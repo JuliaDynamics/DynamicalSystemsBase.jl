@@ -3,6 +3,7 @@ import OrdinaryDiffEq.ODEProblem
 import OrdinaryDiffEq.ODEIntegrator
 
 export ContinuousDS, ODEProblem, ODEIntegrator, variational_integrator
+export ContinuousDynamicalSystem
 
 #######################################################################################
 #                                     Constructors                                    #

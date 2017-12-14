@@ -1,6 +1,6 @@
 using StaticArrays, Requires
 using IterTools: chain
-export Dataset
+export Dataset, AbstractDataset, minima, maxima
 
 abstract type AbstractDataset{D, T} end
 
@@ -167,6 +167,11 @@ Base.show(io::IO, d::AbstractDataset) = println(io, matstring(d))
 #####################################################################################
 #                                 Minima and Maxima                                 #
 #####################################################################################
+"""
+    minima(dataset)
+Return an `SVector` that contains the minimum elements of each timeseries of the
+dataset.
+"""
 function minima(data::AbstractDataset{D, T}) where {D, T<:Real}
     m = fill(T(Inf), D)
     for point in data
@@ -179,6 +184,11 @@ function minima(data::AbstractDataset{D, T}) where {D, T<:Real}
     return SVector{D,T}(m)
 end
 
+"""
+    maxima(dataset)
+Return an `SVector` that contains the maximum elements of each timeseries of the
+dataset.
+"""
 function maxima(data::AbstractDataset{D, T}) where {D, T<:Real}
     m = fill(T(-Inf), D)
     for point in data
