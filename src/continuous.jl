@@ -77,9 +77,7 @@ end
 
 
 """
-```julia
-ODEProblem(ds::ContinuousDS, t)
-```
+    ODEProblem(ds::ContinuousDS, t)
 Return an `ODEProblem` with the given
 system information (t0 is zero).
 This can be passed directly into `solve` from [`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html).
@@ -92,9 +90,7 @@ end
 
 
 """
-```julia
-ODEIntegrator(ds::ContinuousDS, t; diff_eq_kwargs)
-```
+    ODEIntegrator(ds::ContinuousDS, t; diff_eq_kwargs)
 Return an `ODEIntegrator`, by first creating an `ODEProblem(ds, t)`.
 This can be used directly with the interfaces of
 [`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html).
