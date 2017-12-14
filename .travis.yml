@@ -13,8 +13,3 @@ script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone(pwd())'
   - julia -e 'Pkg.test("DynamicalSystemsDef")'
-after_success:
-  - test $TRAVIS_OS_NAME = "linux" && julia -e julia -e 'Pkg.add("Documenter")'
-  - test $TRAVIS_OS_NAME = "linux" && julia -e 'cd(Pkg.dir("DynamicalSystemsDef")); include(joinpath("docs", "make.jl"))'
-#  - julia -e 'cd(Pkg.dir("DynamicalSystemsDef")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
-#  - julia -e 'cd(Pkg.dir("DynamicalSystemsDef")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'

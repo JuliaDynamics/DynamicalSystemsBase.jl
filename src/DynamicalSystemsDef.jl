@@ -1,3 +1,9 @@
+__precompile__()
+
+"""
+Definitions of core system and data types used
+in in the ecosystem of DynamicalSystems.jl
+"""
 module DynamicalSystemsDef
 
 abstract type DynamicalSystem end
