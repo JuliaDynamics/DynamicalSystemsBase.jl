@@ -238,3 +238,6 @@ the data in a delimited (text) format in `f`.
 """
 write_dataset(f, dataset::AbstractDataset, delim = '\t'; opts...) =
 writedlm(f, dataset.data, delim; opts...)
+
+# x = rand(3*100)
+# reinterpret(SVector{3, Float64}, x, (100,))

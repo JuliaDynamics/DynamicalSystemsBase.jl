@@ -1,7 +1,9 @@
-export Reconstruction
 using StaticArrays
 using LsqFit: curve_fit
 using StatsBase: autocor
+
+export Reconstruction
+export estimate_delay
 #####################################################################################
 #                            Reconstruction Object                                  #
 #####################################################################################
