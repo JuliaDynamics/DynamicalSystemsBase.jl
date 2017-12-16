@@ -1,6 +1,9 @@
 using StaticArrays, Requires
 using IterTools: chain
+import Base: ==
+
 export Dataset, AbstractDataset, minima, maxima
+export read_dataset, write_dataset
 
 abstract type AbstractDataset{D, T} end
 
@@ -28,9 +31,10 @@ abstract type AbstractDataset{D, T} end
 Base.append!(d1::AbstractDataset, d2::AbstractDataset) = append!(d1.data, d2.data)
 
 # Other commonly used functions:
-@inline Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
+Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
 @inline dimension(::AbstractDataset{D,T}) where {D,T} = D
 @inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T
+==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
 
 """
     Dataset{D, T} <: AbstractDataset{D,T}
@@ -200,3 +204,37 @@ function maxima(data::AbstractDataset{D, T}) where {D, T<:Real}
     end
     return SVector{D, T}(m)
 end
+
+#####################################################################################
+#                                    Dataset IO                                     #
+#####################################################################################
+"""
+    read_dataset(file, V::Type{Dataset{D, T}}, delim::Char = '\t'; skipstart = 0)
+Read a `delim`-delimited text file directly into a dataset of dimension `D`
+with numbers of type `T`.
+
+Optionally skip the first `skipstart` rows of the file (that may e.g.
+contain headers).
+"""
+function read_dataset(filename, ::Type{Dataset{D, T}}, delim::Char = '\t';
+    skipstart = 0) where {D, T}
+
+    V = SVector{D, T}
+    data = SVector{D, T}[]
+    open(filename) do io
+        for (i, ss) in enumerate(eachline(io))
+            i ≤ skipstart && continue
+            s = split(ss, delim)
+            push!(data, V(ntuple(k -> parse(T, s[k]), Val(D))))
+        end
+    end
+    return Dataset(data)
+end
+
+"""
+    write_dataset(f, dataset, delim = '\t'; opts...)
+Simply calls `writedlm(f, dataset.data, delim; opts...)` and writes
+the data in a delimited (text) format in `f`.
+"""
+write_dataset(f, dataset::AbstractDataset, delim = '\t'; opts...) =
+writedlm(f, dataset.data, delim; opts...)
