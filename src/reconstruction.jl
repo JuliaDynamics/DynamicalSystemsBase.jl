@@ -31,8 +31,8 @@ R = Reconstruction(s, 4, 1) # dimension 4 and delay 1
 R[3] # third point of reconstruction, ≡ (s[3], s[4], s[5], s[6])
 R[1, 2] # Second element of first point of reconstruction, ≡ s[2]
 ```
-and can also be given to all functions that accept a `Dataset`,
-like [`generalized_dim`](@ref).
+and can also be given to all functions that accept a `Dataset`
+(like e.g. `generalized_dim` from module `ChaosTools`).
 
 The functions `dimension(R)` and `delay(R)` return `D` and `τ` respectively.
 
@@ -138,7 +138,7 @@ end
 
 """
     estimate_delay(s) -> τ
-Estimate an optimal delay to be used in [`reconstruct`](@ref),
+Estimate an optimal delay to be used in [`Reconstruction`](@ref),
 by performing an exponential fit to
 the `abs.(c)` with `c` the auto-correlation function of `s`.
 Return the exponential decay time `τ` rounded to an integer.

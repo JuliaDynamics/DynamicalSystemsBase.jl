@@ -39,7 +39,7 @@ Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
 """
     Dataset{D, T} <: AbstractDataset{D,T}
 A dedicated interface for datasets, i.e. vectors of vectors.
-It contains **equally-sized datapoints** of length `D`,
+It contains *equally-sized datapoints* of length `D`,
 represented by `SVector{D, T}`, containing numbers of type `T`.
 
 The internal data representation is more efficient than having a `Matrix` and
@@ -232,9 +232,9 @@ function read_dataset(filename, ::Type{Dataset{D, T}}, delim::Char = '\t';
 end
 
 """
-    write_dataset(f, dataset, delim = '\t'; opts...)
+    write_dataset(file, dataset::AbstractDataset, delim = '\t'; opts...)
 Simply calls `writedlm(f, dataset.data, delim; opts...)` and writes
-the data in a delimited (text) format in `f`.
+the data in a delimited (text) format in `file`.
 """
 write_dataset(f, dataset::AbstractDataset, delim = '\t'; opts...) =
 writedlm(f, dataset.data, delim; opts...)

@@ -129,7 +129,7 @@ end
 """
     variational_integrator(ds::ContinuousDS, k::Int, tfinal, S::Matrix, kwargs...)
 Return an `ODEIntegrator` that represents the variational equations
-of motion for the system. Used in [`lyapunovs`](@ref) and [`gali`](@ref).
+of motion for the system.
 
 It evolves in parallel `ds.state` and `k` deviation
 vectors ``w_i`` such that ``\\dot{w}_i = J\\times w_i`` with ``J`` the Jacobian
