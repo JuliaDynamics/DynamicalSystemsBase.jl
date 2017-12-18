@@ -1,9 +1,9 @@
 """
-Sub-module of the module `DynamicalSystemsDef`, which contains pre-defined
+Sub-module of the module `DynamicalSystemsBase`, which contains pre-defined
 famous systems.
 """
 module Systems
-using DynamicalSystemsDef, StaticArrays
+using DynamicalSystemsBase, StaticArrays
 const twopi = 2π
 #######################################################################################
 #                                    Continuous                                       #

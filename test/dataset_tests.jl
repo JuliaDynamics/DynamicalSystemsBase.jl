@@ -1,7 +1,7 @@
 cd()
 println("\nTesting Dataset IO (file at $(pwd()))...")
-if current_module() != DynamicalSystemsDef
-  using DynamicalSystemsDef
+if current_module() != DynamicalSystemsBase
+  using DynamicalSystemsBase
 end
 using Base.Test, StaticArrays
 
