@@ -58,13 +58,15 @@ data[1] == data[1, :] # this is the first datapoint (D-dimensional)
 data[5, 3] # value of the third variable, at the 5th timepoint
 ```
 
-Use `convert(Matrix, dataset)` to create a `Matrix`, and `convert(Dataset, matrix)`
-to create a `Dataset` from a matrix. Notice: `convert(Dataset, matrix)` assumes
+Use `Matrix(dataset)` to create a `Matrix`, and `Dataset(matrix)`
+to create a `Dataset` from a matrix. Notice: `Dataset(matrix)` assumes
 that each column of the matrix represents one dynamic variable. If instead each
 column of the matrix represents a datapoint, use `reinterpret(Dataset, matrix)`.
 
 If you have various timeseries vectors `x, y, z, ...` pass them like
 `Dataset(x, y, z, ...)`.
+
+See also [`read_dataset`](@ref), [`write_dataset`](@ref).
 """
 struct Dataset{D, T<:Number} <: AbstractDataset{D,T}
     data::Vector{SVector{D,T}}
