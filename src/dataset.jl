@@ -12,6 +12,7 @@ abstract type AbstractDataset{D, T} end
 @inline Base.size(d::AbstractDataset{D,T}) where {D,T} = (length(d.data), D)
 @inline Base.size(d::AbstractDataset, i::Int) = size(d)[i]
 @inline Base.iteratorsize(d::AbstractDataset) = Base.HasLength()
+
 # 1D indexing  over the container elements:
 @inline Base.getindex(d::AbstractDataset, i) = d.data[i]
 @inline Base.endof(d::AbstractDataset) = endof(d.data)
@@ -22,15 +23,20 @@ abstract type AbstractDataset{D, T} end
 [d.data[k][j] for k in 1:length(d)]
 @inline Base.getindex(d::AbstractDataset, i::Int, j::Colon) = d.data[i]
 @inline Base.getindex(d::AbstractDataset, r::Range) = d.data[r]
+# Indexing with ranges
+@inline Base.getindex(d::AbstractDataset, i::Range, j::Int) =
+[d.data[k][j] for k in i]
+@inline Base.getindex(d::AbstractDataset, i::Int, j::Range) =
+[d.data[i][k] for k in j]
+
 # Itereting interface:
 @inline Base.eachindex(D::AbstractDataset) = Base.OneTo(length(D.data))
 @inline Base.start(d::AbstractDataset) = 1
 @inline Base.next(d::AbstractDataset, state) = (d[state], state + 1)
-@inline Base.done(d::AbstractDataset, state) = state >= length(d.data) + 1
-# Append
-Base.append!(d1::AbstractDataset, d2::AbstractDataset) = append!(d1.data, d2.data)
+@inline Base.done(d::AbstractDataset, state) = state ≥ length(d.data) + 1
 
 # Other commonly used functions:
+Base.append!(d1::AbstractDataset, d2::AbstractDataset) = append!(d1.data, d2.data)
 Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
 @inline dimension(::AbstractDataset{D,T}) where {D,T} = D
 @inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T

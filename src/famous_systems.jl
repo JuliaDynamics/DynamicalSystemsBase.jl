@@ -241,6 +241,36 @@ function (obj::Lorenz96{N, T})(dx, x) where {N, T}
 end
 
 
+"""
+    duffing(u0 = [rand(), rand(), 0]; ω = 2.2, f = 27.0, d = 0.2)
+The (forced) duffing oscillator, that satisfies the equation
+```math
+\\ddot{x} + d\\cdot\\dot{x} + x + x^3 = f\\cos(\\omega t)
+```
+with `f, ω` the forcing strength and frequency and `d` the dampening.
+
+(Jacobian is computed automatically)
+
+The `eom!` field of the returned system has as fields the keyword arguments of
+this function. You can access them and change their value at any point
+using `ds.eom!.parameter = value`.
+"""
+function duffing(u0 = [rand(), rand(), 0]; ω = 2.2, f = 27.0, d = 0.2)
+    duf = Duffing(ω, d, f) # create struct
+    return ContinuousDS(u0, duf)
+end
+mutable struct Duffing
+    ω::Float64
+    d::Float64
+    f::Float64
+end
+function (duf::Duffing)(dx, x)
+    dx[1] = x[2]
+    dx[2] = duf.f*cos(duf.ω*x[3]) -x[1] - x[1]^3 - duf.d * x[2]
+    dx[3] = 1
+    return nothing
+end
+
 #######################################################################################
 #                                     Discrete                                        #
 #######################################################################################
@@ -326,7 +356,7 @@ mutable struct StandardMap
 end
 @inline @inbounds function (f::StandardMap)(x)
     theta = x[1]; p = x[2]
-    p+=f.k*sin(theta)
+    p += f.k*sin(theta)
     theta += p
     while theta >= twopi; theta -= twopi; end
     while theta < 0; theta += twopi; end

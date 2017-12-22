@@ -65,27 +65,31 @@ Base.eltype(ds::ContinuousDS{T,F,J}) where {T, F, J} = T
 #######################################################################################
 #                         Interface to DifferentialEquations                          #
 #######################################################################################
-function get_solver!(diff_eq_kwargs::Dict)
+function get_solver(diff_eq_kwargs::Dict)
+
     if haskey(diff_eq_kwargs, :solver)
+        newkw = deepcopy(diff_eq_kwargs)
         solver = diff_eq_kwargs[:solver]
-        pop!(diff_eq_kwargs, :solver)
+        pop!(newkw, :solver)
+        return solver, newkw
     else
         solver = Tsit5()
+        return solver, diff_eq_kwargs
     end
-    return solver
 end
 
 
 
 """
-    ODEProblem(ds::ContinuousDS, t)
+    ODEProblem(ds::ContinuousDS, t, state = ds.state)
 Return an `ODEProblem` with the given
-system information (t0 is zero).
-This can be passed directly into `solve` from [`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html).
+system information (`t` is the final time of `tspan`, and `tspan[1]` is zero).
+This can be passed directly into `solve` from
+[`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html).
 """
-function ODEProblem(ds::ContinuousDS, t)
+function ODEProblem(ds::ContinuousDS, t, state = ds.state)
     odef = (t, u, du) -> ds.eom!(du, u)
-    OrdinaryDiffEq.ODEProblem(odef, copy(ds.state), (zero(t), t))
+    ODEProblem{true}(odef, state, (zero(t), t))
 end
 
 
@@ -107,9 +111,9 @@ do so by using the symbol `:solver`, e.g.:
 """
 function ODEIntegrator(ds::ContinuousDS, t; diff_eq_kwargs = Dict())
     prob = ODEProblem(ds, t)
-    solver = get_solver!(diff_eq_kwargs)
-    integrator = init(prob, solver; diff_eq_kwargs...,
-    save_first=false, save_everystep=false)
+    solver, newkw = get_solver(diff_eq_kwargs)
+    integrator = init(prob, solver; newkw...,
+    save_everystep=false)
     return integrator
 end
 
@@ -120,8 +124,8 @@ end
 Solve the `prob` using `solve` and return the solution.
 """
 function get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
-    solver = get_solver!(diff_eq_kwargs)
-    sol = solve(prob, solver; diff_eq_kwargs..., save_everystep=false)
+    solver, newkw = get_solver(diff_eq_kwargs)
+    sol = solve(prob, solver; newkw..., save_everystep=false)
     return sol.u
 end
 
@@ -164,8 +168,8 @@ function variational_integrator(ds::ContinuousDS, k::Int, t_final::Real,
     end
 
     varprob = ODEProblem(veom!, S, (zero(t_final), t_final))
-    solver = get_solver!(diff_eq_kwargs)
-    vintegrator = init(varprob, solver; diff_eq_kwargs..., save_everystep=false)
+    solver, newkw = get_solver(diff_eq_kwargs)
+    vintegrator = init(varprob, solver; newkw..., save_everystep=false)
     return vintegrator
 end
 
@@ -190,8 +194,9 @@ end
 #                                Evolution of System                                  #
 #######################################################################################
 # See discrete.jl for the documentation string
-function evolve(ds::ContinuousDS, t::Real = 1.0; diff_eq_kwargs = Dict())
-    prob = ODEProblem(ds, t)
+function evolve(ds::ContinuousDS, t::Real = 1.0, state = ds.state;
+    diff_eq_kwargs = Dict())
+    prob = ODEProblem(ds, t, state)
     return get_sol(prob, diff_eq_kwargs)[end]
 end
 
