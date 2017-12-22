@@ -271,6 +271,36 @@ function (duf::Duffing)(dx, x)
     return nothing
 end
 
+
+"""
+    shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
+Shinriki oscillator with all other parameters (besides `R1`) set to constants.
+
+Always use `diff_eq_kwargs = Dict(:abstol=>1e-9, :reltol => 1e-9)` when solving
+this system because it involves an exponential function.
+"""
+function shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
+    shi = Shinriki(R1)
+    return ContinuousDS(u0, shi)
+end
+mutable struct Shinriki
+    R1::Float64
+end
+(shi::Shinriki)(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
+function (shi::Shinriki)(du, u)
+
+    du[1] = (1/0.01)*(
+    u[1]*(1/6.9 - 1/shi.R1) - shi(u[1] - u[2]) - (u[1] - u[2])/14.5
+    )
+
+    du[2] = (1/0.1)*(
+    shi(u[1] - u[2]) + (u[1] - u[2])/14.5 - u[3]
+    )
+
+    du[3] = (1/0.32)*(-u[3]*0.1 + u[2])
+    return nothing
+end
+
 #######################################################################################
 #                                     Discrete                                        #
 #######################################################################################
