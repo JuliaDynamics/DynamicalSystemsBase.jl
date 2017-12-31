@@ -33,4 +33,4 @@ using Base.Test, StaticArrays
 
     rm("test.txt")
   end
-eend
+end
