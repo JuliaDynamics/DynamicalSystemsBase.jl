@@ -32,5 +32,6 @@ using Base.Test, StaticArrays
     @test dimension(data2) == 2
 
     rm("test.txt")
+    @test !isfile("test.txt") # make extra sure!
   end
 end
