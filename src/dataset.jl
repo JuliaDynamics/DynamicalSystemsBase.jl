@@ -259,11 +259,12 @@ function read_dataset(filename, ::Type{Dataset{D, T}}, delim::Char = '\t';
 end
 
 """
-    write_dataset(file, dataset::AbstractDataset, delim = '\t'; opts...)
-Simply calls `writedlm(f, dataset.data, delim; opts...)` and writes
-the data in a delimited (text) format in `file`.
+    write_dataset(file, dataset::AbstractDataset, delim::Char = '\t'; opts...)
+Write a `dataset` in a `delim`-delimited text file.
+
+`opts` are keyword arguments passed into `writedlm`.
 """
-write_dataset(f, dataset::AbstractDataset, delim = '\t'; opts...) =
+write_dataset(f, dataset::AbstractDataset, delim::Char = '\t'; opts...) =
 writedlm(f, dataset.data, delim; opts...)
 
 # x = rand(3*100)
