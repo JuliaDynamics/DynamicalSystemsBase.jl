@@ -185,9 +185,9 @@ Return an `SVector` that contains the minimum elements of each timeseries of the
 dataset.
 """
 function minima(data::AbstractDataset{D, T}) where {D, T<:Real}
-    m = fill(T(Inf), D)
+    m = Vector(data[1])
     for point in data
-        for i in 1:D
+        for i in 2:D
             if point[i] < m[i]
                 m[i] = point[i]
             end
@@ -202,9 +202,9 @@ Return an `SVector` that contains the maximum elements of each timeseries of the
 dataset.
 """
 function maxima(data::AbstractDataset{D, T}) where {D, T<:Real}
-    m = fill(T(-Inf), D)
+    m = Vector(data[1])
     for point in data
-        for i in 1:D
+        for i in 2:D
             if point[i] > m[i]
                 m[i] = point[i]
             end
@@ -218,8 +218,8 @@ end
 Return `minima(dataset), maxima(dataset)` without doing the computation twice.
 """
 function minmaxima(data::AbstractDataset{D, T}) where {D, T<:Real}
-    mi = [data[1]...]
-    ma = [data[1]...]
+    mi = Vector(data[1])
+    ma = Vector(data[1])
     for point in data
         for i in 1:D
             if point[i] > ma[i]
