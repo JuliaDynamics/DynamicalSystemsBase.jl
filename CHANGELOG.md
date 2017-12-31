@@ -1,6 +1,9 @@
-# v0.2.0
-## BREAKING
+# v0.2.1
+## Non-breaking
+* Added function `minmaxima` that calculates maxima and minima at the same time for
+  datasets.
 
+# v0.2.0
 ## Non-breaking
 * Minor docstring improvements and IO improvements.
 * Datasets can now be accessed with ranges as well.

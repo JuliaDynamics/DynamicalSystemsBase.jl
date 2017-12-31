@@ -3,7 +3,7 @@ using IterTools: chain
 import Base: ==
 
 export Dataset, AbstractDataset, minima, maxima
-export read_dataset, write_dataset
+export read_dataset, write_dataset, minmaxima
 
 abstract type AbstractDataset{D, T} end
 
@@ -72,7 +72,7 @@ column of the matrix represents a datapoint, use `reinterpret(Dataset, matrix)`.
 If you have various timeseries vectors `x, y, z, ...` pass them like
 `Dataset(x, y, z, ...)`.
 
-See also [`read_dataset`](@ref), [`write_dataset`](@ref).
+See also [`read_dataset`](@ref), [`write_dataset`](@ref) and [`minmaxima`](@ref).
 """
 struct Dataset{D, T<:Number} <: AbstractDataset{D,T}
     data::Vector{SVector{D,T}}
@@ -211,6 +211,25 @@ function maxima(data::AbstractDataset{D, T}) where {D, T<:Real}
         end
     end
     return SVector{D, T}(m)
+end
+
+"""
+    minmaxima(dataset)
+Return `minima(dataset), maxima(dataset)` without doing the computation twice.
+"""
+function minmaxima(data::AbstractDataset{D, T}) where {D, T<:Real}
+    mi = [data[1]...]
+    ma = [data[1]...]
+    for point in data
+        for i in 1:D
+            if point[i] > ma[i]
+                ma[i] = point[i]
+            elseif point[i] < mi[i]
+                mi[i] = point[i]
+            end
+        end
+    end
+    return SVector{D, T}(mi), SVector{D, T}(ma)
 end
 
 #####################################################################################

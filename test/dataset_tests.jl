@@ -5,20 +5,32 @@ if current_module() != DynamicalSystemsBase
 end
 using Base.Test, StaticArrays
 
-@testset "Dataset IO" begin
+@testset "Dataset" begin
   ds = Systems.towel()
   data = trajectory(ds, 1000)
+  @testset "minmax" begin
+    mi = minima(data)
+    ma = maxima(data)
+    mimi, mama = minmaxima(data)
+    @test mimi == mi
+    @test mama == ma
+    for i in 1:3
+      @test mi[i] < ma[i]
+    end
+  end
 
-  @test !isfile("test.txt")
-  write_dataset("test.txt", data)
-  @test isfile("test.txt")
+  @testset "IO" begin
+    @test !isfile("test.txt")
+    write_dataset("test.txt", data)
+    @test isfile("test.txt")
 
-  data3 = read_dataset("test.txt", Dataset{3, Float64})
-  @test dimension(data3) == 3
-  @test data3 == data
+    data3 = read_dataset("test.txt", Dataset{3, Float64})
+    @test dimension(data3) == 3
+    @test data3 == data
 
-  data2 = read_dataset("test.txt", Dataset{2, Float64})
-  @test dimension(data2) == 2
+    data2 = read_dataset("test.txt", Dataset{2, Float64})
+    @test dimension(data2) == 2
 
-  rm("test.txt")
-end
+    rm("test.txt")
+  end
+eend
