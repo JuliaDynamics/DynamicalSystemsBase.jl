@@ -2,7 +2,7 @@ using OrdinaryDiffEq, Requires, ForwardDiff
 import OrdinaryDiffEq.ODEProblem
 import OrdinaryDiffEq.ODEIntegrator
 
-export ContinuousDS, ODEProblem, ODEIntegrator, variational_integrator
+export ContinuousDS, variational_integrator, ODEIntegrator
 export ContinuousDynamicalSystem
 
 #######################################################################################
@@ -14,48 +14,68 @@ abstract type ContinuousDynamicalSystem <: DynamicalSystem end
 """
     ContinuousDS(state, eom! [, jacob! [, J]]) <: DynamicalSystem
 `D`-dimensional continuous dynamical system.
-## Fields:
+## Fields
 * `state::Vector{T}` : Current state-vector of the system. Do `ds.state .= u` to
   change the state.
-* `eom!` (function) : The function that represents the system's equations of motion
-  (also called vector field). The function is of the format: `eom!(du, u)`
-  which means that it is **in-place**, with the Julian syntax (the mutated argument
-  `du` is the first).
+* `problem::ODEProblem` : The fundamental structure used in the
+   [DifferentialEquations.jl](http://docs.juliadiffeq.org/latest/index.html).
+   Contains the equations of motion, callbacks and other information.
 * `jacob!` (function) : The function that represents the Jacobian of the system,
-  given in the format: `jacob!(J, u)` which means it is in-place, with the mutated
-  argument being the first.
-* `J::Matrix{T}` : Initialized Jacobian matrix (optional).
+  given in the format: `jacob!(t, u, J)` which means it is in-place, with the mutated
+  argument being the last.
+* `J::Matrix{T}` : Jacobian matrix.
 
-Only the first two fields of this type are displayed during print.
+## Creating a `ContinuousDS`
+The equations of motion should be in the form `eom!(t, u, du)`
+which means that it is **in-place**, with the mutated argument
+`du` the last one. If you have this function, and optionally a function for the
+Jacobian, you can use the constructor
+```julia
+ContinuousDS(state, eom! [, jacob! [, J]]; tspan = (0.0, 100.0))
+```
+If instead you already have an `ODEProblem` because you also want to take advantage
+of the callback functionality of DifferentialEquations.jl, you may use the constructor
+```julia
+ContinuousDS(odeproblem [, jacob! [, J]])
+```
 
 As mentioned in our [official documentation](https://juliadynamics.github.io/DynamicalSystems.jl/latest/system_definition#example-using-functors),
 it is preferred to use Functors for both the equations of motion and the Jacobian.
 
 If the `jacob` is not provided by the user, it is created automatically
-using the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
+using the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/)
+(which always passes `t=0` at the `eom!`).
+Please see the official documentation for the handling of explicit time dependence
+regarding Jacobians.
+
+To interfece *towards* DifferentialEquations.jl use `ODEIntegrator(ds, stuff...)`.
 """
-struct ContinuousDS{T<:Number, F, JJ} <: ContinuousDynamicalSystem
+struct ContinuousDS{T<:Number, ODE, JJ} <: ContinuousDynamicalSystem
     state::Vector{T}
-    eom!::F
+    problem::ODE
     jacob!::JJ
     J::Matrix{T}
 end
 
 # Constructors
 function ContinuousDS(state, eom!, j!,
-    J = zeros(eltype(state), length(state), length(state)))
-    j!(J, state)
-    return ContinuousDS(state, eom!, j!, J)
+    J = zeros(eltype(state), length(state), length(state)); tspan=(0.0, 100.0))
+
+    j!(0.0, state, J)
+    problem = ODEProblem{true}(eom!, state, tspan)
+
+    return ContinuousDS(state, problem, j!, J)
 end
 
 function ContinuousDS(state, eom!)
     D = length(state); T = eltype(state)
     du = copy(state)
     J = zeros(T, D, D)
-    jcf = ForwardDiff.JacobianConfig(eom!, du, state)
-    ForwardDiff_jacob!(J, u) = ForwardDiff.jacobian!(
-    J, eom!, du, u, jcf)
-    ForwardDiff_jacob!(J, state)
+    jeom! = (du, u) -> eom!(0, u, du)
+    jcf = ForwardDiff.JacobianConfig(jeom!, du, state)
+    ForwardDiff_jacob!(t, u, J) = ForwardDiff.jacobian!(
+    J, jeom!, du, u, jcf)
+    ForwardDiff_jacob!(0, state, J)
     return ContinuousDS(state, eom!, ForwardDiff_jacob!, J)
 end
 
@@ -78,39 +98,31 @@ function get_solver(diff_eq_kwargs::Dict)
     end
 end
 
+OrdinaryDiffEq.ODEProblem(
+ds::ContinuousDS, t::Real = ds.problem.tspan[2], state::Vector = ds.state) =
+ODEProblem(ds.problem, state, (zero(t), t))
 
-
-"""
-    ODEProblem(ds::ContinuousDS, t, state = ds.state)
-Return an `ODEProblem` with the given
-system information (`t` is the final time of `tspan`, and `tspan[1]` is zero).
-This can be passed directly into `solve` from
-[`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html).
-"""
-function ODEProblem(ds::ContinuousDS, t, state = ds.state)
-    odef = (t, u, du) -> ds.eom!(du, u)
-    ODEProblem{true}(odef, state, (zero(t), t))
-end
-
-
+OrdinaryDiffEq.ODEProblem(
+ds::ContinuousDS, tspan::Tuple = ds.problem.tspan, state::Vector = ds.state) =
+ODEProblem(ds.problem, state, tspan)
 
 """
-    ODEIntegrator(ds::ContinuousDS, t; diff_eq_kwargs)
-Return an `ODEIntegrator`, by first creating an `ODEProblem(ds, t)`.
-This can be used directly with the interfaces of
+    ODEIntegrator(ds::ContinuousDS, t [, state]; diff_eq_kwargs = Dict())
+Return an `ODEIntegrator` to be used directly with the interfaces of
 [`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html).
 
 `diff_eq_kwargs = Dict()` is a dictionary `Dict{Symbol, ANY}`
 of keyword arguments
-passed into the `init` of the
-[`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html) package,
+passed into the `init` of
+[`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html),
 for example `Dict(:abstol => 1e-9)`. If you want to specify a solver,
 do so by using the symbol `:solver`, e.g.:
 `Dict(:solver => DP5(), :tstops => 0:0.01:t)`. This requires you to have been first
 `using OrdinaryDiffEq` to access the solvers.
 """
-function ODEIntegrator(ds::ContinuousDS, t; diff_eq_kwargs = Dict())
-    prob = ODEProblem(ds, t)
+function OrdinaryDiffEq.ODEIntegrator(ds::ContinuousDS,
+    t, state::Vector = ds.state; diff_eq_kwargs = Dict())
+    prob = ODEProblem(ds, t, state)
     solver, newkw = get_solver(diff_eq_kwargs)
     integrator = init(prob, solver; newkw...,
     save_everystep=false)
@@ -223,21 +235,9 @@ end
 #######################################################################################
 #                                 Pretty-Printing                                     #
 #######################################################################################
-import Base.show
 function Base.show(io::IO, ds::ContinuousDS{S, F, J}) where {S, F, J}
     D = dimension(ds)
     text = "$(dimension(ds))-dimensional continuous dynamical system"
     print(io, text*":\n",
-    "state: $(ds.state)\n", "eom: $F\n")
-end
-
-@require Juno begin
-function Juno.render(i::Juno.Inline, s::ContinuousDS{S, F, J}) where
-    {S, F, J}
-    t = Juno.render(i, Juno.defaultrepr(s))
-    text = "$(dimension(s))-dimensional continuous dynamical system"
-    t[:head] = Juno.render(i, Text(text))
-    t[:children] = t[:children][1:2]
-    t
-end
+    "state: $(ds.state)\n", "eom: $(ds.problem.f)\n")
 end
