@@ -117,13 +117,22 @@ function get_solver(diff_eq_kwargs::Dict)
     end
 end
 
+# ODEProblem(
+# ds::ContinuousDS, t::Real = ds.prob.tspan[2], state::Vector = ds.prob.u0) =
+# ODEProblem{true}(ds.prob, state, (zero(t), t))
+#
+# ODEProblem(
+# ds::ContinuousDS, tspan::Tuple, state::Vector = ds.prob.u0) =
+# ODEProblem{true}(ds.prob, state, tspan)
+
+# Workaround for above
 ODEProblem(
-ds::ContinuousDS, t::Real = ds.prob.tspan[2], state::Vector = ds.state) =
-ODEProblem{true}(ds.prob, state, (zero(t), t))
+ds::ContinuousDS, t::Real = ds.prob.tspan[2], state::Vector = ds.prob.u0) =
+ODEProblem{true}(ds.prob.f, state, (zero(t), t))
 
 ODEProblem(
-ds::ContinuousDS, tspan::Tuple, state::Vector = ds.state) =
-ODEProblem{true}(ds.prob, state, tspan)
+ds::ContinuousDS, tspan::Tuple, state::Vector = ds.prob.u0) =
+ODEProblem{true}(ds.prob.f, state, tspan)
 
 """
     ODEIntegrator(ds::ContinuousDS, t [, state]; diff_eq_kwargs = Dict())
@@ -140,7 +149,7 @@ do so by using the symbol `:solver`, e.g.:
 `using OrdinaryDiffEq` to access the solvers.
 """
 function OrdinaryDiffEq.ODEIntegrator(ds::ContinuousDS,
-    t, state::Vector = ds.state; diff_eq_kwargs = Dict())
+    t, state::Vector = ds.prob.u0; diff_eq_kwargs = Dict())
     prob = ODEProblem(ds, t, state)
     solver, newkw = get_solver(diff_eq_kwargs)
     integrator = init(prob, solver; newkw...,
@@ -167,11 +176,11 @@ Return an `ODEIntegrator` that represents the variational equations
 of motion for the system. `t` makes the `tspan` and if it is `Real`
 instead of `Tuple`, initial time is assumed zero.
 
-This integrator evolves in parallel `ds.state` and `k` deviation
+This integrator evolves in parallel the system and `k` deviation
 vectors ``w_i`` such that ``\\dot{w}_i = J\\times w_i`` with ``J`` the Jacobian
 at the current state. `S` is the initial "conditions" which contain both the
 system's state as well as the initial diviation vectors:
-`S = cat(2, ds.state, ws)` if `ws` is a matrix that has as *columns* the initial
+`S = cat(2, state, ws)` if `ws` is a matrix that has as *columns* the initial
 deviation vectors.
 
 The only keyword argument for this funcion is `diff_eq_kwargs = Dict()` (see
@@ -231,7 +240,7 @@ end
 #                                Evolution of System                                  #
 #######################################################################################
 # See discrete.jl for the documentation string
-function evolve(ds::ContinuousDS, t::Real = 1.0, state = ds.state;
+function evolve(ds::ContinuousDS, t = 1.0, state = ds.prob.u0;
     diff_eq_kwargs = Dict())
     prob = ODEProblem(ds, t, state)
     return get_sol(prob, diff_eq_kwargs)[end]
@@ -240,17 +249,23 @@ end
 
 
 # See discrete.jl for the documentation string
-function trajectory(ds::ContinuousDS, T::Real;
+function trajectory(ds::ContinuousDS, T;
     dt::Real=0.05, diff_eq_kwargs = Dict())
 
     # Necessary due to DifferentialEquations:
-    if !issubtype(typeof(T), AbstractFloat)
+
+    if typeof(T) <: Real && !issubtype(typeof(T), AbstractFloat)
         T = convert(Float64, T)
     end
     T<=0 && throw(ArgumentError("Total time `T` must be positive."))
 
     D = dimension(ds)
-    t = zero(T):dt:T #time vector
+    if typeof(T) <: Real
+        t = zero(T):dt:T #time vector
+    elseif typeof(T) == Tuple
+        t = T[1]:dt:T[2]
+    end
+
     prob = ODEProblem(ds, T)
     kw = Dict{Symbol, Any}(diff_eq_kwargs) #nessesary conversion to add :saveat
     kw[:saveat] = t

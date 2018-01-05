@@ -227,7 +227,7 @@ struct Lorenz96{N, T <: Real} # Structure with the parameters of Lorenz96 system
   F::T
 end
 # Equations of motion
-function (obj::Lorenz96{N, T})(t, u, du) where {N, T}
+function (obj::Lorenz96{N, T})(t, x, dx) where {N, T}
     F = obj.F
     # 3 edge cases
     dx[1] = (x[2] - x[N - 1]) * x[N] - x[1] + F
