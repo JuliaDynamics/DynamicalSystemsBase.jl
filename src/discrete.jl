@@ -141,7 +141,10 @@ Return the Jacobian matrix of the equations of motion at the system's state.
 jacobian(ds::DynamicalSystem) = (ds.jacob!(ds.J, state(ds)), ds.J)
 jacobian(ds::DiscreteDS) = ds.jacob(state(ds))
 
-
+"""
+    state(ds::DynamicalSystem)
+Return the state of the system.
+"""
 state(ds::DynamicalSystem) = ds.state
 
 #####################################################################################
