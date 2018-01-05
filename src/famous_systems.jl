@@ -299,7 +299,8 @@ function (shi::Shinriki)(t, u::EomVector, du::EomVector)
     du[3] = (1/0.32)*(-u[3]*0.1 + u[2])
     return nothing
 end
-
+# Jacobian caller for Shinriki:
+(shi::Shinriki)(::Type{Val{:jac}}, t, u, J) = (shi::Shinriki)(t, u, J)
 #######################################################################################
 #                                     Discrete                                        #
 #######################################################################################

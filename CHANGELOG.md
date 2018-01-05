@@ -1,3 +1,12 @@
+# v0.3.0
+## BREAKING
+* The type `ContinuousDS` has been completely overhauled.
+  * Now the type contains an `ODEProblem` instead of `state` and `eom!`.
+  * Now the form of equations of motion is expected as `(t, u, du)`.
+  * We are able to handle non-autonomous systems with "simple" time dependence.
+  * This also allows to use callbacks natively tied to the system! This means
+    that you can create the simple form of Hybrid systems!
+
 # v0.2.1
 ## Non-breaking
 * Added function `minmaxima` that calculates maxima and minima at the same time for

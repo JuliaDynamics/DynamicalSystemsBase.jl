@@ -26,7 +26,7 @@ abstract type ContinuousDynamicalSystem <: DynamicalSystem end
   argument being the last.
 * `J::Matrix{T}` : Jacobian matrix.
 
-You can use `ds.prob.u0 .= newu` to set a new state to the system.
+You can use `ds.prob.u0 .= newstate` to set a new state to the system.
 
 ## Creating a `ContinuousDS`
 The equations of motion **must be** in the form `eom!(t, u, du)`,
@@ -48,13 +48,14 @@ ContinuousDS(odeproblem [, jacob! [, J]])
 If the `jacob!` is not provided by the user, it is created automatically
 using the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/)
 (which always passes `t=0` at the `eom!`) in both cases.
-Please see the official documentation for the handling of explicit time dependence
-regarding Jacobians.
 
 As mentioned in our [official documentation](https://juliadynamics.github.io/DynamicalSystems.jl/latest/system_definition#example-using-functors),
 it is preferred to use Functors for both the equations of motion and the Jacobian.
 
 To interfece *towards* DifferentialEquations.jl use `ODEIntegrator(ds, stuff...)`.
+Notice that you can have performance gains for stiff methods by
+explicitly adding a Jacobian caller for DifferentialEquations.jl by defining
+`eom!(::Type{Val{:jac}}, t, u, J) = jacob!(t, u, J)`.
 """
 struct ContinuousDS{T<:Number, ODE, JJ} <: ContinuousDynamicalSystem
     prob::ODE
