@@ -48,13 +48,13 @@ mutable struct Lorenz63
     ρ::Float64
     β::Float64
 end
-@inline @inbounds function (s::Lorenz63)(du::EomVector, u::EomVector)
+@inline @inbounds function (s::Lorenz63)(t, u::EomVector, du::EomVector)
     du[1] = s.σ*(u[2]-u[1])
     du[2] = u[1]*(s.ρ-u[3]) - u[2]
     du[3] = u[1]*u[2] - s.β*u[3]
     return nothing
 end
-@inline @inbounds function (s::Lorenz63)(J::EomMatrix, u::EomVector)
+@inline @inbounds function (s::Lorenz63)(t, u::EomVector, J::EomMatrix)
     J[1,1] = -s.σ; J[1, 2] = s.σ
     J[2,1] = s.ρ - u[3]; J[2,3] = -u[1]
     J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -s.β
