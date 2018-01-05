@@ -154,9 +154,6 @@ Evolve the `ds.state` (or `u0` if given) for total time `T` and return the
 `final_state`. For discrete systems `T` corresponds to steps and
 thus it must be integer.
 
-Notice that for `BigDiscreteDS` a *copy* of `ds.state` is made for no given `u0`,
-so that `ds.state` is not mutated.
-
 `evolve` *does not store* any information about intermediate steps.
 Use [`trajectory`](@ref) if you want to produce a trajectory of the system.
 If you want to
