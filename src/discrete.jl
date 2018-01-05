@@ -1,6 +1,6 @@
 using StaticArrays, ForwardDiff, Requires
 
-export DiscreteDS, DiscreteDS1D, evolve, trajectory, dimension
+export DiscreteDS, DiscreteDS1D, evolve, trajectory, dimension, state
 export BigDiscreteDS, DiscreteDynamicalSystem
 
 #####################################################################################
