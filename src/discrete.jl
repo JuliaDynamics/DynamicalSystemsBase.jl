@@ -142,7 +142,7 @@ jacobian(ds::DynamicalSystem) = (ds.jacob!(ds.J, ds.state), ds.J)
 jacobian(ds::DiscreteDS) = ds.jacob(ds.state)
 
 
-
+state(ds::DynamicalSystem) = ds.state
 
 
 #####################################################################################
