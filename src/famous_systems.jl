@@ -249,25 +249,29 @@ The (forced) duffing oscillator, that satisfies the equation
 ```
 with `f, ω` the forcing strength and frequency and `d` the dampening.
 
-(Jacobian is computed automatically)
-
 The `eom!` field of the returned system has as fields the keyword arguments of
 this function. You can access them and change their value at any point
 using `ds.eom!.parameter = value`.
 """
 function duffing(u0 = [rand(), rand(), 0]; ω = 2.2, f = 27.0, d = 0.2)
     duf = Duffing(ω, d, f) # create struct
-    return ContinuousDS(u0, duf)
+    J = zeros(eltype(u0), 2, 2)
+    J[1,2] = 1
+    return ContinuousDS(u0, duf, duf, J)
 end
 mutable struct Duffing
     ω::Float64
     d::Float64
     f::Float64
 end
-@inbounds function (duf::Duffing)(t, u::EomVector, du::EomVector)
+@inbounds function (duf::Duffing)(t, u::AbstractVector, du::AbstractVector)
     dx[1] = x[2]
     dx[2] = duf.f*cos(duf.ω*t) -x[1] - x[1]^3 - duf.d * x[2]
     return nothing
+end
+@inbounds function (duf::Duffing)(t, u::AbstractVector, du::AbstractMatrix)
+    J[2,1] = -1 - 3u[1]^2
+    J[2,2] = - duf.d*u[2]
 end
 
 
