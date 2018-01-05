@@ -31,7 +31,9 @@ You can use `ds.prob.u0 .= newu` to set a new state to the system.
 ## Creating a `ContinuousDS`
 The equations of motion **must be** in the form `eom!(t, u, du)`,
 which means that they are **in-place** with the mutated argument
-`du` the last one. If you have this function, and optionally a function for the
+`du` the last one. Both `u, du` **must be** `Vector`s.
+
+If you have this function, and optionally a function for the
 Jacobian, you can use the constructor
 ```julia
 ContinuousDS(state, eom! [, jacob! [, J]]; tspan = (0.0, 100.0))
