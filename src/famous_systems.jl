@@ -48,13 +48,13 @@ mutable struct Lorenz63
     ρ::Float64
     β::Float64
 end
-@inline @inbounds function (s::Lorenz63)(du::EomVector, u::EomVector)
+@inline @inbounds function (s::Lorenz63)(t, u::AbstractVector, du::AbstractVector)
     du[1] = s.σ*(u[2]-u[1])
     du[2] = u[1]*(s.ρ-u[3]) - u[2]
     du[3] = u[1]*u[2] - s.β*u[3]
     return nothing
 end
-@inline @inbounds function (s::Lorenz63)(J::EomMatrix, u::EomVector)
+@inline @inbounds function (s::Lorenz63)(t, u::AbstractVector, J::AbstractMatrix)
     J[1,1] = -s.σ; J[1, 2] = s.σ
     J[2,1] = s.ρ - u[3]; J[2,3] = -u[1]
     J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -s.β
@@ -101,13 +101,13 @@ mutable struct Rössler
     b::Float64
     c::Float64
 end
-@inline @inbounds function (s::Rössler)(du::EomVector, u::EomVector)
+@inline @inbounds function (s::Rössler)(t, u::AbstractVector, du::AbstractVector)
     du[1] = -u[2]-u[3]
     du[2] = u[1] + s.a*u[2]
     du[3] = s.b + u[3]*(u[1] - s.c)
     return nothing
 end
-@inline @inbounds function (s::Rössler)(J::EomMatrix, u::EomVector)
+@inline @inbounds function (s::Rössler)(t, u::AbstractVector, J::AbstractMatrix)
     J[2,2] = s.a
     J[3,1] = u[3]; J[3,3] = u[1] - s.c
     return nothing
@@ -140,7 +140,7 @@ mutable struct DoublePendulum
     M1::Float64
     M2::Float64
 end
-@inbounds function (s::DoublePendulum)(du::EomVector, state::EomVector)
+@inbounds function (s::DoublePendulum)(t, state, du)
     du[1] = state[2]
 
     del_ = state[3] - state[1]
@@ -201,14 +201,14 @@ end
 mutable struct HénonHeiles
     λ::Float64
 end
-@inline @inbounds function (s::HénonHeiles)(du::EomVector, u::EomVector)
+@inline @inbounds function (s::HénonHeiles)(t, u::AbstractVector, du::AbstractVector)
     du[1] = u[3]
     du[2] = u[4]
     du[3] = -u[1] - 2s.λ*u[1]*u[2]
     du[4] = -u[2] - s.λ*(u[1]^2 - u[2]^2)
     return nothing
 end
-@inline @inbounds function (s::HénonHeiles)(J::EomMatrix, u::EomVector)
+@inline @inbounds function (s::HénonHeiles)(t, u::AbstractVector, J::AbstractMatrix)
     J[3,1] = -1 - 2s.λ*u[2]; J[3,2] = -2s.λ*u[1]
     J[4,1] = -2s.λ*u[1]; J[4,2] =  -1 + 2s.λ*u[2]
     return nothing
@@ -227,7 +227,7 @@ struct Lorenz96{N, T <: Real} # Structure with the parameters of Lorenz96 system
   F::T
 end
 # Equations of motion
-function (obj::Lorenz96{N, T})(dx, x) where {N, T}
+function (obj::Lorenz96{N, T})(t, x, dx) where {N, T}
     F = obj.F
     # 3 edge cases
     dx[1] = (x[2] - x[N - 1]) * x[N] - x[1] + F
@@ -264,10 +264,9 @@ mutable struct Duffing
     d::Float64
     f::Float64
 end
-function (duf::Duffing)(dx, x)
+@inbounds function (duf::Duffing)(t, u::EomVector, du::EomVector)
     dx[1] = x[2]
-    dx[2] = duf.f*cos(duf.ω*x[3]) -x[1] - x[1]^3 - duf.d * x[2]
-    dx[3] = 1
+    dx[2] = duf.f*cos(duf.ω*t) -x[1] - x[1]^3 - duf.d * x[2]
     return nothing
 end
 
@@ -287,7 +286,7 @@ mutable struct Shinriki
     R1::Float64
 end
 (shi::Shinriki)(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
-function (shi::Shinriki)(du, u)
+function (shi::Shinriki)(t, u::EomVector, du::EomVector)
 
     du[1] = (1/0.01)*(
     u[1]*(1/6.9 - 1/shi.R1) - shi(u[1] - u[2]) - (u[1] - u[2])/14.5
@@ -300,7 +299,8 @@ function (shi::Shinriki)(du, u)
     du[3] = (1/0.32)*(-u[3]*0.1 + u[2])
     return nothing
 end
-
+# Jacobian caller for Shinriki:
+(shi::Shinriki)(::Type{Val{:jac}}, t, u, J) = (shi::Shinriki)(t, u, J)
 #######################################################################################
 #                                     Discrete                                        #
 #######################################################################################
