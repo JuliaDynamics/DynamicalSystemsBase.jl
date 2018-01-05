@@ -127,8 +127,10 @@ end
 # ODEProblem{true}(ds.prob, state, tspan)
 
 # Workaround for above
+ODEProblem(ds::ContinuousDS) = ds.prob
+
 ODEProblem(
-ds::ContinuousDS, t::Real = ds.prob.tspan[2], state::Vector = ds.prob.u0) =
+ds::ContinuousDS, t::Real, state::Vector = ds.prob.u0) =
 ODEProblem{true}(ds.prob.f, state, (zero(t), t),
 callback = ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
 
