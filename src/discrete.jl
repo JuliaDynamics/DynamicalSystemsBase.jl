@@ -13,7 +13,7 @@ abstract type DiscreteDynamicalSystem <: DynamicalSystem end
 `D`-dimensional discrete dynamical system.
 ## Fields:
 * `state::SVector{D}` : Current state-vector of the system, stored in the data format
-  of `StaticArray`'s `SVector`. Use `ds.state = newstate` to set a new state.
+  of `StaticArray`'s `SVector`. Use `state(ds) = newstate` to set a new state.
 * `eom` (function) : The function that represents the system's equations of motion
   (also called vector field). The function is of the format: `eom(u) -> SVector`
   which means that given a state-vector `u` it returns an `SVector` containing the
@@ -54,7 +54,7 @@ One-dimensional discrete dynamical system.
 ## Fields:
 * `state::Real` : Current state of the system.
 * `eom` (function) : The function that represents the system's equation of motion:
-  `eom(x) -> Real`. Use `ds.state = x` to set a new state.
+  `eom(x) -> Real`. Use `state(ds) = x` to set a new state.
 * `deriv` (function) : A function that calculates the system's derivative given
   a state: `deriv(x) -> Real`. If it is not provided by the user
   it is created automatically using the module
@@ -81,7 +81,7 @@ DiscreteDS1D(a,b,c;)=DiscreteDS1D(a,b,c)
 for this system perform all operations *in-place*.
 ## Fields:
 * `state::Vector{T}` : Current state-vector of the system.
-  Do `ds.state .= u` to change the state.
+  Do `state(ds) .= u` to change the state.
 * `eom!` (function) : The function that represents the system's equations of motion
   (also called vector field). The function is of the format: `eom!(xnew, x)`
   which means that given a state-vector `x` and another similar one `xnew`,
@@ -132,25 +132,24 @@ Return the dimension of the system
 """
 dimension(::DiscreteDS{D, T, F, J}) where {D, T, F, J} = D
 dimension(::DiscreteDS1D) = 1
-dimension(ds::BigDiscreteDS) = length(ds.state)
+dimension(ds::BigDiscreteDS) = length(state(ds))
 
 """
     jacobian(ds::DynamicalSystem)
 Return the Jacobian matrix of the equations of motion at the system's state.
 """
-jacobian(ds::DynamicalSystem) = (ds.jacob!(ds.J, ds.state), ds.J)
-jacobian(ds::DiscreteDS) = ds.jacob(ds.state)
+jacobian(ds::DynamicalSystem) = (ds.jacob!(ds.J, state(ds)), ds.J)
+jacobian(ds::DiscreteDS) = ds.jacob(state(ds))
 
 
 state(ds::DynamicalSystem) = ds.state
-
 
 #####################################################################################
 #                               System Evolution                                    #
 #####################################################################################
 """
     evolve(ds::DynamicalSystem, T=1 [, u0]; diff_eq_kwargs = Dict())
-Evolve the `ds.state` (or `u0` if given) for total time `T` and return the
+Evolve the `state(ds)` (or `u0` if given) for total time `T` and return the
 `final_state`. For discrete systems `T` corresponds to steps and
 thus it must be integer.
 
@@ -162,14 +161,14 @@ perform step-by-step evolution of a continuous system, use
 the `step!(integrator)` function provided by
 [`DifferentialEquations`](https://github.com/JuliaDiffEq/DifferentialEquations.jl).
 """
-function evolve(ds::DiscreteDynamicalSystem, N::Int = 1, st = ds.state)
+function evolve(ds::DiscreteDynamicalSystem, N::Int = 1, st = state(ds))
     for i in 1:N
         st = ds.eom(st)
     end
     return st
 end
 
-function evolve(ds::BigDiscreteDS, N::Int = 1, st = copy(ds.state))
+function evolve(ds::BigDiscreteDS, N::Int = 1, st = copy(state(ds)))
     for i in 1:N
         ds.dummystate .= st
         ds.eom!(st, ds.dummystate)
@@ -203,7 +202,7 @@ continuous case, a `W×D` dataset is returned, with `W = length(0:dt:T)` with
   `using OrdinaryDiffEq` to access the solvers.
 """
 function trajectory(ds::DiscreteDS, N::Real)
-    st = ds.state
+    st = state(ds)
     ts = Vector{typeof(st)}(N)
     ts[1] = st
     f = ds.eom
@@ -215,7 +214,7 @@ function trajectory(ds::DiscreteDS, N::Real)
 end
 
 function trajectory(ds::DiscreteDS1D, N::Int)
-    x = deepcopy(ds.state)
+    x = deepcopy(state(ds))
     f = ds.eom
     ts = Vector{typeof(x)}(N)
     ts[1] = x
@@ -227,7 +226,7 @@ function trajectory(ds::DiscreteDS1D, N::Int)
 end
 
 function trajectory(ds::BigDiscreteDS, N::Int)
-    x = copy(ds.state)
+    x = copy(state(ds))
     SV = SVector{dimension(ds), eltype(x)}
     f! = ds.eom!
     ts = Vector{SV}(N)
@@ -252,7 +251,7 @@ function Base.show(io::IO, ds::DiscreteDS{N, S, F, J}) where
     {N<:ANY, S<:ANY, F<:ANY, J<:ANY}
     text = "$(dimension(ds))-dimensional discrete system"
     print(io, text*"\n",
-    " state: $(ds.state)\n", " eom: $F\n")
+    " state: $(state(ds))\n", " eom: $F\n")
 end
 
 @require Juno begin
@@ -272,7 +271,7 @@ function Base.show(io::IO, ds::BigDiscreteDS{T, F, J}) where
     {T, F<:ANY, J<:ANY}
     text = "$(dimension(ds))-dimensional Big discrete system"
     print(io, text*"\n",
-    " state: $(ds.state)\n", " eom!: $F\n")
+    " state: $(state(ds))\n", " eom!: $F\n")
 end
 
 @require Juno begin

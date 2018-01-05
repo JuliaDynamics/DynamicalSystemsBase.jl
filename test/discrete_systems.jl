@@ -71,11 +71,11 @@ end
     M = 5; ks = 0.5ones(M); Γ = 0.05;
     ds = Systems.coupledstandardmaps(M, 0.1rand(2M); ks=ks, Γ = Γ)
 
-    u0 = copy(ds.state)
+    u0 = copy(state(ds))
     st1 = evolve(ds, 100)
 
     @test st1 != u0
-    @test u0 == ds.state
+    @test u0 == state(ds)
 
     Jbef = copy(ds.J)
     ds.jacob!(ds.J, evolve(ds))
