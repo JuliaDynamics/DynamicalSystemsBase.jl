@@ -242,10 +242,10 @@ end
 
 
 """
-    duffing(u0 = [rand(), rand(), 0]; ω = 2.2, f = 27.0, d = 0.2)
+    duffing(u0 = [rand(), rand(), 0]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
 The (forced) duffing oscillator, that satisfies the equation
 ```math
-\\ddot{x} + d\\cdot\\dot{x} + x + x^3 = f\\cos(\\omega t)
+\\ddot{x} + d\\cdot\\dot{x} + β*x + x^3 = f\\cos(\\omega t)
 ```
 with `f, ω` the forcing strength and frequency and `d` the dampening.
 
@@ -253,8 +253,8 @@ The `eom!` field of the returned system has as fields the keyword arguments of
 this function. You can access them and change their value at any point
 using `ds.eom!.parameter = value`.
 """
-function duffing(u0 = [rand(), rand(), 0]; ω = 2.2, f = 27.0, d = 0.2)
-    duf = Duffing(ω, d, f) # create struct
+function duffing(u0 = [rand(), rand()]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
+    duf = Duffing(ω, d, f, β) # create struct
     J = zeros(eltype(u0), 2, 2)
     J[1,2] = 1
     return ContinuousDS(u0, duf, duf, J)
@@ -263,15 +263,16 @@ mutable struct Duffing
     ω::Float64
     d::Float64
     f::Float64
+    β::Float64
 end
-@inbounds function (duf::Duffing)(t, u::AbstractVector, du::AbstractVector)
+@inbounds function (duf::Duffing)(t, x::AbstractVector, dx::AbstractVector)
     dx[1] = x[2]
-    dx[2] = duf.f*cos(duf.ω*t) -x[1] - x[1]^3 - duf.d * x[2]
+    dx[2] = duf.f*cos(duf.ω*t) - duf.β*x[1] - x[1]^3 - duf.d * x[2]
     return nothing
 end
-@inbounds function (duf::Duffing)(t, u::AbstractVector, du::AbstractMatrix)
-    J[2,1] = -1 - 3u[1]^2
-    J[2,2] = - duf.d*u[2]
+@inbounds function (duf::Duffing)(t, u::AbstractVector, J::AbstractMatrix)
+    J[2,1] = -duf.β - 3u[1]^2
+    J[2,2] = -duf.d*u[2]
 end
 
 
