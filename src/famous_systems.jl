@@ -291,7 +291,7 @@ mutable struct Shinriki
     R1::Float64
 end
 (shi::Shinriki)(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
-function (shi::Shinriki)(t, u::EomVector, du::EomVector)
+function (shi::Shinriki)(t, u::AbstractVector, du::AbstractVector)
 
     du[1] = (1/0.01)*(
     u[1]*(1/6.9 - 1/shi.R1) - shi(u[1] - u[2]) - (u[1] - u[2])/14.5
@@ -453,7 +453,7 @@ mutable struct CoupledStandardMaps{N, T}
     idxsp1::Vector{Int}
 end
 @inbounds function (f::CoupledStandardMaps{N, T})(
-    xnew::EomVector, x::EomVector) where {N, T}
+    xnew::AbstractVector, x::AbstractVector) where {N, T}
     for i in f.idxs
 
         xnew[i+N] = mod2pi(
@@ -466,7 +466,7 @@ end
     return nothing
 end
 @inbounds function (f::CoupledStandardMaps{M, T})(
-    J::EomMatrix, x::EomVector) where {M, T}
+    J::AbstractMatrix, x::AbstractVector) where {M, T}
     # x[i] ≡ θᵢ
     # x[[idxsp1[i]]] ≡ θᵢ+₁
     # x[[idxsm1[i]]] ≡ θᵢ-₁
@@ -519,8 +519,8 @@ mutable struct HénonMap
     a::Float64
     b::Float64
 end
-(f::HénonMap)(x::EomVector) = SVector{2}(1.0 - f.a*x[1]^2 + x[2], f.b*x[1])
-(f::HénonMap)(x::EomVector, no::Void) = @SMatrix [-2*f.a*x[1] 1.0; f.b 0.0]
+(f::HénonMap)(x) = SVector{2}(1.0 - f.a*x[1]^2 + x[2], f.b*x[1])
+(f::HénonMap)(x, no::Void) = @SMatrix [-2*f.a*x[1] 1.0; f.b 0.0]
 
 
 """

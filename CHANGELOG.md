@@ -1,3 +1,7 @@
+# v0.3.1
+* Added `jacobian` function
+* Removed `EomVector` nonsense.
+
 # v0.3.0
 ## BREAKING
 * The type `ContinuousDS` has been completely overhauled.
