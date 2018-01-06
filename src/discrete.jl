@@ -1,6 +1,6 @@
 using StaticArrays, ForwardDiff, Requires
 
-export DiscreteDS, DiscreteDS1D, evolve, trajectory, dimension, state
+export DiscreteDS, DiscreteDS1D, evolve, trajectory, dimension, state, jacobian
 export BigDiscreteDS, DiscreteDynamicalSystem
 
 #####################################################################################
@@ -135,14 +135,14 @@ dimension(::DiscreteDS1D) = 1
 dimension(ds::BigDiscreteDS) = length(state(ds))
 
 """
-    jacobian(ds::DynamicalSystem)
+    jacobian(ds::DynamicalSystem) -> J
 Return the Jacobian matrix of the equations of motion at the system's state.
 """
-jacobian(ds::DynamicalSystem) = (ds.jacob!(ds.J, state(ds)), ds.J)
+jacobian(ds::DynamicalSystem) = (ds.jacob!(ds.J, state(ds)); ds.J)
 jacobian(ds::DiscreteDS) = ds.jacob(state(ds))
 
 """
-    state(ds::DynamicalSystem)
+    state(ds::DynamicalSystem) -> u
 Return the state of the system.
 """
 state(ds::DynamicalSystem) = ds.state

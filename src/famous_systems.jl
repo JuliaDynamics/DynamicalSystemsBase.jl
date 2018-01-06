@@ -272,7 +272,7 @@ end
 end
 @inbounds function (duf::Duffing)(t, u::AbstractVector, J::AbstractMatrix)
     J[2,1] = -duf.β - 3u[1]^2
-    J[2,2] = -duf.d*u[2]
+    J[2,2] = -duf.d
 end
 
 
