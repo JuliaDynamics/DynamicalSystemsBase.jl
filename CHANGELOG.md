@@ -1,6 +1,8 @@
 # v0.3.1
 * Added `jacobian` function
 * Removed `EomVector` nonsense.
+* Now `trajectory` correctly gives equi-spaced points when the ODEProblem has
+"special" callbacks.
 
 # v0.3.0
 ## BREAKING

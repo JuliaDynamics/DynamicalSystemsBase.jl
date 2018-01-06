@@ -254,7 +254,15 @@ function evolve(ds::ContinuousDS, t = 1.0, state = ds.prob.u0;
     return get_sol(prob, diff_eq_kwargs)[end]
 end
 
-
+function use_tstops(prob::ODEProblem)
+    if prob.callback == nothing
+        return false
+    elseif typeof(prob.callback) <: CallbackSet
+        any(x->typeof(x.affect!)<:ManifoldProjection, prob.callback.discrete_callbacks)
+    else
+        return typeof(prob.callback.affect!) == ManifoldProjection
+    end
+end
 
 # See discrete.jl for the documentation string
 function trajectory(ds::ContinuousDS, T;
@@ -263,11 +271,10 @@ function trajectory(ds::ContinuousDS, T;
     # Necessary due to DifferentialEquations:
 
     if typeof(T) <: Real && !issubtype(typeof(T), AbstractFloat)
+        T<=0 && throw(ArgumentError("Total time `T` must be positive."))
         T = convert(Float64, T)
     end
-    T<=0 && throw(ArgumentError("Total time `T` must be positive."))
 
-    D = dimension(ds)
     if typeof(T) <: Real
         t = zero(T):dt:T #time vector
     elseif typeof(T) == Tuple
@@ -277,6 +284,9 @@ function trajectory(ds::ContinuousDS, T;
     prob = ODEProblem(ds, T)
     kw = Dict{Symbol, Any}(diff_eq_kwargs) #nessesary conversion to add :saveat
     kw[:saveat] = t
+    # Take special care of callback sessions and use `tstops` if necessary
+    use_tstops(prob) && (kw[:tstops] = t)
+
     return Dataset(get_sol(prob, kw))
 end
 
