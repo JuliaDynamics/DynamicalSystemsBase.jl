@@ -19,6 +19,18 @@ using Base.Test, StaticArrays
     end
   end
 
+  @testset "Conversions" begin
+    m = Matrix(data)
+    @test Dataset(m) == data
+    @test reinterpret(Dataset, reinterpret(Matrix, data)) == data
+    @test transpose(m) == reinterpret(Matrix, data)
+
+    m = rand(1000, 4)
+    @test reinterpret(Matrix, reinterpret(Dataset, m)) == m
+    @test Dataset(m) !== Dataset(transpose(m))
+    @test Dataset(m) == reinterpret(Dataset, transpose(m))
+  end
+
   @testset "IO" begin
     @test !isfile("test.txt")
     write_dataset("test.txt", data)
