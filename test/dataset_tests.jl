@@ -44,6 +44,19 @@ using Base.Test, StaticArrays
     @test dimension(data2) == 2
 
     rm("test.txt")
+
+    write_dataset("test.txt", data, ',')
+    @test isfile("test.txt")
+
+    data3 = read_dataset("test.txt", Dataset{3, Float64}, ',')
+    @test dimension(data3) == 3
+    @test data3 == data
+
+    data2 = read_dataset("test.txt", Dataset{2, Float64})
+    @test dimension(data2) == 2
+
+    rm("test.txt")
+
     @test !isfile("test.txt") # make extra sure!
   end
 end

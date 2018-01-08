@@ -235,7 +235,7 @@ end
 #                                    Dataset IO                                     #
 #####################################################################################
 """
-    read_dataset(file, V::Type{Dataset{D, T}}, delim::Char = '\t'; skipstart = 0)
+    read_dataset(file, ::Type{<:Dataset}, delim::Char = '\t'; skipstart = 0)
 Read a `delim`-delimited text file directly into a dataset of dimension `D`
 with numbers of type `T`.
 
