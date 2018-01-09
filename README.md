@@ -8,4 +8,4 @@ Repository containing core system and data definitions used in the ecosystem of 
 
 The git history of this repository before version v0.1.0 is contained in the git history of
 [DynamicalSystems.jl](https://github.com/JuliaDynamics/DynamicalSystems.jl) before
-its version v1.0.0.
+its version v0.8.0.
