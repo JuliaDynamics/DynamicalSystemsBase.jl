@@ -16,10 +16,10 @@ abstract type DiscreteDynamicalSystem <: DynamicalSystem end
   of `StaticArray`'s `SVector`. Use `state(ds) = newstate` to set a new state.
 * `eom` (function) : The function that represents the system's equations of motion
   (also called vector field). The function is of the format: `eom(u) -> SVector`
-  which means that given a state-vector `u` it returns an `SVector` containing the
+  which means that given a state `SVector` `u` it returns an `SVector` containing the
   next state.
 * `jacob` (function) : A function that calculates the system's jacobian matrix,
-  based on the format: `jacob(u) -> SMatrix` which means that given a state-vector
+  based on the format: `jacob(u) -> SMatrix` which means that given a state `Svector`
   `u` it returns an `SMatrix` containing the Jacobian at that state.
 
 Only the first two fields of this type are displayed during print.
@@ -84,10 +84,10 @@ for this system perform all operations *in-place*.
   Do `state(ds) .= u` to change the state.
 * `eom!` (function) : The function that represents the system's equations of motion
   (also called vector field). The function is of the format: `eom!(xnew, x)`
-  which means that given a state-vector `x` and another similar one `xnew`,
+  which means that given a state `Vector` `x` and another similar one `xnew`,
   it writes in-place the new state in `xnew`.
 * `jacob!` (function) : A function that calculates the system's jacobian matrix,
-  based on the format: `jacob!(J, x)` which means that given a state-vector
+  based on the format: `jacob!(J, x)` which means that given a state `Vector`
   `x` it writes in-place the Jacobian in `J`.
 * `J::Matrix{T}` : Initialized Jacobian matrix (optional).
 * `dummystate::Vector{T}` : Dummy vector, which most of the time fills the
@@ -135,8 +135,10 @@ dimension(::DiscreteDS1D) = 1
 dimension(ds::BigDiscreteDS) = length(state(ds))
 
 """
-    jacobian(ds::DynamicalSystem) -> J
+    jacobian(ds::DynamicalSystem, t = 0) -> J
 Return the Jacobian matrix of the equations of motion at the system's state.
+
+The argument `t` is valid only for continuous systems.
 """
 jacobian(ds::DynamicalSystem) = (ds.jacob!(ds.J, state(ds)); ds.J)
 jacobian(ds::DiscreteDS) = ds.jacob(state(ds))
@@ -179,6 +181,13 @@ function evolve(ds::BigDiscreteDS, N::Int = 1, st = copy(state(ds)))
     return st
 end
 
+"""
+    evolve(ds::DynamicalSystem, T=1; diff_eq_kwargs = Dict())
+Same as [`evolve`](@ref) but updates the system's state (in-place) with the
+final state.
+"""
+evolve!(ds::DiscreteDynamicalSystem, N::Int = 1) = (ds.state = evolve(ds, N))
+evolve!(ds::BigDiscreteDS, N::Int = 1) = (ds.state .= evolve(ds, N))
 
 
 """

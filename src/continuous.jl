@@ -31,9 +31,16 @@ You can use `ds.prob.u0 .= newstate` to set a new state to the system.
 ## Creating a `ContinuousDS`
 The equations of motion **must be** in the form `eom!(t, u, du)`,
 which means that they are **in-place** with the mutated argument
-`du` the last one. Both `u, du` **must be** `Vector`s.
+`du` the last one. Both `u, du` **must be** `Vector`s. You can still use matrices
+in your equations of motion. Just change `function eom(t, u, du)` to
+```julia
+function eom(t, u, du)
+    um = reshape(u, a, b); dum = reshape(du, a, b)
+    # equations of motion with matrix shape of a×b
+```
+and you will be able to express the equations with matrix notation.
 
-If you have this function, and optionally a function for the
+If you have the `eom` function, and optionally a function for the
 Jacobian, you can use the constructor
 ```julia
 ContinuousDS(state, eom! [, jacob! [, J]]; tspan = (0.0, 100.0))
@@ -65,6 +72,10 @@ end
 
 # Constructors with Jacobian:
 function ContinuousDS(prob::ODEProblem, j!)
+    typeof(state) != Vector && throw(ArgumentError(
+    "Currently we only support vectors as states, "*
+    "see the documentation string of `ContinuousDS`."
+    ))
     J = zeros(eltype(state), length(state), length(state))
     j!(0, prob.u0, J)
     return ContinuousDS(prob, j!, J)
@@ -81,9 +92,11 @@ end
 
 
 # Constructors without Jacobian:
-ContinuousDS(prob::ODEProblem) = ContinuousDS(prob.u0, prob.f; tspan = prob.tspan)
+function ContinuousDS(prob::ODEProblem)
+    state = prob.u0
+    eom! = prob.f
+    tspan = prob.tspan
 
-function ContinuousDS(state, eom!; tspan=(0.0, 100.0))
     D = length(state); T = eltype(state)
     du = copy(state)
     J = zeros(T, D, D)
@@ -92,7 +105,27 @@ function ContinuousDS(state, eom!; tspan=(0.0, 100.0))
 
     jeom! = (du, u) -> eom!(0, u, du)
     jcf = ForwardDiff.JacobianConfig(jeom!, du, state)
-    ForwardDiff_jacob!(t, u, J) = ForwardDiff.jacobian!(
+    ForwardDiff_jacob! = (t, u, J) -> ForwardDiff.jacobian!(
+    J, jeom!, du, u, jcf)
+    ForwardDiff_jacob!(0, state, J)
+
+    return ContinuousDS(problem, ForwardDiff_jacob!, J)
+end
+
+function ContinuousDS(state, eom!; tspan=(0.0, 100.0))
+    typeof(state) != Vector && throw(ArgumentError(
+    "Currently we only support vectors as states, "*
+    "see the documentation string of `ContinuousDS`."
+    ))
+    D = length(state); T = eltype(state)
+    du = copy(state)
+    J = zeros(T, D, D)
+
+    problem = ODEProblem{true}(eom!, state, tspan)
+
+    jeom! = (du, u) -> eom!(0, u, du)
+    jcf = ForwardDiff.JacobianConfig(jeom!, du, state)
+    ForwardDiff_jacob! = (t, u, J) -> ForwardDiff.jacobian!(
     J, jeom!, du, u, jcf)
     ForwardDiff_jacob!(0, state, J)
 
@@ -103,7 +136,8 @@ dimension(ds::ContinuousDS) = length(ds.prob.u0)
 Base.eltype(ds::ContinuousDS{T,F,J}) where {T, F, J} = T
 state(ds::ContinuousDS) = ds.prob.u0
 
-jacobian(ds::ContinuousDynamicalSystem) = (ds.jacob!(0, state(ds), ds.J); ds.J)
+jacobian(ds::ContinuousDynamicalSystem, t = 0) =
+(ds.jacob!(t, state(ds), ds.J); ds.J)
 
 #######################################################################################
 #                         Interface to DifferentialEquations                          #
@@ -120,14 +154,6 @@ function get_solver(diff_eq_kwargs::Dict)
         return solver, diff_eq_kwargs
     end
 end
-
-# ODEProblem(
-# ds::ContinuousDS, t::Real = ds.prob.tspan[2], state::Vector = ds.prob.u0) =
-# ODEProblem{true}(ds.prob, state, (zero(t), t))
-#
-# ODEProblem(
-# ds::ContinuousDS, tspan::Tuple, state::Vector = ds.prob.u0) =
-# ODEProblem{true}(ds.prob, state, tspan)
 
 # Workaround for above
 ODEProblem(ds::ContinuousDS) = ds.prob
@@ -165,17 +191,6 @@ function OrdinaryDiffEq.ODEIntegrator(ds::ContinuousDS,
     return integrator
 end
 
-
-
-"""
-    get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
-Solve the `prob` using `solve` and return the solution.
-"""
-function get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
-    solver, newkw = get_solver(diff_eq_kwargs)
-    sol = solve(prob, solver; newkw..., save_everystep=false)
-    return sol.u
-end
 
 
 """
@@ -252,6 +267,20 @@ function evolve(ds::ContinuousDS, t = 1.0, state = ds.prob.u0;
     diff_eq_kwargs = Dict())
     prob = ODEProblem(ds, t, state)
     return get_sol(prob, diff_eq_kwargs)[end]
+end
+
+evolve!(ds::ContinuousDS, t = 1.0; diff_eq_kwargs = Dict()) =
+(ds.prob.u0 .= evolve(ds, t, diff_eq_kwargs = diff_eq_kwargs))
+
+
+"""
+    get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
+Solve the `prob` using `solve` and return the solution.
+"""
+function get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
+    solver, newkw = get_solver(diff_eq_kwargs)
+    sol = solve(prob, solver; newkw..., save_everystep=false)
+    return sol.u
 end
 
 function use_tstops(prob::ODEProblem)
