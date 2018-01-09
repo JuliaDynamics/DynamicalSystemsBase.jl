@@ -2,6 +2,7 @@
 * Orders of magnitude speed-up in conversions between `Matrix` and `Dataset`,
   because now methods use `transpose` internally and only `reinterpret`.
 * Bugfix of `eltype` of `Reconstruction`.
+* Added `circlemap` to `Systems`.
 
 # v0.3.1
 * Added `jacobian` function

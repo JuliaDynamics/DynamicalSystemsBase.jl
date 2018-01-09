@@ -556,6 +556,27 @@ end
 @inline (f::Logistic)(x::Number) = f.r*x*(1-x)
 @inline (f::Logistic)(x::Number, no::Void) = f.r*(1-2x)
 
+"""
+    circlemap(x0=rand(); Ω = 1.0, K = 0.99, usemod::Bool = false)
 
+```math
+\\theta_{n+1} = \\theta_n + 2\\pi\\Omega - K\\sin(\\theta_n)
+```
+All keywords of this function are also fields of `eom` and can be changed.
+`usemod` notes whether to take `mod2pi` at the equation of motion.
+"""
+function circlemap(x0=rand(); K = 0.99, Ω = 1.0, usemod::Bool = false)
+    lol = CircleMap(Ω, K, usemod)
+    deriv_circle(x) = lol(x, nothing)
+    return DiscreteDS1D(x0, lol, deriv_circle)
+end
+mutable struct CircleMap
+    Ω::Float64
+    K::Float64
+    usemod::Bool
+end
+@inline (f::CircleMap)(x::Number) =
+(y = x + f.Ω - f.K*sin(x); f.usemod ? y : mod2pi(y))
+@inline (f::CircleMap)(x::Number, no::Void) = -f.K*cos(x)
 
 end# Systems module
