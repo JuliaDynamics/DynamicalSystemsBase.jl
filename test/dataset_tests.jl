@@ -8,6 +8,18 @@ using Base.Test, StaticArrays
 @testset "Dataset" begin
   ds = Systems.towel()
   data = trajectory(ds, 1000)
+
+  @testset "Methods & Indexing" begin
+    a = data[:, 1]
+    b = data[:, 2]
+    c = data[:, 3]
+
+    @test Dataset(a, b, c) == data
+    @test size(Dataset(a, b)) == (1000, 2)
+
+    @test data[:, 2:3][:, 1] == data[:, 2]
+  end
+
   @testset "minmax" begin
     mi = minima(data)
     ma = maxima(data)

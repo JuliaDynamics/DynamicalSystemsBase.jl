@@ -83,7 +83,7 @@ end
 # Constructors without Jacobian:
 ContinuousDS(prob::ODEProblem) = ContinuousDS(prob.u0, prob.f; tspan = prob.tspan)
 
-function ContinuousDS(state::Vector, eom!; tspan=(0.0, 100.0))
+function ContinuousDS(state, eom!; tspan=(0.0, 100.0))
     D = length(state); T = eltype(state)
     du = copy(state)
     J = zeros(T, D, D)
@@ -133,12 +133,12 @@ end
 ODEProblem(ds::ContinuousDS) = ds.prob
 
 ODEProblem(
-ds::ContinuousDS, t::Real, state::Vector = ds.prob.u0) =
+ds::ContinuousDS, t::Real, state = ds.prob.u0) =
 ODEProblem{true}(ds.prob.f, state, (zero(t), t),
 callback = ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
 
 ODEProblem(
-ds::ContinuousDS, tspan::Tuple, state::Vector = ds.prob.u0) =
+ds::ContinuousDS, tspan::Tuple, state = ds.prob.u0) =
 ODEProblem{true}(ds.prob.f, state, tspan,
 callback = ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
 

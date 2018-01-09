@@ -1,8 +1,14 @@
-# v0.3.2
-* Orders of magnitude speed-up in conversions between `Matrix` and `Dataset`,
-  because now methods use `transpose` internally and only `reinterpret`.
+# v0.3.3
+## Non-breaking
 * Bugfix of `eltype` of `Reconstruction`.
 * Added `circlemap` to `Systems`.
+* Bugfix on `Datasett` that incorrect methods were being called due to missing `<:`.
+* Method `Base.getindex(d::AbstractDataset{D,T}, ::Colon, j<:AbstractVector{Int}) ` now exists!
+
+# v0.3.2
+## Non-breaking
+* Orders of magnitude speed-up in conversions between `Matrix` and `Dataset`,
+  because now methods use `transpose` internally and only `reinterpret`.
 
 # v0.3.1
 * Added `jacobian` function

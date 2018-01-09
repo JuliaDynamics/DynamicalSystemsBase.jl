@@ -29,6 +29,19 @@ abstract type AbstractDataset{D, T} end
 @inline Base.getindex(d::AbstractDataset, i::Int, j::Range) =
 [d.data[i][k] for k in j]
 
+function Base.getindex(d::AbstractDataset{D,T},
+    ::Colon, j<:AbstractVector{Int}) where {D, T}
+    L = length(d)
+    ret = zeros(T, length(j), L)
+    for i in 1:L
+        for k in 1:length(j)
+            p = j[k]
+            ret[k, i] = d[i, p]
+        end
+    end
+    return reinterpret(Dataset, ret)
+end
+
 # Itereting interface:
 @inline Base.eachindex(D::AbstractDataset) = Base.OneTo(length(D.data))
 @inline Base.start(d::AbstractDataset) = 1
@@ -83,7 +96,10 @@ end
 # Empty dataset:
 Dataset{D, T}() where {D,T} = Dataset(SVector{D,T}[])
 
-function Dataset(v::Vector{Vector{T}}) where {T<:Number}
+###########################################################################
+# Dataset(Vectors of stuff)
+###########################################################################
+function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
     D = length(v[1])
     L = length(v)
     data = Vector{SVector{D, T}}(L)
@@ -96,7 +112,7 @@ function Dataset(v::Vector{Vector{T}}) where {T<:Number}
     return Dataset{D, T}(data)
 end
 
-@generated function _dataset(::Val{D}, vecs::Vararg{AbstractVector{T}}) where {D, T}
+@generated function _dataset(::Val{D}, vecs::Vararg{<:AbstractVector{T}}) where {D, T}
     gens = [:(vecs[$k][i]) for k=1:D]
 
     quote
@@ -109,13 +125,15 @@ end
     end
 end
 
-function Dataset(vecs::Vararg{AbstractVector{T}}) where {T}
+function Dataset(vecs::Vararg{<:AbstractVector{T}}) where {T}
     D = length(vecs)
     return Dataset(_dataset(Val{D}(), vecs...))
 end
 
 
-# Conversions:
+#####################################################################################
+#                                Dataset <-> Matrix                                 #
+#####################################################################################
 function Base.convert(::Type{Matrix}, d::AbstractDataset{D,T}) where {D, T}
     L = length(d)
     m = reinterpret(T, d.data, (D,L))
@@ -143,7 +161,9 @@ function Base.convert(::Type{Dataset}, y::Vector{T}) where {T}
     return Dataset(data)
 end
 
-### Pretty printing
+#####################################################################################
+#                                   Pretty Printing                                 #
+#####################################################################################
 function matname(d::Dataset{D, T}) where {D, T}
     N = length(d)
     return "$D-dimensional Dataset with $N points:"
