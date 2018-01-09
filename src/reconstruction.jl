@@ -50,7 +50,6 @@ end
 Reconstruction(s::AbstractVector{T}, D, τ) where {T} =
 Reconstruction{D, T, τ}(reconstruct(s, Val{D}(), τ))
 
-@inline Base.eltype(::Reconstruction{D, T, t}) where {T,D,t} = T
 @inline delay(::Reconstruction{D, T, t}) where {T,D,t} = t
 
 function reconstruct_impl(::Type{Val{D}}) where D

@@ -254,7 +254,7 @@ function Base.show(io::IO, ds::DiscreteDS{N, S, F, J}) where
     {N<:ANY, S<:ANY, F<:ANY, J<:ANY}
     text = "$(dimension(ds))-dimensional discrete system"
     print(io, text*"\n",
-    " state: $(state(ds))\n", " eom: $F\n")
+    " state: $(state(ds))\n", " e.o.m.: $F\n")
 end
 
 @require Juno begin
@@ -274,7 +274,7 @@ function Base.show(io::IO, ds::BigDiscreteDS{T, F, J}) where
     {T, F<:ANY, J<:ANY}
     text = "$(dimension(ds))-dimensional Big discrete system"
     print(io, text*"\n",
-    " state: $(state(ds))\n", " eom!: $F\n")
+    " state: $(state(ds))\n", " e.o.m.: $F\n")
 end
 
 @require Juno begin
@@ -291,7 +291,7 @@ end
 ### 1-D
 function Base.show(io::IO, s::DiscreteDS1D{S, F, J}) where {S<:ANY, F<:ANY, J<:ANY}
     print(io, "1-dimensional discrete dynamical system:\n",
-    "state: $(s.state)\n", "eom: $F\n")
+    "state: $(s.state)\n", "e.o.m.: $F\n")
 end
 @require Juno begin
     function Juno.render(i::Juno.Inline, s::DiscreteDS1D{S, F, J}) where

@@ -64,12 +64,15 @@ data[1] == data[1, :] # this is the first datapoint (D-dimensional)
 data[5, 3] # value of the third variable, at the 5th timepoint
 ```
 
-Use `Matrix(dataset)` to create a `Matrix`, and `Dataset(matrix)`
-to create a `Dataset` from a matrix. Notice: `Dataset(matrix)` assumes
-that each column of the matrix represents one dynamic variable. If instead each
-column of the matrix represents a datapoint, use `reinterpret(Dataset, matrix)`.
+Use `Matrix(dataset)` or `reinterpret(Matrix, dataset) to create a `Matrix`
+from a `dataset`, the first method returning a matrix where each column is a
+a timeseries while the second returning a matrix where each column is
+a datapoint. Similarly, use
+`Dataset(matrix)` or `reinterpret(Dataset, matrix)` to create a `Dataset` from
+a `matrix` that has structure as noted by the `Matrix` methods. Notice that the 2
+matrix versions are just the transpose of each other.
 
-If you have various timeseries vectors `x, y, z, ...` pass them like
+If you have various timeseries `Vector`s `x, y, z, ...` pass them like
 `Dataset(x, y, z, ...)`.
 
 See also [`read_dataset`](@ref), [`write_dataset`](@ref) and [`minmaxima`](@ref).
@@ -113,22 +116,20 @@ end
 
 
 # Conversions:
-@inbounds function Base.convert(::Type{Matrix}, d::AbstractDataset{D,T}) where {D, T}
-  mat = Matrix{T}(length(d), D)
-  for i in 1:length(d)
-    mat[i,:] .= d.data[i]
-  end
-  mat
+function Base.convert(::Type{Matrix}, d::AbstractDataset{D,T}) where {D, T}
+    L = length(d)
+    m = reinterpret(T, d.data, (D,L))
+    transpose(m)
+end
+
+function Base.reinterpret(::Type{M}, d::AbstractDataset{D,T}) where {M<:Matrix, D, T}
+    L = length(d)
+    reinterpret(T, d.data, (D,L))
 end
 
 function Base.convert(::Type{Dataset}, mat::AbstractMatrix)
-    D = size(mat, 2); T = eltype(mat)
-    L = size(mat, 1)
-    d = Vector{SVector{D, T}}(L)
-    for i in 1:L
-        d[i] = SVector{D, T}(view(mat, i, :))
-    end
-    return Dataset(d)
+    m = transpose(mat)
+    reinterpret(Dataset, m)
 end
 
 function Base.reinterpret(::Type{Dataset}, mat::Array{T,2}) where {T<:Real}
@@ -141,8 +142,6 @@ function Base.convert(::Type{Dataset}, y::Vector{T}) where {T}
     data = reinterpret(SVector{1,T}, y, (length(y),))
     return Dataset(data)
 end
-
-
 
 ### Pretty printing
 function matname(d::Dataset{D, T}) where {D, T}
@@ -236,7 +235,7 @@ end
 #                                    Dataset IO                                     #
 #####################################################################################
 """
-    read_dataset(file, V::Type{Dataset{D, T}}, delim::Char = '\t'; skipstart = 0)
+    read_dataset(file, ::Type{<:Dataset}, delim::Char = '\t'; skipstart = 0)
 Read a `delim`-delimited text file directly into a dataset of dimension `D`
 with numbers of type `T`.
 
