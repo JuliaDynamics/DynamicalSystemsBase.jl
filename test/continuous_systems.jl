@@ -12,6 +12,8 @@ println("\nTesting continuous systems...")
 
   @test lo11.prob == lo22.prob
 
+  t = (0.0, 100.0)
+
   function condition(t,u,integrator) # Event when event_f(t,u) == 0
     u[1]
   end
@@ -20,6 +22,15 @@ println("\nTesting continuous systems...")
   end
   cb = ContinuousCallback(condition,affect!)
 
+  prob1 = ODEProblem(lo11.prob.f, rand(3), t, callback = cb)
+  ds = ContinuousDS(prob1)
+  ds2 = ContinuousDS(prob1, lo11.jacob!, lo11.J)
+
+  @test ds.prob.callback == cb
+  @test ds2.prob.callback == cb
+  @test ds2.jacob! == lo11.jacob!
+
+end
 
 
 @testset "Lorenz System" begin
@@ -39,6 +50,11 @@ println("\nTesting continuous systems...")
     st3 = evolve(lo33, 1.0;
     diff_eq_kwargs=Dict(:abstol=>1e-9, :reltol=>1e-9))
     @test st1 ≈ st3
+
+    evolve!(lo22, 1.0;
+    diff_eq_kwargs=Dict(:abstol=>1e-9, :reltol=>1e-9))
+    @test lo22.prob.u0 ≈ st1
+    lo22.prob.u0 .= lo11.prob.u0
 
   end
 

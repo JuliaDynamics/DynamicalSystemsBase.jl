@@ -5,7 +5,7 @@
 * Bugfix on `Datasett` that incorrect methods were being called due to missing `<:`.
 * Method `Base.getindex(d::AbstractDataset{D,T}, ::Colon, j<:AbstractVector{Int}) ` now exists!
 * Added function `evolve!`.
-* Clear state that we do not support matrices in the equations of motion.
+* Clearly state that we do not support matrices in the equations of motion.
 
 # v0.3.2
 ## Non-breaking

@@ -64,31 +64,37 @@ Notice that you can have performance gains for stiff methods by
 explicitly adding a Jacobian caller for DifferentialEquations.jl by defining
 `eom!(::Type{Val{:jac}}, t, u, J) = jacob!(t, u, J)`.
 """
-struct ContinuousDS{T<:Number, ODE, JJ} <: ContinuousDynamicalSystem
+struct ContinuousDS{T<:Number, ODE<:ODEProblem, JJ} <: ContinuousDynamicalSystem
     prob::ODE
     jacob!::JJ
     J::Matrix{T}
+
+    function ContinuousDS{T,ODE,JJ}(prob, j!, J) where {T,ODE,JJ}
+
+        typeof(prob.u0) <: Vector || throw(ArgumentError(
+        "Currently we only support vectors as states, "*
+        "see the documentation string of `ContinuousDS`."
+        ))
+        j!(0, prob.u0, J)
+
+        eltype(prob.u0) == eltype(J) || throw(ArgumentError(
+        "The state and the Jacobian must have same type of numbers."))
+
+        return new(prob, j!, J)
+    end
 end
 
 # Constructors with Jacobian:
+ContinuousDS(prob::ODE, j!::JJ, J::Matrix{T}) where {T<:Number, ODE<:ODEProblem, JJ} = ContinuousDS{T, ODE,JJ}(prob, j!, J)
+
 function ContinuousDS(prob::ODEProblem, j!)
-    
-    typeof(prob.u0) != Vector && throw(ArgumentError(
-    "Currently we only support vectors as states, "*
-    "see the documentation string of `ContinuousDS`."
-    ))
+
     J = zeros(eltype(state), length(state), length(state))
-    j!(0, prob.u0, J)
     return ContinuousDS(prob, j!, J)
 end
 
-function ContinuousDS(state::Vector, eom!, j!,
+function ContinuousDS(state, eom!, j!,
     J = zeros(eltype(state), length(state), length(state)); tspan=(0.0, 100.0))
-
-    typeof(state) != Vector && throw(ArgumentError(
-    "Currently we only support vectors as states, "*
-    "see the documentation string of `ContinuousDS`."
-    ))
 
     j!(0.0, state, J)
     problem = ODEProblem{true}(eom!, state, tspan)
@@ -101,13 +107,10 @@ end
 function ContinuousDS(prob::ODEProblem)
     state = prob.u0
     eom! = prob.f
-    tspan = prob.tspan
 
     D = length(state); T = eltype(state)
     du = copy(state)
     J = zeros(T, D, D)
-
-    problem = ODEProblem{true}(eom!, state, tspan)
 
     jeom! = (du, u) -> eom!(0, u, du)
     jcf = ForwardDiff.JacobianConfig(jeom!, du, state)
@@ -115,14 +118,11 @@ function ContinuousDS(prob::ODEProblem)
     J, jeom!, du, u, jcf)
     ForwardDiff_jacob!(0, state, J)
 
-    return ContinuousDS(problem, ForwardDiff_jacob!, J)
+    return ContinuousDS(prob, ForwardDiff_jacob!, J)
 end
 
 function ContinuousDS(state, eom!; tspan=(0.0, 100.0))
-    typeof(state) != Vector && throw(ArgumentError(
-    "Currently we only support vectors as states, "*
-    "see the documentation string of `ContinuousDS`."
-    ))
+
     D = length(state); T = eltype(state)
     du = copy(state)
     J = zeros(T, D, D)
@@ -138,6 +138,7 @@ function ContinuousDS(state, eom!; tspan=(0.0, 100.0))
     return ContinuousDS(problem, ForwardDiff_jacob!, J)
 end
 
+# Basic
 dimension(ds::ContinuousDS) = length(ds.prob.u0)
 Base.eltype(ds::ContinuousDS{T,F,J}) where {T, F, J} = T
 state(ds::ContinuousDS) = ds.prob.u0
