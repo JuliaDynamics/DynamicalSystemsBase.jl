@@ -30,7 +30,7 @@ abstract type AbstractDataset{D, T} end
 [d.data[i][k] for k in j]
 
 function Base.getindex(d::AbstractDataset{D,T},
-    ::Colon, j<:AbstractVector{Int}) where {D, T}
+    ::Colon, j::VI) where {D, T, VI <: AbstractVector{Int}}
     L = length(d)
     ret = zeros(T, length(j), L)
     for i in 1:L
