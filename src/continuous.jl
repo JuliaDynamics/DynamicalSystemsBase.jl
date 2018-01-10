@@ -1,4 +1,4 @@
-using OrdinaryDiffEq, Requires, ForwardDiff
+using OrdinaryDiffEq, Requires, ForwardDiff, DiffEqCallbacks
 import OrdinaryDiffEq.ODEProblem
 import OrdinaryDiffEq.ODEIntegrator
 
@@ -296,7 +296,7 @@ function use_tstops(prob::ODEProblem)
     elseif typeof(prob.callback) <: CallbackSet
         any(x->typeof(x.affect!)<:ManifoldProjection, prob.callback.discrete_callbacks)
     else
-        return typeof(prob.callback.affect!) == ManifoldProjection
+        return typeof(prob.callback.affect!) <: ManifoldProjection
     end
 end
 

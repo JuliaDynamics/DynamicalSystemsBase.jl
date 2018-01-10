@@ -3,7 +3,7 @@ Sub-module of the module `DynamicalSystemsBase`, which contains pre-defined
 famous systems.
 """
 module Systems
-using DynamicalSystemsBase, StaticArrays
+using DynamicalSystemsBase, StaticArrays, DiffEqCallbacks
 const twopi = 2π
 #######################################################################################
 #                                    Continuous                                       #
@@ -29,9 +29,9 @@ also associated with the term "butterfly effect" (a term which Lorenz himself di
 even though the effect applies generally to dynamical systems.
 Default values are the ones used in the original paper.
 
-The `eom!` field of the returned system has as fields the keyword arguments of
+The `ds.prob.f` field of the returned system has as fields the keyword arguments of
 this function. You can access them and change their value at any point
-using `ds.eom!.parameter = value`.
+using `ds.prob.f.parameter = value`.
 
 [1] : E. N. Lorenz, J. atmos. Sci. **20**, pp 130 (1963)
 """
@@ -79,9 +79,9 @@ strange attractor. However, it is easier to analyze qualitatively, as for exampl
 the attractor is composed of a single manifold.
 Default values are the same as the original paper.
 
-The `eom!` field of the returned system has as fields the keyword arguments of
+The `ds.prob.f` field of the returned system has as fields the keyword arguments of
 this function. You can access them and change their value at any point
-using `ds.eom!.parameter = value`.
+using `ds.prob.f.parameter = value`.
 
 [1] : O. E. Rössler, Phys. Lett. **57A**, pp 397 (1976)
 """
@@ -124,9 +124,9 @@ Jacobian is created automatically (thus methods that use the Jacobian will be sl
 
 (please contribute the Jacobian and the e.o.m. in LaTeX :smile:)
 
-The `eom!` field of the returned system has as fields the keyword arguments of
+The `ds.prob.f` field of the returned system has as fields the keyword arguments of
 this function. You can access them and change their value at any point
-using `ds.eom!.parameter = value`.
+using `ds.prob.f.parameter = value`.
 """
 function double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
 
@@ -162,13 +162,13 @@ end
 
 
 """
-    henonhelies(u0=[0, -0.25, 0.42081,0]; λ = 1)
+    henonhelies(u0=[0, -0.25, 0.42081,0]; conserveE = true)
 ```math
 \\begin{aligned}
 \\dot{x} &= p_x \\\\
 \\dot{y} &= p_y \\\\
-\\dot{p}_x &= -x -2\\lambda xy \\\\
-\\dot{p}_y &= -y -\\lambda (x^2 - y^2)
+\\dot{p}_x &= -x -2 xy \\\\
+\\dot{p}_y &= -y - (x^2 - y^2)
 \\end{aligned}
 ```
 
@@ -180,38 +180,54 @@ for only but a few initial conditions.
 
 The default initial condition is a typical chaotic orbit.
 
-The `eom!` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.eom!.parameter = value`.
+You can optionally choose to conserve energy, up to `1e-14` error level, but having
+slower integration as a drawback.
 
 [1] : Hénon, M. & Heiles, C., The Astronomical Journal **69**, pp 73–79 (1964)
 """
-function henonhelies(u0=[0, -0.25, 0.42081, 0]; λ = 1)
+function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
+
+    function hheom!(t, u::AbstractVector, du::AbstractVector)
+        du[1] = u[3]
+        du[2] = u[4]
+        du[3] = -u[1] - 2u[1]*u[2]
+        du[4] = -u[2] - (u[1]^2 - u[2]^2)
+        return nothing
+    end
+    function hhjacob!(t, u::AbstractVector, J::AbstractMatrix)
+        J[3,1] = -1 - 2u[2]; J[3,2] = -2u[1]
+        J[4,1] = -2u[1]; J[4,2] =  -1 + 2u[2]
+        return nothing
+    end
+
     i = one(eltype(u0))
     o = zero(eltype(u0))
     J = zeros(eltype(u0), 4, 4)
     J[1,:] = [o,    o,     i,    o]
     J[2,:] = [o,    o,     o,    i]
-    J[3,:] = [ -i - 2λ*u0[2],   -2λ*u0[1],   o,   o]
-    J[4,:] = [-2λ*u0[1],  -1 + 2λ*u0[2],  o,   o]
+    J[3,:] = [ -i - 2*u0[2],   -2*u0[1],   o,   o]
+    J[4,:] = [-2*u0[1],  -1 + 2*u0[2],  o,   o]
 
-    s = HénonHeiles(λ)
-    return ContinuousDS(u0, s, s, J)
-end
-mutable struct HénonHeiles
-    λ::Float64
-end
-@inline @inbounds function (s::HénonHeiles)(t, u::AbstractVector, du::AbstractVector)
-    du[1] = u[3]
-    du[2] = u[4]
-    du[3] = -u[1] - 2s.λ*u[1]*u[2]
-    du[4] = -u[2] - s.λ*(u[1]^2 - u[2]^2)
-    return nothing
-end
-@inline @inbounds function (s::HénonHeiles)(t, u::AbstractVector, J::AbstractMatrix)
-    J[3,1] = -1 - 2s.λ*u[2]; J[3,2] = -2s.λ*u[1]
-    J[4,1] = -2s.λ*u[1]; J[4,2] =  -1 + 2s.λ*u[2]
-    return nothing
+    @inline Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
+    @inline Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
+    @inline Hhh(q1, q2, p1, p2) = Thh(p1, p2) + Vhh(q1, q2)
+    @inline Hhh(u::AbstractVector) = Hhh(u...)
+
+    E = Hhh(u0)
+
+    function ghh(u, resid)
+        resid[1] = Hhh(u[1],u[2],u[3],u[4]) - E
+        resid[2:4] .= 0
+    end
+
+    cb = ManifoldProjection(ghh, nlopts=Dict(:ftol=>1e-13), save = false)
+
+    if conserveE
+        prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
+    else
+        prob = prob = ODEProblem(hheom!, u0, (0., 100.0))
+    end
+    return ContinuousDS(prob, hhjacob!, J)
 end
 
 """
@@ -249,9 +265,9 @@ The (forced) duffing oscillator, that satisfies the equation
 ```
 with `f, ω` the forcing strength and frequency and `d` the dampening.
 
-The `eom!` field of the returned system has as fields the keyword arguments of
+The `ds.prob.f` field of the returned system has as fields the keyword arguments of
 this function. You can access them and change their value at any point
-using `ds.eom!.parameter = value`.
+using `ds.prob.f.parameter = value`.
 """
 function duffing(u0 = [rand(), rand()]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
     duf = Duffing(ω, d, f, β) # create struct
