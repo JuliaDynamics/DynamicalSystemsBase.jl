@@ -5,7 +5,7 @@ using Base.Test, StaticArrays, OrdinaryDiffEq
 
 println("\nTesting continuous systems...")
 
-@testset "ODEProblem conservation"
+@testset "ODEProblem conservation" begin
 
   lo11 = Systems.lorenz() #with Jac
   lo22 = ContinuousDS(lo11.prob) #without Jac
