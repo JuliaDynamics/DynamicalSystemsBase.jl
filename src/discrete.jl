@@ -1,7 +1,7 @@
 using StaticArrays, ForwardDiff, Requires
 
 export DiscreteDS, DiscreteDS1D, evolve, trajectory, dimension, state, jacobian
-export BigDiscreteDS, DiscreteDynamicalSystem
+export BigDiscreteDS, DiscreteDynamicalSystem, evolve!
 
 #####################################################################################
 #                                   Constructors                                    #
