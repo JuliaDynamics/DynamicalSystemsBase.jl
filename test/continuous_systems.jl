@@ -57,7 +57,9 @@ end
     lo22.prob.u0 .= lo11.prob.u0
   end
 
+  lo11 = Systems.lorenz() #with Jac
   lo22 = ContinuousDS(lo11.prob) #without Jac
+  lo33 = Systems.lorenz(big.([0.0, 10.0, 0.0]))
 
   @testset "trajectory" begin
     # trajectory pure:
