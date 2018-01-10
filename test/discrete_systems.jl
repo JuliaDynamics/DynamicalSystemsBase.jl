@@ -1,4 +1,4 @@
-println("\nTesting continuous system evolution...")
+println("\nTesting discrete system evolution...")
 if current_module() != DynamicalSystemsBase
   using DynamicalSystemsBase
 end

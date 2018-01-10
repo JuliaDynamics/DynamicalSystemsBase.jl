@@ -221,7 +221,7 @@ dataset.
 function minima(data::AbstractDataset{D, T}) where {D, T<:Real}
     m = Vector(data[1])
     for point in data
-        for i in 2:D
+        for i in 1:D
             if point[i] < m[i]
                 m[i] = point[i]
             end
@@ -238,7 +238,7 @@ dataset.
 function maxima(data::AbstractDataset{D, T}) where {D, T<:Real}
     m = Vector(data[1])
     for point in data
-        for i in 2:D
+        for i in 1:D
             if point[i] > m[i]
                 m[i] = point[i]
             end
