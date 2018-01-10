@@ -23,7 +23,7 @@ abstract type ContinuousDynamicalSystem <: DynamicalSystem end
   information like e.g. [callbacks](http://docs.juliadiffeq.org/latest/features/callback_functions.html#Event-Handling-and-Callback-Functions-1).
 * `jacob!` (function) : The function that represents the Jacobian of the system,
   given in the format: `jacob!(t, u, J)` which means it is in-place, with the mutated
-  argument being the last.
+  argument being the last (`u` **must be** `Vector`).
 * `J::Matrix{T}` : Jacobian matrix.
 
 You can use `ds.prob.u0 .= newstate` to set a new state to the system.
@@ -32,7 +32,7 @@ You can use `ds.prob.u0 .= newstate` to set a new state to the system.
 The equations of motion **must be** in the form `eom!(t, u, du)`,
 which means that they are **in-place** with the mutated argument
 `du` the last one. Both `u, du` **must be** `Vector`s. You can still use matrices
-in your equations of motion. Just change `function eom(t, u, du)` to
+in your equations of motion though! Just change `function eom(t, u, du)` to
 ```julia
 function eom(t, u, du)
     um = reshape(u, a, b); dum = reshape(du, a, b)
@@ -72,7 +72,8 @@ end
 
 # Constructors with Jacobian:
 function ContinuousDS(prob::ODEProblem, j!)
-    typeof(state) != Vector && throw(ArgumentError(
+    
+    typeof(prob.u0) != Vector && throw(ArgumentError(
     "Currently we only support vectors as states, "*
     "see the documentation string of `ContinuousDS`."
     ))
@@ -83,6 +84,11 @@ end
 
 function ContinuousDS(state::Vector, eom!, j!,
     J = zeros(eltype(state), length(state), length(state)); tspan=(0.0, 100.0))
+
+    typeof(state) != Vector && throw(ArgumentError(
+    "Currently we only support vectors as states, "*
+    "see the documentation string of `ContinuousDS`."
+    ))
 
     j!(0.0, state, J)
     problem = ODEProblem{true}(eom!, state, tspan)
