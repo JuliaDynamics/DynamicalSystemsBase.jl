@@ -75,7 +75,7 @@ end
 
 # Pretty print:
 matname(d::Reconstruction{D, T, τ}) where {D, T, τ} =
-"$(D)-dimensional delay coordinates reconstruction with delay τ=$(τ)"
+"(D=$(D), τ=$(τ)) - delay coordinates Reconstruction"
 
 
 #####################################################################################

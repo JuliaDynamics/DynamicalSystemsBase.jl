@@ -140,6 +140,17 @@ function Base.convert(::Type{Matrix}, d::AbstractDataset{D,T}) where {D, T}
     transpose(m)
 end
 
+function Base.convert(::Type{Matrix{S}}, d::AbstractDataset{D,BigFloat}) where {D, S}
+    mat = Matrix{S}(length(d), D)
+    for i in 1:length(d)
+        mat[i,:] .= d.data[i]
+    end
+    mat
+end
+
+Base.convert(::Type{Matrix}, d::AbstractDataset{D,BigFloat}) where {D} =
+convert(Matrix{BigFloat}, d)
+
 function Base.reinterpret(::Type{M}, d::AbstractDataset{D,T}) where {M<:Matrix, D, T}
     L = length(d)
     reinterpret(T, d.data, (D,L))
@@ -166,7 +177,7 @@ end
 #####################################################################################
 function matname(d::Dataset{D, T}) where {D, T}
     N = length(d)
-    return "$D-dimensional Dataset with $N points:"
+    return "$D-dimensional Dataset{$(T)} with $N points:"
 end
 
 function matstring(d::AbstractDataset{D, T}) where {D, T}
@@ -177,7 +188,11 @@ function matstring(d::AbstractDataset{D, T}) where {D, T}
             mat[i, :] .= d[a]
         end
     else
-        mat = convert(Matrix, d)
+        if T == BigFloat
+            mat = convert(Matrix{Float64}, d)
+        else
+            mat = convert(Matrix, d)
+        end
     end
     s = sprint(io -> show(IOContext(io, limit=true), MIME"text/plain"(), mat))
     s = join(split(s, '\n')[2:end], '\n')
