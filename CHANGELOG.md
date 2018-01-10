@@ -2,10 +2,11 @@
 ## Non-breaking
 * Bugfix of `eltype` of `Reconstruction`.
 * Added `circlemap` to `Systems`.
-* Bugfix on `Datasett` that incorrect methods were being called due to missing `<:`.
+* Bugfix on `Dataset` that incorrect methods were being called due to missing `<:`.
 * Method `Base.getindex(d::AbstractDataset{D,T}, ::Colon, j<:AbstractVector{Int}) ` now exists!
 * Added function `evolve!`.
 * Clearly state that we do not support matrices in the equations of motion.
+* Bugfixes regarding ODEProblem.
 
 # v0.3.2
 ## Non-breaking

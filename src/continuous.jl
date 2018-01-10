@@ -226,7 +226,7 @@ function variational_integrator(ds::ContinuousDS, k::Int, T,
     # k deviation vectors. Notice that the k deviation vectors
     # can also be considered a D×k matrix (which is the case
     # at `lyapunovs` function).
-    # The e.o.m. for the system is f!(t, u , du).
+    # The e.o.m. for the system is f!(t, u , du) with `u` the system state.
     # The e.o.m. for the deviation vectors (tangent dynamics) are simply:
     # dY/dt = J(u) ⋅ Y
     # with J the Jacobian of the vector field at the current state

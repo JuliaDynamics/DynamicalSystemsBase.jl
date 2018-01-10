@@ -185,6 +185,10 @@ end
     evolve(ds::DynamicalSystem, T=1; diff_eq_kwargs = Dict())
 Same as [`evolve`](@ref) but updates the system's state (in-place) with the
 final state.
+
+Notice that for continuous systems `ds.prob.u0` is a *reference* to a vector.
+Modifying it modifies all other references to this vector, including the state
+of other `ContinuousDS` that share the same reference.
 """
 evolve!(ds::DiscreteDynamicalSystem, N::Int = 1) = (ds.state = evolve(ds, N))
 evolve!(ds::BigDiscreteDS, N::Int = 1) = (ds.state .= evolve(ds, N))
