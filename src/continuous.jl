@@ -63,6 +63,9 @@ To interfece *towards* DifferentialEquations.jl use `ODEIntegrator(ds, stuff...)
 Notice that you can have performance gains for stiff methods by
 explicitly adding a Jacobian caller for DifferentialEquations.jl by defining
 `eom!(::Type{Val{:jac}}, t, u, J) = jacob!(t, u, J)`.
+
+`ContinuousDS` by default are evolved using solver `Vern9()` and tolerances
+`:abstol => 1e-9, :reltol => 1e-9`.
 """
 struct ContinuousDS{T<:Number, ODE<:ODEProblem, JJ} <: ContinuousDynamicalSystem
     prob::ODE
@@ -149,20 +152,8 @@ jacobian(ds::ContinuousDynamicalSystem, t = 0) =
 #######################################################################################
 #                         Interface to DifferentialEquations                          #
 #######################################################################################
-function get_solver(diff_eq_kwargs::Dict)
 
-    if haskey(diff_eq_kwargs, :solver)
-        newkw = deepcopy(diff_eq_kwargs)
-        solver = diff_eq_kwargs[:solver]
-        pop!(newkw, :solver)
-        return solver, newkw
-    else
-        solver = Tsit5()
-        return solver, diff_eq_kwargs
-    end
-end
-
-# Workaround for above
+# ODEProblem helper functions
 ODEProblem(ds::ContinuousDS) = ds.prob
 
 ODEProblem(
@@ -179,11 +170,11 @@ ODEProblem{true}(ds.prob.f, state, (zero(t), t),
 callback = cb, mass_matrix = ds.prob.mass_matrix)
 
 """
-    ODEIntegrator(ds::ContinuousDS, t [, state]; diff_eq_kwargs = Dict())
+    ODEIntegrator(ds::ContinuousDS, t [, state]; diff_eq_kwargs)
 Return an `ODEIntegrator` to be used directly with the interfaces of
 [`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html).
 
-`diff_eq_kwargs = Dict()` is a dictionary `Dict{Symbol, ANY}`
+`diff_eq_kwargs` is a dictionary `Dict{Symbol, ANY}`
 of keyword arguments
 passed into the `init` of
 [`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html),
@@ -193,9 +184,9 @@ do so by using the symbol `:solver`, e.g.:
 `using OrdinaryDiffEq` to access the solvers.
 """
 function OrdinaryDiffEq.ODEIntegrator(ds::ContinuousDS,
-    t, state::Vector = ds.prob.u0; diff_eq_kwargs = Dict())
+    t, state::Vector = ds.prob.u0; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
     prob = ODEProblem(ds, t, state)
-    solver, newkw = get_solver(diff_eq_kwargs)
+    solver, newkw = extract_solver(diff_eq_kwargs)
     integrator = init(prob, solver; newkw...,
     save_everystep=false)
     return integrator
@@ -204,7 +195,7 @@ end
 
 
 """
-    variational_integrator(ds::ContinuousDS, k::Int, t, S::Matrix, kwargs...)
+    variational_integrator(ds::ContinuousDS, k::Int, t, S::Matrix; diff_eq_kwargs)
 Return an `ODEIntegrator` that represents the variational equations
 of motion for the system. `t` makes the `tspan` and if it is `Real`
 instead of `Tuple`, initial time is assumed zero.
@@ -216,11 +207,11 @@ system's state as well as the initial diviation vectors:
 `S = cat(2, state, ws)` if `ws` is a matrix that has as *columns* the initial
 deviation vectors.
 
-The only keyword argument for this funcion is `diff_eq_kwargs = Dict()` (see
+The only keyword argument for this funcion is `diff_eq_kwargs` (see
 [`trajectory`](@ref)).
 """
 function variational_integrator(ds::ContinuousDS, k::Int, T,
-    S::AbstractMatrix; diff_eq_kwargs = Dict())
+    S::AbstractMatrix; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
 
     f! = ds.prob.f
     jac! = ds.jacob!
@@ -247,7 +238,7 @@ function variational_integrator(ds::ContinuousDS, k::Int, T,
         varprob = ODEProblem{true}(veom!, S, T)
     end
 
-    solver, newkw = get_solver(diff_eq_kwargs)
+    solver, newkw = extract_solver(diff_eq_kwargs)
     vintegrator = init(varprob, solver; newkw..., save_everystep=false)
     return vintegrator
 end
@@ -272,16 +263,31 @@ end
 #######################################################################################
 #                                Evolution of System                                  #
 #######################################################################################
+const DEFAULT_DIFFEQ_KWARGS = Dict{Symbol, Any}(:abstol => 1e-9, :reltol => 1e-9)
+const DEFAULT_SOLVER = Vern9()
+
 # See discrete.jl for the documentation string
 function evolve(ds::ContinuousDS, t = 1.0, state = ds.prob.u0;
-    diff_eq_kwargs = Dict())
+    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
     prob = ODEProblem(ds, t, state)
     return get_sol(prob, diff_eq_kwargs)[end]
 end
 
-evolve!(ds::ContinuousDS, t = 1.0; diff_eq_kwargs = Dict()) =
+evolve!(ds::ContinuousDS, t = 1.0; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS) =
 (ds.prob.u0 .= evolve(ds, t, diff_eq_kwargs = diff_eq_kwargs))
 
+function extract_solver(diff_eq_kwargs)
+    # Extract solver from kwargs
+    if haskey(diff_eq_kwargs, :solver)
+        newkw = copy(diff_eq_kwargs)
+        solver = diff_eq_kwargs[:solver]
+        pop!(newkw, :solver)
+    else
+        solver = DEFAULT_SOLVER
+        newkw = diff_eq_kwargs
+    end
+    return solver, newkw
+end
 
 """
     get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
@@ -289,13 +295,15 @@ Solve the `prob` using `solve` and return the solution.
 
 Correctly uses `tstops` if necessary (e.g. in the presence of `ManifoldProjection`).
 """
-function get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
-    solver, newkw = get_solver(diff_eq_kwargs)
+function get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = DEFAULT_DIFFEQ_KWARGS)
+
+    solver, newkw = extract_solver(diff_eq_kwargs)
     # Take special care of callback sessions and use `tstops` if necessary
     # in conjuction with `saveat`
     if haskey(newkw, :saveat) && use_tstops(prob)
         newkw[:tstops] = newkw[:saveat]
     end
+
     sol = solve(prob, solver; newkw..., save_everystep=false)
     return sol.u
 end
@@ -312,10 +320,9 @@ end
 
 # See discrete.jl for the documentation string
 function trajectory(ds::ContinuousDS, T;
-    dt::Real=0.05, diff_eq_kwargs = Dict())
+    dt::Real=0.05, diff_eq_kwargs::Dict = DEFAULT_DIFFEQ_KWARGS)
 
     # Necessary due to DifferentialEquations:
-
     if typeof(T) <: Real && !issubtype(typeof(T), AbstractFloat)
         T<=0 && throw(ArgumentError("Total time `T` must be positive."))
         T = convert(Float64, T)
@@ -323,12 +330,17 @@ function trajectory(ds::ContinuousDS, T;
 
     if typeof(T) <: Real
         t = zero(T):dt:T #time vector
-    elseif typeof(T) == Tuple
+    elseif typeof(T) <: Tuple
         t = T[1]:dt:T[2]
     end
 
     prob = ODEProblem(ds, T)
-    kw = Dict{Symbol, Any}(diff_eq_kwargs) #nessesary conversion to add :saveat
+    if eltype(diff_eq_kwargs) != Pair{Symbol,Any}
+        # nessesary conversion to add :saveat
+        kw = Dict{Symbol, Any}(diff_eq_kwargs)
+    else
+        kw = diff_eq_kwargs
+    end
     kw[:saveat] = t
 
     return Dataset(get_sol(prob, kw))
