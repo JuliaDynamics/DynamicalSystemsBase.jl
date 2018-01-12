@@ -7,6 +7,10 @@ include("math_tests.jl")
 # System Evolution:
 include("discrete_systems.jl")
 include("continuous_systems.jl")
+# Dataset:
+include("dataset_tests.jl")
+# Reconstruction:
+include("reconstruction_tests.jl")
 
 ti = time() - ti
 println("\nTest took total time of:")

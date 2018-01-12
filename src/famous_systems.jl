@@ -220,9 +220,9 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
         resid[2:4] .= 0
     end
 
-    cb = ManifoldProjection(ghh, nlopts=Dict(:ftol=>1e-13), save = false)
-
+    
     if conserveE
+        cb = ManifoldProjection(ghh, nlopts=Dict(:ftol=>1e-13), save = false)
         prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
     else
         prob = prob = ODEProblem(hheom!, u0, (0., 100.0))

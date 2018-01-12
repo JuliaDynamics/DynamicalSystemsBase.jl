@@ -1,3 +1,10 @@
+# v0.3.4
+## Non-breaking
+* Added energy conservation option to the Henon Helies system
+* All `ContinuousDS` evolution now internally passes thrgouh the `get_sol` function,
+  which improves the clarity and stability of the ecosystem greatly!!!
+
+
 # v0.3.3
 ## Non-breaking
 * Bugfix of `eltype` of `Reconstruction`.

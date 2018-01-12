@@ -170,10 +170,13 @@ ds::ContinuousDS, t::Real, state = ds.prob.u0) =
 ODEProblem{true}(ds.prob.f, state, (zero(t), t),
 callback = ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
 
-ODEProblem(
-ds::ContinuousDS, tspan::Tuple, state = ds.prob.u0) =
+ODEProblem(ds::ContinuousDS, tspan::Tuple, state = ds.prob.u0) =
 ODEProblem{true}(ds.prob.f, state, tspan,
 callback = ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
+
+ODEProblem(ds::ContinuousDS, t::Real, state, cb) =
+ODEProblem{true}(ds.prob.f, state, (zero(t), t),
+callback = cb, mass_matrix = ds.prob.mass_matrix)
 
 """
     ODEIntegrator(ds::ContinuousDS, t [, state]; diff_eq_kwargs = Dict())
@@ -283,9 +286,16 @@ evolve!(ds::ContinuousDS, t = 1.0; diff_eq_kwargs = Dict()) =
 """
     get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
 Solve the `prob` using `solve` and return the solution.
+
+Correctly uses `tstops` if necessary (e.g. in the presence of `ManifoldProjection`).
 """
 function get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
     solver, newkw = get_solver(diff_eq_kwargs)
+    # Take special care of callback sessions and use `tstops` if necessary
+    # in conjuction with `saveat`
+    if haskey(newkw, :saveat) && use_tstops(prob)
+        newkw[:tstops] = newkw[:saveat]
+    end
     sol = solve(prob, solver; newkw..., save_everystep=false)
     return sol.u
 end
@@ -320,8 +330,6 @@ function trajectory(ds::ContinuousDS, T;
     prob = ODEProblem(ds, T)
     kw = Dict{Symbol, Any}(diff_eq_kwargs) #nessesary conversion to add :saveat
     kw[:saveat] = t
-    # Take special care of callback sessions and use `tstops` if necessary
-    use_tstops(prob) && (kw[:tstops] = t)
 
     return Dataset(get_sol(prob, kw))
 end

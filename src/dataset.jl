@@ -77,7 +77,7 @@ data[1] == data[1, :] # this is the first datapoint (D-dimensional)
 data[5, 3] # value of the third variable, at the 5th timepoint
 ```
 
-Use `Matrix(dataset)` or `reinterpret(Matrix, dataset) to create a `Matrix`
+Use `Matrix(dataset)` or `reinterpret(Matrix, dataset)` to create a `Matrix`
 from a `dataset`, the first method returning a matrix where each column is a
 a timeseries while the second returning a matrix where each column is
 a datapoint. Similarly, use
