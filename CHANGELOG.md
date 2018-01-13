@@ -1,4 +1,7 @@
 # v0.3.4
+## Breaking
+* By default now all `ContinuousDynamicalSystems` are solved using `Vern9` as a
+  solver and tolerances of `1e-9`, both abstol and reltol.
 ## Non-breaking
 * Added energy conservation option to the Henon Helies system
 * All `ContinuousDS` evolution now internally passes thrgouh the `get_sol` function,
