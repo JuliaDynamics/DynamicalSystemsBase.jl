@@ -1,4 +1,4 @@
-# v0.3.4
+# v0.4.0
 ## Breaking
 * By default now all `ContinuousDynamicalSystems` are solved using `Vern9` as a
   solver and tolerances of `1e-9`, both abstol and reltol.
