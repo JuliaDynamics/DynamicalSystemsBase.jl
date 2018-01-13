@@ -3,7 +3,7 @@ import OrdinaryDiffEq.ODEProblem
 import OrdinaryDiffEq.ODEIntegrator
 
 export ContinuousDS, variational_integrator, ODEIntegrator, ODEProblem
-export ContinuousDynamicalSystem
+export ContinuousDynamicalSystem, DEFAULT_DIFFEQ_KWARGS, get_sol
 
 #######################################################################################
 #                                     Constructors                                    #
@@ -165,9 +165,16 @@ ODEProblem(ds::ContinuousDS, tspan::Tuple, state = ds.prob.u0) =
 ODEProblem{true}(ds.prob.f, state, tspan,
 callback = ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
 
-ODEProblem(ds::ContinuousDS, t::Real, state, cb) =
-ODEProblem{true}(ds.prob.f, state, (zero(t), t),
-callback = cb, mass_matrix = ds.prob.mass_matrix)
+function ODEProblem(ds::ContinuousDS, t::Real, state, cb)
+    if ds.prob.callback == nothing
+        return ODEProblem{true}(ds.prob.f, state, (zero(t), t),
+        callback = cb, mass_matrix = ds.prob.mass_matrix)
+    else
+        return ODEProblem{true}(ds.prob.f, state, (zero(t), t),
+        callback = CallbackSet(cb, ds.prob.callback),
+        mass_matrix = ds.prob.mass_matrix)
+    end
+end
 
 """
     ODEIntegrator(ds::ContinuousDS, t [, state]; diff_eq_kwargs)
@@ -270,7 +277,7 @@ const DEFAULT_SOLVER = Vern9()
 function evolve(ds::ContinuousDS, t = 1.0, state = ds.prob.u0;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
     prob = ODEProblem(ds, t, state)
-    return get_sol(prob, diff_eq_kwargs)[end]
+    return get_sol(prob, diff_eq_kwargs)[1][end]
 end
 
 evolve!(ds::ContinuousDS, t = 1.0; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS) =
@@ -279,7 +286,7 @@ evolve!(ds::ContinuousDS, t = 1.0; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS) =
 function extract_solver(diff_eq_kwargs)
     # Extract solver from kwargs
     if haskey(diff_eq_kwargs, :solver)
-        newkw = copy(diff_eq_kwargs)
+        newkw = deepcopy(diff_eq_kwargs)
         solver = diff_eq_kwargs[:solver]
         pop!(newkw, :solver)
     else
@@ -290,31 +297,41 @@ function extract_solver(diff_eq_kwargs)
 end
 
 """
-    get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = Dict())
-Solve the `prob` using `solve` and return the solution.
+    get_sol(prob::ODEProblem [, diff_eq_kwargs::Dict, extra_kwargs::Dict])
+Solve the `prob` using `solve` and return the solutions vector as well as
+the time vector.
 
-Correctly uses `tstops` if necessary (e.g. in the presence of `ManifoldProjection`).
+The second and third
+arguments are optional *position* arguments, passed to `solve` as keyword arguments.
+They both have to be dictionaries of `Symbol` keys.
+Only the second argument may contain a solver via the `:solver` key.
+
+`get_sol` correctly uses `tstops` if necessary
+(e.g. in the presence of `DiscreteCallback`s).
 """
-function get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = DEFAULT_DIFFEQ_KWARGS)
+function get_sol(prob::ODEProblem, diff_eq_kwargs::Dict = DEFAULT_DIFFEQ_KWARGS,
+    extra_kwargs = Dict())
 
     solver, newkw = extract_solver(diff_eq_kwargs)
     # Take special care of callback sessions and use `tstops` if necessary
     # in conjuction with `saveat`
     if haskey(newkw, :saveat) && use_tstops(prob)
-        newkw[:tstops] = newkw[:saveat]
+        sol = solve(prob, solver; newkw..., extra_kwargs..., save_everystep=false,
+        tstops = newkw[:saveat])
+    else
+        sol = solve(prob, solver; newkw..., extra_kwargs..., save_everystep=false)
     end
 
-    sol = solve(prob, solver; newkw..., save_everystep=false)
-    return sol.u
+    return sol.u, sol.t
 end
 
 function use_tstops(prob::ODEProblem)
     if prob.callback == nothing
         return false
     elseif typeof(prob.callback) <: CallbackSet
-        any(x->typeof(x.affect!)<:ManifoldProjection, prob.callback.discrete_callbacks)
+        any(x->typeof(x)<:DiscreteCallback, prob.callback.discrete_callbacks)
     else
-        return typeof(prob.callback.affect!) <: ManifoldProjection
+        return typeof(prob.callback) <: DiscreteCallback
     end
 end
 
@@ -335,15 +352,8 @@ function trajectory(ds::ContinuousDS, T;
     end
 
     prob = ODEProblem(ds, T)
-    if eltype(diff_eq_kwargs) != Pair{Symbol,Any}
-        # nessesary conversion to add :saveat
-        kw = Dict{Symbol, Any}(diff_eq_kwargs)
-    else
-        kw = diff_eq_kwargs
-    end
-    kw[:saveat] = t
 
-    return Dataset(get_sol(prob, kw))
+    return Dataset(get_sol(prob, diff_eq_kwargs, Dict(:saveat => t))[1])
 end
 
 #######################################################################################

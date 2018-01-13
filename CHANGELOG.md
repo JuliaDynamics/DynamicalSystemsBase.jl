@@ -3,7 +3,9 @@
 * Added energy conservation option to the Henon Helies system
 * All `ContinuousDS` evolution now internally passes thrgouh the `get_sol` function,
   which improves the clarity and stability of the ecosystem greatly!!!
-
+* Improved stability in propagating `solve` keywords.
+* `get_sol` now returns solution and time vector for generality purposes.
+* `get_sol` is now also exported.
 
 # v0.3.3
 ## Non-breaking

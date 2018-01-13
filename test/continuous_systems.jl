@@ -146,6 +146,6 @@ end
   E1 = [Hhh(p) for p in tra1]
   E2 = [Hhh(p) for p in tra2]
 
-  @test std(E1) < 1e-13
-  @test std(E2) < 1e-13
+  @test std(E1) < 1e-12
+  @test std(E2) < 1e-12
 end
