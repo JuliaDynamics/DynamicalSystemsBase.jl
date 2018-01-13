@@ -32,15 +32,14 @@ You can use `ds.prob.u0 .= newstate` to set a new state to the system.
 The equations of motion **must be** in the form `eom!(t, u, du)`,
 which means that they are **in-place** with the mutated argument
 `du` the last one. Both `u, du` **must be** `Vector`s. You can still use matrices
-in your equations of motion though! Just change `function eom(t, u, du)` to
+in your equations of motion though! Just change `function eom!(t, u, du)` to
 ```julia
-function eom(t, u, du)
+function eom!(t, u, du)
     um = reshape(u, a, b); dum = reshape(du, a, b)
     # equations of motion with matrix shape of a×b
 ```
-and you will be able to express the equations with matrix notation.
 
-If you have the `eom` function, and optionally a function for the
+If you have the `eom!` function, and optionally a function for the
 Jacobian, you can use the constructor
 ```julia
 ContinuousDS(state, eom! [, jacob! [, J]]; tspan = (0.0, 100.0))
@@ -59,7 +58,8 @@ using the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/
 As mentioned in our [official documentation](https://juliadynamics.github.io/DynamicalSystems.jl/latest/system_definition#example-using-functors),
 it is preferred to use Functors for both the equations of motion and the Jacobian.
 
-To interfece *towards* DifferentialEquations.jl use `ODEIntegrator(ds, stuff...)`.
+To interfece *towards* DifferentialEquations.jl use `ODEIntegrator(ds, stuff...)`
+and `ODEProblem(ds, stuff...)`.
 Notice that you can have performance gains for stiff methods by
 explicitly adding a Jacobian caller for DifferentialEquations.jl by defining
 `eom!(::Type{Val{:jac}}, t, u, J) = jacob!(t, u, J)`.
@@ -165,6 +165,12 @@ ODEProblem(ds::ContinuousDS, tspan::Tuple, state = ds.prob.u0) =
 ODEProblem{true}(ds.prob.f, state, tspan,
 callback = ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
 
+"""
+    ODEProblem(ds::ContinuousDS, t, state = ds.prob.u0 [, callback])
+Create a new `ODEProblem` for the given dynamical system that final time `t` (or `tspan`
+for tuple `t`), `state` and if given, also merges the `callback` with other existing
+callbacks currently in `ds.prob`.
+"""
 function ODEProblem(ds::ContinuousDS, t::Real, state, cb)
     if ds.prob.callback == nothing
         return ODEProblem{true}(ds.prob.f, state, (zero(t), t),
@@ -299,7 +305,7 @@ end
 """
     get_sol(prob::ODEProblem [, diff_eq_kwargs::Dict, extra_kwargs::Dict])
 Solve the `prob` using `solve` and return the solutions vector as well as
-the time vector.
+the time vector. Always uses the keyword argument `save_everystep=false`.
 
 The second and third
 arguments are optional *position* arguments, passed to `solve` as keyword arguments.

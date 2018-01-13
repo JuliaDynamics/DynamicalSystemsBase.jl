@@ -9,6 +9,7 @@
 * Improved stability in propagating `solve` keywords.
 * `get_sol` now returns solution and time vector for generality purposes.
 * `get_sol` is now also exported.
+* Internal `ODEProblem` constructor correctly merges different callbacks.
 
 # v0.3.3
 ## Non-breaking
