@@ -83,7 +83,8 @@ a timeseries while the second returning a matrix where each column is
 a datapoint. Similarly, use
 `Dataset(matrix)` or `reinterpret(Dataset, matrix)` to create a `Dataset` from
 a `matrix` that has structure as noted by the `Matrix` methods. Notice that the 2
-matrix versions are just the transpose of each other.
+matrix versions are just the transpose of each other however `reinterpret` takes
+much less time.
 
 If you have various timeseries `Vector`s `x, y, z, ...` pass them like
 `Dataset(x, y, z, ...)`.
@@ -266,6 +267,23 @@ function minmaxima(data::AbstractDataset{D, T}) where {D, T<:Real}
     return SVector{D, T}(mi), SVector{D, T}(ma)
 end
 
+#####################################################################################
+#                                     SVD                                           #
+#####################################################################################
+# SVD of Base seems to be much faster when the "long" dimension of the matrix
+# is the first one, probably due to Julia's column major structure.
+# This does not depend on using `svd` or `svdfact`, both give same timings.
+# In fact it is so much faster, that it is *much* more worth it to
+# use `Matrix(data)` instead of `reinterpret` in order to preserve the
+# long dimension being the first.
+"""
+    svd(d::AbstractDataset) -> U, S, Vtr
+Perform singular value decomposition on the dataset.
+"""
+function Base.svd(d::AbstractDataset)
+    F = svdfact(Matrix(d))
+    return F[:U], F[:S], F[:Vt]
+end
 #####################################################################################
 #                                    Dataset IO                                     #
 #####################################################################################
