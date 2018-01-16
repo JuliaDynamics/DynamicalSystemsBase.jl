@@ -43,7 +43,7 @@ function Base.getindex(d::AbstractDataset{D,T},
 end
 
 # Timeseries of a dataset
-@generated function columns(data::AbstractDataset{D, T})
+@generated function columns(data::AbstractDataset{D, T}) where {D, T}
     gens = [:(data[:, $k]) for k=1:D]
     quote tuple($(gens...)) end
 end
