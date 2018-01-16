@@ -132,6 +132,17 @@ end
     end
 end
 
+@testset "Gissinger Columns" begin
+    ds = Systems.gissinger()
+    data = trajectory(ds, 100.0)
+
+    xyz = columns(data)
+
+    for i in 1:3
+        @test xyz[i] == data[:, i]
+    end
+end
+
 @testset "ManifoldProjection" begin
   ds1 = Systems.henonhelies() #with Jac
   ds2 = ContinuousDS(ds1.prob) #without Jac
