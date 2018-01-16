@@ -3,7 +3,7 @@ using IterTools: chain
 import Base: ==
 
 export Dataset, AbstractDataset, minima, maxima
-export read_dataset, write_dataset, minmaxima
+export read_dataset, write_dataset, minmaxima, columns
 
 abstract type AbstractDataset{D, T} end
 
