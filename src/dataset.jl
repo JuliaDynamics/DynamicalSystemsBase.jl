@@ -42,6 +42,12 @@ function Base.getindex(d::AbstractDataset{D,T},
     return reinterpret(Dataset, ret)
 end
 
+# Timeseries of a dataset
+@generated function columns(data::AbstractDataset{D, T})
+    gens = [:(data[:, $k]) for k=1:D]
+    quote tuple($(gens...)) end
+end
+
 # Itereting interface:
 @inline Base.eachindex(D::AbstractDataset) = Base.OneTo(length(D.data))
 @inline Base.start(d::AbstractDataset) = 1
@@ -86,10 +92,9 @@ a `matrix` that has structure as noted by the `Matrix` methods. Notice that the 
 matrix versions are just the transpose of each other however `reinterpret` takes
 much less time.
 
-If you have various timeseries `Vector`s `x, y, z, ...` pass them like
-`Dataset(x, y, z, ...)`.
-
-See also [`read_dataset`](@ref), [`write_dataset`](@ref) and [`minmaxima`](@ref).
+If you have various timeseries vectors `x, y, z, ...` pass them like
+`Dataset(x, y, z, ...)`. You can use `columns(dataset)` to obtain the reverse,
+i.e. all columns of the dataset in a tuple.
 """
 struct Dataset{D, T<:Number} <: AbstractDataset{D,T}
     data::Vector{SVector{D,T}}
