@@ -220,7 +220,7 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
         resid[2:4] .= 0
     end
 
-    
+
     if conserveE
         cb = ManifoldProjection(ghh, nlopts=Dict(:ftol=>1e-13), save = false)
         prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
@@ -322,6 +322,41 @@ function (shi::Shinriki)(t, u::AbstractVector, du::AbstractVector)
 end
 # Jacobian caller for Shinriki:
 (shi::Shinriki)(::Type{Val{:jac}}, t, u, J) = (shi::Shinriki)(t, u, J)
+
+"""
+```julia
+gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
+```
+```math
+\\begin{aligned}
+\\dot{Q} &= \\mu Q - VD \\\\
+\\dot{D} &= -\\nu D + VQ \\\\
+\\dot{V} &= \\Gamma -V + QD
+\\end{aligned}
+```
+A continuous system that models chaotic reversals due to Gissinger [1].
+
+The `ds.prob.f` field of the returned system has as fields the keyword arguments of
+this function. You can access them and change their value at any point
+using `ds.prob.f.parameter = value`.
+
+[1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
+"""
+function gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
+    gis = Gissinger(μ, ν, Γ)
+    return ContinuousDS(u0, gis)
+end
+mutable struct Gissinger
+    μ::Float64
+    ν::Float64
+    Γ::Float64
+end
+function (gis::Gissinger)(t, u::AbstractVector, du::AbstractVector)
+    du[1] = gis.μ*u[1] - u[2]*u[3]
+    du[2] = -gis.ν*u[2] + u[1]*u[3]
+    du[3] = gis.Γ - u[3] + u[1]*u[2]
+    return nothing
+end
 #######################################################################################
 #                                     Discrete                                        #
 #######################################################################################
