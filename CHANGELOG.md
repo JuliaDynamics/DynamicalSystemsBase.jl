@@ -1,7 +1,5 @@
-# v0.4.2
-* (Breaking?) Moved `estimate_delay` to ChaosTools.jl
-
 # v0.4.1
+* (Breaking?) Moved `estimate_delay` to ChaosTools.jl
 * Added `gissinger` system.
 * Added `columns` function for columns of dataset.
 
