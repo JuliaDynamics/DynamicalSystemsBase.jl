@@ -1,3 +1,10 @@
+# v0.4.2
+* (Breaking?) Moved `estimate_delay` to ChaosTools.jl
+
+# v0.4.1
+* Added `gissinger` system.
+* Added `columns` function for columns of dataset.
+
 # v0.4.0
 ## Breaking
 * By default now all `ContinuousDynamicalSystems` are solved using `Vern9` as a
