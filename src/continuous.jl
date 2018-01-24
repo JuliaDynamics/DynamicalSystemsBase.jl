@@ -4,7 +4,7 @@ import OrdinaryDiffEq.ODEIntegrator
 
 export ContinuousDS, variational_integrator, ODEIntegrator, ODEProblem
 export ContinuousDynamicalSystem, DEFAULT_DIFFEQ_KWARGS, get_sol
-export set_params!, set_state!
+export set_parameters!, set_state!
 
 #######################################################################################
 #                                     Constructors                                    #
@@ -28,7 +28,7 @@ abstract type ContinuousDynamicalSystem <: DynamicalSystem end
   the convention of DifferentialEquations.jl for the equations of motion function.
 * `J::Matrix{T}` : Initialized Jacobian matrix.
 
-You can use `ds.prob.u0 .= newstate` to set a new state to the system.
+See also [`set_state!`](@ref), [`set_parameters!`](@ref)
 
 ## Creating a `ContinuousDS`
 The equations of motion **must be** in the form `eom!(du, u, p, t)`, as requested
@@ -36,14 +36,7 @@ by DifferentialEquations.jl. They are **in-place** with the mutated argument
 `du` being first. `p` stands for the parameters of the model and `t` stands
 for the time variable (independent variable). Actually using `p` and `t` inside `eom!`
 is completely optional, however *both must be used in the definition of the function*!
-Both `u, du` **must be** `Vector`s and `p` can be any kind of `Array`.
-You can still use matrices
-in your equations of motion though! Just change `function eom!(t, u, du)` to
-```julia
-function eom!(t, u, du)
-    um = reshape(u, a, b); dum = reshape(du, a, b)
-    # equations of motion with matrix shape of a×b
-```
+Both `u, du` **must be** `Vector`s and `p` **must be** any kind of `Array`.
 
 If you have the `eom!` function, and optionally a function for the
 Jacobian, you can use the constructor
@@ -64,7 +57,9 @@ ContinuousDS(odeproblem [, jacob! [, J]])
 If the `jacob!` is not provided by the user, it is created automatically
 using the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/),
 which always passes `p = odeproblem.p, t=0` at the `eom!` (this interaction is
-well-behavied for all functions exported by the DynamicalSystems.jl suite).
+well-behavied for all functions exported by the DynamicalSystems.jl suite because
+the parameter container is passed by reference and thus mutations in parameters
+propagate correctly).
 
 `ContinuousDS` by default are evolved using solver `Vern9()` and tolerances
 `:abstol => 1e-9, :reltol => 1e-9`.
@@ -77,7 +72,7 @@ struct ContinuousDS{T<:Number, ODE<:ODEProblem, JJ} <: ContinuousDynamicalSystem
     function ContinuousDS{T,ODE,JJ}(prob, j!, J) where {T,ODE,JJ}
 
         typeof(prob.u0) <: Vector || throw(ArgumentError(
-        "Currently we only support vectors as states, "*
+        "We only support vectors as states, "*
         "see the documentation string of `ContinuousDS`."
         ))
         j!(0, prob.u0, J)
@@ -168,52 +163,51 @@ I HAVE STOPPED HERE
 # ODEProblem helper functions
 ODEProblem(ds::ContinuousDS) = ds.prob
 
-ODEProblem(
-ds::ContinuousDS, t::Real, state = ds.prob.u0) =
-ODEProblem{true}(ds.prob.f, state, (zero(t), t),
-callback = ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
-
-ODEProblem(ds::ContinuousDS, tspan::Tuple, state = ds.prob.u0) =
-ODEProblem{true}(ds.prob.f, state, tspan,
-callback = ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
-
 """
-    ODEProblem(ds::ContinuousDS, t, state = ds.prob.u0 [, callback])
-Create a new `ODEProblem` for the given dynamical system that final time `t` (or `tspan`
-for tuple `t`), `state` and if given, also merges the `callback` with other existing
-callbacks currently in `ds.prob`.
+    ODEProblem(ds::ContinuousDS; kwargs...)
+Create a new `ODEProblem` for the given dynamical system by changing specific
+aspects of the existing `ODEProblem`.
+
+Keyword arguments: `state, t, parameters, callback, mass_matrix, tspan`.
+
+If `t` is given, a `tspan` is created with initial time assumed zero. If `tspan`
+is given directly, the keyword `t` is disregarded.
 """
-function ODEProblem(ds::ContinuousDS, t::Real, state, cb)
-    if ds.prob.callback == nothing
-        return ODEProblem{true}(ds.prob.f, state, (zero(t), t),
-        callback = cb, mass_matrix = ds.prob.mass_matrix)
-    else
-        return ODEProblem{true}(ds.prob.f, state, (zero(t), t),
-        callback = CallbackSet(cb, ds.prob.callback),
-        mass_matrix = ds.prob.mass_matrix)
-    end
+function ODEProblem(ds::ContinuousDS;
+                    t = ds.prob.tspan[end],
+                    state = ds.prob.u0,
+                    parameters = ds.prob.p,
+                    callback = ds.prob.callback,
+                    mass_matrix = ds.prob.mass_matrix,
+                    tspan = (zero(t), t))
+
+    return ODEProblem(ds.prob.f, state, tspan, parameters,
+                      mass_matrix = mass_matrix, callback = callback)
 end
 
-"""
-    ODEIntegrator(ds::ContinuousDS, t [, state]; diff_eq_kwargs)
-Return an `ODEIntegrator` to be used directly with the interfaces of
-[`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html).
+# Extra callback implementation:
+# """
+#     ODEProblem(ds::ContinuousDS, t, state = ds.prob.u0 [, callback])
+# Create a new `ODEProblem` for the given dynamical system that final time `t` (or `tspan`
+# for tuple `t`), `state` and if given, also merges the `callback` with other existing
+# callbacks currently in `ds.prob`.
+# """
+# function ODEProblem(ds::ContinuousDS, t::Real, state, cb)
+#     if ds.prob.callback == nothing
+#         return ODEProblem{true}(ds.prob.f, state, (zero(t), t),
+#         callback = cb, mass_matrix = ds.prob.mass_matrix)
+#     else
+#         return ODEProblem{true}(ds.prob.f, state, (zero(t), t),
+#         callback = CallbackSet(cb, ds.prob.callback),
+#         mass_matrix = ds.prob.mass_matrix)
+#     end
+# end
 
-`diff_eq_kwargs` is a dictionary `Dict{Symbol, ANY}`
-of keyword arguments
-passed into the `init` of
-[`DifferentialEquations.jl`](http://docs.juliadiffeq.org/stable/index.html),
-for example `Dict(:abstol => 1e-9)`. If you want to specify a solver,
-do so by using the symbol `:solver`, e.g.:
-`Dict(:solver => DP5(), :tstops => 0:0.01:t)`. This requires you to have been first
-`using OrdinaryDiffEq` to access the solvers.
-"""
 function OrdinaryDiffEq.ODEIntegrator(ds::ContinuousDS,
     t, state::Vector = ds.prob.u0; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
-    prob = ODEProblem(ds, t, state)
+    prob = ODEProblem(ds; t = t, state = state)
     solver, newkw = extract_solver(diff_eq_kwargs)
-    integrator = init(prob, solver; newkw...,
-    save_everystep=false)
+    integrator = init(prob, solver; newkw..., save_everystep=false)
     return integrator
 end
 
@@ -250,17 +244,17 @@ function variational_integrator(ds::ContinuousDS, k::Int, T,
     # dY/dt = J(u) ⋅ Y
     # with J the Jacobian of the vector field at the current state
     # and Y being each of the k deviation vectors
-    veom! = (t, u, du) -> begin
+    veom! = (du, u, p, t) -> begin
         us = view(u, :, 1)
-        f!(t, us, view(du, :, 1))
-        jac!(t, us, J)
+        f!(view(du, :, 1), us, p, t)
+        jac!(J, us, p, t)
         A_mul_B!(view(du, :, 2:k+1), J, view(u, :, 2:k+1))
     end
 
     if typeof(T) <: Real
-        varprob = ODEProblem{true}(veom!, S, (zero(T), T))
+        varprob = ODEProblem{true}(veom!, S, (zero(T), T), ds.prob.p)
     else
-        varprob = ODEProblem{true}(veom!, S, T)
+        varprob = ODEProblem{true}(veom!, S, T, ds.prob.p)
     end
 
     solver, newkw = extract_solver(diff_eq_kwargs)
