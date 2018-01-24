@@ -155,7 +155,6 @@ jacobian(ds::ContinuousDynamicalSystem, t = 0) =
 
 
 
-I HAVE STOPPED HERE
 #######################################################################################
 #                         Interface to DifferentialEquations                          #
 #######################################################################################
@@ -345,7 +344,7 @@ function use_tstops(prob::ODEProblem)
     if prob.callback == nothing
         return false
     elseif typeof(prob.callback) <: CallbackSet
-        any(x->typeof(x)<:DiscreteCallback, prob.callback.discrete_callbacks)
+        return any(x->typeof(x)<:DiscreteCallback, prob.callback.discrete_callbacks)
     else
         return typeof(prob.callback) <: DiscreteCallback
     end

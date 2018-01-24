@@ -217,7 +217,7 @@ continuous case, a `W×D` dataset is returned, with `W = length(0:dt:T)` with
   `Dict(:solver => DP5(), :maxiters => 1e9)`. This requires you to have been first
   `using OrdinaryDiffEq` to access the solvers.
 """
-function trajectory(ds::DiscreteDS, N::Real)
+function trajectory(ds::DiscreteDS, N::Int)
     st = state(ds)
     ts = Vector{typeof(st)}(N)
     ts[1] = st
@@ -242,7 +242,7 @@ function trajectory(ds::DiscreteDS1D, N::Int)
 end
 
 function trajectory(ds::BigDiscreteDS, N::Int)
-    x = copy(state(ds))
+    x = deepcopy(state(ds))
     SV = SVector{dimension(ds), eltype(x)}
     f! = ds.eom!
     ts = Vector{SV}(N)
@@ -262,10 +262,10 @@ end
 #####################################################################################
 #                                Pretty-Printing                                    #
 #####################################################################################
-import Base.show
+Base.summary(ds::DiscreteDS) = "$(dimension(ds))-dimensional discrete dynamical system"
 function Base.show(io::IO, ds::DiscreteDS{N, S, F, J}) where
     {N<:ANY, S<:ANY, F<:ANY, J<:ANY}
-    text = "$(dimension(ds))-dimensional discrete system"
+    text = summary(ds)
     print(io, text*"\n",
     " state: $(state(ds))\n", " e.o.m.: $F\n")
 end

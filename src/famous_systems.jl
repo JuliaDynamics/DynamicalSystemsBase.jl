@@ -29,37 +29,39 @@ also associated with the term "butterfly effect" (a term which Lorenz himself di
 even though the effect applies generally to dynamical systems.
 Default values are the ones used in the original paper.
 
-The `ds.prob.f` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.prob.f.parameter = value`.
+The parameter container has the parameters in the same order as stated in the
+function definition example.
 
 [1] : E. N. Lorenz, J. atmos. Sci. **20**, pp 130 (1963)
 """
 function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
+
     J = zeros(eltype(u0), 3, 3)
     J[1,:] .= (-σ,          σ,    0)
     J[2,:] .= (ρ - u0[3],  -1,   -u0[1])
     J[3,:] .= (u0[2],   u0[1],   -β)
+
+    @inline @inbounds function lorenz63_eom(du, u, p, t)
+        σ, ρ, β = p
+        du[1] = σ*(u[2]-u[1])
+        du[2] = u[1]*(ρ-u[3]) - u[2]
+        du[3] = u[1]*u[2] - β*u[3]
+        return nothing
+    end
+
+    @inline @inbounds function lorenz63_jacob(J, u, p, t)
+        σ, ρ, β = p
+        J[1,1] = -σ; J[1, 2] = σ
+        J[2,1] = ρ - u[3]; J[2,3] = -u[1]
+        J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -β
+        return nothing
+    end
+
     s = Lorenz63(σ, ρ, β)
     return ContinuousDS(u0, s, s, J)
 end
-mutable struct Lorenz63
-    σ::Float64
-    ρ::Float64
-    β::Float64
-end
-@inline @inbounds function (s::Lorenz63)(t, u::AbstractVector, du::AbstractVector)
-    du[1] = s.σ*(u[2]-u[1])
-    du[2] = u[1]*(s.ρ-u[3]) - u[2]
-    du[3] = u[1]*u[2] - s.β*u[3]
-    return nothing
-end
-@inline @inbounds function (s::Lorenz63)(t, u::AbstractVector, J::AbstractMatrix)
-    J[1,1] = -s.σ; J[1, 2] = s.σ
-    J[2,1] = s.ρ - u[3]; J[2,3] = -u[1]
-    J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -s.β
-    return nothing
-end
+
+
 
 """
 ```julia
