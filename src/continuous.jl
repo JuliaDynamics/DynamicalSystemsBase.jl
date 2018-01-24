@@ -288,12 +288,16 @@ const DEFAULT_SOLVER = Vern9()
 # See discrete.jl for the documentation string
 function evolve(ds::ContinuousDS, t = 1.0, state = ds.prob.u0;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
-    prob = ODEProblem(ds, t, state)
+    if typeof(t) <: Real
+        prob = ODEProblem(ds, t = t, state = state)
+    else
+        prob = ODEProblem(ds, tspan = t, state = state)
+    end
     return get_sol(prob, diff_eq_kwargs)[1][end]
 end
 
-evolve!(ds::ContinuousDS, t = 1.0; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS) =
-(ds.prob.u0 .= evolve(ds, t, diff_eq_kwargs = diff_eq_kwargs))
+evolve!(ds::ContinuousDS, t; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS) =
+(ds.prob.u0 .= evolve(ds, t; diff_eq_kwargs = diff_eq_kwargs))
 
 function extract_solver(diff_eq_kwargs)
     # Extract solver from kwargs

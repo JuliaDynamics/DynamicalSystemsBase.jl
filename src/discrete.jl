@@ -153,10 +153,10 @@ state(ds::DynamicalSystem) = ds.state
 #                               System Evolution                                    #
 #####################################################################################
 """
-    evolve(ds::DynamicalSystem, T=1 [, u0]; diff_eq_kwargs = Dict())
+    evolve(ds::DynamicalSystem, T [, u0]; diff_eq_kwargs = Dict())
 Evolve the `state(ds)` (or `u0` if given) for total time `T` and return the
 `final_state`. For discrete systems `T` corresponds to steps and
-thus it must be integer.
+thus it must be integer. For continuous systems `T` can also be a tuple (for `tspan`).
 
 `evolve` *does not store* any information about intermediate steps.
 Use [`trajectory`](@ref) if you want to produce a trajectory of the system.
@@ -166,14 +166,14 @@ perform step-by-step evolution of a continuous system, use
 the `step!(integrator)` function provided by
 [`DifferentialEquations`](https://github.com/JuliaDiffEq/DifferentialEquations.jl).
 """
-function evolve(ds::DiscreteDynamicalSystem, N::Int = 1, st = state(ds))
+function evolve(ds::DiscreteDynamicalSystem, N::Int, st = state(ds))
     for i in 1:N
         st = ds.eom(st)
     end
     return st
 end
 
-function evolve(ds::BigDiscreteDS, N::Int = 1, st = copy(state(ds)))
+function evolve(ds::BigDiscreteDS, N::Int, st = copy(state(ds)))
     for i in 1:N
         ds.dummystate .= st
         ds.eom!(st, ds.dummystate)
@@ -182,7 +182,7 @@ function evolve(ds::BigDiscreteDS, N::Int = 1, st = copy(state(ds)))
 end
 
 """
-    evolve(ds::DynamicalSystem, T=1; diff_eq_kwargs = Dict())
+    evolve!(ds::DynamicalSystem, T; diff_eq_kwargs = Dict())
 Same as [`evolve`](@ref) but updates the system's state (in-place) with the
 final state.
 
@@ -190,8 +190,8 @@ Notice that for continuous systems `ds.prob.u0` is a *reference* to a vector.
 Modifying it modifies all other references to this vector, including the state
 of other `ContinuousDS` that share the same reference.
 """
-evolve!(ds::DiscreteDynamicalSystem, N::Int = 1) = (ds.state = evolve(ds, N))
-evolve!(ds::BigDiscreteDS, N::Int = 1) = (ds.state .= evolve(ds, N))
+evolve!(ds::DiscreteDynamicalSystem, N::Int) = (ds.state = evolve(ds, N))
+evolve!(ds::BigDiscreteDS, N::Int) = (ds.state .= evolve(ds, N))
 
 
 """
