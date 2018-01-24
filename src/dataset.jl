@@ -92,9 +92,7 @@ from a `dataset`, the first method returning a matrix where each column is a
 a timeseries while the second returning a matrix where each column is
 a datapoint. Similarly, use
 `Dataset(matrix)` or `reinterpret(Dataset, matrix)` to create a `Dataset` from
-a `matrix` that has structure as noted by the `Matrix` methods. Notice that the 2
-matrix versions are just the transpose of each other however `reinterpret` takes
-much less time.
+a `matrix` that has structure as noted by the `Matrix` methods.
 
 If you have various timeseries vectors `x, y, z, ...` pass them like
 `Dataset(x, y, z, ...)`. You can use `columns(dataset)` to obtain the reverse,
@@ -117,7 +115,7 @@ function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
         D != length(v[i]) && throw(ArgumentError(
         "All data-points in a Dataset must have same size"
         ))
-        data[i] = SVector{D,T}(v[i])
+        @inbounds data[i] = SVector{D,T}(v[i])
     end
     return Dataset{D, T}(data)
 end
@@ -144,28 +142,23 @@ end
 #####################################################################################
 #                                Dataset <-> Matrix                                 #
 #####################################################################################
-function Base.convert(::Type{Matrix}, d::AbstractDataset{D,T}) where {D, T}
-    L = length(d)
-    m = reinterpret(T, d.data, (D,L))
-    transpose(m)
-end
-
-function Base.convert(::Type{Matrix{S}}, d::AbstractDataset{D,BigFloat}) where {D, S}
+#### From dataset to matrix ####
+function Base.convert(::Type{Matrix{S}}, d::AbstractDataset{D,T}) where {S, D, T}
     mat = Matrix{S}(length(d), D)
-    for i in 1:length(d)
-        mat[i,:] .= d.data[i]
+    for j in 1:D
+        for i in 1:length(d)
+            @inbounds mat[i,j] = d.data[i][j]
+        end
     end
     mat
 end
-
-Base.convert(::Type{Matrix}, d::AbstractDataset{D,BigFloat}) where {D} =
-convert(Matrix{BigFloat}, d)
 
 function Base.reinterpret(::Type{M}, d::AbstractDataset{D,T}) where {M<:Matrix, D, T}
     L = length(d)
     reinterpret(T, d.data, (D,L))
 end
 
+#### From matrix to dataset ####
 function Base.convert(::Type{Dataset}, mat::AbstractMatrix)
     m = transpose(mat)
     reinterpret(Dataset, m)

@@ -1,3 +1,11 @@
+# v0.5.0
+
+## Massively Breaking
+
+# Non-breaking
+* Improved the algorithm that converts a Dataset to a Matrix. It is now not only
+  faster, but also more clear!
+
 # v0.4.1
 * (Breaking?) Moved `estimate_delay` to ChaosTools.jl
 * Added `gissinger` system.
