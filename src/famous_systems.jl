@@ -3,7 +3,8 @@ Sub-module of the module `DynamicalSystemsBase`, which contains pre-defined
 famous systems.
 """
 module Systems
-using DynamicalSystemsBase, StaticArrays, DiffEqCallbacks
+using DynamicalSystemsBase, StaticArrays
+# using DiffEqCallbacks
 const twopi = 2π
 #######################################################################################
 #                                    Continuous                                       #
@@ -57,8 +58,7 @@ function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
         return nothing
     end
 
-    s = Lorenz63(σ, ρ, β)
-    return ContinuousDS(u0, s, s, J)
+    return ContinuousDS(u0, lorenz63_eom, lorenz63_jacob, J; parameters = [σ, ρ, β])
 end
 
 

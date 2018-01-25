@@ -1,4 +1,4 @@
-using OrdinaryDiffEq, Requires, ForwardDiff, DiffEqCallbacks
+using OrdinaryDiffEq, Requires, ForwardDiff
 import OrdinaryDiffEq.ODEProblem
 import OrdinaryDiffEq.ODEIntegrator
 
@@ -36,15 +36,16 @@ by DifferentialEquations.jl. They are **in-place** with the mutated argument
 `du` being first. `p` stands for the parameters of the model and `t` stands
 for the time variable (independent variable). Actually using `p` and `t` inside `eom!`
 is completely optional, however *both must be used in the definition of the function*!
-Both `u, du` **must be** `Vector`s and `p` **must be** any kind of `Array`.
+Both `u, du` **must be** `Vector`s.
 
 If you have the `eom!` function, and optionally a function for the
 Jacobian, you can use the constructor
 ```julia
 ContinuousDS(state, eom!, jacob! [, J]];
-  tspan = (0.0, 100.0), initial_params = nothing)
+  tspan = (0.0, 100.0), parameters = nothing)
 ```
-with `state` the initial condition of the system. `initial_params` is a keyword
+with `state` the initial condition of the system. `parameters` is a keyword
+corresponding to the initial parameters of the model,
 and if not given it is assumed to be `nothing` (which of course means that the
 model does not have any parameters).
 
@@ -75,13 +76,10 @@ struct ContinuousDS{T<:Number, ODE<:ODEProblem, JJ} <: ContinuousDynamicalSystem
         "We only support vectors as states, "*
         "see the documentation string of `ContinuousDS`."
         ))
-        j!(0, prob.u0, J)
+        j!(J, prob.u0, prob.p, 0)
 
         eltype(prob.u0) == eltype(J) || throw(ArgumentError(
         "The state and the Jacobian must have same type of numbers."))
-
-        eltype(prob.p) <: Array || throw(ArgumentError(
-        "The parameter container has to be a subtype of `Array`."))
 
         return new(prob, j!, J)
     end
@@ -101,10 +99,10 @@ end
 
 function ContinuousDS(state, eom!, j!,
     J = zeros(eltype(state), length(state), length(state));
-    tspan=(0.0, 100.0), initial_params = nothing)
+    tspan=(0.0, 100.0), parameters = nothing)
 
-    j!(0.0, state, J)
-    problem = ODEProblem{true}(eom!, state, tspan)
+    j!(J, state, parameters, 0)
+    problem = ODEProblem{true}(eom!, state, tspan, parameters)
 
     return ContinuousDS(problem, j!, J)
 end
@@ -123,7 +121,7 @@ function ContinuousDS(prob::ODEProblem)
     jcf = ForwardDiff.JacobianConfig(jeom!, du, state)
     ForwardDiff_jacob! = (J, u, p, t) -> ForwardDiff.jacobian!(
     J, jeom!, du, u, jcf)
-    ForwardDiff_jacob!(0, state, J)
+    ForwardDiff_jacob!(J, state, prob.p, 0)
 
     return ContinuousDS(prob, ForwardDiff_jacob!, J)
 end
@@ -158,9 +156,6 @@ jacobian(ds::ContinuousDynamicalSystem, t = 0) =
 #######################################################################################
 #                         Interface to DifferentialEquations                          #
 #######################################################################################
-
-# ODEProblem helper functions
-ODEProblem(ds::ContinuousDS) = ds.prob
 
 """
     ODEProblem(ds::ContinuousDS; kwargs...)
@@ -362,11 +357,11 @@ function trajectory(ds::ContinuousDS, T;
 
     if typeof(T) <: Real
         t = zero(T):dt:T #time vector
+        prob = ODEProblem(ds; t = T)
     elseif typeof(T) <: Tuple
         t = T[1]:dt:T[2]
+        prob = ODEProblem(ds; tspan = T)
     end
-
-    prob = ODEProblem(ds, T)
 
     return Dataset(get_sol(prob, diff_eq_kwargs, Dict(:saveat => t))[1])
 end
