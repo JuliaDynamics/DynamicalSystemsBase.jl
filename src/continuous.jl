@@ -31,9 +31,9 @@ abstract type ContinuousDynamicalSystem <: DynamicalSystem end
 See also [`set_state!`](@ref), [`set_parameters!`](@ref)
 
 ## Creating a `ContinuousDS`
-The equations of motion **must be** in the form `eom!(du, u, p, t)`, as requested
-by DifferentialEquations.jl. They are **in-place** with the mutated argument
-`du` being first. `p` stands for the parameters of the model and `t` stands
+The equations of motion function **must be** in the form `eom!(du, u, p, t)`,
+as requested by DifferentialEquations.jl. They are **in-place** with the mutated
+argument `du` being first. `p` stands for the parameters of the model and `t` stands
 for the time variable (independent variable). Actually using `p` and `t` inside `eom!`
 is completely optional, however *both must be used in the definition of the function*!
 Both `u, du` **must be** `Vector`s.
@@ -41,8 +41,8 @@ Both `u, du` **must be** `Vector`s.
 If you have the `eom!` function, and optionally a function for the
 Jacobian, you can use the constructor
 ```julia
-ContinuousDS(state, eom!, jacob! [, J]];
-  tspan = (0.0, 100.0), parameters = nothing)
+ContinuousDS(state, eom! [, jacob! [, J]];
+             tspan = (0.0, 100.0), parameters = nothing)
 ```
 with `state` the initial condition of the system. `parameters` is a keyword
 corresponding to the initial parameters of the model,
@@ -110,35 +110,35 @@ end
 
 # Constructors without Jacobian:
 function ContinuousDS(prob::ODEProblem)
-    state = prob.u0
+    u0 = prob.u0
     eom! = prob.f
 
-    D = length(state); T = eltype(state)
-    du = copy(state)
+    D = length(u0); T = eltype(u0)
+    du = copy(u0)
     J = zeros(T, D, D)
 
     jeom! = (du, u) -> eom!(du, u, prob.p, 0)
-    jcf = ForwardDiff.JacobianConfig(jeom!, du, state)
+    jcf = ForwardDiff.JacobianConfig(jeom!, du, u0)
     ForwardDiff_jacob! = (J, u, p, t) -> ForwardDiff.jacobian!(
     J, jeom!, du, u, jcf)
-    ForwardDiff_jacob!(J, state, prob.p, 0)
+    ForwardDiff_jacob!(J, u0, prob.p, 0)
 
     return ContinuousDS(prob, ForwardDiff_jacob!, J)
 end
 
-function ContinuousDS(state, eom!; initial_param = nothing, tspan=(0.0, 100.0))
+function ContinuousDS(u0, eom!; parameters = nothing, tspan=(0.0, 100.0))
 
-    D = length(state); T = eltype(state)
-    du = copy(state)
+    D = length(u0); T = eltype(u0)
+    du = copy(u0)
     J = zeros(T, D, D)
 
-    problem = ODEProblem{true}(eom!, state, tspan, initial_param)
+    problem = ODEProblem{true}(eom!, u0, tspan, parameters)
 
-    jeom! = (du, u) -> eom!(du, u, prob.p, 0)
-    jcf = ForwardDiff.JacobianConfig(jeom!, du, state)
+    jeom! = (du, u) -> eom!(du, u, problem.p, 0)
+    jcf = ForwardDiff.JacobianConfig(jeom!, du, u0)
     ForwardDiff_jacob! = (J, u, p, t) -> ForwardDiff.jacobian!(
     J, jeom!, du, u, jcf)
-    ForwardDiff_jacob!(J, state, initial_param, 0)
+    ForwardDiff_jacob!(J, u0, parameters, 0)
 
     return ContinuousDS(problem, ForwardDiff_jacob!, J)
 end
@@ -291,7 +291,7 @@ function evolve(ds::ContinuousDS, t = 1.0, state = ds.prob.u0;
 end
 
 evolve!(ds::ContinuousDS, t; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS) =
-(ds.prob.u0 .= evolve(ds, t; diff_eq_kwargs = diff_eq_kwargs))
+(ds.prob.u0 .= evolve(ds, t; diff_eq_kwargs = diff_eq_kwargs); ds.prob.u0)
 
 function extract_solver(diff_eq_kwargs)
     # Extract solver from kwargs

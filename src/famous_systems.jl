@@ -30,8 +30,8 @@ also associated with the term "butterfly effect" (a term which Lorenz himself di
 even though the effect applies generally to dynamical systems.
 Default values are the ones used in the original paper.
 
-The parameter container has the parameters in the same order as stated in the
-function definition example.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 
 [1] : E. N. Lorenz, J. atmos. Sci. **20**, pp 130 (1963)
 """
@@ -81,9 +81,8 @@ strange attractor. However, it is easier to analyze qualitatively, as for exampl
 the attractor is composed of a single manifold.
 Default values are the same as the original paper.
 
-The `ds.prob.f` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.prob.f.parameter = value`.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 
 [1] : O. E. Rössler, Phys. Lett. **57A**, pp 397 (1976)
 """
@@ -95,25 +94,23 @@ function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
     J[2,:] .= [i,  a,       o]
     J[3,:] .= [u0[3], o, u0[1] - c]
 
-    s = Rössler(a, b, c)
+    @inline @inbounds function roessler_eom(du, u, p, t)
+        a, b, c = p
+        du[1] = -u[2]-u[3]
+        du[2] = u[1] + a*u[2]
+        du[3] = b + u[3]*(u[1] - c)
+        return nothing
+    end
+
+    @inline @inbounds function roessler_jacob(J, u, p, t)
+        J[2,2] = p[1]
+        J[3,1] = u[3]; J[3,3] = u[1] - p[3]
+        return nothing
+    end
+
     return ContinuousDS(u0, s, s, J)
 end
-mutable struct Rössler
-    a::Float64
-    b::Float64
-    c::Float64
-end
-@inline @inbounds function (s::Rössler)(t, u::AbstractVector, du::AbstractVector)
-    du[1] = -u[2]-u[3]
-    du[2] = u[1] + s.a*u[2]
-    du[3] = s.b + u[3]*(u[1] - s.c)
-    return nothing
-end
-@inline @inbounds function (s::Rössler)(t, u::AbstractVector, J::AbstractMatrix)
-    J[2,2] = s.a
-    J[3,1] = u[3]; J[3,3] = u[1] - s.c
-    return nothing
-end
+
 
 """
     double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
@@ -126,43 +123,36 @@ Jacobian is created automatically (thus methods that use the Jacobian will be sl
 
 (please contribute the Jacobian and the e.o.m. in LaTeX :smile:)
 
-The `ds.prob.f` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.prob.f.parameter = value`.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 """
 function double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
 
-    s = DoublePendulum(G, L1, L2, M1, M2)
-    return ContinuousDS(u0, s)
-end
-mutable struct DoublePendulum
-    G::Float64
-    L1::Float64
-    L2::Float64
-    M1::Float64
-    M2::Float64
-end
-@inbounds function (s::DoublePendulum)(t, state, du)
-    du[1] = state[2]
+    @inbounds function doublependulum_eom(du, state, p, t)
+        G, L1, L2, M1, M2 = p
 
-    del_ = state[3] - state[1]
-    den1 = (s.M1 + s.M2)*s.L1 - s.M2*s.L1*cos(del_)*cos(del_)
-    du[2] = (s.M2*s.L1*state[2]*state[2]*sin(del_)*cos(del_) +
-               s.M2*s.G*sin(state[3])*cos(del_) +
-               s.M2*s.L2*state[4]*state[4]*sin(del_) -
-               (s.M1 + s.M2)*s.G*sin(state[1]))/den1
+        du[1] = state[2]
+        del_ = state[3] - state[1]
+        den1 = (M1 + M2)*L1 - M2*L1*cos(del_)*cos(del_)
+        du[2] = (M2*L1*state[2]*state[2]*sin(del_)*cos(del_) +
+                   M2*G*sin(state[3])*cos(del_) +
+                   M2*L2*state[4]*state[4]*sin(del_) -
+                   (M1 + M2)*G*sin(state[1]))/den1
 
-    du[3] = state[4]
+        du[3] = state[4]
 
-    den2 = (s.L2/s.L1)*den1
-    du[4] = (-s.M2*s.L2*state[4]*state[4]*sin(del_)*cos(del_) +
-               (s.M1 + s.M2)*s.G*sin(state[1])*cos(del_) -
-               (s.M1 + s.M2)*s.L1*state[2]*state[2]*sin(del_) -
-               (s.M1 + s.M2)*s.G*sin(state[3]))/den2
-    return nothing
+        den2 = (L2/L1)*den1
+        du[4] = (-M2*L2*state[4]*state[4]*sin(del_)*cos(del_) +
+                   (M1 + M2)*G*sin(state[1])*cos(del_) -
+                   (M1 + M2)*L1*state[2]*state[2]*sin(del_) -
+                   (M1 + M2)*G*sin(state[3]))/den2
+        return nothing
+    end
+    return ContinuousDS(u0, doublependulum_eom; parameters = [G, L1, L2, M1, M2])
 end
 
 
+#= Commenting out Henon Helies until DiffEqCallbacks are updated to v3
 """
     henonhelies(u0=[0, -0.25, 0.42081,0]; conserveE = true)
 ```math
@@ -231,22 +221,21 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
     end
     return ContinuousDS(prob, hhjacob!, J)
 end
+=#
 
 """
     lorenz96(N::Int, u0 = rand(M); F=0.01)
 `N` is the chain length, `F` the forcing. Jacobian is created automatically.
+(parameter container only contains `F`)
 """
 function lorenz96(N::Int, u0 = rand(N); F=0.01)
     @assert N ≥ 3 "`N` must be at least 3"
-    lor96 = Lorenz96{N, typeof(F)}(F) # create struct
-    return ContinuousDS(u0, lor96)
+    lor96 = Lorenz96{N}() # create struct
+    return ContinuousDS(u0, lor96; parameters = [F])
 end
-struct Lorenz96{N, T <: Real} # Structure with the parameters of Lorenz96 system
-  F::T
-end
-# Equations of motion
-function (obj::Lorenz96{N, T})(t, x, dx) where {N, T}
-    F = obj.F
+struct Lorenz96{N} end # Structure for size type
+function (obj::Lorenz96{N})(dx, x, p, t) where {N}
+    F = p[1]
     # 3 edge cases
     dx[1] = (x[2] - x[N - 1]) * x[N] - x[1] + F
     dx[2] = (x[3] - x[N]) * x[1] - x[2] + F
@@ -259,6 +248,7 @@ function (obj::Lorenz96{N, T})(t, x, dx) where {N, T}
 end
 
 
+
 """
     duffing(u0 = [rand(), rand(), 0]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
 The (forced) duffing oscillator, that satisfies the equation
@@ -267,63 +257,57 @@ The (forced) duffing oscillator, that satisfies the equation
 ```
 with `f, ω` the forcing strength and frequency and `d` the dampening.
 
-The `ds.prob.f` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.prob.f.parameter = value`.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 """
 function duffing(u0 = [rand(), rand()]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
-    duf = Duffing(ω, d, f, β) # create struct
+
     J = zeros(eltype(u0), 2, 2)
     J[1,2] = 1
-    return ContinuousDS(u0, duf, duf, J)
-end
-mutable struct Duffing
-    ω::Float64
-    d::Float64
-    f::Float64
-    β::Float64
-end
-@inbounds function (duf::Duffing)(t, x::AbstractVector, dx::AbstractVector)
-    dx[1] = x[2]
-    dx[2] = duf.f*cos(duf.ω*t) - duf.β*x[1] - x[1]^3 - duf.d * x[2]
-    return nothing
-end
-@inbounds function (duf::Duffing)(t, u::AbstractVector, J::AbstractMatrix)
-    J[2,1] = -duf.β - 3u[1]^2
-    J[2,2] = -duf.d
+    @inbounds function duffing_eom(dx, x, p, t)
+        ω, d, f, β = p
+        dx[1] = x[2]
+        dx[2] = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
+        return nothing
+    end
+    @inbounds function  duffing_jacob(J, u, p, t)
+        ω, d, f, β = p
+        J[2,1] = -β - 3u[1]^2
+        J[2,2] = -d
+    end
+    return ContinuousDS(u0, duffing_eom, duffing_jacob, J; parameters = [ω, f, d, β])
 end
 
 
 """
     shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
 Shinriki oscillator with all other parameters (besides `R1`) set to constants.
-
-Always use `diff_eq_kwargs = Dict(:abstol=>1e-9, :reltol => 1e-9)` when solving
-this system because it involves an exponential function.
+*This is a stiff problem, be careful when choosing solvers and tolerances*.
 """
 function shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
-    shi = Shinriki(R1)
-    return ContinuousDS(u0, shi)
-end
-mutable struct Shinriki
-    R1::Float64
-end
-(shi::Shinriki)(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
-function (shi::Shinriki)(t, u::AbstractVector, du::AbstractVector)
 
-    du[1] = (1/0.01)*(
-    u[1]*(1/6.9 - 1/shi.R1) - shi(u[1] - u[2]) - (u[1] - u[2])/14.5
-    )
+    shinriki_voltage(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
+    function shinriki_eom(du, u, p, t)
+        R1 = p[1]
 
-    du[2] = (1/0.1)*(
-    shi(u[1] - u[2]) + (u[1] - u[2])/14.5 - u[3]
-    )
+        du[1] = (1/0.01)*(
+        u[1]*(1/6.9 - 1/R1) - shinriki_voltage(u[1] - u[2]) - (u[1] - u[2])/14.5
+        )
 
-    du[3] = (1/0.32)*(-u[3]*0.1 + u[2])
-    return nothing
+        du[2] = (1/0.1)*(
+        shinriki_voltage(u[1] - u[2]) + (u[1] - u[2])/14.5 - u[3]
+        )
+
+        du[3] = (1/0.32)*(-u[3]*0.1 + u[2])
+        return nothing
+    end
+
+    # # Jacobian caller for Shinriki:
+    # shinriki_eom(::Type{Val{:jac}}, J, u, p, t) = (shi::Shinriki)(t, u, J)
+
+    return ContinuousDS(u0, shinriki_eom; parameters = [R1])
 end
-# Jacobian caller for Shinriki:
-(shi::Shinriki)(::Type{Val{:jac}}, t, u, J) = (shi::Shinriki)(t, u, J)
+
 
 """
 ```julia
@@ -336,29 +320,27 @@ gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
 \\dot{V} &= \\Gamma -V + QD
 \\end{aligned}
 ```
-A continuous system that models chaotic reversals due to Gissinger [1].
+A continuous system that models chaotic reversals due to Gissinger [1], applied
+to study the reversals of the magnetic field of the Earth.
 
-The `ds.prob.f` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.prob.f.parameter = value`.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 
 [1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
 """
 function gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
-    gis = Gissinger(μ, ν, Γ)
-    return ContinuousDS(u0, gis)
+
+    function gissinger_eom(du, u, p, t)
+        μ, ν, Γ = p
+        du[1] = μ*u[1] - u[2]*u[3]
+        du[2] = -ν*u[2] + u[1]*u[3]
+        du[3] = Γ - u[3] + u[1]*u[2]
+        return nothing
+    end
+
+    return ContinuousDS(u0, gissinger_eom; parameters = [μ, ν, Γ])
 end
-mutable struct Gissinger
-    μ::Float64
-    ν::Float64
-    Γ::Float64
-end
-function (gis::Gissinger)(t, u::AbstractVector, du::AbstractVector)
-    du[1] = gis.μ*u[1] - u[2]*u[3]
-    du[2] = -gis.ν*u[2] + u[1]*u[3]
-    du[3] = gis.Γ - u[3] + u[1]*u[2]
-    return nothing
-end
+
 #######################################################################################
 #                                     Discrete                                        #
 #######################################################################################
