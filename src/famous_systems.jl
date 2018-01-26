@@ -407,9 +407,8 @@ destroyed, as was calculated by Greene [2]. The e.o.m. considers the angle varia
 both variables
 are always taken modulo 2π (the mapping is on the [0,2π)² torus).
 
-The `eom` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.eom.parameter = value`.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 
 [1] : B. V. Chirikov, Preprint N. **267**, Institute of
 Nuclear Physics, Novosibirsk (1969)
@@ -417,26 +416,21 @@ Nuclear Physics, Novosibirsk (1969)
 [2] : J. M. Greene, J. Math. Phys. **20**, pp 1183 (1979)
 """
 function standardmap(u0=0.001rand(2); k = 0.971635)
-    sm = StandardMap(k)
-    jacob_sm(x) = sm(x, nothing)
-    return DiscreteDS(u0, sm, jacob_sm)
+    @inline @inbounds function standardmap_eom(x, p)
+        theta = x[1]; p = x[2]
+        p += p[1]*sin(theta)
+        theta += p
+        while theta >= twopi; theta -= twopi; end
+        while theta < 0; theta += twopi; end
+        while p >= twopi; p -= twopi; end
+        while p < 0; p += twopi; end
+        return SVector(theta, p)
+    end
+    @inline @inbounds standardmap_jacob(x, p) =
+    @SMatrix [1 + p[1]*cos(x[1])    1;
+              p[1]*cos(x[1])        1]
+    return DiscreteDS(u0, standardmap_eom, standardmap_jacob; parameters = [k])
 end
-mutable struct StandardMap
-    k::Float64
-end
-@inline @inbounds function (f::StandardMap)(x)
-    theta = x[1]; p = x[2]
-    p += f.k*sin(theta)
-    theta += p
-    while theta >= twopi; theta -= twopi; end
-    while theta < 0; theta += twopi; end
-    while p >= twopi; p -= twopi; end
-    while p < 0; p += twopi; end
-    return SVector(theta, p)
-end
-@inline @inbounds (f::StandardMap)(x, no::Void) =
-@SMatrix [1 + f.k*cos(x[1])    1;
-          f.k*cos(x[1])        1]
 
 """
 ```julia
@@ -456,9 +450,8 @@ The *total* dimension of the system
 is `2M`. The maps are coupled through `Γ`
 and the `i`-th map has a nonlinear parameter `ks[i]`.
 
-The `eom!` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.eom!.parameter = value`.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 
 [1] : H. Kantz & P. Grassberger, J. Phys. A **21**, pp 127–133 (1988)
 """
@@ -469,7 +462,7 @@ function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
     idxsm1 = circshift(idxs, +1)  #indexes of thetas - 1
     idxsp1 = circshift(idxs, -1)  #indexes of thetas + 1
 
-    csm = CoupledStandardMaps{M, eltype(ks)}(ks, Γ, idxs, idxsm1, idxsp1)
+    csm = CoupledStandardMaps{M}(idxs, idxsm1, idxsp1)
     J = zeros(eltype(u0), 2M, 2M)
     # Set ∂/∂p entries (they are eye(M,M))
     # And they dont change they are constants
@@ -478,30 +471,30 @@ function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
         J[i+M, i+M] = 1
     end
 
-    return BigDiscreteDS(u0, csm, csm, J)
+    return BigDiscreteDS(u0, csm, csm, J; parameters = [ks, Γ])
 end
-mutable struct CoupledStandardMaps{N, T}
-    ks::Vector{T}
-    Γ::T
+mutable struct CoupledStandardMaps{N}
     idxs::UnitRange{Int}
     idxsm1::Vector{Int}
     idxsp1::Vector{Int}
 end
-@inbounds function (f::CoupledStandardMaps{N, T})(
-    xnew::AbstractVector, x::AbstractVector) where {N, T}
+@inbounds function (f::CoupledStandardMaps{N})(xnew::AbstractVector, x, p) where {N}
+    ks, Γ = p
     for i in f.idxs
 
         xnew[i+N] = mod2pi(
-            x[i+N] + f.ks[i]*sin(x[i]) -
-            f.Γ*(sin(x[f.idxsp1[i]] - x[i]) + sin(x[f.idxsm1[i]] - x[i]))
+            x[i+N] + ks[i]*sin(x[i]) -
+            Γ*(sin(x[f.idxsp1[i]] - x[i]) + sin(x[f.idxsm1[i]] - x[i]))
         )
 
         xnew[i] = mod2pi(x[i] + xnew[i+N])
     end
     return nothing
 end
-@inbounds function (f::CoupledStandardMaps{M, T})(
-    J::AbstractMatrix, x::AbstractVector) where {M, T}
+@inbounds function (f::CoupledStandardMaps{M})(
+    J::AbstractMatrix, x, p) where {M}
+
+    ks, Γ = p
     # x[i] ≡ θᵢ
     # x[[idxsp1[i]]] ≡ θᵢ+₁
     # x[[idxsm1[i]]] ≡ θᵢ-₁
@@ -509,9 +502,9 @@ end
         cosθ = cos(x[i])
         cosθp= cos(x[f.idxsp1[i]] - x[i])
         cosθm= cos(x[f.idxsm1[i]] - x[i])
-        J[i+M, i] = f.ks[i]*cosθ + f.Γ*(cosθp + cosθm)
-        J[i+M, f.idxsm1[i]] = - f.Γ*cosθm
-        J[i+M, f.idxsp1[i]] = - f.Γ*cosθp
+        J[i+M, i] = ks[i]*cosθ + Γ*(cosθp + cosθm)
+        J[i+M, f.idxsm1[i]] = - Γ*cosθm
+        J[i+M, f.idxsp1[i]] = - Γ*cosθp
         J[i, i] = 1 + J[i+M, i]
         J[i, f.idxsm1[i]] = J[i+M, f.idxsm1[i]]
         J[i, f.idxsp1[i]] = J[i+M, f.idxsp1[i]]
@@ -538,24 +531,16 @@ According to the author, it is a system displaying all the properties of the
 Lorentz system (1963) while being as simple as possible.
 Default values are the ones used in the original paper.
 
-The `eom` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.eom.parameter = value`.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 
 [1] : M. Hénon, Commun.Math. Phys. **50**, pp 69 (1976)
 """
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
-
-    he = HénonMap(a,b)
-    @inline jacob_henon(x) = he(x, nothing)
-    return DiscreteDS(u0, he, jacob_henon)
+    henon_eom(x, p) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+    henon_jacob(x, p) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
+    return DiscreteDS(u0, henon_eom, henon_jacob; parameters = [a, b])
 end # should give lyapunov exponents [0.4189, -1.6229]
-mutable struct HénonMap
-    a::Float64
-    b::Float64
-end
-(f::HénonMap)(x) = SVector{2}(1.0 - f.a*x[1]^2 + x[2], f.b*x[1])
-(f::HénonMap)(x, no::Void) = @SMatrix [-2*f.a*x[1] 1.0; f.b 0.0]
 
 
 """
@@ -572,46 +557,38 @@ Originally intentend to be a discretized model of polulation dynamics, it is now
 for its bifurcation diagram, an immensly complex graph that that was shown
 be universal by Feigenbaum [2].
 
-The `eom` field of the returned system has as fields the keyword arguments of
-this function. You can access them and change their value at any point
-using `ds.eom.parameter = value`.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 
 [1] : R. M. May, Nature **261**, pp 459 (1976)
 
 [2] : M. J. Feigenbaum, J. Stat. Phys. **19**, pp 25 (1978)
 """
 function logistic(x0=rand(); r = 4.0)
-    lol = Logistic(r)
-    deriv_logistic(x) = lol(x, nothing)
-    return DiscreteDS1D(x0, lol, deriv_logistic)
+    @inline logistic_eom(x, p) = p[1]*x*(1-x)
+    @inline logistic_jacob(x, p) = p[1]*(1-2x)
+    return DiscreteDS1D(x0, logistic_eom, logistic_jacob; parameters = [r])
 end
-mutable struct Logistic
-    r::Float64
-end
-@inline (f::Logistic)(x::Number) = f.r*x*(1-x)
-@inline (f::Logistic)(x::Number, no::Void) = f.r*(1-2x)
+
+
 
 """
-    circlemap(x0=rand(); Ω = 1.0, K = 0.99, usemod::Bool = false)
+    circlemap(x0=rand(); Ω = 1.0, K = 0.99)
 
 ```math
 \\theta_{n+1} = \\theta_n + 2\\pi\\Omega - K\\sin(\\theta_n)
 ```
-All keywords of this function are also fields of `eom` and can be changed.
-`usemod` notes whether to take `mod2pi` at the equation of motion.
+Notice that the map *does not use* `mod2pi` at the equation of motion.
+
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 """
 function circlemap(x0=rand(); K = 0.99, Ω = 1.0, usemod::Bool = false)
-    lol = CircleMap(Ω, K, usemod)
-    deriv_circle(x) = lol(x, nothing)
-    return DiscreteDS1D(x0, lol, deriv_circle)
+    @inline circlemap_eom(x, p) = x + twopi*p[1] - p[2]*sin(x)
+    @inline circlemap_jacob(x, p) = -p[2]*cos(x)
+    return DiscreteDS1D(x0, circlemap_eom, circlemap_jacob; parameters = [Ω, K])
 end
-mutable struct CircleMap
-    Ω::Float64
-    K::Float64
-    usemod::Bool
-end
-@inline (f::CircleMap)(x::Number) =
-(y = x + f.Ω - f.K*sin(x); f.usemod ? y : mod2pi(y))
-@inline (f::CircleMap)(x::Number, no::Void) = -f.K*cos(x)
+
+
 
 end# Systems module
