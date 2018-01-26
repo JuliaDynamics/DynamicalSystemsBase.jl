@@ -108,7 +108,7 @@ function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
         return nothing
     end
 
-    return ContinuousDS(u0, s, s, J)
+    return ContinuousDS(u0, s, s, J; parameters = [a, b, c])
 end
 
 
