@@ -148,8 +148,8 @@ dimension(ds::ContinuousDS) = length(ds.prob.u0)
 Base.eltype(ds::ContinuousDS{T,F,J}) where {T, F, J} = T
 state(ds::ContinuousDS) = ds.prob.u0
 
-jacobian(ds::ContinuousDynamicalSystem, t = 0) =
-(ds.jacob!(ds.J, state(ds), ds.prob.p, t); ds.J)
+jacobian(ds::ContinuousDynamicalSystem) =
+(ds.jacob!(ds.J, state(ds), ds.prob.p, ds.prob.tspan[1]); ds.J)
 
 
 
