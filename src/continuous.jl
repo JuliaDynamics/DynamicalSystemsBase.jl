@@ -162,10 +162,12 @@ set_state!(ds::ContinuousDS, u0) = (ds.state .= u0)
 
 """
     ODEProblem(ds::ContinuousDS; kwargs...)
-Create a new `ODEProblem` for the given dynamical system by changing specific
-aspects of the existing `ODEProblem`.
+Create a new `ODEProblem` for the given dynamical system by optionally
+changing specific aspects of the existing `ODEProblem`.
 
-Keyword arguments: `state, t, parameters, callback, mass_matrix, tspan`.
+Keyword arguments: `state, t, parameters, callback, mass_matrix, tspan`. If
+`callback` is given and a callback also exists already in `ds.prob` (i.e.
+`ds.prob.cb ≠ nothing`) then the two callbacks are merged into a `CallbackSet`.
 
 If `t` is given, a `tspan` is created with initial time assumed zero. If `tspan`
 is given directly, the keyword `t` is disregarded.
@@ -178,27 +180,17 @@ function ODEProblem(ds::ContinuousDS;
                     mass_matrix = ds.prob.mass_matrix,
                     tspan = (zero(t), t))
 
-    return ODEProblem(ds.prob.f, state, tspan, parameters,
-                      mass_matrix = mass_matrix, callback = callback)
+    if ds.prob.callback == nothing
+        cb = callback
+    else
+        cb = CallbackSet(callback, ds.prob.callback)
+    end
+
+    return ODEProblem{true}(ds.prob.f, state, tspan, parameters,
+                      mass_matrix = mass_matrix, callback = cb)
 end
 
-# Extra callback implementation:
-# """
-#     ODEProblem(ds::ContinuousDS, t, state = ds.prob.u0 [, callback])
-# Create a new `ODEProblem` for the given dynamical system that final time `t` (or `tspan`
-# for tuple `t`), `state` and if given, also merges the `callback` with other existing
-# callbacks currently in `ds.prob`.
-# """
-# function ODEProblem(ds::ContinuousDS, t::Real, state, cb)
-#     if ds.prob.callback == nothing
-#         return ODEProblem{true}(ds.prob.f, state, (zero(t), t),
-#         callback = cb, mass_matrix = ds.prob.mass_matrix)
-#     else
-#         return ODEProblem{true}(ds.prob.f, state, (zero(t), t),
-#         callback = CallbackSet(cb, ds.prob.callback),
-#         mass_matrix = ds.prob.mass_matrix)
-#     end
-# end
+
 
 function OrdinaryDiffEq.ODEIntegrator(ds::ContinuousDS,
     t, state::Vector = ds.prob.u0; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
