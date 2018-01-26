@@ -28,6 +28,9 @@ abstract type ContinuousDynamicalSystem <: DynamicalSystem end
   `J`.
 * `J::Matrix{T}` : Initialized Jacobian matrix.
 
+The equations of motion function is contained in `prob.f`, the state is contained
+in `prob.u0` and the parameters are contained in `prob.p`.
+
 ## Creating a `ContinuousDS`
 The equations of motion function **must be** in the form `eom!(du, u, p, t)`,
 as requested by DifferentialEquations.jl. They are **in-place** with the mutated

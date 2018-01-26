@@ -108,7 +108,7 @@ function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
         return nothing
     end
 
-    return ContinuousDS(u0, s, s, J; parameters = [a, b, c])
+    return ContinuousDS(u0, roessler_eom, roessler_jacob, J; parameters = [a, b, c])
 end
 
 
@@ -206,14 +206,14 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
 
     E = Hhh(u0)
 
-    function ghh(u, resid)
+    function ghh!(resid, u)
         resid[1] = Hhh(u[1],u[2],u[3],u[4]) - E
         resid[2:4] .= 0
     end
 
 
     if conserveE
-        cb = ManifoldProjection(ghh, nlopts=Dict(:ftol=>1e-13), save = false)
+        cb = ManifoldProjection(ghh!, nlopts=Dict(:ftol=>1e-13), save = false)
         prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
     else
         prob = prob = ODEProblem(hheom!, u0, (0., 100.0))
