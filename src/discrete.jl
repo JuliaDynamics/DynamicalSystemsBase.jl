@@ -60,9 +60,9 @@ end
 # constructor without jacobian (uses ForwardDiff)
 function DiscreteDS(u0::AbstractVector, eom; parameters = nothing)
     su0 = SVector{length(u0)}(u0)
-    reducedeom(x) = eom(x, parameters)
-    cfg = ForwardDiff.JacobianConfig(eom, u0)
-    @inline ForwardDiff_jac(x) = ForwardDiff.jacobian(eom, x, cfg)
+    reducedeom = (x) -> eom(x, parameters)
+    cfg = ForwardDiff.JacobianConfig(reducedeom, u0)
+    @inline ForwardDiff_jac(x, p) = ForwardDiff.jacobian(reducedeom, x, cfg)
     return DiscreteDS(su0, eom, ForwardDiff_jac, parameters)
 end
 
@@ -111,8 +111,8 @@ mutable struct DiscreteDS1D{S<:Number, F, D, P} <: DiscreteDynamicalSystem
     p::P
 end
 function DiscreteDS1D(x0, eom; parameters = nothing)
-    reducedeom(x) = eom(x, p)
-    ForwardDiff_der(x) = ForwardDiff.derivative(reducedeom, x)
+    reducedeom = (x) -> eom(x, parameters)
+    ForwardDiff_der(x, p) = ForwardDiff.derivative(reducedeom, x)
     DiscreteDS1D(x0, eom, ForwardDiff_der, parameters)
 end
 DiscreteDS1D(a,b,c;parameters = nothing) = DiscreteDS1D(a,b,c,parameters)
@@ -322,7 +322,7 @@ end
         t = Juno.render(i, Juno.defaultrepr(ds))
         text = summary(ds)
         t[:head] = Juno.render(i, Text(text))
-        t[:children] = t[:children][1:2] # remove showing field dummystate
+        t[:children] = t[:children][1:2] # only display state and eom
         t
     end
 end
