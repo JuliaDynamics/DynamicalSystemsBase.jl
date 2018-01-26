@@ -152,6 +152,8 @@ function Base.convert(::Type{Matrix{S}}, d::AbstractDataset{D,T}) where {S, D, T
     end
     mat
 end
+Base.convert(::Type{Matrix}, d::AbstractDataset{D,T}) where {D, T} =
+convert(Matrix{T}, d)
 
 function Base.reinterpret(::Type{M}, d::AbstractDataset{D,T}) where {M<:Matrix, D, T}
     L = length(d)
@@ -191,11 +193,7 @@ function matstring(d::AbstractDataset{D, T}) where {D, T}
             mat[i, :] .= d[a]
         end
     else
-        if T == BigFloat
-            mat = convert(Matrix{Float64}, d)
-        else
-            mat = convert(Matrix, d)
-        end
+        mat = Matrix(d)
     end
     s = sprint(io -> show(IOContext(io, limit=true), MIME"text/plain"(), mat))
     s = join(split(s, '\n')[2:end], '\n')

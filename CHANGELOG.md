@@ -1,6 +1,9 @@
 # v0.5.0
 
 ## Massively Breaking
+* All system type definitions have changed. See the new documentation strings
+  or the new docs! We are now having the syntax `eom!(du, u, p, t)` and the
+  parameters are passed directly into the function!!!
 
 # Non-breaking
 * Improved the algorithm that converts a Dataset to a Matrix. It is now not only
