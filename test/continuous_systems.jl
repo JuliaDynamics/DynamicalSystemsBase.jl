@@ -2,11 +2,10 @@ if current_module() != DynamicalSystemsBase
   using DynamicalSystemsBase
 end
 using Base.Test, StaticArrays, OrdinaryDiffEq
-# using DiffEqCallbacks
+using DiffEqCallbacks
 
 println("\nTesting continuous systems...")
 
-#= Commenting out until Callbacks are on v3
 @testset "ODEProblem conservation" begin
 
   lo11 = Systems.lorenz() #with Jac
@@ -17,15 +16,13 @@ println("\nTesting continuous systems...")
   t = (0.0, 100.0)
 
   # Event when event_f(t,u) == 0
-   condition(u, t, integrator) = u[1]
+  condition = (u, t, integrator) -> u[1]
 
-  function affect!(integrator)
-    integrator.u[2] = -integrator.u[2]
-  end
+  affect! = (integrator) -> (integrator.u[2] = -integrator.u[2])
 
   cb = ContinuousCallback(condition, affect!)
 
-  prob1 = ODEProblem(lo11.prob.f, rand(3), t, callback = cb)
+  prob1 = ODEProblem(lo11; state = rand(3), tspan = t, callback = cb)
   ds = ContinuousDS(prob1)
   ds2 = ContinuousDS(prob1, lo11.jacob!, lo11.J)
 
@@ -34,7 +31,7 @@ println("\nTesting continuous systems...")
   @test ds2.jacob! == lo11.jacob!
 
 end
-=#
+
 
 @testset "Lorenz System" begin
 

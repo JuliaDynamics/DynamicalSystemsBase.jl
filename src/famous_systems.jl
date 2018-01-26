@@ -4,7 +4,7 @@ famous systems.
 """
 module Systems
 using DynamicalSystemsBase, StaticArrays
-# using DiffEqCallbacks
+using DiffEqCallbacks
 const twopi = 2π
 #######################################################################################
 #                                    Continuous                                       #
@@ -152,7 +152,6 @@ function double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 
 end
 
 
-#= Commenting out Henon Helies until DiffEqCallbacks are updated to v3
 """
     henonhelies(u0=[0, -0.25, 0.42081,0]; conserveE = true)
 ```math
@@ -179,14 +178,14 @@ slower integration as a drawback.
 """
 function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
 
-    function hheom!(t, u::AbstractVector, du::AbstractVector)
+    function hheom!(du, u, p, t)
         du[1] = u[3]
         du[2] = u[4]
         du[3] = -u[1] - 2u[1]*u[2]
         du[4] = -u[2] - (u[1]^2 - u[2]^2)
         return nothing
     end
-    function hhjacob!(t, u::AbstractVector, J::AbstractMatrix)
+    function hhjacob!(J, u, p, t)
         J[3,1] = -1 - 2u[2]; J[3,2] = -2u[1]
         J[4,1] = -2u[1]; J[4,2] =  -1 + 2u[2]
         return nothing
@@ -221,7 +220,7 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
     end
     return ContinuousDS(prob, hhjacob!, J)
 end
-=#
+
 
 """
     lorenz96(N::Int, u0 = rand(M); F=0.01)
