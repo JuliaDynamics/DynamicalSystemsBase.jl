@@ -4,7 +4,6 @@ import OrdinaryDiffEq.ODEIntegrator
 
 export ContinuousDS, variational_integrator, ODEIntegrator, ODEProblem
 export ContinuousDynamicalSystem, DEFAULT_DIFFEQ_KWARGS, get_sol
-export set_parameters!, set_state!
 
 #######################################################################################
 #                                     Constructors                                    #
@@ -24,11 +23,10 @@ abstract type ContinuousDynamicalSystem <: DynamicalSystem end
   the parameters of the equations of motion (`prob.p`) and optionally other
   information like e.g. [callbacks](http://docs.juliadiffeq.org/latest/features/callback_functions.html#Event-Handling-and-Callback-Functions-1).
 * `jacob!` (function) : The function that represents the Jacobian of the system,
-  given in the format: `jacob!(J, u, p, t)` which means it is in-place, following
-  the convention of DifferentialEquations.jl for the equations of motion function.
+  given in the format: `jacob!(J, u, p, t)` which means given a state `u`, a
+  parameter container `p` and a time `t`, it writes the system's Jacobian in-place in
+  `J`.
 * `J::Matrix{T}` : Initialized Jacobian matrix.
-
-See also [`set_state!`](@ref), [`set_parameters!`](@ref)
 
 ## Creating a `ContinuousDS`
 The equations of motion function **must be** in the form `eom!(du, u, p, t)`,
@@ -64,6 +62,8 @@ propagate correctly).
 
 `ContinuousDS` by default are evolved using solver `Vern9()` and tolerances
 `:abstol => 1e-9, :reltol => 1e-9`.
+
+See also [`set_state!`](@ref).
 """
 struct ContinuousDS{T<:Number, ODE<:ODEProblem, JJ} <: ContinuousDynamicalSystem
     prob::ODE
@@ -151,7 +151,7 @@ state(ds::ContinuousDS) = ds.prob.u0
 jacobian(ds::ContinuousDynamicalSystem) =
 (ds.jacob!(ds.J, state(ds), ds.prob.p, ds.prob.tspan[1]); ds.J)
 
-
+set_state!(ds::ContinuousDS, u0) = (ds.state .= u0)
 
 #######################################################################################
 #                         Interface to DifferentialEquations                          #

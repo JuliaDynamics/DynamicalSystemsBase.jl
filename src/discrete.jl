@@ -2,6 +2,7 @@ using StaticArrays, ForwardDiff, Requires
 
 export DiscreteDS, DiscreteDS1D, evolve, trajectory, dimension, state, jacobian
 export BigDiscreteDS, DiscreteDynamicalSystem, evolve!
+export set_state!
 
 #####################################################################################
 #                                   Constructors                                    #
@@ -15,12 +16,12 @@ abstract type DiscreteDynamicalSystem <: DynamicalSystem end
 * `state::SVector{D}` : Current state-vector of the system, stored in the data format
   of `StaticArray`'s `SVector`.
 * `eom` (function) : The function that represents the system's equations of motion
-  (also called vector field). It **must** be in the form `eom(u, p) -> SVector`
-  which means that given a state `u::SVector` and some parameter container
+  (also called vector field). It **must** be in the form `eom(x, p) -> SVector`
+  which means that given a state `x::SVector` and some parameter container
   `p` it returns an `SVector` containing the next state.
 * `jacob` (function) : A function that calculates the system's jacobian matrix.
-  It **must be** in the form `jacob(u, p) -> SMatrix` which means that given a state
-  `u::Svector` and a parameter container `p` it returns an `SMatrix`
+  It **must be** in the form `jacob(x, p) -> SMatrix` which means that given a state
+  `x::Svector` and a parameter container `p` it returns an `SMatrix`
   containing the Jacobian at that state.
 * `p` : Some kind of container of (initial) parameters. Highly suggested to use
   a subtype of `Array` or [`LMArray`](https://github.com/JuliaDiffEq/LabelledArrays.jl).
@@ -49,6 +50,13 @@ mutable struct DiscreteDS{D, T<:Number, F, J, P} <: DiscreteDynamicalSystem
     jacob::J
     p::P
 end
+function DiscreteDS(u0::AbstractVector, eom, jac; parameters = nothing)
+    D = length(u0)
+    su0 = SVector{D}(u0)
+    T = eltype(su0); F = typeof(eom); J = typeof(jac)
+    P = typeof(parameters)
+    return DiscreteDS{D, T, F, J, P}(su0, eom, jac, parameters)
+end
 # constructor without jacobian (uses ForwardDiff)
 function DiscreteDS(u0::AbstractVector, eom; parameters = nothing)
     su0 = SVector{length(u0)}(u0)
@@ -57,13 +65,11 @@ function DiscreteDS(u0::AbstractVector, eom; parameters = nothing)
     @inline ForwardDiff_jac(x) = ForwardDiff.jacobian(eom, x, cfg)
     return DiscreteDS(su0, eom, ForwardDiff_jac, parameters)
 end
-function DiscreteDS(u0::AbstractVector, eom, jac; parameters = nothing)
-    D = length(u0)
-    su0 = SVector{D}(u0)
-    T = eltype(su0); F = typeof(eom); J = typeof(jac)
-    return DiscreteDS{D, T, F, J}(su0, eom, jac, parameters))
-end
 
+"""
+    set_state!(ds::DynamicalSystem, newstate)
+Set the state of the system to `newstate`.
+"""
 set_state!(ds::DiscreteDS, unew) = (ds.state = unew)
 
 """
@@ -180,6 +186,8 @@ end
 
 dimension(ds::BigDiscreteDS) = length(state(ds))
 
+set_state!(ds::BigDiscreteDS, u0) = (ds.state .= u0)
+
 """
     jacobian(ds::DynamicalSystem) -> J
 Return the Jacobian matrix of the equations of motion at the system's current
@@ -206,7 +214,7 @@ function evolve(ds::DiscreteDynamicalSystem, N::Int, st = state(ds))
     return st
 end
 
-function evolve(ds::BigDiscreteDS, N::Int, st = copy(state(ds)))
+function evolve(ds::BigDiscreteDS, N::Int, st = deepcopy(state(ds)))
     for i in 1:N
         ds.dummystate .= st
         ds.eom!(st, ds.dummystate, ds.p)
@@ -256,7 +264,7 @@ function trajectory(ds::DiscreteDS, N::Int)
     ts[1] = st
     f = ds.eom
     for i in 2:N
-        st = f(st)
+        st = f(st, ds.p)
         ts[i] = st
     end
     return Dataset(ts)
@@ -268,7 +276,7 @@ function trajectory(ds::DiscreteDS1D, N::Int)
     ts = Vector{typeof(x)}(N)
     ts[1] = x
     for i in 2:N
-        x = f(x)
+        x = f(x, ds.p)
         ts[i] = x
     end
     return ts
@@ -282,7 +290,7 @@ function trajectory(ds::BigDiscreteDS, N::Int)
     ts[1] = SV(x)
     for i in 2:N
         ds.dummystate .= x
-        f!(x, ds.dummystate)
+        f!(x, ds.dummystate, ds.p)
         ts[i] = SV(x)
     end
     return Dataset(ts)
