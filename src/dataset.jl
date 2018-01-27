@@ -44,7 +44,7 @@ end
 
 """
     columns(dataset) -> x, y, z, ...
-Return the individual columns of the dataset
+Return the individual columns of the dataset.
 """
 function columns end
 @generated function columns(data::AbstractDataset{D, T}) where {D, T}
