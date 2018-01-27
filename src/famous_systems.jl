@@ -415,9 +415,9 @@ Nuclear Physics, Novosibirsk (1969)
 [2] : J. M. Greene, J. Math. Phys. **20**, pp 1183 (1979)
 """
 function standardmap(u0=0.001rand(2); k = 0.971635)
-    @inline @inbounds function standardmap_eom(x, p)
+    @inline @inbounds function standardmap_eom(x, par)
         theta = x[1]; p = x[2]
-        p += p[1]*sin(theta)
+        p += par[1]*sin(theta)
         theta += p
         while theta >= twopi; theta -= twopi; end
         while theta < 0; theta += twopi; end

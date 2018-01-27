@@ -70,7 +70,7 @@ end
     set_state!(ds::DynamicalSystem, newstate)
 Set the state of the system to `newstate`.
 """
-set_state!(ds::DiscreteDS, unew) = (ds.state = unew)
+set_state!(ds::DynamicalSystem, unew) = (ds.state = unew)
 
 """
     dimension(ds::DynamicalSystem) -> D
@@ -234,8 +234,7 @@ Notice that for continuous systems `ds.prob.u0` is a *reference* to a vector.
 Modifying it modifies all other references to this vector, including the state
 of other `ContinuousDS` that share the same reference.
 """
-evolve!(ds::DiscreteDynamicalSystem, N::Int) = (ds.state = evolve(ds, N))
-evolve!(ds::BigDiscreteDS, N::Int) = (ds.state .= evolve(ds, N))
+evolve!(ds::DynamicalSystem, N::Int) = set_state!(ds, evolve(ds, N))
 
 
 """
