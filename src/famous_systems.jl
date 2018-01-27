@@ -264,13 +264,13 @@ function duffing(u0 = [rand(), rand()]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
     J = zeros(eltype(u0), 2, 2)
     J[1,2] = 1
     @inbounds function duffing_eom(dx, x, p, t)
-        ω, d, f, β = p
+        ω, f, d, β = p
         dx[1] = x[2]
         dx[2] = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
         return nothing
     end
     @inbounds function  duffing_jacob(J, u, p, t)
-        ω, d, f, β = p
+        ω, f, d, β = p
         J[2,1] = -β - 3u[1]^2
         J[2,2] = -d
     end
