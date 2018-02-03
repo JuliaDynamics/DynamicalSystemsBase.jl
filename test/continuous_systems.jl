@@ -144,7 +144,7 @@ end
     end
 end
 
-#=
+
 @testset "ManifoldProjection" begin
   ds1 = Systems.henonhelies() #with Jac
   ds2 = ContinuousDS(ds1.prob) #without Jac
@@ -162,4 +162,3 @@ end
   @test std(E1) < 1e-12
   @test std(E2) < 1e-12
 end
-=#

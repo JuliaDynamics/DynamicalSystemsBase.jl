@@ -1,3 +1,7 @@
+# v0.5.2
+## Non-breaking
+* Massive performance boost of up to 8x in system evolution.
+
 # v0.5.0
 
 ## Massively Breaking

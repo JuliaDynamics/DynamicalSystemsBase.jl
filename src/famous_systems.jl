@@ -42,23 +42,21 @@ function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
     J[2,:] .= (ρ - u0[3],  -1,   -u0[1])
     J[3,:] .= (u0[2],   u0[1],   -β)
 
-    @inline @inbounds function lorenz63_eom(du, u, p, t)
-        σ, ρ, β = p
-        du[1] = σ*(u[2]-u[1])
-        du[2] = u[1]*(ρ-u[3]) - u[2]
-        du[3] = u[1]*u[2] - β*u[3]
-        return nothing
-    end
-
-    @inline @inbounds function lorenz63_jacob(J, u, p, t)
-        σ, ρ, β = p
-        J[1,1] = -σ; J[1, 2] = σ
-        J[2,1] = ρ - u[3]; J[2,3] = -u[1]
-        J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -β
-        return nothing
-    end
-
     return ContinuousDS(u0, lorenz63_eom, lorenz63_jacob, J; parameters = [σ, ρ, β])
+end
+@inline @inbounds function lorenz63_eom(du, u, p, t)
+    σ = p[1]; ρ = p[2]; β = p[3]
+    du[1] = σ*(u[2]-u[1])
+    du[2] = u[1]*(ρ-u[3]) - u[2]
+    du[3] = u[1]*u[2] - β*u[3]
+    return nothing
+end
+@inline @inbounds function lorenz63_jacob(J, u, p, t)
+    σ, ρ, β = p
+    J[1,1] = -σ; J[1, 2] = σ
+    J[2,1] = ρ - u[3]; J[2,3] = -u[1]
+    J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -β
+    return nothing
 end
 
 
@@ -94,23 +92,20 @@ function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
     J[2,:] .= [i,  a,       o]
     J[3,:] .= [u0[3], o, u0[1] - c]
 
-    @inline @inbounds function roessler_eom(du, u, p, t)
-        a, b, c = p
-        du[1] = -u[2]-u[3]
-        du[2] = u[1] + a*u[2]
-        du[3] = b + u[3]*(u[1] - c)
-        return nothing
-    end
-
-    @inline @inbounds function roessler_jacob(J, u, p, t)
-        J[2,2] = p[1]
-        J[3,1] = u[3]; J[3,3] = u[1] - p[3]
-        return nothing
-    end
-
     return ContinuousDS(u0, roessler_eom, roessler_jacob, J; parameters = [a, b, c])
 end
-
+@inline @inbounds function roessler_eom(du, u, p, t)
+    a, b, c = p
+    du[1] = -u[2]-u[3]
+    du[2] = u[1] + a*u[2]
+    du[3] = b + u[3]*(u[1] - c)
+    return nothing
+end
+@inline @inbounds function roessler_jacob(J, u, p, t)
+    J[2,2] = p[1]
+    J[3,1] = u[3]; J[3,3] = u[1] - p[3]
+    return nothing
+end
 
 """
     double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
@@ -127,30 +122,28 @@ The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
 function double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
-
-    @inbounds function doublependulum_eom(du, state, p, t)
-        G, L1, L2, M1, M2 = p
-
-        du[1] = state[2]
-        del_ = state[3] - state[1]
-        den1 = (M1 + M2)*L1 - M2*L1*cos(del_)*cos(del_)
-        du[2] = (M2*L1*state[2]*state[2]*sin(del_)*cos(del_) +
-                   M2*G*sin(state[3])*cos(del_) +
-                   M2*L2*state[4]*state[4]*sin(del_) -
-                   (M1 + M2)*G*sin(state[1]))/den1
-
-        du[3] = state[4]
-
-        den2 = (L2/L1)*den1
-        du[4] = (-M2*L2*state[4]*state[4]*sin(del_)*cos(del_) +
-                   (M1 + M2)*G*sin(state[1])*cos(del_) -
-                   (M1 + M2)*L1*state[2]*state[2]*sin(del_) -
-                   (M1 + M2)*G*sin(state[3]))/den2
-        return nothing
-    end
     return ContinuousDS(u0, doublependulum_eom; parameters = [G, L1, L2, M1, M2])
 end
+@inbounds function doublependulum_eom(du, state, p, t)
+    G, L1, L2, M1, M2 = p
 
+    du[1] = state[2]
+    del_ = state[3] - state[1]
+    den1 = (M1 + M2)*L1 - M2*L1*cos(del_)*cos(del_)
+    du[2] = (M2*L1*state[2]*state[2]*sin(del_)*cos(del_) +
+               M2*G*sin(state[3])*cos(del_) +
+               M2*L2*state[4]*state[4]*sin(del_) -
+               (M1 + M2)*G*sin(state[1]))/den1
+
+    du[3] = state[4]
+
+    den2 = (L2/L1)*den1
+    du[4] = (-M2*L2*state[4]*state[4]*sin(del_)*cos(del_) +
+               (M1 + M2)*G*sin(state[1])*cos(del_) -
+               (M1 + M2)*L1*state[2]*state[2]*sin(del_) -
+               (M1 + M2)*G*sin(state[3]))/den2
+    return nothing
+end
 
 """
     henonhelies(u0=[0, -0.25, 0.42081,0]; conserveE = true)
@@ -178,18 +171,6 @@ slower integration as a drawback.
 """
 function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
 
-    function hheom!(du, u, p, t)
-        du[1] = u[3]
-        du[2] = u[4]
-        du[3] = -u[1] - 2u[1]*u[2]
-        du[4] = -u[2] - (u[1]^2 - u[2]^2)
-        return nothing
-    end
-    function hhjacob!(J, u, p, t)
-        J[3,1] = -1 - 2u[2]; J[3,2] = -2u[1]
-        J[4,1] = -2u[1]; J[4,2] =  -1 + 2u[2]
-        return nothing
-    end
 
     i = one(eltype(u0))
     o = zero(eltype(u0))
@@ -206,11 +187,10 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
 
     E = Hhh(u0)
 
-    function ghh!(resid, u)
+    ghh! = (resid, u) -> begin
         resid[1] = Hhh(u[1],u[2],u[3],u[4]) - E
         resid[2:4] .= 0
     end
-
 
     if conserveE
         cb = ManifoldProjection(ghh!, nlopts=Dict(:ftol=>1e-13), save = false)
@@ -220,6 +200,19 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
     end
     return ContinuousDS(prob, hhjacob!, J)
 end
+function hheom!(du, u, p, t)
+    du[1] = u[3]
+    du[2] = u[4]
+    du[3] = -u[1] - 2u[1]*u[2]
+    du[4] = -u[2] - (u[1]^2 - u[2]^2)
+    return nothing
+end
+function hhjacob!(J, u, p, t)
+    J[3,1] = -1 - 2u[2]; J[3,2] = -2u[1]
+    J[4,1] = -2u[1]; J[4,2] =  -1 + 2u[2]
+    return nothing
+end
+
 
 
 """
@@ -263,20 +256,19 @@ function duffing(u0 = [rand(), rand()]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
 
     J = zeros(eltype(u0), 2, 2)
     J[1,2] = 1
-    @inbounds function duffing_eom(dx, x, p, t)
-        ω, f, d, β = p
-        dx[1] = x[2]
-        dx[2] = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
-        return nothing
-    end
-    @inbounds function  duffing_jacob(J, u, p, t)
-        ω, f, d, β = p
-        J[2,1] = -β - 3u[1]^2
-        J[2,2] = -d
-    end
     return ContinuousDS(u0, duffing_eom, duffing_jacob, J; parameters = [ω, f, d, β])
 end
-
+@inbounds function duffing_eom(dx, x, p, t)
+    ω, f, d, β = p
+    dx[1] = x[2]
+    dx[2] = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
+    return nothing
+end
+@inbounds function  duffing_jacob(J, u, p, t)
+    ω, f, d, β = p
+    J[2,1] = -β - 3u[1]^2
+    J[2,2] = -d
+end
 
 """
     shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
@@ -284,27 +276,24 @@ Shinriki oscillator with all other parameters (besides `R1`) set to constants.
 *This is a stiff problem, be careful when choosing solvers and tolerances*.
 """
 function shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
-
-    shinriki_voltage(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
-    function shinriki_eom(du, u, p, t)
-        R1 = p[1]
-
-        du[1] = (1/0.01)*(
-        u[1]*(1/6.9 - 1/R1) - shinriki_voltage(u[1] - u[2]) - (u[1] - u[2])/14.5
-        )
-
-        du[2] = (1/0.1)*(
-        shinriki_voltage(u[1] - u[2]) + (u[1] - u[2])/14.5 - u[3]
-        )
-
-        du[3] = (1/0.32)*(-u[3]*0.1 + u[2])
-        return nothing
-    end
-
     # # Jacobian caller for Shinriki:
     # shinriki_eom(::Type{Val{:jac}}, J, u, p, t) = (shi::Shinriki)(t, u, J)
-
     return ContinuousDS(u0, shinriki_eom; parameters = [R1])
+end
+shinriki_voltage(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
+function shinriki_eom(du, u, p, t)
+    R1 = p[1]
+
+    du[1] = (1/0.01)*(
+    u[1]*(1/6.9 - 1/R1) - shinriki_voltage(u[1] - u[2]) - (u[1] - u[2])/14.5
+    )
+
+    du[2] = (1/0.1)*(
+    shinriki_voltage(u[1] - u[2]) + (u[1] - u[2])/14.5 - u[3]
+    )
+
+    du[3] = (1/0.32)*(-u[3]*0.1 + u[2])
+    return nothing
 end
 
 
@@ -328,16 +317,14 @@ function's documentation string.
 [1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
 """
 function gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
-
-    function gissinger_eom(du, u, p, t)
-        μ, ν, Γ = p
-        du[1] = μ*u[1] - u[2]*u[3]
-        du[2] = -ν*u[2] + u[1]*u[3]
-        du[3] = Γ - u[3] + u[1]*u[2]
-        return nothing
-    end
-
     return ContinuousDS(u0, gissinger_eom; parameters = [μ, ν, Γ])
+end
+function gissinger_eom(du, u, p, t)
+    μ, ν, Γ = p
+    du[1] = μ*u[1] - u[2]*u[3]
+    du[2] = -ν*u[2] + u[1]*u[3]
+    du[3] = Γ - u[3] + u[1]*u[2]
+    return nothing
 end
 
 #######################################################################################
@@ -366,20 +353,20 @@ Default values are the ones used in the original paper.
 [1] : O. E. Rössler, Phys. Lett. **71A**, pp 155 (1979)
 """
 function towel(u0=[0.085, -0.121, 0.075])
-    @inline @inbounds function eom_towel(x, p)
-    x1, x2, x3 = x[1], x[2], x[3]
+        return DiscreteDS(u0, eom_towel, jacob_towel)
+end# should result in lyapunovs: [0.432207,0.378834,-3.74638]
+@inline function eom_towel(x, p)
+    @inbounds x1, x2, x3 = x[1], x[2], x[3]
     SVector( 3.8*x1*(1-x1) - 0.05*(x2+0.35)*(1-2*x3),
     0.1*( (x2+0.35)*(1-2*x3) - 1 )*(1 - 1.9*x1),
     3.78*x3*(1-x3)+0.2*x2 )
-    end
+end
 
-    @inline @inbounds function jacob_towel(x, p)
-        @SMatrix [3.8*(1 - 2x[1]) -0.05*(1-2x[3]) 0.1*(x[2] + 0.35);
-        -0.19((x[2] + 0.35)*(1-2x[3]) - 1)  0.1*(1-2x[3])*(1-1.9x[1])  -0.2*(x[2] + 0.35)*(1-1.9x[1]);
-        0.0  0.2  3.78(1-2x[3]) ]
-    end
-    return DiscreteDS(u0, eom_towel, jacob_towel)
-end# should result in lyapunovs: [0.432207,0.378834,-3.74638]
+@inline function jacob_towel(x, p)
+    @SMatrix [3.8*(1 - 2x[1]) -0.05*(1-2x[3]) 0.1*(x[2] + 0.35);
+    -0.19((x[2] + 0.35)*(1-2x[3]) - 1)  0.1*(1-2x[3])*(1-1.9x[1])  -0.2*(x[2] + 0.35)*(1-1.9x[1]);
+    0.0  0.2  3.78(1-2x[3]) ]
+end
 
 """
 ```julia
@@ -415,21 +402,21 @@ Nuclear Physics, Novosibirsk (1969)
 [2] : J. M. Greene, J. Math. Phys. **20**, pp 1183 (1979)
 """
 function standardmap(u0=0.001rand(2); k = 0.971635)
-    @inline @inbounds function standardmap_eom(x, par)
-        theta = x[1]; p = x[2]
-        p += par[1]*sin(theta)
-        theta += p
-        while theta >= twopi; theta -= twopi; end
-        while theta < 0; theta += twopi; end
-        while p >= twopi; p -= twopi; end
-        while p < 0; p += twopi; end
-        return SVector(theta, p)
-    end
-    @inline @inbounds standardmap_jacob(x, p) =
-    @SMatrix [1 + p[1]*cos(x[1])    1;
-              p[1]*cos(x[1])        1]
     return DiscreteDS(u0, standardmap_eom, standardmap_jacob; parameters = [k])
 end
+@inline @inbounds function standardmap_eom(x, par)
+    theta = x[1]; p = x[2]
+    p += par[1]*sin(theta)
+    theta += p
+    while theta >= twopi; theta -= twopi; end
+    while theta < 0; theta += twopi; end
+    while p >= twopi; p -= twopi; end
+    while p < 0; p += twopi; end
+    return SVector(theta, p)
+end
+@inline @inbounds standardmap_jacob(x, p) =
+@SMatrix [1 + p[1]*cos(x[1])    1;
+          p[1]*cos(x[1])        1]
 
 """
 ```julia
@@ -490,14 +477,14 @@ end
     end
     return nothing
 end
-@inbounds function (f::CoupledStandardMaps{M})(
+function (f::CoupledStandardMaps{M})(
     J::AbstractMatrix, x, p) where {M}
 
     ks, Γ = p
     # x[i] ≡ θᵢ
     # x[[idxsp1[i]]] ≡ θᵢ+₁
     # x[[idxsm1[i]]] ≡ θᵢ-₁
-    for i in f.idxs
+    @inbounds for i in f.idxs
         cosθ = cos(x[i])
         cosθp= cos(x[f.idxsp1[i]] - x[i])
         cosθm= cos(x[f.idxsm1[i]] - x[i])
@@ -536,11 +523,10 @@ function's documentation string.
 [1] : M. Hénon, Commun.Math. Phys. **50**, pp 69 (1976)
 """
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
-    henon_eom(x, p) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-    henon_jacob(x, p) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
     return DiscreteDS(u0, henon_eom, henon_jacob; parameters = [a, b])
 end # should give lyapunov exponents [0.4189, -1.6229]
-
+@inline henon_eom(x, p) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+@inline henon_jacob(x, p) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
 
 """
 ```julia
@@ -564,10 +550,10 @@ function's documentation string.
 [2] : M. J. Feigenbaum, J. Stat. Phys. **19**, pp 25 (1978)
 """
 function logistic(x0=rand(); r = 4.0)
-    @inline logistic_eom(x, p) = p[1]*x*(1-x)
-    @inline logistic_jacob(x, p) = p[1]*(1-2x)
     return DiscreteDS1D(x0, logistic_eom, logistic_jacob; parameters = [r])
 end
+@inline logistic_eom(x, p) = p[1]*x*(1-x)
+@inline logistic_jacob(x, p) = p[1]*(1-2x)
 
 
 
@@ -583,11 +569,10 @@ The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
 function circlemap(x0=rand(); K = 0.99, Ω = 1.0, usemod::Bool = false)
-    @inline circlemap_eom(x, p) = x + twopi*p[1] - p[2]*sin(x)
-    @inline circlemap_jacob(x, p) = -p[2]*cos(x)
     return DiscreteDS1D(x0, circlemap_eom, circlemap_jacob; parameters = [Ω, K])
 end
-
+@inline circlemap_eom(x, p) = x + twopi*p[1] - p[2]*sin(x)
+@inline circlemap_jacob(x, p) = -p[2]*cos(x)
 
 
 end# Systems module
