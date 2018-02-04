@@ -36,17 +36,19 @@ function generate_jacobian(iip::Bool, f::F, x::X) where {F, X}
     iip == true ? generate_jacobian_iip(f, x) : generate_jacobian_oop(f, x)
 end
 
-mutable struct DiscreteProblem{IIP, D, T, S<:AbstractVector, F, P}
+mutable struct DiscreteProblem{IIP, D, T, S<:AbstractVector{T}, F, P}
     s::S # s stands for state
-    eom::F
+    f::F # more similarity with ODEProblem
     p::P
 end
 
-function DiscreteProblem(s::S, eom::F, p::P) where {S, F, P}
+function DiscreteProblem(s, eom::F, p::P) where {F, P}
     D = length(s)
     T = eltype(s)
     iip = isinplace(eom, 3)
-    DiscreteProblem{iip, D, T, S, F, P}(s, eom, p)
+    u = iip ? Vector(s) : SVector{D}(s)
+    S = typeof(u)
+    DiscreteProblem{iip, D, T, S, F, P}(u, eom, p)
 end
 
 isinplace(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = IIP
@@ -55,12 +57,29 @@ eltype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = T
 statetype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = S
 state(dl::DiscreteProblem) = dl.s
 
-struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, J, M} <: AbstractDynamicalSystem
+struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, JA, M} <: AbstractDynamicalSystem
     prob::DiscreteProblem{IIP, D, T, S, F, P}
-    jacobian::J
+    jacobian::JA
     # The following 2 are used only in the case of IIP = true
     dummy::S
     J::M
+    # To solve DynamicalSystemsBase.jl#17
+    isautodiff::Bool
+end
+
+function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA) where {S, F, P, JA}
+    prob = DiscreteProblem(s, eom, p)
+    iip = isinplace(prob)
+    J = begin
+        D = dimension(prob)
+        if iip
+            J = similar(s, (D,D))
+            jacob(J, s, prob.p)
+        else
+            J = jacob(s, prob.p)
+        end
+    end
+    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, false)
 end
 
 function DiscreteDynamicalSystem(s::S, eom::F, p::P) where {S, F, P}
@@ -77,12 +96,16 @@ function DiscreteDynamicalSystem(s::S, eom::F, p::P) where {S, F, P}
         if iip
             J = similar(s, (D,D))
             jacob(J, s, prob.p)
+            J
         else
             J = jacob(s, prob.p)
         end
     end
-    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J)
+
+    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, true)
 end
+
+
 
 for f in (:isinplace, :dimension, :eltype, :statetype, :state)
     @eval begin
@@ -124,17 +147,87 @@ set_state!(ds2, xnew)
 
 
 function jacobian(ds::DDS{true}, u = state(ds))
-
     ds.jacobian(ds.J, u, ds.prob.p)
     return ds.J
 end
 
-function jacobian(ds::DDS{false}, u = state(ds))
-    ds.jacobian(u, ds.prob.p)
-end
+jacobian(ds::DDS{false}, u = state(ds)) = ds.jacobian(u, ds.prob.p)
 
 @assert jacobian(ds) == jacobian(ds2)
 
 
+#= Methods necessary:
+evolve(ds [, N] [, u])
+evolve!([u], ds, N)
+=#
+
+evolve(ds::DDS{true}, u = state(ds)) = (ds.prob.f(ds.dummy, u, ds.prob.p); ds.dummy)
+evolve(ds::DDS{false}, u = state(ds)) = ds.prob.f(u, ds.prob.p)
+
+function evolve(ds::DDS{true}, N::Int, u = state(ds))
+    D = dimension(ds)
+    u0 = SVector{D}(u)
+    ds.dummy .= u
+    for i in 1:N
+        ds.prob.f(ds.prob.s, ds.dummy, ds.prob.p)
+        ds.dummy .= u
+    end
+    uret = SVector{D}(ds.prob.s)
+    ds.prob.s .= u0
+    return Vector(uret)
+end
+
+function evolve(ds::DDS{false}, N::Int, u0 = state(ds))
+    for i in 1:N
+        u0 = ds.prob.f(u0, ds.prob.p)
+    end
+    return u0
+end
+
+evolve!(u, ds::DDS{true}) = (ds.dummy .= u; ds.prob.f(u, ds.dummy, ds.prob.p))
+function evolve!(u, ds::DDS{true}, N::Int)
+    for i in 1:N
+        ds.dummy .= u
+        ds.prob.f(u, ds.dummy, ds.prob.p)
+    end
+    return
+end
+evolve!(ds::DDS{true}) = evolve!(ds.prob.s, ds)
+evolve!(ds::DDS{true}, N::Int) = evolve!(ds.prob.s, ds, N)
+
+evolve!(u, ds::DDS{false}) = (u .= ds.prob.f(u, ds.prob.p))
+evolve!(u, ds::DDS{false}, N::Int) = (u .= evolve(ds, N, u))
+evolve!(ds::DDS{false}, N::Int = 1) = (ds.prob.s = evolve(ds, N))
+
+
+
+function trajectory(ds::DDS{true}, N::Int, u = state(ds))
+    SV = SVector{dimension(ds), eltype(u)}
+    f! = ds.prob.f
+    ts = Vector{SV}(N)
+    ts[1] = SV(u)
+    for i in 2:N
+        ds.dummy .= ts[i-1]
+        f!(ds.prob.s, ds.dummy, ds.prob.p)
+        ts[i] = SV(ds.prob.s)
+    end
+    ds.prob.s .= ts[1]
+    return ts # Dataset(ts)
+end
+
+function trajectory(ds::DDS{false}, N::Int, st = state(ds))
+    SV = SVector{dimension(ds), eltype(st)}
+    ts = Vector{SV}(N)
+    ts[1] = st
+    f = ds.prob.f
+    for i in 2:N
+        st = f(st, ds.prob.p)
+        ts[i] = st
+    end
+    return ts # Dataset(ts)
+end
+
 
 println("success.")
+
+using BenchmarkTools
