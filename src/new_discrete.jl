@@ -14,8 +14,9 @@ end
 # Here f! must be of the form: f!(dx, x), in-place with 2 arguments!
 function generate_jacobian_iip(f!::F, x::X) where {F, X}
     # Test f structure:
-    @assert isinplace(f, 2)
+    @assert isinplace(f!, 2)
     # Setup config
+    dum = deepcopy(x)
     cfg = ForwardDiff.JacobianConfig(f!, dum, x)
     # Notice that this version is inefficient: The result of applying f! is
     # already written in `dum` when the Jacobian is calculated. But this is
@@ -92,3 +93,5 @@ end
 
 ds2 = DiscreteDS([0.0, 0.0], henon_eom_iip, p)
 @assert isinplace(ds2)
+
+println("success.")
