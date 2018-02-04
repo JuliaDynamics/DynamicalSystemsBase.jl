@@ -4,6 +4,7 @@ import OrdinaryDiffEq.ODEIntegrator
 
 export ContinuousDS, variational_integrator, ODEIntegrator, ODEProblem
 export ContinuousDynamicalSystem, DEFAULT_DIFFEQ_KWARGS, get_sol
+export parallel_integrator
 
 #######################################################################################
 #                                     Constructors                                    #
@@ -203,12 +204,12 @@ end
 
 
 """
-    variational_integrator(ds::ContinuousDS, k::Int, t, S::Matrix; diff_eq_kwargs)
+    variational_integrator(ds::ContinuousDS, S::Matrix, [, t]; diff_eq_kwargs)
 Return an `ODEIntegrator` that represents the variational equations
 of motion for the system. `t` makes the `tspan` and if it is `Real`
 instead of `Tuple`, initial time is assumed zero.
 
-This integrator evolves in parallel the system and `k` deviation
+This integrator evolves in parallel the system and `k = size(S)[2] - 1` deviation
 vectors ``w_i`` such that ``\\dot{w}_i = J\\times w_i`` with ``J`` the Jacobian
 at the current state. `S` is the initial "conditions" which contain both the
 system's state as well as the initial diviation vectors:
@@ -218,12 +219,13 @@ deviation vectors.
 The only keyword argument for this funcion is `diff_eq_kwargs` (see
 [`trajectory`](@ref)).
 """
-function variational_integrator(ds::ContinuousDS, k::Int, T,
-    S::AbstractMatrix; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
+function variational_integrator(ds::ContinuousDS, S::Matrix, T = ds.prob.tspan;
+    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
 
     f! = ds.prob.f
     jac! = ds.jacob!
     J = ds.J
+    k = size(S)[2]-1
     # the equations of motion `veom!` evolve the system and
     # k deviation vectors. Notice that the k deviation vectors
     # can also be considered a D×k matrix (which is the case
@@ -247,10 +249,36 @@ function variational_integrator(ds::ContinuousDS, k::Int, T,
     end
 
     solver, newkw = extract_solver(diff_eq_kwargs)
-    vintegrator = init(varprob, solver; newkw..., save_everystep=false)
+    vintegrator = init(varprob, solver; newkw...)
     return vintegrator
 end
 
+"""
+    parallel_integrator(ds::ContinuousDS, S::Matrix, [, t]; diff_eq_kwargs)
+"""
+function parallel_integrator(ds::ContinuousDS, S::Matrix, T = ds.prob.tspan;
+    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
+
+    f! = ds.prob.f
+    k = size(S)[2]
+
+    veom! = (du, u, p, t) -> begin
+        for j in 1:k
+            f!(view(du, :, j), view(u, :, j), p, t)
+        end
+        return
+    end
+
+    if typeof(T) <: Real
+        varprob = ODEProblem{true}(veom!, S, (zero(T), T), ds.prob.p)
+    else
+        varprob = ODEProblem{true}(veom!, S, T, ds.prob.p)
+    end
+
+    solver, newkw = extract_solver(diff_eq_kwargs)
+    pintegrator = init(varprob, solver; newkw...)
+    return pintegrator
+end
 
 
 function check_tolerances(d0, diff_eq_kwargs)
@@ -373,3 +401,39 @@ function Base.show(io::IO, ds::ContinuousDS{S, F, J}) where {S, F, J}
     print(io, text*":\n",
     "state: $(ds.prob.u0)\n", "e.o.m.: $(ds.prob.f)\n")
 end
+
+#=
+using OrdinaryDiffEq, BenchmarkTools
+@inline @inbounds function lorenz63_eom(du, u, p, t)
+    σ = p[1]; ρ = p[2]; β = p[3]
+    du[1] = σ*(u[2]-u[1])
+    du[2] = u[1]*(ρ-u[3]) - u[2]
+    du[3] = u[1]*u[2] - β*u[3]
+    return nothing
+end
+p = [10,28,8/3]
+u0 = [1.0;0.0;0.0]
+tspan = (0.0,100.0)
+prob = ODEProblem(lorenz63_eom,u0,tspan,p)
+@btime solve(prob,Tsit5())
+
+# Function that evolves `k` orbits in parallel:
+S = rand(3, 2)
+function f(prob, S)
+    D = length(prob.u0)
+    f! = prob.f
+    k = size(S)[2]
+
+    veom! = (du, u, p, t) -> begin
+        for j in 1:k
+            f!(view(du, :, j), view(u, :, j), p, t)
+        end
+        return
+    end
+
+    varprob = ODEProblem{true}(veom!, S, prob.tspan, prob.p)
+end
+varprob = f(prob,  S)
+@btime solve(varprob,Tsit5());
+
+=#
