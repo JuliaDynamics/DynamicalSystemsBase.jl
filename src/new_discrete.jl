@@ -2,10 +2,10 @@ using StaticArrays, ForwardDiff
 import DiffEqBase: isinplace
 import Base: eltype
 
-export DiscreteDynamicalSystem, DDS, DiscreteProblem
+export DiscreteDynamicalSystem, DDS, DiscreteProblem, DynamicalSystem
 export state, jacobian, isinplace, dimension, statetype, state
 
-abstract type AbstractDynamicalSystem end
+abstract type DynamicalSystem end
 
 # Here f must be of the form: f(x) -> SVector (ONE ARGUMENT!)
 function generate_jacobian_oop(f::F, x::X) where {F, X}
@@ -37,7 +37,7 @@ function generate_jacobian(iip::Bool, f::F, x::X) where {F, X}
 end
 
 mutable struct DiscreteProblem{IIP, D, T, S<:AbstractVector{T}, F, P}
-    s::S # s stands for state
+    u0::S # initial state
     f::F # more similarity with ODEProblem
     p::P
 end
@@ -51,13 +51,17 @@ function DiscreteProblem(s, eom::F, p::P) where {F, P}
     DiscreteProblem{iip, D, T, S, F, P}(u, eom, p)
 end
 
+"""
+    isinplace(ds::DynamicalSystem) -> Bool
+Return `true` if the system operates in-place.
+"""
 isinplace(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = IIP
 dimension(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = D
 eltype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = T
 statetype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = S
-state(dl::DiscreteProblem) = dl.s
+state(prob::DiscreteProblem) = prob.u0
 
-struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, JA, M} <: AbstractDynamicalSystem
+struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, JA, M} <: DynamicalSystem
     prob::DiscreteProblem{IIP, D, T, S, F, P}
     jacobian::JA
     # The following 2 are used only in the case of IIP = true
@@ -66,6 +70,8 @@ struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, JA, M} <: AbstractDynamicalSy
     # To solve DynamicalSystemsBase.jl#17
     isautodiff::Bool
 end
+# Alias
+DDS = DiscreteDynamicalSystem
 
 function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA) where {S, F, P, JA}
     prob = DiscreteProblem(s, eom, p)
@@ -118,8 +124,6 @@ for f in (:isinplace, :dimension, :eltype, :statetype, :state)
     end
 end
 
-# Alias
-DDS = DiscreteDynamicalSystem
 
 # Test out of place:
 p = [1.4, 0.3]
@@ -140,7 +144,7 @@ ds2 = DDS([0.0, 0.0], henon_eom_iip, p)
 
 # set_state
 function set_state!(ds::DDS, xnew)
-    ds.prob.s = xnew
+    ds.prob.u0 = xnew
 end
 
 xnew = rand(2)
@@ -175,11 +179,11 @@ function evolve(ds::DDS{true}, N::Int, u = state(ds))
     u0 = SVector{D}(u)
     ds.dummy .= u
     for i in 1:N
-        ds.prob.f(ds.prob.s, ds.dummy, ds.prob.p)
+        ds.prob.f(ds.prob.u0, ds.dummy, ds.prob.p)
         ds.dummy .= u
     end
-    uret = SVector{D}(ds.prob.s)
-    ds.prob.s .= u0
+    uret = SVector{D}(ds.prob.u0)
+    ds.prob.u0 .= u0
     return Vector(uret)
 end
 
@@ -198,12 +202,12 @@ function evolve!(u, ds::DDS{true}, N::Int)
     end
     return
 end
-evolve!(ds::DDS{true}) = evolve!(ds.prob.s, ds)
-evolve!(ds::DDS{true}, N::Int) = evolve!(ds.prob.s, ds, N)
+evolve!(ds::DDS{true}) = evolve!(ds.prob.u0, ds)
+evolve!(ds::DDS{true}, N::Int) = evolve!(ds.prob.u0, ds, N)
 
 evolve!(u, ds::DDS{false}) = (u .= ds.prob.f(u, ds.prob.p))
 evolve!(u, ds::DDS{false}, N::Int) = (u .= evolve(ds, N, u))
-evolve!(ds::DDS{false}, N::Int = 1) = (ds.prob.s = evolve(ds, N))
+evolve!(ds::DDS{false}, N::Int = 1) = (ds.prob.u0 = evolve(ds, N))
 
 
 
@@ -214,10 +218,10 @@ function trajectory(ds::DDS{true}, N::Int, u = state(ds))
     ts[1] = SV(u)
     for i in 2:N
         ds.dummy .= ts[i-1]
-        f!(ds.prob.s, ds.dummy, ds.prob.p)
-        ts[i] = SV(ds.prob.s)
+        f!(ds.prob.u0, ds.dummy, ds.prob.p)
+        ts[i] = SV(ds.prob.u0)
     end
-    ds.prob.s .= ts[1]
+    ds.prob.u0 .= ts[1]
     return ts # Dataset(ts)
 end
 
