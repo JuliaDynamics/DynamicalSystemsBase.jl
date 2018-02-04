@@ -2,6 +2,9 @@ using StaticArrays, ForwardDiff
 import DiffEqBase: isinplace
 import Base: eltype
 
+export DiscreteDynamicalSystem, DDS, DiscreteProblem
+export state, jacobian, isinplace, dimension, statetype, state
+
 # Here f must be of the form: f(x) -> SVector (ONE ARGUMENT!)
 function generate_jacobian_oop(f::F, x::X) where {F, X}
     # Test f structure:
@@ -50,7 +53,7 @@ eltype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = T
 statetype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = S
 state(dl::DiscreteProblem) = dl.s
 
-struct DiscreteDS{IIP, D, T, S, F, P, J, M}
+struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, J, M}
     system::DiscreteProblem{IIP, D, T, S, F, P}
     jacobian::J
     # The following 2 are used only in the case of IIP = true
@@ -58,7 +61,7 @@ struct DiscreteDS{IIP, D, T, S, F, P, J, M}
     J::M
 end
 
-function DiscreteDS(s::S, eom::F, p::P) where {S, F, P}
+function DiscreteDynamicalSystem(s::S, eom::F, p::P) where {S, F, P}
     system = DiscreteProblem(s, eom, p)
     iip = isinplace(system)
     if !iip
@@ -76,20 +79,22 @@ function DiscreteDS(s::S, eom::F, p::P) where {S, F, P}
             J = jacob(s, system.p)
         end
     end
-    return DiscreteDS(system, jacob, deepcopy(s), J)
+    return DiscreteDynamicalSystem(system, jacob, deepcopy(s), J)
 end
 
 for f in (:isinplace, :dimension, :eltype, :statetype, :state)
     @eval begin
-        @inline ($f)(ds::DiscreteDS) = $(f)(ds.system)
+        @inline ($f)(ds::DiscreteDynamicalSystem) = $(f)(ds.system)
     end
 end
 
+# Alias
+DDS = DiscreteDynamicalSystem
 
 # Test out of place:
 p = [1.4, 0.3]
 @inline henon_eom(x, p) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-ds = DiscreteDS(SVector(0.0, 0.0), henon_eom, p)
+ds = DDS(SVector(0.0, 0.0), henon_eom, p)
 @assert !isinplace(ds)
 
 # Test inplace:
@@ -98,14 +103,12 @@ function henon_eom_iip(dx, x, p)
     dx[2] = p[2]*x[1]
 end
 
-ds2 = DiscreteDS([0.0, 0.0], henon_eom_iip, p)
+ds2 = DDS([0.0, 0.0], henon_eom_iip, p)
 @assert isinplace(ds2)
-
-println("success.")
 
 
 # set_state
-function set_state!(ds::DiscreteDS, xnew)
+function set_state!(ds::DDS, xnew)
     ds.system.s = xnew
 end
 
@@ -118,14 +121,20 @@ set_state!(ds2, xnew)
 @assert state(ds2) == xnew
 
 
-function jacobian(ds::DiscreteDS{true, D, T, S, F, P, J, M},
+function jacobian(ds::DDS{true, D, T, S, F, P, J, M},
     u = state(ds)) where {D, T, S, F, P, J, M}
 
     ds.jacobian(ds.J, u, ds.system.p)
     return ds.J
 end
 
-function jacobian(ds::DiscreteDS{false, D, T, S, F, P, J, M},
+function jacobian(ds::DDS{false, D, T, S, F, P, J, M},
     u = state(ds)) where {D, T, S, F, P, J, M}
     ds.jacobian(u, ds.system.p)
 end
+
+@assert jacobian(ds) == jacobian(ds2)
+
+
+
+println("success.")
