@@ -4,10 +4,7 @@ import DiffEqBase: isinplace
 # Here f must be of the form: f(x) -> SVector (ONE ARGUMENT!)
 function generate_jacobian_oop(f::F, x::X) where {F, X}
     # Test f structure:
-    L = length(x)
-    y = f(x)
-    @assert typeof(y) <: SVector
-    @assert length(y) == L
+    @assert !isinplace(f, 2)
     # Setup config
     cfg = ForwardDiff.JacobianConfig(f, x)
     FDjac(x, p) = ForwardDiff.jacobian(f, x, cfg)
@@ -15,11 +12,9 @@ function generate_jacobian_oop(f::F, x::X) where {F, X}
 end
 
 # Here f! must be of the form: f!(dx, x), in-place with 2 arguments!
-function generate_jacobian_ip(f!::F, x::X) where {F, X}
+function generate_jacobian_iip(f!::F, x::X) where {F, X}
     # Test f structure:
-    dum = deepcopy(x)
-    f!(dum, x)
-    @assert dum != x
+    @assert isinplace(f, 2)
     # Setup config
     cfg = ForwardDiff.JacobianConfig(f!, dum, x)
     # Notice that this version is inefficient: The result of applying f! is
@@ -31,7 +26,7 @@ end
 
 # At the moment this may be type-unstable, but on Julia 0.7 it will be stable
 function generate_jacobian(iip::Bool, f::F, x::X) where {F, X}
-    iip == true ? generate_jacobian_ip(f, x) : generate_jacobian_oop(f, x)
+    iip == true ? generate_jacobian_iip(f, x) : generate_jacobian_oop(f, x)
 end
 
 mutable struct DiscreteLaw{IIP, D, T, S<:AbstractVector, F, P}
