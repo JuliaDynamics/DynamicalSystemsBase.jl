@@ -1,5 +1,6 @@
 using StaticArrays, ForwardDiff
 import DiffEqBase: isinplace
+import Base: eltype
 
 # Here f must be of the form: f(x) -> SVector (ONE ARGUMENT!)
 function generate_jacobian_oop(f::F, x::X) where {F, X}
@@ -45,6 +46,8 @@ end
 
 isinplace(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = IIP
 dimension(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = D
+eltype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = T
+statetype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = S
 state(dl::DiscreteProblem) = dl.s
 
 struct DiscreteDS{IIP, D, T, S, F, P, J, M}
@@ -76,7 +79,11 @@ function DiscreteDS(s::S, eom::F, p::P) where {S, F, P}
     return DiscreteDS(system, jacob, deepcopy(s), J)
 end
 
-isinplace(ds::DiscreteDS) = isinplace(ds.system)
+for f in (:isinplace, :dimension, :eltype, :statetype, :state)
+    @eval begin
+        @inline ($f)(ds::DiscreteDS) = $(f)(ds.system)
+    end
+end
 
 
 # Test out of place:
@@ -95,3 +102,30 @@ ds2 = DiscreteDS([0.0, 0.0], henon_eom_iip, p)
 @assert isinplace(ds2)
 
 println("success.")
+
+
+# set_state
+function set_state!(ds::DiscreteDS, xnew)
+    ds.system.s = xnew
+end
+
+xnew = rand(2)
+
+set_state!(ds, xnew)
+set_state!(ds2, xnew)
+
+@assert state(ds) == xnew
+@assert state(ds2) == xnew
+
+
+function jacobian(ds::DiscreteDS{true, D, T, S, F, P, J, M},
+    u = state(ds)) where {D, T, S, F, P, J, M}
+
+    ds.jacobian(ds.J, u, ds.system.p)
+    return ds.J
+end
+
+function jacobian(ds::DiscreteDS{false, D, T, S, F, P, J, M},
+    u = state(ds)) where {D, T, S, F, P, J, M}
+    ds.jacobian(u, ds.system.p)
+end
