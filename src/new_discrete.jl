@@ -5,6 +5,8 @@ import Base: eltype
 export DiscreteDynamicalSystem, DDS, DiscreteProblem
 export state, jacobian, isinplace, dimension, statetype, state
 
+abstract type AbstractDynamicalSystem end
+
 # Here f must be of the form: f(x) -> SVector (ONE ARGUMENT!)
 function generate_jacobian_oop(f::F, x::X) where {F, X}
     # Test f structure:
@@ -53,8 +55,8 @@ eltype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = T
 statetype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = S
 state(dl::DiscreteProblem) = dl.s
 
-struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, J, M}
-    system::DiscreteProblem{IIP, D, T, S, F, P}
+struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, J, M} <: AbstractDynamicalSystem
+    prob::DiscreteProblem{IIP, D, T, S, F, P}
     jacobian::J
     # The following 2 are used only in the case of IIP = true
     dummy::S
@@ -62,29 +64,29 @@ struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, J, M}
 end
 
 function DiscreteDynamicalSystem(s::S, eom::F, p::P) where {S, F, P}
-    system = DiscreteProblem(s, eom, p)
-    iip = isinplace(system)
+    prob = DiscreteProblem(s, eom, p)
+    iip = isinplace(prob)
     if !iip
-        reducedeom = (x) -> eom(x, system.p)
+        reducedeom = (x) -> eom(x, prob.p)
     else
-        reducedeom = (dx, x) -> eom(dx, x, system.p)
+        reducedeom = (dx, x) -> eom(dx, x, prob.p)
     end
     jacob = generate_jacobian(iip, reducedeom, s)
     J = begin
-        D = dimension(system)
+        D = dimension(prob)
         if iip
             J = similar(s, (D,D))
-            jacob(J, s, system.p)
+            jacob(J, s, prob.p)
         else
-            J = jacob(s, system.p)
+            J = jacob(s, prob.p)
         end
     end
-    return DiscreteDynamicalSystem(system, jacob, deepcopy(s), J)
+    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J)
 end
 
 for f in (:isinplace, :dimension, :eltype, :statetype, :state)
     @eval begin
-        @inline ($f)(ds::DiscreteDynamicalSystem) = $(f)(ds.system)
+        @inline ($f)(ds::DiscreteDynamicalSystem) = $(f)(ds.prob)
     end
 end
 
@@ -109,7 +111,7 @@ ds2 = DDS([0.0, 0.0], henon_eom_iip, p)
 
 # set_state
 function set_state!(ds::DDS, xnew)
-    ds.system.s = xnew
+    ds.prob.s = xnew
 end
 
 xnew = rand(2)
@@ -121,16 +123,14 @@ set_state!(ds2, xnew)
 @assert state(ds2) == xnew
 
 
-function jacobian(ds::DDS{true, D, T, S, F, P, J, M},
-    u = state(ds)) where {D, T, S, F, P, J, M}
+function jacobian(ds::DDS{true}, u = state(ds))
 
-    ds.jacobian(ds.J, u, ds.system.p)
+    ds.jacobian(ds.J, u, ds.prob.p)
     return ds.J
 end
 
-function jacobian(ds::DDS{false, D, T, S, F, P, J, M},
-    u = state(ds)) where {D, T, S, F, P, J, M}
-    ds.jacobian(u, ds.system.p)
+function jacobian(ds::DDS{false}, u = state(ds))
+    ds.jacobian(u, ds.prob.p)
 end
 
 @assert jacobian(ds) == jacobian(ds2)
