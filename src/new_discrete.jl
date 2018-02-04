@@ -82,6 +82,13 @@ function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA) where {S, F, P, 
     return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, false)
 end
 
+function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA, J) where {S, F, P, JA}
+    prob = DiscreteProblem(s, eom, p)
+    iip = isinplace(prob)
+    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, false)
+end
+
+
 function DiscreteDynamicalSystem(s::S, eom::F, p::P) where {S, F, P}
     prob = DiscreteProblem(s, eom, p)
     iip = isinplace(prob)
@@ -104,8 +111,6 @@ function DiscreteDynamicalSystem(s::S, eom::F, p::P) where {S, F, P}
 
     return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, true)
 end
-
-
 
 for f in (:isinplace, :dimension, :eltype, :statetype, :state)
     @eval begin
@@ -249,6 +254,9 @@ end
 
 ParallelEvolver(ds::DDS, states) = ParallelEvolver(ds.prob, states)
 
+set_state!(pe::ParallelEvolver{true}, x, k) = (pe.states[k] .= x)
+set_state!(pe::ParallelEvolver{false}, x, k) = (pe.states[k] = x)
+
 function evolve!(pe::ParallelEvolver{true, D, T, S, F, P, k},
     N::Int = 1) where {D, T, S<:AbstractVector{T}, F, P, k}
     for j in 1:N
@@ -285,8 +293,48 @@ evolve!(pe, 10); evolve!(pe2, 10)
 @assert pe.states[2] == pe2.states[2]
 @assert pe.states[1] == pe.states[2]
 
-@assert evolve(ds)
+@assert !isinf(evolve(ds, 1000000)[1])
+
+
+
+#### TAngent evolver
+mutable struct TangentEvolver{IIP, D, T, S, F, P, JA, M}
+    ds::DDS{IIP, D, T, S, F, P, JA, M}
+    state::S
+    J::M
+end
+
+TangentEvolver(ds::DDS) = TangentEvolver(ds, deepcopy(state(ds)), deepcopy(ds.J))
+
+te = TangentEvolver(ds)
+te2 = TangentEvolver(ds2)
+
+function evolve!(te::TangentEvolver{true}, N::Int = 1)
+    for j in 1:N
+        te.ds.dummy .= te.state
+        te.ds.prob.f(te.state, te.ds.dummy, te.ds.prob.p)
+        te.ds.jacobian(te.J, te.state, te.ds.prob.p)
+    end
+    return
+end
+
+function evolve!(te::TangentEvolver{false}, N::Int = 1)
+    for j in 1:N
+        te.state = te.ds.prob.f(te.state, te.ds.prob.p)
+        te.J = te.ds.jacobian(te.state, te.ds.prob.p)
+    end
+    return
+end
+
+evolve!(te, 10)
+evolve!(te2, 10)
+
+@assert te.state == te2.state
+@assert te.J == te2.J
+
 
 println("success.")
 
 using BenchmarkTools
+
+@btime evolve!($te, 1000)
