@@ -126,6 +126,7 @@ ds = DDS(SVector(0.0, 0.0), henon_eom, p)
 function henon_eom_iip(dx, x, p)
     dx[1] = 1.0 - p[1]*x[1]^2 + x[2]
     dx[2] = p[2]*x[1]
+    return
 end
 
 ds2 = DDS([0.0, 0.0], henon_eom_iip, p)
@@ -227,6 +228,64 @@ function trajectory(ds::DDS{false}, N::Int, st = state(ds))
     return ts # Dataset(ts)
 end
 
+# Parallel evolver!
+struct ParallelEvolver{IIP, D, T, S<:AbstractVector{T}, F, P, k}
+    prob::DiscreteProblem{IIP, D, T, S, F, P}
+    states::Vector{S}
+    # used only when IIP = true
+    dummy::Vector{T}
+end
+
+function ParallelEvolver(prob::DiscreteProblem{IIP, D, T, S, F, P}, states) where
+    {IIP, D, T, S<:AbstractVector{T}, F, P}
+    k = length(states)
+    if IIP == true
+        s = [Vector(a) for a in states]
+    else
+        s = [SVector{D, T}(a) for a in states]
+    end
+    return ParallelEvolver{IIP, D, T, S, F, P, k}(prob, s, Vector(deepcopy(states[1])))
+end
+
+ParallelEvolver(ds::DDS, states) = ParallelEvolver(ds.prob, states)
+
+function evolve!(pe::ParallelEvolver{true, D, T, S, F, P, k},
+    N::Int = 1) where {D, T, S<:AbstractVector{T}, F, P, k}
+    for j in 1:N
+        for i in 1:k
+            pe.dummy .= pe.states[i]
+            pe.prob.f(pe.states[i], pe.dummy, pe.prob.p)
+        end
+    end
+    return
+end
+
+function evolve!(pe::ParallelEvolver{false, D, T, S, F, P, k},
+    N::Int = 1) where {D, T, S<:AbstractVector{T}, F, P, k}
+    for j in 1:N
+        for i in 1:k
+            pe.states[i] = pe.prob.f(pe.states[i], pe.prob.p)
+        end
+    end
+    return
+end
+
+
+states = [zeros(2), zeros(2)]
+
+ds = DDS(SVector(0.0, 0.0), henon_eom, p)
+ds2 = DDS([0.0, 0.0], henon_eom_iip, p)
+
+pe = ParallelEvolver(ds.prob, states)
+pe2 = ParallelEvolver(ds2.prob, states)
+
+
+evolve!(pe, 10); evolve!(pe2, 10)
+@assert pe.states[1] == pe2.states[1]
+@assert pe.states[2] == pe2.states[2]
+@assert pe.states[1] == pe.states[2]
+
+@assert evolve(ds)
 
 println("success.")
 
