@@ -30,25 +30,25 @@ function generate_jacobian(iip::Bool, f::F, x::X) where {F, X}
     iip == true ? generate_jacobian_iip(f, x) : generate_jacobian_oop(f, x)
 end
 
-mutable struct DiscreteLaw{IIP, D, T, S<:AbstractVector, F, P}
+mutable struct DiscreteProblem{IIP, D, T, S<:AbstractVector, F, P}
     s::S # s stands for state
     eom::F
     p::P
 end
 
-function DiscreteLaw(s::S, eom::F, p::P) where {S, F, P}
+function DiscreteProblem(s::S, eom::F, p::P) where {S, F, P}
     D = length(s)
     T = eltype(s)
     iip = isinplace(eom, 3)
-    DiscreteLaw{iip, D, T, S, F, P}(s, eom, p)
+    DiscreteProblem{iip, D, T, S, F, P}(s, eom, p)
 end
 
-isinplace(::DiscreteLaw{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = IIP
-dimension(::DiscreteLaw{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = D
-state(dl::DiscreteLaw) = dl.s
+isinplace(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = IIP
+dimension(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = D
+state(dl::DiscreteProblem) = dl.s
 
 struct DiscreteDS{IIP, D, T, S, F, P, J, M}
-    system::DiscreteLaw{IIP, D, T, S, F, P}
+    system::DiscreteProblem{IIP, D, T, S, F, P}
     jacobian::J
     # The following 2 are used only in the case of IIP = true
     dummy::S
@@ -56,7 +56,7 @@ struct DiscreteDS{IIP, D, T, S, F, P, J, M}
 end
 
 function DiscreteDS(s::S, eom::F, p::P) where {S, F, P}
-    system = DiscreteLaw(s, eom, p)
+    system = DiscreteProblem(s, eom, p)
     iip = isinplace(system)
     if !iip
         reducedeom = (x) -> eom(x, system.p)
