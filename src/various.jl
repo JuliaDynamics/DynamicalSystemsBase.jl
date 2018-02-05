@@ -128,6 +128,11 @@ end
 #####################################################################################
 to_matrix(a::AbstractVector{<:AbstractVector}) = cat(2, a...)
 to_matrix(a::AbstractMatrix) = a
+function to_Smatrix(m)
+    M = to_matrix(m)
+    a, b = size(M)
+    return SMatrix{a, b}(M)
+end
 to_vectorSvector(a::AbstractVector{<:SVector}) = a
 function to_vectorSvector(a::AbstractMatrix)
     S = eltype(a)
@@ -138,3 +143,12 @@ function to_vectorSvector(a::AbstractMatrix)
     end
     return ws
 end
+
+export orthonormal
+
+"""
+    orthonormal(D, k) -> ws
+Return a matrix `ws` with `k` columns, each being
+an `D`-dimensional orthonormal vector.
+"""
+orthonormal(D, k) = qr(rand(D, D))[1][:, 1:k]

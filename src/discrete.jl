@@ -1,228 +1,269 @@
-using StaticArrays, ForwardDiff, Requires
+using StaticArrays, ForwardDiff
+import DiffEqBase: isinplace
+import Base: eltype
 
-export DiscreteDS, DiscreteDS1D, evolve, trajectory, dimension, state, jacobian
-export BigDiscreteDS, DiscreteDynamicalSystem, evolve!
-export set_state!
+export DiscreteDynamicalSystem, DDS, DiscreteProblem, DynamicalSystem
+export state, jacobian, isinplace, dimension, statetype, state
+export set_state!, set_parameter!, TangentEvolver, ParallelEvolver
+
+abstract type DynamicalSystem end
 
 #####################################################################################
-#                                   Constructors                                    #
+#                              Jacobian Generation                                  #
 #####################################################################################
-"Abstract type representing discrete systems."
-abstract type DiscreteDynamicalSystem <: DynamicalSystem end
-"""
-    DiscreteDS <: DynamicalSystem
-`D`-dimensional discrete dynamical system.
-## Fields
-* `state::SVector{D}` : Current state-vector of the system, stored in the data format
-  of `StaticArray`'s `SVector`.
-* `eom` (function) : The function that represents the system's equations of motion
-  (also called vector field). It **must** be in the form `eom(x, p) -> SVector`
-  which means that given a state `x::SVector` and some parameter container
-  `p` it returns an `SVector` containing the next state.
-* `jacob` (function) : A function that calculates the system's jacobian matrix.
-  It **must be** in the form `jacob(x, p) -> SMatrix` which means that given a state
-  `x::Svector` and a parameter container `p` it returns an `SMatrix`
-  containing the Jacobian at that state.
-* `p` : Some kind of container of (initial) parameters. Highly suggested to use
-  a subtype of `Array` or [`LMArray`](https://github.com/JuliaDiffEq/LabelledArrays.jl).
 
-It is not necessary that `p` is used inside the functions (e.g.
-a model without parameters), however
-the functions **must be** declared in this format.
+# Here f must be of the form: f(x) -> SVector (ONE ARGUMENT!)
+function generate_jacobian_oop(f::F, x::X) where {F, X}
+    # Test f structure:
+    @assert !isinplace(f, 2)
+    # Setup config
+    cfg = ForwardDiff.JacobianConfig(f, x)
+    FDjac(x, p) = ForwardDiff.jacobian(f, x, cfg)
+    return FDjac
+end
 
-Use [`set_state!`](@ref) to change the system's state.
+# Here f! must be of the form: f!(dx, x), in-place with 2 arguments!
+function generate_jacobian_iip(f!::F, x::X) where {F, X}
+    # Test f structure:
+    @assert isinplace(f!, 2)
+    # Setup config
+    dum = deepcopy(x)
+    cfg = ForwardDiff.JacobianConfig(f!, dum, x)
+    # Notice that this version is inefficient: The result of applying f! is
+    # already written in `dum` when the Jacobian is calculated. But this is
+    # also done during normal evolution, making `f!` being applied twice.
+    FDjac!(J, x, p) = ForwardDiff.jacobian!(J, f!, dum, x, cfg)
+    return FDjac!
+end
 
-## Constructor
-```julia
-DiscreteDS(state, eom [, jacob]; parameters = nothing)
-```
-If the `jacob` is not provided by the user, it is created automatically
-using the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
-Notice that if your model has parameters, you *must* give them via the keyword
-argument `parameters`.
+# At the moment this may be type-unstable, but on Julia 0.7 it will be stable
+function generate_jacobian(iip::Bool, f::F, x::X) where {F, X}
+    iip == true ? generate_jacobian_iip(f, x) : generate_jacobian_oop(f, x)
+end
 
-*Automatic differentiation and parameter changes
-works only if the container `p` is changed in-place!*
-"""
-mutable struct DiscreteDS{D, T<:Number, F, J, P} <: DiscreteDynamicalSystem
-    state::SVector{D,T}
-    eom::F
-    jacob::J
+
+#####################################################################################
+#                                  Discrete System                                  #
+#####################################################################################
+mutable struct DiscreteProblem{IIP, D, T, S<:AbstractVector{T}, F, P}
+    u0::S # initial state
+    f::F # more similarity with ODEProblem
     p::P
 end
-function DiscreteDS(u0::AbstractVector, eom, jac; parameters = nothing)
-    D = length(u0)
-    su0 = SVector{D}(u0)
-    T = eltype(su0); F = typeof(eom); J = typeof(jac)
-    P = typeof(parameters)
-    return DiscreteDS{D, T, F, J, P}(su0, eom, jac, parameters)
-end
-# constructor without jacobian (uses ForwardDiff)
-function DiscreteDS(u0::AbstractVector, eom; parameters = nothing)
-    su0 = SVector{length(u0)}(u0)
-    reducedeom = (x) -> eom(x, parameters)
-    cfg = ForwardDiff.JacobianConfig(reducedeom, u0)
-    @inline ForwardDiff_jac(x, p) = ForwardDiff.jacobian(reducedeom, x, cfg)
-    return DiscreteDS(su0, eom, ForwardDiff_jac, parameters)
+
+function DiscreteProblem(s, eom::F, p::P) where {F, P}
+    D = length(s)
+    T = eltype(s)
+    iip = isinplace(eom, 3)
+    iip || (@assert typeof(eom(s, p)) <: SVector)
+    iip && (x = deepcopy(s); eom(x, s, p); @assert x!=s)
+    u = iip ? Vector(s) : SVector{D}(s)
+    S = typeof(u)
+    DiscreteProblem{iip, D, T, S, F, P}(u, eom, p)
 end
 
 """
-    set_state!(ds::DynamicalSystem, newstate)
-Set the state of the system to `newstate`.
+    isinplace(ds::DynamicalSystem) -> Bool
+Return `true` if the system operates in-place.
 """
-set_state!(ds::DynamicalSystem, unew) = (ds.state = unew)
+isinplace(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = IIP
 
 """
     dimension(ds::DynamicalSystem) -> D
 Return the dimension of the system.
 """
-dimension(::DiscreteDS{D, T, F, J, P}) where {D, T, F, J, P} = D
-
-jacobian(ds::DiscreteDS) = ds.jacob(state(ds), ds.p)
-
-"""
-    state(ds::DynamicalSystem) -> u
-Return the state of the system.
-"""
-state(ds::DynamicalSystem) = ds.state
+dimension(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = D
+eltype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = T
+statetype(::DiscreteProblem{IIP, D, T, S, F, P}) where {IIP, D, T, S, F, P} = S
 
 """
-    DiscreteDS1D(state, eom [, deriv]; parameters = nothing) <: DynamicalSystem
-One-dimensional discrete dynamical system.
-## Fields
-* `state::Number` : Current state of the system.
-* `eom` (function) : The function that represents the system's equations of motion.
-  It **must** be in the form `eom(x, p) -> Number`.
-* `deriv` (function) : A function that calculates the system's derivative given
-  a state. It **must** be in the form `deriv(x, p) -> Number`.
-  If it is not provided by the user
-  it is created automatically using the module
-  [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
-* `p` : Some kind of container of (initial) parameters. Highly suggested to use
-  a subtype of `Array` or [`LMArray`](https://github.com/JuliaDiffEq/LabelledArrays.jl).
-
-*Automatic differentiation and parameter changes
-works only if the container `p` is changed in-place!*
+    state(ds::DynamicalSystem) -> state
+Return the current state of the system.
 """
-mutable struct DiscreteDS1D{S<:Number, F, D, P} <: DiscreteDynamicalSystem
-    state::S
-    eom::F
-    deriv::D
-    p::P
-end
-function DiscreteDS1D(x0, eom; parameters = nothing)
-    reducedeom = (x) -> eom(x, parameters)
-    ForwardDiff_der(x, p) = ForwardDiff.derivative(reducedeom, x)
-    DiscreteDS1D(x0, eom, ForwardDiff_der, parameters)
-end
-DiscreteDS1D(a,b,c;parameters = nothing) = DiscreteDS1D(a,b,c,parameters)
+state(prob::DiscreteProblem) = prob.u0
 
-dimension(::DiscreteDS1D) = 1
+"""
+    set_parameter!(ds::DynamicalSystem, index, value)
+    set_parameter!(ds::DynamicalSystem, values)
+Change one or many parameters of the system
+by setting `p[index] = value` in the first case
+and `p .= values` in the second.
+"""
+set_parameter!(prob, index, value) = (prob.p[index] = value)
+set_parameter!(prob, values) = (prob.p .= values)
+
+
 
 
 """
-    BigDiscreteDS <: DynamicalSystem
-`D`-dimensional discrete dynamical system (used for big `D`). The equations
-for this system perform all operations *in-place*.
-## Fields:
-* `state::Vector{T}` : Current state-vector of the system.
-  Do `state(ds) .= u` to change the state.
-* `eom!` (function) : The function that represents the system's equations of motion
-  (also called vector field). The function is of the format: `eom!(xnew, x, p)`
+    DiscreteDynamicalSystem <: DynamicalSystem
+A structure describing a discrete dynamical system. `DDS` is an alias
+to `DiscreteDynamicalSystem`.
+
+`DDS` contains the equations of motion (EOM), the initial state and the
+the Jacobian of the EOM. The are two "versions" for `DDS`, depending on whether the
+EOM are in-place (iip) or out-of-place (oop).
+
+Here is how to define them:
+
+* **iip** : The EOM **must** be in the form `eom(x, p) -> SVector`
+  which means that given a state `x::SVector` and some parameter container
+  `p` it returns an `SVector` containing the next state.
+* **oop** : The EOM **must** be in the form `eom!(xnew, x, p)`
   which means that given a state `Vector` `x` and some parameter container `p`,
   it writes in-place the new state in `xnew`.
-* `jacob!` (function) : A function that calculates the system's jacobian matrix,
-  based on the format: `jacob!(J, x, p)` which means that given a state `Vector`
-  `x` it writes in-place the Jacobian in `J`.
-* `J::Matrix{T}` : Initialized Jacobian matrix (optional).
-* `p` : Some kind of container of (initial) parameters. Highly suggested to use
-  a subtype of `Array` or [`LMArray`](https://github.com/JuliaDiffEq/LabelledArrays.jl).
-* `dummystate::Vector{T}` : Dummy vector, which most of the time fills the
-  role of the previous state in e.g. [`evolve`](@ref).
 
-It is not necessary that `p` is used inside the functions (e.g.
-a model without parameters), however
-the functions **must be** declared in this format.
-
-Use [`set_state!`](@ref) to change the system's state.
+iip is suggested for big systems, whereas oop is suggested for small systems.
 
 ## Constructor
 ```julia
-BigDiscreteDS(state, eom! [, jacob! [, J]]; parameters = nothing)
+DDS(state, eom, p [, jacobian [, J]])
 ```
+where `p` is the parameter container. Pass `nothing` if the dynamical system
+does not have parameters, otherwise we highly suggest to use
+a subtype of `Array` or [`LMArray`](https://github.com/JuliaDiffEq/LabelledArrays.jl).
 
-If the `jacob` is not provided by the user, it is created automatically
-using the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
-Notice that if your model has parameters, you *must* give them via the keyword
-argument `parameters`.
+The `jacobian` is a *function* and (if given) must also be of the same form as the EOM,
+`jacobian(x, p) -> SMatrix` for the oop and `jacobian!(xnew, x, p)` for the iip.
+`J` is an initialized Jacobian matrix (only useful in the iip case).
 
-*Automatic differentiation and parameter changes
-works only if the container `p` is changed in-place!*
+The constructor deduces automatically whether the EOM are iip or oop.
+If `jacobian` is not given, it is constructed automatically using
+the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
+
+## Related Functions
+[`state`](@ref), [`set_state!`](@ref),
+[`set_parameter!`](@ref), [`jacobian`](@ref),
+[`ParallelEvolver`](@ref), [`TangentEvolver`](@ref).
 """
-struct BigDiscreteDS{T<:Number, F, JJ, P} <: DiscreteDynamicalSystem
-    state::Vector{T}
-    eom!::F
-    jacob!::JJ
-    J::Matrix{T}
-    p::P
-    dummystate::Vector{T}
+struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, JA, M} <: DynamicalSystem
+    prob::DiscreteProblem{IIP, D, T, S, F, P}
+    jacobian::JA
+    # The following 2 are used only in the case of IIP = true
+    dummy::S
+    J::M
+    # To solve DynamicalSystemsBase.jl#17
+    isautodiff::Bool
 end
-function BigDiscreteDS(u0, f!, j!,
-    J::Matrix = zeros(eltype(u0), length(u0), length(u0));
-    parameters = nothing)
-    dum = copy(u0)
-    j!(J, u0, parameters)
-    BigDiscreteDS(u0, f!, j!, J, parameters, dum)
-end
+# Alias
+DDS = DiscreteDynamicalSystem
 
-# Constructor without jacobian
-function BigDiscreteDS(u0, f!; parameters = nothing)
-    J = zeros(eltype(u0), length(u0), length(u0))
-    dum = copy(u0)
-
-    reducedeom! = (xnew, x) -> f!(xnew, x, parameters)
-    cfg = ForwardDiff.JacobianConfig(reducedeom!, dum, u0)
-    FD_jacob!(J, x, p) = ForwardDiff.jacobian!(J, reducedeom!, dum, x, cfg)
-    FD_jacob!(J, u0, parameters)
-    return BigDiscreteDS(u0, f!, FD_jacob!, J, parameters, dum)
+# With jacobian and J
+function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA) where {S, F, P, JA}
+    prob = DiscreteProblem(s, eom, p)
+    iip = isinplace(prob)
+    D = dimension(prob)
+    if iip
+        J = similar(s, (D,D))
+        jacob(J, s, prob.p)
+    else
+        J = jacob(s, prob.p)
+    end
+    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, false)
 end
 
-dimension(ds::BigDiscreteDS) = length(state(ds))
+# With jacobian but no J
+function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA, J) where {S, F, P, JA}
+    prob = DiscreteProblem(s, eom, p)
+    iip = isinplace(prob)
+    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, false)
+end
 
-set_state!(ds::BigDiscreteDS, u0) = (ds.state .= u0)
+# Without jacobian
+function DiscreteDynamicalSystem(s::S, eom::F, p::P) where {S, F, P}
+    prob = DiscreteProblem(s, eom, p)
+    iip = isinplace(prob)
+    if !iip
+        reducedeom = (x) -> eom(x, prob.p)
+    else
+        reducedeom = (dx, x) -> eom(dx, x, prob.p)
+    end
+    jacob = generate_jacobian(iip, reducedeom, s)
+    J = begin
+        D = dimension(prob)
+        if iip
+            J = similar(s, (D,D))
+            jacob(J, s, prob.p)
+            J
+        else
+            J = jacob(s, prob.p)
+        end
+    end
+
+    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, true)
+end
+
+# Expand methods
+for f in (:isinplace, :dimension, :eltype, :statetype, :state, :set_parameter)
+    @eval begin
+        @inline ($f)(ds::DiscreteDynamicalSystem) = $(f)(ds.prob)
+    end
+end
+set_parameter!(ds::DDS, args...) = set_parameter!(ds.prob, args...)
+
+# set_state
+"""
+    set_state!(ds::DynamicalSystem, unew)
+Set the state of the system to `unew`.
+"""
+function set_state!(ds::DDS, xnew)
+    ds.prob.u0 = xnew
+end
 
 """
-    jacobian(ds::DynamicalSystem) -> J
-Return the Jacobian matrix of the equations of motion at the system's current
-state and parameters.
+    jacobian(ds::DynamicalSystem, u = state(ds))
+Return the Jacobian of the equations of motion at `u`.
 """
-jacobian(ds::DynamicalSystem) = (ds.jacob!(ds.J, state(ds), ds.p); ds.J)
+function jacobian(ds::DDS{true}, u = state(ds))
+    ds.jacobian(ds.J, u, ds.prob.p)
+    return ds.J
+end
+
+jacobian(ds::DDS{false}, u = state(ds)) = ds.jacobian(u, ds.prob.p)
+
+
+
 
 #####################################################################################
-#                               System Evolution                                    #
+#                                 Time-Evolution                                    #
 #####################################################################################
+#= Methods necessary:
+evolve(ds [, N] [, u])
+evolve!([u], ds, N)
+=#
 """
-    evolve(ds::DynamicalSystem, T [, u0]; diff_eq_kwargs = Dict())
-Evolve the `state(ds)` (or `u0` if given) for total time `T` and return the
-`final_state`. For discrete systems `T` corresponds to steps and
+    evolve(ds::DynamicalSystem, [, T] [, u0]; diff_eq_kwargs = Dict())
+Evolve `u0` (or `state(ds)` if not given) for total time `T` (or `1` if not given)
+and return the `final_state`.
+
+For discrete systems `T` corresponds to steps and
 thus it must be integer. For continuous systems `T` can also be a tuple (for `tspan`).
 
 `evolve` *does not store* any information about intermediate steps.
 Use [`trajectory`](@ref) if you want to produce a trajectory of the system.
+See also `[`trajectory`](@ref)` for using `diff_eq_kwargs`.
 """
-function evolve(ds::DiscreteDynamicalSystem, N::Int, st = state(ds))
+evolve(ds::DDS{true}, u = state(ds)) = (ds.prob.f(ds.dummy, u, ds.prob.p); ds.dummy)
+evolve(ds::DDS{false}, u = state(ds)) = ds.prob.f(u, ds.prob.p)
+
+function evolve(ds::DDS{true}, N::Int, u = state(ds))
+    D = dimension(ds)
+    u0 = SVector{D}(u)
+    ds.dummy .= u
     for i in 1:N
-        st = ds.eom(st, ds.p)
+        ds.prob.f(ds.prob.u0, ds.dummy, ds.prob.p)
+        ds.dummy .= u
     end
-    return st
+    uret = SVector{D}(ds.prob.u0)
+    ds.prob.u0 .= u0
+    return Vector(uret)
 end
 
-function evolve(ds::BigDiscreteDS, N::Int, st = deepcopy(state(ds)))
+function evolve(ds::DDS{false}, N::Int, u0 = state(ds))
     for i in 1:N
-        ds.dummystate .= st
-        ds.eom!(st, ds.dummystate, ds.p)
+        u0 = ds.prob.f(u0, ds.prob.p)
     end
-    return st
+    return u0
 end
 
 """
@@ -230,11 +271,26 @@ end
 Same as [`evolve`](@ref) but updates the system's state (in-place) with the
 final state.
 
-Notice that for continuous systems `ds.prob.u0` is a *reference* to a vector.
-Modifying it modifies all other references to this vector, including the state
-of other `ContinuousDS` that share the same reference.
+```julia
+evolve!(pe::ParallelEvolver, N = 1)
+evolve!(te::TangentEvolver, N = 1)
+```
+Evolve `pe` or `te` for `N` steps in-place.
 """
-evolve!(ds::DynamicalSystem, N::Int) = set_state!(ds, evolve(ds, N))
+evolve!(u, ds::DDS{true}) = (ds.dummy .= u; ds.prob.f(u, ds.dummy, ds.prob.p))
+function evolve!(u, ds::DDS{true}, N::Int)
+    for i in 1:N
+        ds.dummy .= u
+        ds.prob.f(u, ds.dummy, ds.prob.p)
+    end
+    return
+end
+evolve!(ds::DDS{true}) = evolve!(ds.prob.u0, ds)
+evolve!(ds::DDS{true}, N::Int) = evolve!(ds.prob.u0, ds, N)
+
+evolve!(u, ds::DDS{false}) = (u .= ds.prob.f(u, ds.prob.p))
+evolve!(u, ds::DDS{false}, N::Int) = (u .= evolve(ds, N, u))
+evolve!(ds::DDS{false}, N::Int = 1) = (ds.prob.u0 = evolve(ds, N))
 
 
 """
@@ -260,68 +316,190 @@ continuous case, a `W×D` dataset is returned, with `W = length(0:dt:T)` with
   `Dict(:solver => DP5(), :maxiters => 1e9)`. This requires you to have been first
   `using OrdinaryDiffEq` to access the solvers.
 """
-function trajectory(ds::DiscreteDS, N::Int)
-    st = state(ds)
-    ts = Vector{typeof(st)}(N)
-    ts[1] = st
-    f = ds.eom
+function trajectory(ds::DDS{true}, N::Int, u = state(ds))
+    SV = SVector{dimension(ds), eltype(u)}
+    f! = ds.prob.f
+    ts = Vector{SV}(N)
+    ts[1] = SV(u)
     for i in 2:N
-        st = f(st, ds.p)
+        ds.dummy .= ts[i-1]
+        f!(ds.prob.u0, ds.dummy, ds.prob.p)
+        ts[i] = SV(ds.prob.u0)
+    end
+    ds.prob.u0 .= ts[1]
+    return ts # Dataset(ts)
+end
+
+function trajectory(ds::DDS{false}, N::Int, st = state(ds))
+    SV = SVector{dimension(ds), eltype(st)}
+    ts = Vector{SV}(N)
+    ts[1] = st
+    f = ds.prob.f
+    for i in 2:N
+        st = f(st, ds.prob.p)
         ts[i] = st
     end
-    return Dataset(ts)
+    return ts # Dataset(ts)
 end
 
-function trajectory(ds::DiscreteDS1D, N::Int)
-    x = deepcopy(state(ds))
-    f = ds.eom
-    ts = Vector{typeof(x)}(N)
-    ts[1] = x
-    for i in 2:N
-        x = f(x, ds.p)
-        ts[i] = x
+
+#####################################################################################
+#                          Parallel/Tangent Evolvers                                #
+#####################################################################################
+"""
+    ParallelEvolver(ds::DiscreteDynamicalSystem, states) -> `pe`
+Return a structure `pe` that evolves in parallel many `states`
+according to the same equations of motion.
+The `states` must be a `Vector` of `Vector` or `SVector`.
+
+Use [`evolve!`](@ref)`(pe, N)` to evolve all states for `N` steps.
+
+Use [`set_state!`](@ref)`(pe, x, k)` to change the `k`-th state.
+"""
+struct ParallelEvolver{IIP, D, T, S<:AbstractVector{T}, F, P, k}
+    prob::DiscreteProblem{IIP, D, T, S, F, P}
+    states::Vector{S}
+    # used only when IIP = true
+    dummy::Vector{T}
+end
+
+function ParallelEvolver(prob::DiscreteProblem{IIP, D, T, S, F, P}, states) where
+    {IIP, D, T, S<:AbstractVector{T}, F, P}
+    k = length(states)
+    if IIP == true
+        s = [Vector(a) for a in states]
+    else
+        s = [SVector{D, T}(a) for a in states]
     end
-    return ts
+    return ParallelEvolver{IIP, D, T, S, F, P, k}(prob, s, Vector(deepcopy(states[1])))
 end
 
-function trajectory(ds::BigDiscreteDS, N::Int)
-    x = deepcopy(state(ds))
-    SV = SVector{dimension(ds), eltype(x)}
-    f! = ds.eom!
-    ts = Vector{SV}(N)
-    ts[1] = SV(x)
-    for i in 2:N
-        ds.dummystate .= x
-        f!(x, ds.dummystate, ds.p)
-        ts[i] = SV(x)
+ParallelEvolver(ds::DDS, states) = ParallelEvolver(ds.prob, states)
+
+"""
+    set_state!(pe::ParallelEvolver{true}, x, k)
+Set the `k`-th state of the [`ParallelEvolver`](@ref) to `x`.
+"""
+set_state!(pe::ParallelEvolver{true}, x, k) = (pe.states[k] .= x)
+set_state!(pe::ParallelEvolver{false}, x, k) = (pe.states[k] = x)
+
+function evolve!(pe::ParallelEvolver{true, D, T, S, F, P, k},
+    N::Int = 1) where {D, T, S<:AbstractVector{T}, F, P, k}
+    for j in 1:N
+        for i in 1:k
+            pe.dummy .= pe.states[i]
+            pe.prob.f(pe.states[i], pe.dummy, pe.prob.p)
+        end
     end
-    return Dataset(ts)
+    return
+end
+
+function evolve!(pe::ParallelEvolver{false, D, T, S, F, P, k},
+    N::Int = 1) where {D, T, S<:AbstractVector{T}, F, P, k}
+    for j in 1:N
+        for i in 1:k
+            pe.states[i] = pe.prob.f(pe.states[i], pe.prob.p)
+        end
+    end
+    return
 end
 
 
+
+
+#### TAngent evolver
+"""
+    TangentEvolver(ds::DiscreteDynamicalSystem, ws | k) -> `te`
+Return a structure `te` that evolves in parallel the system as well as
+deviation vectors `ws` (vector of vectors or
+matrix), which obey the tangent space dynamics.
+If an integer `k` is given instead of `ws`,
+then `k` random orthonormal deviation vectors are chosen.
+
+Use [`evolve!`](@ref)`(te, N)` to evolve for `N` steps.
+
+## Description
+If ``J`` is the jacobian of the system then the equations for the system
+and a deviation vector ``w`` are:
+```math
+u_{n+1} = f(u_n)
+w_{n+1} = J(u_n) \\cdot w_n
+```
+with ``f`` being the equations of motion function and ``u`` the system state.
+
+The deviation vectors `ws` (field `te.ws`) are stored as a matrix, with each
+column being a deviation vector ``w``.
+
+Use [`set_jacobian!`](@ref) to change ``J`` between steps.
+See [`tangent_integrator`](@ref) for the case of continuous systems.
+"""
+mutable struct TangentEvolver{IIP, D, T, S, F, P, JA, M}
+    ds::DDS{IIP, D, T, S, F, P, JA, M}
+    state::S
+    J::M
+    ws::M
+    dummyws::M
+end
+
+function TangentEvolver(ds::DDS, k::Int)
+    D = dimension(ds)
+    ws = orthonormal(D, k)
+    WS = isinplace(ds) ? ws : to_Smatrix(ws)
+    TangentEvolver(ds, WS)
+end
+
+function TangentEvolver(ds::DDS, ws::AbstractMatrix)
+    WS = isinplace(ds) ? ws : to_Smatrix(ws)
+    TangentEvolver(ds, deepcopy(state(ds)), deepcopy(ds.J), WS, deepcopy(WS))
+end
+
+
+"""
+    set_state!(te::TangentEvolver, x)
+Set the state of the [`TangentEvolver`](@ref) to `x`.
+"""
+set_state!(pe::TangentEvolver{true}, x) = (pe.state .= x)
+set_state!(pe::TangentEvolver{false}, x) = (pe.state = x)
+
+"""
+    set_jacobian!(te::TangentEvolver, J)
+Set the Jacobian matrix of the [`TangentEvolver`](@ref) to `J`.
+"""
+set_jacobian!(pe::TangentEvolver{true}, x) = (pe.J .= x)
+set_jacobian!(pe::TangentEvolver{false}, x) = (pe.J = x)
+
+
+function evolve!(te::TangentEvolver{true}, N::Int = 1)
+    for j in 1:N
+        te.ds.dummy .= te.state
+        te.ds.prob.f(te.state, te.ds.dummy, te.ds.prob.p)
+        te.ds.jacobian(te.J, te.state, te.ds.prob.p)
+        te.dummyws .= te.ws
+        A_mul_B!(te.ws, te.J, te.dummyws)
+    end
+    return
+end
+
+function evolve!(te::TangentEvolver{false}, N::Int = 1)
+    J = te.J
+    for j in 1:N
+        te.state = te.ds.prob.f(te.state, te.ds.prob.p)
+        J = te.ds.jacobian(te.state, te.ds.prob.p)
+        te.ws = J*te.ws
+    end
+    te.J = J
+    return
+end
 
 
 
 #####################################################################################
 #                                Pretty-Printing                                    #
 #####################################################################################
-Base.summary(ds::DiscreteDS) = "$(dimension(ds))-dimensional discrete dynamical system"
-Base.summary(ds::BigDiscreteDS) = "$(dimension(ds))-dimensional Big discrete system"
-Base.summary(ds::DiscreteDS1D) = "1-dimensional discrete dynamical system"
+Base.summary(ds::DDS) = "$(dimension(ds))-dimensional discrete dynamical system"
 
-function Base.show(io::IO, ds::DynamicalSystem)
+function Base.show(io::IO, ds::DDS)
     text = summary(ds)
-    eom = typeof(ds) <: BigDiscreteDS ? ds.eom! : ds.eom
     print(io, text*"\n",
-    " state: $(state(ds))\n", " e.o.m.: $(eom)\n")
-end
-
-@require Juno begin
-    function Juno.render(i::Juno.Inline, ds::DynamicalSystem)
-        t = Juno.render(i, Juno.defaultrepr(ds))
-        text = summary(ds)
-        t[:head] = Juno.render(i, Text(text))
-        t[:children] = t[:children][1:2] # only display state and eom
-        t
-    end
+    " state: $(state(ds))\n", " e.o.m.: $(ds.prob.f)\n")
 end

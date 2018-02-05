@@ -5,6 +5,7 @@ ti = time()
 # Mathematics:
 include("math_tests.jl")
 # System Evolution:
+include("discrete_types.jl")
 include("discrete_systems.jl")
 include("continuous_systems.jl")
 # Dataset:
