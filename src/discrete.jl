@@ -5,6 +5,7 @@ import Base: eltype
 export DiscreteDynamicalSystem, DDS, DiscreteProblem, DynamicalSystem
 export state, jacobian, isinplace, dimension, statetype, state
 export set_state!, set_parameter!, TangentEvolver, ParallelEvolver
+export set_tangent!
 
 abstract type DynamicalSystem end
 
@@ -420,17 +421,17 @@ Use [`evolve!`](@ref)`(te, N)` to evolve for `N` steps.
 
 ## Description
 If ``J`` is the jacobian of the system then the equations for the system
-and a deviation vector ``w`` are:
+and a deviation vector (or matrix) ``w`` are:
 ```math
 u_{n+1} = f(u_n)
 w_{n+1} = J(u_n) \\cdot w_n
 ```
 with ``f`` being the equations of motion function and ``u`` the system state.
 
-The deviation vectors `ws` (field `te.ws`) are stored as a matrix, with each
-column being a deviation vector ``w``.
+The deviation vectors ``w`` (field `te.ws`) are stored as a matrix, with each
+column being a deviation vector.
 
-Use [`set_jacobian!`](@ref) to change ``J`` between steps.
+Use [`set_tangent!`](@ref) to change ``w`` between steps.
 See [`tangent_integrator`](@ref) for the case of continuous systems.
 """
 mutable struct TangentEvolver{IIP, D, T, S, F, P, JA, M}
@@ -462,11 +463,11 @@ set_state!(pe::TangentEvolver{true}, x) = (pe.state .= x)
 set_state!(pe::TangentEvolver{false}, x) = (pe.state = x)
 
 """
-    set_jacobian!(te::TangentEvolver, J)
-Set the Jacobian matrix of the [`TangentEvolver`](@ref) to `J`.
+    set_state!(te::TangentEvolver, ws)
+Set the deviation vectors of the [`TangentEvolver`](@ref) to `ws`.
 """
-set_jacobian!(pe::TangentEvolver{true}, x) = (pe.J .= x)
-set_jacobian!(pe::TangentEvolver{false}, x) = (pe.J = x)
+set_tangent!(te::TangentEvolver{true}, x) = (te.ws .= x)
+set_tangent!(te::TangentEvolver{false}, x) = (te.ws = x)
 
 
 function evolve!(te::TangentEvolver{true}, N::Int = 1)
