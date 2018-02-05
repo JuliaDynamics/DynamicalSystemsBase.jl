@@ -53,8 +53,8 @@ end
 #####################################################################################
 mutable struct DiscreteProblem{IIP, D, T, S, F, P}
     u0::S # initial state
-    f::F # more similarity with ODEProblem
-    p::P
+    f::F  # eom, but same syntax as ODEProblem
+    p::P  # parameter container
 end
 
 function DiscreteProblem(s, eom::F, p::P) where {F, P}

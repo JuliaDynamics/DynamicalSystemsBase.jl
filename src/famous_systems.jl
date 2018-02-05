@@ -457,7 +457,7 @@ function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
         J[i+M, i+M] = 1
     end
 
-    return BigDiscreteDS(u0, csm, csm, J; parameters = [ks, Γ])
+    return DDS(u0, csm, [ks, Γ], csm, J)
 end
 mutable struct CoupledStandardMaps{N}
     idxs::UnitRange{Int}
@@ -586,7 +586,7 @@ The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
 function circlemap(x0=rand(); K = 0.99, Ω = 1.0, usemod::Bool = false)
-    return DiscreteDS1D(x0, circlemap_eom, circlemap_jacob; parameters = [Ω, K])
+    return DDS(x0, circlemap_eom, [Ω, K], circlemap_jacob)
 end
 @inline circlemap_eom(x, p) = x + twopi*p[1] - p[2]*sin(x)
 @inline circlemap_jacob(x, p) = -p[2]*cos(x)
