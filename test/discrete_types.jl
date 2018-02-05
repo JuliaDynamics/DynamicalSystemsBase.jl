@@ -95,8 +95,12 @@ end
     evolve!(te2_nojac, 2)
 
     @test te.state == te2.state
-    @test te.J == te2.J
     @test te.ws == te2.ws
     @test te2_nojac.ws == te_nojac.ws
     @test te.ws ≈ te_nojac.ws
+
+    s = evolve(ds, 2)
+
+    @test state(te) == s
+    @test state(te2_nojac) == s
 end
