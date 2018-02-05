@@ -425,7 +425,7 @@ and a deviation vector (or matrix) ``w`` are:
 ```math
 \\begin{aligned}
 u_{n+1} &= f(u_n) \\\\
-w_{n+1} &= J(u_n) \\cdot w_n
+w_{n+1} &= J(u_n) \\times w_n
 \\end{aligned}
 ```
 with ``f`` being the equations of motion function and ``u`` the system state.
@@ -483,22 +483,26 @@ Set the deviation vectors of the [`TangentEvolver`](@ref) to `ws`.
 set_tangent!(te::TangentEvolver{true}, x) = (te.ws .= x)
 set_tangent!(te::TangentEvolver{false}, x) = (te.ws = x)
 
-
+# iip with user jacobian:
 function evolve!(te::TangentEvolver{true, false}, N::Int = 1)
+    # println("starting evolve {true, false}")
     for j in 1:N
+        # println("N = $j")
+        # println("te.ds.J = $(te.ds.J)")
         te.ds.dummy .= te.state
-        te.ds.prob.f(te.state, te.ds.dummy, te.ds.prob.p)
         te.ds.jacobian(te.ds.J, te.state, te.ds.prob.p)
+        te.ds.prob.f(te.state, te.ds.dummy, te.ds.prob.p)
         te.dummyws .= te.ws
         A_mul_B!(te.ws, te.ds.J, te.dummyws)
+        # println("after jacobian")
+        # println("te.ds.J = $(te.ds.J)")
     end
     return
 end
 
+# iip with autodiff jacobian:
 function evolve!(te::TangentEvolver{true, true}, N::Int = 1)
-    te.ds.dummy .= te.state
     for j in 1:N
-        # The following line also applues ds.prob.f on ds.dummy
         te.ds.jacobian(te.ds.J, te.state, te.ds.prob.p)
         te.dummyws .= te.ws
         A_mul_B!(te.ws, te.ds.J, te.dummyws)
@@ -507,10 +511,11 @@ function evolve!(te::TangentEvolver{true, true}, N::Int = 1)
     return
 end
 
+# oop version:
 function evolve!(te::TangentEvolver{false}, N::Int = 1)
     for j in 1:N
-        te.state = te.ds.prob.f(te.state, te.ds.prob.p)
         J = te.ds.jacobian(te.state, te.ds.prob.p)
+        te.state = te.ds.prob.f(te.state, te.ds.prob.p)
         te.ws = J*te.ws
     end
     return
