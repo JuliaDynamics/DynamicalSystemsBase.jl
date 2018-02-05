@@ -15,7 +15,7 @@ abstract type DynamicalSystem end
 #####################################################################################
 
 # Here f must be of the form: f(x) -> SVector (ONE ARGUMENT!)
-function generate_jacobian_oop(f::F, x::X) where {F, X}
+function generate_jacobian_oop(f::F, x::X) where {F, X<:AbstractVector}
     # Test f structure:
     @assert !isinplace(f, 2)
     # Setup config
@@ -23,6 +23,15 @@ function generate_jacobian_oop(f::F, x::X) where {F, X}
     FDjac(x, p) = ForwardDiff.jacobian(f, x, cfg)
     return FDjac
 end
+
+# Here f must be of the form: f(x) -> Number (ONE ARGUMENT!)
+function generate_jacobian_oop(f::F, x::X) where {F, X<:Number}
+    # Test f structure:
+    @assert !isinplace(f, 2)
+    FDder(x, p) = ForwardDiff.derivative(f, x)
+    return FDder
+end
+
 
 # Here f! must be of the form: f!(dx, x), in-place with 2 arguments!
 function generate_jacobian_iip(f!::F, x::X) where {F, X}
@@ -42,7 +51,7 @@ end
 #####################################################################################
 #                                  Discrete System                                  #
 #####################################################################################
-mutable struct DiscreteProblem{IIP, D, T, S<:AbstractVector{T}, F, P}
+mutable struct DiscreteProblem{IIP, D, T, S, F, P}
     u0::S # initial state
     f::F # more similarity with ODEProblem
     p::P
@@ -52,9 +61,9 @@ function DiscreteProblem(s, eom::F, p::P) where {F, P}
     D = length(s)
     T = eltype(s)
     iip = isinplace(eom, 3)
-    iip || (@assert typeof(eom(s, p)) <: SVector)
+    iip || D != 1 && (@assert typeof(eom(s, p)) <: SVector)
     iip && (x = deepcopy(s); eom(x, s, p); @assert x!=s)
-    u = iip ? Vector(s) : SVector{D}(s)
+    u = iip ? Vector(s) : (D == 1 ? s : SVector{D}(s))
     S = typeof(u)
     DiscreteProblem{iip, D, T, S, F, P}(u, eom, p)
 end
@@ -146,7 +155,7 @@ end
 DDS = DiscreteDynamicalSystem
 
 # With jacobian and J
-function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA) where {S, F, P, JA}
+function DiscreteDynamicalSystem(s, eom::F, p::P, jacob::JA) where {F, P, JA}
     prob = DiscreteProblem(s, eom, p)
     iip = isinplace(prob)
     D = dimension(prob)
@@ -156,11 +165,15 @@ function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA) where {S, F, P, 
     else
         J = jacob(s, prob.p)
     end
-    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, false)
+    IIP = isinplace(prob)
+    T = eltype(prob)
+    M = typeof(J)
+    S = typeof(state(prob))
+    return DiscreteDynamicalSystem{IIP, D, T, S, F, P, JA, M}(prob, jacob, deepcopy(s), J, false)
 end
 
 # With jacobian but no J
-function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA, J) where {S, F, P, JA}
+function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA, J) where {S<:AbstractArray, F, P, JA}
     prob = DiscreteProblem(s, eom, p)
     iip = isinplace(prob)
     return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, false)
@@ -536,7 +549,8 @@ Base.summary(te::TangentEvolver) =
 function Base.show(io::IO, ds::DDS)
     text = summary(ds)
     print(io, text*"\n",
-    " state: $(state(ds))\n", " e.o.m.: $(ds.prob.f)\n")
+    " state: $(state(ds))\n", " e.o.m.: $(ds.prob.f)\n",
+    " jacobian: $(ds.jacobian)\n")
 end
 function Base.show(io::IO, pe::ParallelEvolver)
     text = summary(pe)

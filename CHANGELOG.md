@@ -1,6 +1,14 @@
-# v0.5.2
+# v0.6
+## Massively Breaking
+* All systems now have the parameter container as the third argument, and
+  mandatory as well.
+* Complete overhaul of Discrete Systems: all systems are now one, there is
+  no longer `DiscreteDS` and `BigDiscreteDS`. Everything is `DDS`!
+* `variational_integrator` renamed to `tangent_integrator`.
 ## Non-breaking
 * Massive performance boost of up to 8x in system evolution.
+* `ParallelEvolver` for `DDS`
+* `TangentEvolver` for `DDS`
 
 # v0.5.0
 

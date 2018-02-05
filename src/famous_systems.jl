@@ -523,10 +523,27 @@ function's documentation string.
 [1] : M. Hénon, Commun.Math. Phys. **50**, pp 69 (1976)
 """
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
-    return DiscreteDS(u0, henon_eom, henon_jacob; parameters = [a, b])
+    return DDS(u0, henon_eom, [a, b], henon_jacob)
 end # should give lyapunov exponents [0.4189, -1.6229]
 @inline henon_eom(x, p) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
 @inline henon_jacob(x, p) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
+
+function henon_iip(u0=zeros(2); a = 1.4, b = 0.3)
+    return DDS(u0, henon_eom_iip, [a, b], henon_jacob_iip)
+end
+function henon_eom_iip(dx, x, p)
+    dx[1] = 1.0 - p[1]*x[1]^2 + x[2]
+    dx[2] = p[2]*x[1]
+    return
+end
+function henon_jacob_iip(J, x, p)
+    J[1,1] = -2*p[1]*x[1]
+    J[1,2] = 1.0
+    J[2,1] = p[2]
+    J[2,2] = 0.0
+    return
+end
+
 
 """
 ```julia
@@ -550,7 +567,7 @@ function's documentation string.
 [2] : M. J. Feigenbaum, J. Stat. Phys. **19**, pp 25 (1978)
 """
 function logistic(x0=rand(); r = 4.0)
-    return DiscreteDS1D(x0, logistic_eom, logistic_jacob; parameters = [r])
+    return DDS(x0, logistic_eom, [r], logistic_jacob)
 end
 @inline logistic_eom(x, p) = p[1]*x*(1-x)
 @inline logistic_jacob(x, p) = p[1]*(1-2x)
