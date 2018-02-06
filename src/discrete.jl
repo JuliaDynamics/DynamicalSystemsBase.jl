@@ -633,8 +633,9 @@ evolve(ds::DDS, u) = evolve(ds.prob, u)
 trajectory(ds::DDS, args...) = trajectory(ds.prob, args...)
 
 """
-    jacobian(ds::DynamicalSystem, u = state(ds))
-Return the Jacobian of the equations of motion at `u`.
+    jacobian([J, ] ds::DynamicalSystem, u = state(ds))
+Return the Jacobian of the equations of motion at `u`, optionally writting the
+result in-place in `J`.
 """
 function jacobian(ds::DDS{true}, u = state(ds))
     ds.tangent.jacobian(ds.tangent.J, u, ds.prob.p)
@@ -642,6 +643,10 @@ function jacobian(ds::DDS{true}, u = state(ds))
 end
 
 jacobian(ds::DDS{false}, u = state(ds)) = ds.tangent.jacobian(u, ds.prob.p)
+
+function jacobian(J, ds::DDS, u = state(ds))
+    ds.tangent.jacobian(J, u, ds.prob.p)
+end
 
 #####################################################################################
 #                                Pretty-Printing                                    #

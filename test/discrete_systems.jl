@@ -7,8 +7,8 @@ using Base.Test, StaticArrays
 @testset "Logistic Map" begin
 
   d1 = Systems.logistic(0.1)
-  d2 = DDS(0.1, d1.prob.f, d1.prob.p)
-  d3 = DDS(big(0.1), d1.prob.f, d1.prob.p, d1.jacobian)
+  d2 = DDS(0.1, d1.prob.f; p = d1.prob.p)
+  d3 = DDS(big(0.1), d1.prob.f, d1.tangent.jacobian; p =  d1.prob.p)
 
   @testset "Evolution & trajectory" begin
     st1 = evolve(d1, 1)
@@ -42,8 +42,8 @@ end
     s1 = Systems.henon(0.1ones(N))
   end
 
-  s2 = DDS(0.1ones(N), s1.prob.f, s1.prob.p)
-  s4 = DDS(round.(big.(0.1ones(N)),3), s1.prob.f, s1.prob.p, s1.jacobian)
+  s2 = DDS(0.1ones(N), s1.prob.f; p = s1.prob.p)
+  s4 = DDS(big.(0.1ones(N)), s1.prob.f, s1.tangent.jacobian; p = s1.prob.p)
 
   @testset "Evolution & trajectory" begin
     st1 = evolve(s1, 1)
@@ -82,11 +82,10 @@ end
     st1 = evolve(ds, 100)
 
     @test st1 != u0
-    @test u0 == state(ds)
+    evolve!(ds, 100)
+    @test st1 == state(ds)
 
-    Jbef = deepcopy(ds.J)
-    ds.jacobian(ds.J, evolve(ds, 1), ds.prob.p)
-    @test Jbef != ds.J
-    ds.jacobian(Jbef, evolve(ds, 1), ds.prob.p)
-    @test Jbef == ds.J
+    Jbef = deepcopy(ds.tangent.J)
+    jacobian(Jbef, ds)
+    @test Jbef != ds.tangent.J
 end
