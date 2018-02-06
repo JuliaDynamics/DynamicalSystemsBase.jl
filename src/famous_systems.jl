@@ -523,13 +523,13 @@ function's documentation string.
 [1] : M. Hénon, Commun.Math. Phys. **50**, pp 69 (1976)
 """
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
-    return DDS(u0, henon_eom, [a, b], henon_jacob)
+    return DDS(u0, henon_eom, henon_jacob; p = [a, b])
 end # should give lyapunov exponents [0.4189, -1.6229]
 @inline henon_eom(x, p) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
 @inline henon_jacob(x, p) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
 
 function henon_iip(u0=zeros(2); a = 1.4, b = 0.3)
-    return DDS(u0, henon_eom_iip, [a, b], henon_jacob_iip)
+    return DDS(u0, henon_eom_iip, henon_jacob_iip, p = [a, b])
 end
 function henon_eom_iip(dx, x, p)
     dx[1] = 1.0 - p[1]*x[1]^2 + x[2]

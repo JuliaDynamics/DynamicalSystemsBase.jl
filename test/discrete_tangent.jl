@@ -4,84 +4,102 @@ if current_module() != DynamicalSystemsBase
 end
 using Base.Test, StaticArrays
 
+DS = Systems.henon()
+DS2 = Systems.henon_iip()
 
-ds = Systems.henon()
-ds2 = Systems.henon_iip()
+DS_nojac = DDS(SVector(0.0, 0.0), DS.prob.f; p = DS.prob.p)
+DS2_nojac = DDS([0.0, 0.0], DS2.prob.f; p = DS2.prob.p)
 
-ds_nojac = DDS(SVector(0.0, 0.0), ds.prob.f, ds.prob.p)
-ds2_nojac = DDS([0.0, 0.0], ds2.prob.f, ds2.prob.p)
 
 @testset "TangentEvolver" begin
 
-    traj = trajectory(ds, 10)
-    jacvals = [-2*ds.prob.p[1]*t[1] for t in traj]
+    traj = trajectory(DS, 10)
+    jacvals = [-2*DS.prob.p[1]*t[1] for t in traj]
 
-    ws = orthonormal(2, 2)
+    ws2 = orthonormal(2, 2)
+    ws22 = deepcopy(ws2)
+    ws1 = SMatrix{2,2}(ws2)
+    ws11 = deepcopy(ws1)
 
-    te = TangentEvolver(ds, ws)
-    te2 = TangentEvolver(ds2, deepcopy(ws))
-    te_nojac = TangentEvolver(ds_nojac, deepcopy(ws))
-    te2_nojac = TangentEvolver(ds2_nojac, deepcopy(ws))
+    te = DS.tangent
+    te2 = DS2.tangent
+    te_nojac = DS_nojac.tangent
+    te2_nojac = DS2_nojac.tangent
 
-    evolve!(te)
-    evolve!(te2)
-    evolve!(te_nojac)
-    evolve!(te2_nojac)
-
-    @test te.state == te2.state
-    @test te_nojac.state == te2_nojac.state
-    @test te.state == te2_nojac.state
-
-    @test te.ws == te2.ws
-    @test te_nojac.ws ≈ te.ws
-    @test te2_nojac.ws ≈ te.ws
-    @test te2_nojac.ws == te_nojac.ws
-    @test te.ws ≈ te2_nojac.ws
-
-    evolve!(te, 5)
-    evolve!(te2, 5)
-    evolve!(te_nojac, 5)
-    evolve!(te2_nojac, 5)
-
-    @test te2.ds.J[1] ≈ jacvals[6]
-    @test te2_nojac.ds.J[1] ≈ jacvals[6]
+    ws1 = evolve!(ws1, te)
+    ws = evolve!(ws2, te2)
+    ws11 = evolve!(ws11, te_nojac)
+    ws22 = evolve!(ws22, te2_nojac)
 
     @test te.state == te2.state
     @test te_nojac.state == te2_nojac.state
     @test te.state == te2_nojac.state
 
-    @test te.ws == te2.ws
-    @test te2_nojac.ws == te_nojac.ws
-    @test te.ws ≈ te_nojac.ws
+    @test ws1 == ws2
+    @test ws11 ≈ ws1
+    @test ws22 ≈ ws1
+    @test ws11 == ws22
+    @test ws11 ≈ ws2
 
-    s = evolve(ds, 6)
+    ws1 = evolve!(ws1, te, 2)
+    ws = evolve!(ws2, te2, 2)
+    ws11 = evolve!(ws11, te_nojac, 2)
+    ws22 = evolve!(ws22, te2_nojac, 2)
+
+    @test te.state == te2.state
+    @test te_nojac.state == te2_nojac.state
+    @test te.state == te2_nojac.state
+
+    @test ws1 == ws2
+    @test ws11 ≈ ws1
+    @test ws22 ≈ ws1
+    @test ws11 == ws22
+    @test ws11 ≈ ws2
+
+    s = evolve(DS, 3)
 
     @test state(te) == s
     @test state(te2_nojac) == s
 end
 
+
+DS = Systems.henon()
+DS2 = Systems.henon_iip()
+
+DS_nojac = DDS(SVector(0.0, 0.0), DS.prob.f; p = DS.prob.p)
+DS2_nojac = DDS([0.0, 0.0], DS2.prob.f; p = DS2.prob.p)
+
+
 # Add small lyapunov test here
-D = dimension(ds)
-T = eltype(ds)
+D = dimension(DS)
+T = eltype(DS)
 N = 10000
 @testset "lyapunovs $v" for v in ["oop", "oop nojac", "iip", "iip nojac"]
     λ = @SVector zeros(T, D)
-    Q = @SMatrix eye(T, D)
-    te = if v == "oop"
-        TangentEvolver(ds, D)
+    if v == "oop"
+        te = DS.tangent
+        K = @SMatrix eye(T, D)
     elseif v == "oop nojac"
-        TangentEvolver(ds_nojac, D)
+        te = DS_nojac.tangent
+        K = @SMatrix eye(T, D)
     elseif v == "iip"
-        TangentEvolver(ds2, D)
+        te = DS2.tangent
+        K = eye(T, D)
     elseif v == "iip nojac"
-        TangentEvolver(ds2_nojac, D)
+        te = DS2_nojac.tangent
+        K = eye(T, D)
     end
-    set_tangent!(te, Q)
+
     for i in 1:N
-        set_tangent!(te, Q)
-        evolve!(te)
-        Q, R = qr(te.ws)
+        K = evolve!(K, te)
+        # println("K = $K")
+        Q, R = qr(K)
         λ += log.(abs.(diag(R)))
+        if v[1:3] == "oop"
+            K = Q
+        elseif v[1:3] == "iip"
+            K .= Q
+        end
     end
     λ = λ/N
     @test 0.418 < λ[1] < 0.422

@@ -5,7 +5,7 @@ import Base: eltype
 export DiscreteDynamicalSystem, DDS, DiscreteProblem, DynamicalSystem
 export state, jacobian, isinplace, dimension, statetype, state
 export set_state!, set_parameter!, TangentEvolver, ParallelEvolver
-export set_tangent!
+export reform!
 export evolve, evolve!
 export trajectory
 export DynamicalSystem
@@ -28,7 +28,6 @@ Fundamental structure describing a discrete dynamical law. Functions similarly
 with [`ODEProblem`](@ref).
 
 ## Fields
-
 * `u0` : Initial state.
 * `eom` : Function containing the equations of motion (EOM), ``u_{n+1} = f(u_n;p)``.
 * `p` : parameter container. Don't pass anything if the dynamical system
@@ -39,7 +38,6 @@ with [`ODEProblem`](@ref).
 ## Description
 The are two "versions" for `DiscreteProblem`, depending on whether the
 EOM are in-place (iip) or out-of-place (oop).
-
 Here is how to define them:
 
 * **iip** : The EOM **must** be in the form `eom(x, p) -> SVector`
@@ -108,8 +106,8 @@ set_parameter!(prob, values) = (prob.p .= values)
     set_state!(ds::DynamicalSystem, unew)
 Set the state of the system to `unew`.
 """
-set_state!(ds::DiscreteProblem{true}, xnew) = (prob.u0 .= xnew)
-set_state!(prob::DiscreteProblem{false}) = (prob.u0 = xnew)
+set_state!(prob::DiscreteProblem{true}, xnew) = (prob.u0 .= xnew)
+set_state!(prob::DiscreteProblem{false}, xnew) = (prob.u0 = xnew)
 
 
 #####################################################################################
@@ -120,8 +118,8 @@ evolve(ds [, N] [, u])
 evolve!([u], ds, N)
 =#
 """
-    evolve(ds::DynamicalSystem, [, T] [, u0]; diff_eq_kwargs = Dict())
-Evolve `u0` (or `state(ds)` if not given) for total time `T` (or `1` if not given)
+    evolve(ds::DynamicalSystem, T [, u0]; diff_eq_kwargs = Dict())
+Evolve `u0` (or `state(ds)` if not given) for total time `T`
 and return the `final_state`.
 
 For discrete systems `T` corresponds to steps and
@@ -160,13 +158,12 @@ end
 Same as [`evolve`](@ref) but updates the system's state (in-place) with the
 final state. See [`trajectory`](@ref) for `diff_eq_kwargs`.
 
+*Note* - `evolve!` is non-allocating for discrete systems.
+
 ```julia
 evolve!(pe::ParallelEvolver, N = 1)
-evolve!(te::TangentEvolver, N = 1)
 ```
-Evolve `pe` or `te` for `N` steps in-place.
-
-*Note* - `evolve!` is non-allocating for discrete systems.
+Evolve `pe` for `N` steps in-place.
 """
 evolve!(u, prob::DiscreteProblem{true}) =
 (prob.dummy .= u; prob.f(u, prob.dummy, prob.p))
@@ -177,8 +174,9 @@ function evolve!(u, prob::DiscreteProblem{true}, N::Int)
     end
     return
 end
-evolve!(prob::DiscreteProblem{true}) = prob.f(prob.u0, prob.p)
-evolve!(prob::DiscreteProblem{true}, N::Int) = evolve!(ds.prob.u0, prob, N)
+evolve!(prob::DiscreteProblem{true}) =
+(prob.dummy .= prob.u0; prob.f(prob.u0, prob.dummy, prob.p))
+evolve!(prob::DiscreteProblem{true}, N::Int) = evolve!(prob.u0, prob, N)
 
 evolve!(u, prob::DiscreteProblem{false}) = (u .= prob.f(u, prob.p))
 evolve!(u, prob::DiscreteProblem{false}, N::Int) = (u .= evolve(prob, N, u))
@@ -340,7 +338,7 @@ function generate_jacobian_iip(f!::F, x::X, dum) where {F, X}
     # already written in `dum` when the Jacobian is calculated. But this is
     # also done during normal evolution, making `f!` being applied twice.
     FDjac!(J, x, p) = ForwardDiff.jacobian!(J, f!, dum, x, cfg)
-    return FDjac!, dum
+    return FDjac!
 end
 
 
@@ -367,17 +365,22 @@ w_{n+1} &= J(u_n) \\times w_n
 ```
 with ``f`` being the EOM function and ``u`` the system state.
 
-Use [`evolve!`](@ref)`(tangentevolver, N)` to evolve both ``u`` as well as ``w``
-(in-place) for `N` steps.
+Use
+```julia
+ws = evolve!(ws, tangentevolver, N)
+```
+to evolve both ``u`` as well as ``w`` for `N` steps. It is necessary
+to use the syntax `ws = ...` to be able to evolve any number of ``w``
+(which are columns of the matrix `ws`)
+for both the in-place and out-of-place versions.
+
+For out-of-place version `ws` should be an `SMatrix`, wheras for the out-of-place
+version it only has to be `<:AbstractMatrix.`
 
 ## Constructor
 ```julia
-TangentEvolver(ds::DiscreteProblem, [, jacobian [, J]])
+TangentEvolver(dp::DiscreteProblem [, jacobian [, J]])
 ```
-If an integer `k` is given instead of `ws`,
-then `k` random orthonormal deviation vectors are chosen. Otherwise, `ws` is
-expected as either a matrix or a vector of vectors.
-
 The `jacobian` is a *function* and (if given) must also be of the same form as the EOM,
 `jacobian(x, p) -> SMatrix` for the out-of-place version and
 `jacobian!(xnew, x, p)` for the in-place version.
@@ -386,69 +389,83 @@ The `jacobian` is a *function* and (if given) must also be of the same form as t
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
 
-The deviation vectors ``w`` (field `ws`) are stored as a matrix, with each
-column being a deviation vector. The state is stored in the field `state` and is
+The state ``u`` is stored in the field `state` and is
 independent of the state of the underlying [`DiscreteProblem`](@ref).
 
+## Resetting - **important**
+For the in-place version only, the `TangentEvolver` must be "reset"
+to a given `k::Int` in order to evolve a different amount of `ws`. By default
+the amount of `ws` (which are stored as a matrix) coincide with the dimension of
+the system `D`, but any number `k ≤ D` can be evolved (all in "parallel").
+
+Use `reform!(tangentevolver, k::Int, reset_state = true)` to reform the evolver.
+By default the function also resets the state to the state of the `DiscreteProblem`.
+
 ## Related Functions
-Use [`set_state!`](@ref) or [`set_tangent!`](@ref) to change
-the `state` or `ws` between steps. Use [`orthonormal`](@ref) to obtain
+Use [`set_state!`](@ref) to change state between steps.
+Use [`orthonormal`](@ref) to obtain
 a matrix of orthonormal vectors, which can be used as initial conditions for
 `evolve!(ws, tangentevolver, N)`.
 
 See [`tangent_integrator`](@ref) for the case of continuous systems.
 """
-mutable struct TangentEvolver{IIP, IAD, D, T, S, F, P, JA, M, W}
+mutable struct TangentEvolver{IIP, IAD, D, T, S, F, P, JA, M}
     # Utilizes `dummy` field of `prob`
     prob::DiscreteProblem{IIP, D, T, S, F, P}
     jacobian::JA
     J::M
     state::S
-    ws::W
-    dummyws::W
-    # The Type-parameter IAD simply states whether there
+    dummyws::Matrix{T}
+    # The Type-parameter IAD simply states whether the
     # the Jacobian is autodifferentiated, which only matters
     # in the iip case
 end
 
-# With k::Int: simply pass arguments
-function TangentEvolver(ds::DiscreteProblem, k::Int, args...)
-    D = dimension(ds)
-    ws = orthonormal(D, k)
-    WS = isinplace(ds) ? ws : to_Smatrix(ws)
-    TangentEvolver(ds, WS, args...)
+"""
+    reform!(tangentevolver [, k::Int = D] [, reset_state::Bool = true])
+Reform the `tangentevolver` so that it can evolve `k` deviation vectors. Only
+necessary for in-place form.
+"""
+function reform!(te::TangentEvolver{IIP, IAD, D, T, S, F, P, JA, M},
+    k::Int, reset_state::Bool = true) where {IIP, IAD, D, T, S, F, P, JA, M}
+    if reset_state
+        set_state!(te, te.prob.u0)
+    end
+    te.dummyws = zeros(T, D, k)
+    return
+end
+
+function reform!(te::TangentEvolver{IIP, IAD, D, T, S, F, P, JA, M},
+    reset_state::Bool = true) where {IIP, IAD, D, T, S, F, P, JA, M}
+    reform!(te, D, reset_state)
 end
 
 function get_J(prob::DiscreteProblem, jacob)
     D = dimension(prob)
     if isinplace(prob)
-        J = similar(s, (D,D))
-        jacob(J, s, prob.p)
+        J = similar(prob.u0, (D,D))
+        jacob(J, prob.u0, prob.p)
     else
-        J = jacob(s, prob.p)
+        J = jacob(prob.u0, prob.p)
     end
     return J
 end
 
 # Constructor with Jacobian
 function TangentEvolver(prob::DiscreteProblem{IIP, D, T, S, F, P},
-    ws, jacobian::JA, J = get_J(prob, jacobian)) where
+    jacobian::JA, J = get_J(prob, jacobian)) where
     {IIP, D, T, S, F, P, JA}
     M = typeof(J)
-    IAD = ds.isautodiff
-    WS = isinplace(ds) ? ws : to_Smatrix(ws)
-    W = typeof(WS)
-    return TangentEvolver{IIP, false, D, T, S, F, P, JA, M, W}(prob,
-    jacobian, deepcopy(state(prob)), WS, deepcopy(WS))
+    return TangentEvolver{IIP, false, D, T, S, F, P, JA, M}(prob,
+    jacobian, J, deepcopy(state(prob)), orthonormal(D, D))
 end
 
 # Constructor WITHOUT jacobian
-function TangentEvolver(prob::DiscreteProblem{IIP, D, T, S, F, P}, ws) where
+function TangentEvolver(prob::DiscreteProblem{IIP, D, T, S, F, P}) where
     {IIP, D, T, S, F, P}
     if !IIP
         reducedeom = (x) -> prob.f(x, prob.p)
-        jacob = generate_jacobian_oop(reducedeom, s)
-        dum = deepcopy(s)
+        jacob = generate_jacobian_oop(reducedeom, state(prob))
     else
         reducedeom = (dx, x) -> prob.f(dx, x, prob.p)
         # This line ensures that the Jacobian call also applies f in dummy!
@@ -457,10 +474,8 @@ function TangentEvolver(prob::DiscreteProblem{IIP, D, T, S, F, P}, ws) where
     JA = typeof(jacob)
     J = get_J(prob, jacob)
     M = typeof(J)
-    WS = isinplace(ds) ? ws : to_Smatrix(ws)
-    W = typeof(WS)
-    return TangentEvolver{IIP, true, D, T, S, F, P, JA, M, W}(prob,
-    jacob, deepcopy(state(prob)), WS, deepcopy(WS))
+    return TangentEvolver{IIP, true, D, T, S, F, P, JA, M}(prob,
+    jacob, J, deepcopy(state(prob)), orthonormal(D, D))
 end
 
 state(te::TangentEvolver) = te.state
@@ -469,57 +484,54 @@ state(te::TangentEvolver) = te.state
 """
     set_state!(te::TangentEvolver, x)
 Set the state of the [`TangentEvolver`](@ref) to `x`.
-
-*Note* - `set_state!` is non-allocating.
 """
 set_state!(pe::TangentEvolver{true}, x) = (pe.state .= x)
 set_state!(pe::TangentEvolver{false}, x) = (pe.state = x)
 
 """
-    set_tangent!(te::TangentEvolver, ws)
-Set the deviation vectors of the [`TangentEvolver`](@ref) to `ws`.
-"""
-set_tangent!(te::TangentEvolver{true}, x) = (te.ws .= x)
-set_tangent!(te::TangentEvolver{false}, x) = (te.ws = x)
+    evolve!(ws, te::TangentEvolver, N = 1) -> ws_next
+Evolve the `te.state` and and the tangent vectors `ws` for `N` steps.
 
-# iip with user jacobian:
-function evolve!(te::TangentEvolver{true, false}, N::Int = 1)
-    # println("starting evolve {true, false}")
+The function **must** be called as `ws = evolve!(ws, te, N)` in the out-of-place
+version.
+"""
+function evolve!(ws, te::TangentEvolver{true, false}, N::Int = 1)
+    # iip with user jacobian
     for j in 1:N
         # println("N = $j")
         # println("te.ds.J = $(te.ds.J)")
         te.prob.dummy .= te.state
         te.jacobian(te.J, te.state, te.prob.p)
         te.prob.f(te.state, te.prob.dummy, te.prob.p)
-        te.dummyws .= te.ws
-        A_mul_B!(te.ws, te.J, te.dummyws)
+        te.dummyws .= ws
+        A_mul_B!(ws, te.J, te.dummyws)
         # println("after jacobian")
         # println("te.ds.J = $(te.ds.J)")
     end
-    return
+    return ws
 end
 
 # iip with autodiff jacobian:
-function evolve!(te::TangentEvolver{true, true}, N::Int = 1)
+function evolve!(ws, te::TangentEvolver{true, true}, N::Int = 1)
     for j in 1:N
         # This line applies `f` to `te.prob.dummy`
-        te.jacobian(te.ds.J, te.state, te.prob.p)
-        te.dummyws .= te.ws
-        A_mul_B!(te.ws, te.ds.J, te.dummyws)
+        te.jacobian(te.J, te.state, te.prob.p)
+        te.dummyws .= ws
+        A_mul_B!(ws, te.J, te.dummyws)
         # This utilizes the fact that `te.prob.dummy` is evolved:
         te.state .= te.prob.dummy
     end
-    return
+    return ws
 end
 
 # oop version:
-function evolve!(te::TangentEvolver{false}, N::Int = 1)
+function evolve!(ws, te::TangentEvolver{false}, N::Int = 1)
     for j in 1:N
         J = te.jacobian(te.state, te.prob.p)
         te.state = te.prob.f(te.state, te.prob.p)
-        te.ws = J*te.ws
+        ws = J*ws
     end
-    return
+    return ws
 end
 
 
@@ -531,28 +543,25 @@ end
 A structure describing a discrete dynamical system. `DDS` is an alias
 to `DiscreteDynamicalSystem`.
 
-## Fields
 
-* `prob::DiscreteProblem` : The [`DiscreteProblem`](@ref),
-  which describes the equations of motion (EOM) and the state of the system.
-* `jacobian` : The Jacobian of the equations of motion. This field is a function.
-* `tangent::TangentEvolver` : Dynamics for the tangent space of the system,
-  in the form of a [`TangentEvolver`](@ref).
-
-See [`DiscreteProblem`](@ref) for how to define the equations of motion.
-Use the function [`isinplace`](@ref) to test whether the dynamical system
-operates in-place or out-of-place.
-
-## Constructors
-All constructors ultimate call `DDS(discreteproblem, tangentevolver)`.
+## Constructor
 ```julia
-DDS(discreteproblem, tangentevolver)
-DDS(discreteproblem [, jacobian [, J]])
 DDS(state, eom, [, jacobian [, J]]; p = nothing)
 ```
-where `eom` is the equations of motion function (see [`DiscreteProblem`](@ref)
-for how to define it) and `p` is the parameter container, a *keyword argument*,
-in contrast with the constructor of [`DiscreteProblem`](@ref)!
+where `eom` is the equations of motion function and `p` is the parameter container,
+a *keyword argument*.
+
+The are two "versions" for the `eom`, either in-place (iip) or out-of-place (oop).
+Here is how to define them:
+
+* **iip** : The EOM **must** be in the form `eom(x, p) -> SVector`
+  which means that given a state `x::SVector` and some parameter container
+  `p` it returns an `SVector` containing the next state.
+* **oop** : The EOM **must** be in the form `eom!(xnew, x, p)`
+  which means that given a state `Vector` `x` and some parameter container `p`,
+  it writes in-place the new state in `xnew`.
+
+iip is suggested for big systems, whereas oop is suggested for small systems.
 
 The `jacobian` is a *function* and (if given) must also be of the same form as the EOM,
 `jacobian(x, p) -> SMatrix` for the out-of-place version and
@@ -562,75 +571,47 @@ The `jacobian` is a *function* and (if given) must also be of the same form as t
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
 
+## Fields
+
+* `prob::DiscreteProblem` : The [`DiscreteProblem`](@ref),
+  which describes the equations of motion (EOM) and the state of the system.
+* `tangent::TangentEvolver` : Dynamics for the tangent space of the system,
+  in the form of a [`TangentEvolver`](@ref), which also include the Jacobian
+  function.
+
+The low-level constructor simply does `DDS(prob::DiscreteProblem, te::TangentEvolver)`.
+
 ## Related Functions
 [`state`](@ref), [`set_state!`](@ref),
 [`set_parameter!`](@ref), [`jacobian`](@ref),
 [`ParallelEvolver`](@ref), [`TangentEvolver`](@ref).
 """
-struct DiscreteDynamicalSystem{IIP, D, T, S, F, P, JA, M} <: DynamicalSystem
+struct DiscreteDynamicalSystem{IIP, IAD, D, T, S, F, P, JA, M} <: DynamicalSystem
     prob::DiscreteProblem{IIP, D, T, S, F, P}
-    jacobian::JA
-    # The following 2 are used only in the case of IIP = true
-    dummy::S
-    J::M
-    # To solve DynamicalSystemsBase.jl#17
-    isautodiff::Bool
+    tangent::TangentEvolver{IIP, IAD, D, T, S, F, P, JA, M}
 end
 # Alias
 DDS = DiscreteDynamicalSystem
 
-# With jacobian and J
-function DiscreteDynamicalSystem(s, eom::F, p::P, jacob::JA) where {F, P, JA}
+# With jacobian
+function DiscreteDynamicalSystem(s, eom::F, jacob::JA; p = nothing) where {F, JA}
     prob = DiscreteProblem(s, eom, p)
-    iip = isinplace(prob)
-    J = if isinplace(prob)
-        J = similar(s, (D,D))
-        jacob(J, s, prob.p)
-    else
-        J = jacob(s, prob.p)
-    end
-    IIP = isinplace(prob)
-    T = eltype(prob)
-    M = typeof(J)
-    S = typeof(state(prob))
-    return DiscreteDynamicalSystem{IIP, D, T, S, F, P, JA, M}(prob, jacob, deepcopy(s), J, false)
+    J = get_J(prob, jacob)
+    tangent = TangentEvolver(prob, jacob, J)
+    return DDS(prob, tangent)
 end
 
-# With jacobian but no J
-function DiscreteDynamicalSystem(s::S, eom::F, p::P, jacob::JA, J) where {S<:AbstractArray, F, P, JA}
+function DiscreteDynamicalSystem(s, eom::F, jacob::JA, J; p = nothing) where {F, JA}
     prob = DiscreteProblem(s, eom, p)
-    iip = isinplace(prob)
-    return DiscreteDynamicalSystem(prob, jacob, deepcopy(s), J, false)
+    tangent = TangentEvolver(prob, jacob, J)
+    return DDS(prob, tangent)
 end
 
 # Without jacobian
-function DiscreteDynamicalSystem(s::S, eom::F, p::P) where {S, F, P}
+function DiscreteDynamicalSystem(s::S, eom::F; p = nothing) where {S, F}
     prob = DiscreteProblem(s, eom, p)
-    iip = isinplace(prob)
-    if !iip
-        reducedeom = (x) -> eom(x, prob.p)
-        jacob = generate_jacobian_oop(reducedeom, s)
-        dum = deepcopy(s)
-    else
-        reducedeom = (dx, x) -> eom(dx, x, prob.p)
-        jacob, dum = generate_jacobian_iip(reducedeom, s)
-    end
-    J = begin
-        D = dimension(prob)
-        if iip
-            J = similar(s, (D,D))
-            jacob(J, s, prob.p)
-            J
-        else
-            J = jacob(s, prob.p)
-        end
-    end
-    IIP = isinplace(prob)
-    T = eltype(prob)
-    M = typeof(J)
-    X = typeof(state(prob))
-    JA = typeof(jacob)
-    return DiscreteDynamicalSystem{IIP, D, T, X, F, P, JA, M}(prob, jacob, dum, J, true)
+    tangent = TangentEvolver(prob)
+    return DDS(prob, tangent)
 end
 
 # Expand methods
@@ -641,11 +622,7 @@ for f in (:isinplace, :dimension, :eltype, :statetype, :state, :set_parameter)
 end
 set_parameter!(ds::DDS, args...) = set_parameter!(ds.prob, args...)
 ParallelEvolver(ds::DDS, states) = ParallelEvolver(ds.prob, states)
-
-# set_state
-function set_state!(ds::DDS, xnew)
-    ds.prob.u0 = xnew
-end
+set_state!(ds::DDS, xnew) = set_state!(ds.prob, xnew)
 
 # evolve
 evolve!(ds::DDS, N::Int = 1) = evolve!(ds.prob, N)
@@ -653,42 +630,41 @@ evolve!(u, ds::DDS, N::Int = 1) = evolve!(u, ds.prob, N)
 evolve(ds::DDS, N::Int = 1) = evolve(ds.prob, N)
 evolve(ds::DDS, N::Int, u) = evolve(ds.prob, N, u)
 evolve(ds::DDS, u) = evolve(ds.prob, u)
+trajectory(ds::DDS, args...) = trajectory(ds.prob, args...)
 
 """
     jacobian(ds::DynamicalSystem, u = state(ds))
 Return the Jacobian of the equations of motion at `u`.
 """
 function jacobian(ds::DDS{true}, u = state(ds))
-    ds.jacobian(ds.J, u, ds.prob.p)
-    return ds.J
+    ds.tangent.jacobian(ds.tangent.J, u, ds.prob.p)
+    return ds.tangent.J
 end
 
-jacobian(ds::DDS{false}, u = state(ds)) = ds.jacobian(u, ds.prob.p)
-
-
-
-
-
-
-
-
-
+jacobian(ds::DDS{false}, u = state(ds)) = ds.tangent.jacobian(u, ds.prob.p)
 
 #####################################################################################
 #                                Pretty-Printing                                    #
 #####################################################################################
 Base.summary(ds::DDS) =
 "$(dimension(ds))-dimensional discrete dynamical system"
+Base.summary(ds::DiscreteProblem) =
+"$(dimension(ds))-dimensional discrete dynamical problem"
 Base.summary(pe::ParallelEvolver) =
 "$(dimension(pe.prob))-dimensional discrete parallel evolver"
 Base.summary(te::TangentEvolver) =
-"$(dimension(te.ds))-dimensional discrete tangent evolver"
+"$(dimension(te.prob))-dimensional discrete tangent evolver"
 
 function Base.show(io::IO, ds::DDS)
     text = summary(ds)
     print(io, text*"\n",
     " state: $(state(ds))\n", " e.o.m.: $(ds.prob.f)\n",
-    " jacobian: $(ds.jacobian)\n")
+    " jacobian: $(ds.tangent.jacobian)\n")
+end
+function Base.show(io::IO, ds::DiscreteProblem)
+    text = summary(ds)
+    print(io, text*"\n",
+    " state: $(state(ds))\n", " e.o.m.: $(ds.f)\n")
 end
 function Base.show(io::IO, pe::ParallelEvolver)
     text = summary(pe)
@@ -698,6 +674,6 @@ end
 function Base.show(io::IO, te::TangentEvolver)
     text = summary(te)
     print(io, text*"\n",
-    " state: $(te.state)\n", " e.o.m.: $(te.ds.prob.f)\n",
-    " ws: $(te.ws)\n")
+    " state: $(te.state)\n", " e.o.m.: $(te.prob.f)\n",
+    " jacobian: $(te.jacobian)\n")
 end

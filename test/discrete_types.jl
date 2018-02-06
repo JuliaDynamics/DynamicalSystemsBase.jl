@@ -8,8 +8,8 @@ using Base.Test, StaticArrays
 DS = Systems.henon()
 DS2 = Systems.henon_iip()
 
-DS_nojac = DDS(SVector(0.0, 0.0), DS.prob.f, DS.prob.p)
-DS2_nojac = DDS([0.0, 0.0], DS2.prob.f, DS2.prob.p)
+DS_nojac = DDS(SVector(0.0, 0.0), DS.prob.f; p = DS.prob.p)
+DS2_nojac = DDS([0.0, 0.0], DS2.prob.f; p = DS2.prob.p)
 
 
 @testset "isinplace" begin
@@ -19,10 +19,10 @@ DS2_nojac = DDS([0.0, 0.0], DS2.prob.f, DS2.prob.p)
     @test isinplace(DS2)
     @test isinplace(DS2_nojac)
 
-    @test typeof(DS.J) <: SMatrix
-    @test typeof(DS_nojac.J) <: SMatrix
-    @test typeof(DS2.J) <: Matrix
-    @test typeof(DS2_nojac.J) <: Matrix
+    @test typeof(jacobian(DS)) <: SMatrix
+    @test typeof(jacobian(DS_nojac)) <: SMatrix
+    @test typeof(jacobian(DS2)) <: Matrix
+    @test typeof(jacobian(DS2_nojac)) <: Matrix
 
 end
 
