@@ -1,4 +1,4 @@
-println("\nTesting discrete system types...")
+println("\nTesting tangent space evolution...")
 if current_module() != DynamicalSystemsBase
     using DynamicalSystemsBase
 end

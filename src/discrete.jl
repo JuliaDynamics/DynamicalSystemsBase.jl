@@ -7,6 +7,7 @@ export state, jacobian, isinplace, dimension, statetype, state
 export set_state!, set_parameter!, TangentEvolver, ParallelEvolver
 export set_tangent!
 export evolve, evolve!
+export trajectory
 
 abstract type DynamicalSystem end
 
@@ -201,8 +202,12 @@ function DiscreteDynamicalSystem(s::S, eom::F, p::P) where {S, F, P}
             J = jacob(s, prob.p)
         end
     end
-
-    return DiscreteDynamicalSystem(prob, jacob, dum, J, true)
+    IIP = isinplace(prob)
+    T = eltype(prob)
+    M = typeof(J)
+    X = typeof(state(prob))
+    JA = typeof(jacob)
+    return DiscreteDynamicalSystem{IIP, D, T, X, F, P, JA, M}(prob, jacob, dum, J, true)
 end
 
 # Expand methods
@@ -313,7 +318,7 @@ trajectory(ds::DynamicalSystem, T; kwargs...) -> dataset
 ```
 Return a dataset what will contain the trajectory of the sytem,
 after evolving it for time `T`. See [`Dataset`](@ref) for info on how to
-manipulate this object.
+manipulate this object (for 1D systems a `Vector` is returned).
 
 For the discrete case, `T` is an integer and a `T×D` dataset is returned
 (`D` is the system dimensionality). For the
@@ -354,6 +359,18 @@ function trajectory(ds::DDS{false}, N::Int, st = state(ds))
         ts[i] = st
     end
     return Dataset(ts)
+end
+
+function trajectory(ds::DDS{false, 1}, N::Int, st = state(ds))
+    T = eltype(ds)
+    ts = Vector{T}(N)
+    ts[1] = st
+    f = ds.prob.f
+    for i in 2:N
+        st = f(st, ds.prob.p)
+        ts[i] = st
+    end
+    return ts
 end
 
 

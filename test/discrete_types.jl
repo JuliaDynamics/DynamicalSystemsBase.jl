@@ -52,7 +52,7 @@ end
     states = [zeros(2), zeros(2)]
 
     pe = ParallelEvolver(ds, deepcopy(states))
-    pe2 = ParallelEvolver(ds2, states))
+    pe2 = ParallelEvolver(ds2, states)
 
     evolve!(pe, 10); evolve!(pe2, 10)
     @test pe.states[1] == pe2.states[1]

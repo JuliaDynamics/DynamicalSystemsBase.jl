@@ -72,7 +72,9 @@ end
 """
     qr_sq(m::AbstractMatrix) -> (Q, R)
 Perform QR decomposition on a square matrix `m`.
-This method is faster than `Base.qr` for small matrices.
+
+This method is faster than `Base.qr` for small matrices. For sizes of larger
+than (20, 20) `Base.qr` is faster.
 """
 function qr_sq(m::AbstractMatrix)    # faster version for square matrices
 	s = size(m, 1)

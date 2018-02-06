@@ -353,7 +353,7 @@ Default values are the ones used in the original paper.
 [1] : O. E. Rössler, Phys. Lett. **71A**, pp 155 (1979)
 """
 function towel(u0=[0.085, -0.121, 0.075])
-        return DiscreteDS(u0, eom_towel, jacob_towel)
+        return DDS(u0, eom_towel, nothing, jacob_towel)
 end# should result in lyapunovs: [0.432207,0.378834,-3.74638]
 @inline function eom_towel(x, p)
     @inbounds x1, x2, x3 = x[1], x[2], x[3]
@@ -402,7 +402,7 @@ Nuclear Physics, Novosibirsk (1969)
 [2] : J. M. Greene, J. Math. Phys. **20**, pp 1183 (1979)
 """
 function standardmap(u0=0.001rand(2); k = 0.971635)
-    return DiscreteDS(u0, standardmap_eom, standardmap_jacob; parameters = [k])
+    return DDS(u0, standardmap_eom, [k], standardmap_jacob)
 end
 @inline @inbounds function standardmap_eom(x, par)
     theta = x[1]; p = x[2]

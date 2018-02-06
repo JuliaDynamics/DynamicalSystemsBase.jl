@@ -11,7 +11,7 @@
 #
 # Notice that the same changes happened for
 # discrete systems as well. For example, the
-# e.o.m. for `DiscreteDS` are now expected
+# e.o.m. for `DDS` are now expected
 # in the form `eom(x, p)`.
 #
 # Please see the documentation strings of the system types you are using!

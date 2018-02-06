@@ -3,7 +3,7 @@
 * All systems now have the parameter container as the third argument, and
   mandatory as well.
 * Complete overhaul of Discrete Systems: all systems are now one, there is
-  no longer `DiscreteDS` and `BigDiscreteDS`. Everything is `DDS`!
+  no longer `DDS` and `BigDDS`. Everything is `DDS`!
 * `variational_integrator` renamed to `tangent_integrator`.
 ## Non-breaking
 * Massive performance boost of up to 8x in system evolution.
