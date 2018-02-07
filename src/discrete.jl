@@ -26,6 +26,9 @@ end
     DiscreteProblem(u0, eom, p = nothing) <: DynamicalSystem
 Fundamental structure describing a discrete dynamical law.
 
+Use `evolve(dprob, N)` and `evolve!(dprob, N)` to evolve for `N` steps either
+out of place (returning the final state) or in-place (updating the system's state).
+
 ## Fields
 * `u0` : Initial state.
 * `eom` : Function containing the equations of motion (EOM), ``u_{n+1} = f(u_n;p)``.
