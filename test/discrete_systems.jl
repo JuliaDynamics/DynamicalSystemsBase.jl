@@ -7,8 +7,8 @@ using Base.Test, StaticArrays
 @testset "Logistic Map" begin
 
   d1 = Systems.logistic(0.1)
-  d2 = DiscreteDS1D(0.1, d1.eom; parameters = d1.p)
-  d3 = DiscreteDS1D(big(0.1), d1.eom, d1.deriv;parameters = d1.p)
+  d2 = DDS(0.1, d1.prob.f; p = d1.prob.p)
+  d3 = DDS(big(0.1), d1.prob.f, d1.tangent.jacobian; p =  d1.prob.p)
 
   @testset "Evolution & trajectory" begin
     st1 = evolve(d1, 1)
@@ -23,16 +23,16 @@ using Base.Test, StaticArrays
     @test eltype(ts3) == BigFloat
   end
   @testset "Derivatives" begin
-    f1 = d1.deriv(d1.state, d1.p)
-    f2 = d2.deriv(d2.state, d2.p)
-    f3 = d3.deriv(d3.state, d3.p)
+    f1 = jacobian(d1)
+    f2 = jacobian(d2)
+    f3 = jacobian(d3)
     @test isapprox(f1, f2;rtol = 1e-12)
     @test isapprox(f1, f3;rtol = 1e-12)
     @test typeof(f3) == BigFloat
   end
 end
 
-@testset "DiscreteDS $v" for v in ["towel", "henon"]
+@testset "DDS $v" for v in ["towel", "henon"]
 
   if v == "towel"
     N = 3
@@ -42,16 +42,16 @@ end
     s1 = Systems.henon(0.1ones(N))
   end
 
-  s2 = DiscreteDS(0.1ones(N), s1.eom; parameters = s1.p)
-  s4 = DiscreteDS(round.(big.(0.1ones(N)),3), s1.eom, s1.jacob; parameters = s1.p)
+  s2 = DDS(0.1ones(N), s1.prob.f; p = s1.prob.p)
+  s4 = DDS(big.(0.1ones(N)), s1.prob.f, s1.tangent.jacobian; p = s1.prob.p)
 
   @testset "Evolution & trajectory" begin
     st1 = evolve(s1, 1)
     st2 = evolve(s2, 1)
     st4 = evolve(s4, 1)
 
-    @test isapprox.(st1, st2; rtol = 1e-12) == trues(s1.state)
-    @test isapprox.(st1, st4; rtol = 1e-12) == trues(s1.state)
+    @test isapprox.(st1, st2; rtol = 1e-12) == trues(state(s1))
+    @test isapprox.(st1, st4; rtol = 1e-12) == trues(state(s1))
 
     ts = trajectory(s1, 100)
     @test size(ts) == (100, N)
@@ -82,11 +82,10 @@ end
     st1 = evolve(ds, 100)
 
     @test st1 != u0
-    @test u0 == state(ds)
+    evolve!(ds, 100)
+    @test st1 == state(ds)
 
-    Jbef = copy(ds.J)
-    ds.jacob!(ds.J, evolve(ds, 1), ds.p)
-    @test Jbef != ds.J
-    ds.jacob!(Jbef, evolve(ds, 1), ds.p)
-    @test Jbef == ds.J
+    Jbef = deepcopy(ds.tangent.J)
+    jacobian(Jbef, ds)
+    @test Jbef != ds.tangent.J
 end

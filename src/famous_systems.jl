@@ -353,7 +353,7 @@ Default values are the ones used in the original paper.
 [1] : O. E. Rössler, Phys. Lett. **71A**, pp 155 (1979)
 """
 function towel(u0=[0.085, -0.121, 0.075])
-        return DiscreteDS(u0, eom_towel, jacob_towel)
+    return DDS(u0, eom_towel, jacob_towel)
 end# should result in lyapunovs: [0.432207,0.378834,-3.74638]
 @inline function eom_towel(x, p)
     @inbounds x1, x2, x3 = x[1], x[2], x[3]
@@ -402,7 +402,7 @@ Nuclear Physics, Novosibirsk (1969)
 [2] : J. M. Greene, J. Math. Phys. **20**, pp 1183 (1979)
 """
 function standardmap(u0=0.001rand(2); k = 0.971635)
-    return DiscreteDS(u0, standardmap_eom, standardmap_jacob; parameters = [k])
+    return DDS(u0, standardmap_eom, standardmap_jacob; p = [k])
 end
 @inline @inbounds function standardmap_eom(x, par)
     theta = x[1]; p = x[2]
@@ -457,7 +457,7 @@ function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
         J[i+M, i+M] = 1
     end
 
-    return BigDiscreteDS(u0, csm, csm, J; parameters = [ks, Γ])
+    return DDS(u0, csm, csm, J; p = [ks, Γ])
 end
 mutable struct CoupledStandardMaps{N}
     idxs::UnitRange{Int}
@@ -523,10 +523,27 @@ function's documentation string.
 [1] : M. Hénon, Commun.Math. Phys. **50**, pp 69 (1976)
 """
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
-    return DiscreteDS(u0, henon_eom, henon_jacob; parameters = [a, b])
+    return DDS(u0, henon_eom, henon_jacob; p = [a, b])
 end # should give lyapunov exponents [0.4189, -1.6229]
 @inline henon_eom(x, p) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
 @inline henon_jacob(x, p) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
+
+function henon_iip(u0=zeros(2); a = 1.4, b = 0.3)
+    return DDS(u0, henon_eom_iip, henon_jacob_iip, p = [a, b])
+end
+function henon_eom_iip(dx, x, p)
+    dx[1] = 1.0 - p[1]*x[1]^2 + x[2]
+    dx[2] = p[2]*x[1]
+    return
+end
+function henon_jacob_iip(J, x, p)
+    J[1,1] = -2*p[1]*x[1]
+    J[1,2] = 1.0
+    J[2,1] = p[2]
+    J[2,2] = 0.0
+    return
+end
+
 
 """
 ```julia
@@ -550,7 +567,7 @@ function's documentation string.
 [2] : M. J. Feigenbaum, J. Stat. Phys. **19**, pp 25 (1978)
 """
 function logistic(x0=rand(); r = 4.0)
-    return DiscreteDS1D(x0, logistic_eom, logistic_jacob; parameters = [r])
+    return DDS(x0, logistic_eom, logistic_jacob; p = [r])
 end
 @inline logistic_eom(x, p) = p[1]*x*(1-x)
 @inline logistic_jacob(x, p) = p[1]*(1-2x)
@@ -569,7 +586,7 @@ The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
 function circlemap(x0=rand(); K = 0.99, Ω = 1.0, usemod::Bool = false)
-    return DiscreteDS1D(x0, circlemap_eom, circlemap_jacob; parameters = [Ω, K])
+    return DDS(x0, circlemap_eom, circlemap_jacob; p = [Ω, K])
 end
 @inline circlemap_eom(x, p) = x + twopi*p[1] - p[2]*sin(x)
 @inline circlemap_jacob(x, p) = -p[2]*cos(x)

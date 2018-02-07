@@ -2,7 +2,7 @@ using OrdinaryDiffEq, Requires, ForwardDiff
 import OrdinaryDiffEq.ODEProblem
 import OrdinaryDiffEq.ODEIntegrator
 
-export ContinuousDS, variational_integrator, ODEIntegrator, ODEProblem
+export ContinuousDS, tangent_integrator, ODEIntegrator, ODEProblem
 export ContinuousDynamicalSystem, DEFAULT_DIFFEQ_KWARGS, get_sol
 export parallel_integrator
 
@@ -204,7 +204,7 @@ end
 
 
 """
-    variational_integrator(ds::ContinuousDS, S::Matrix, [, t]; diff_eq_kwargs)
+    tangent_integrator(ds::ContinuousDS, S::Matrix, [, t]; diff_eq_kwargs)
 Return an `ODEIntegrator` that represents the variational equations
 of motion for the system. `t` makes the `tspan` and if it is `Real`
 instead of `Tuple`, initial time is assumed zero.
@@ -219,7 +219,7 @@ deviation vectors.
 The only keyword argument for this funcion is `diff_eq_kwargs` (see
 [`trajectory`](@ref)).
 """
-function variational_integrator(ds::ContinuousDS, S::Matrix, T = ds.prob.tspan;
+function tangent_integrator(ds::ContinuousDS, S::Matrix, T = ds.prob.tspan;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
 
     f! = ds.prob.f

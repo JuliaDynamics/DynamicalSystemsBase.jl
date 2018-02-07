@@ -1,6 +1,14 @@
-# v0.5.2
+# v0.6
+## Massively Breaking
+* Complete overhaul of Discrete Systems: all systems are now one, there is
+  no longer `DDS` and `BigDDS`. Everything is `DDS`!
+* `variational_integrator` renamed to `tangent_integrator`.
+* `DDS` is made up of 2 fundamental parts: a DiscreteProblem and a
+  TangentEvolver.
 ## Non-breaking
-* Massive performance boost of up to 8x in system evolution.
+* Massive performance boost of up to 8x in system evolution of continuous systems.
+* `ParallelEvolver`
+* `TangentEvolver`
 
 # v0.5.0
 

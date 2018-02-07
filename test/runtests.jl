@@ -4,8 +4,11 @@ ti = time()
 
 # Mathematics:
 include("math_tests.jl")
-# System Evolution:
+# Discrete:
+include("discrete_types.jl")
 include("discrete_systems.jl")
+include("discrete_tangent.jl")
+# Continuous:
 include("continuous_systems.jl")
 # Dataset:
 include("dataset_tests.jl")

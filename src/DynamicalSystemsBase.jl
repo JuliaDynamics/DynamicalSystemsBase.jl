@@ -6,10 +6,6 @@ in in the ecosystem of DynamicalSystems.jl
 """
 module DynamicalSystemsBase
 
-abstract type DynamicalSystem end
-
-export DynamicalSystem, Systems
-
 include("dataset.jl")
 include("reconstruction.jl")
 include("various.jl")
@@ -17,5 +13,7 @@ include("various.jl")
 include("discrete.jl")
 include("continuous.jl")
 include("famous_systems.jl")
+
+export Systems
 
 end
