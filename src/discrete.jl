@@ -24,8 +24,7 @@ end
 
 """
     DiscreteProblem(u0, eom, p = nothing) <: DynamicalSystem
-Fundamental structure describing a discrete dynamical law. Functions similarly
-with [`ODEProblem`](@ref).
+Fundamental structure describing a discrete dynamical law.
 
 ## Fields
 * `u0` : Initial state.
@@ -249,7 +248,7 @@ end
 #                               Parallel Evolvers                                   #
 #####################################################################################
 """
-    ParallelEvolver(prob::DiscreteProblem, states) -> `pe`
+    ParallelEvolver(prob::DiscreteProblem, states) -> pe
 Return a structure `pe` that evolves in parallel many `states`
 according to the same equations of motion.
 The `states` must be a `Vector` of `Vector` or `SVector`.
@@ -372,7 +371,8 @@ ws = evolve!(ws, tangentevolver, N)
 to evolve both ``u`` as well as ``w`` for `N` steps. It is necessary
 to use the syntax `ws = ...` to be able to evolve any number of ``w``
 (which are columns of the matrix `ws`)
-for both the in-place and out-of-place versions.
+for both the in-place and out-of-place versions. (it is not actually necessary to
+write `ws = ` for the in-place version)
 
 For out-of-place version `ws` should be an `SMatrix`, wheras for the out-of-place
 version it only has to be `<:AbstractMatrix.`
@@ -396,7 +396,7 @@ independent of the state of the underlying [`DiscreteProblem`](@ref).
 For the in-place version only, the `TangentEvolver` must be "reset"
 to a given `k::Int` in order to evolve a different amount of `ws`. By default
 the amount of `ws` (which are stored as a matrix) coincide with the dimension of
-the system `D`, but any number `k ≤ D` can be evolved (all in "parallel").
+the system `D`, but any number `k ≤ D` can be evolved (all in parallel).
 
 Use `reform!(tangentevolver, k::Int, reset_state = true)` to reform the evolver.
 By default the function also resets the state to the state of the `DiscreteProblem`.
@@ -493,7 +493,7 @@ set_state!(pe::TangentEvolver{false}, x) = (pe.state = x)
 Evolve the `te.state` and and the tangent vectors `ws` for `N` steps.
 
 The function **must** be called as `ws = evolve!(ws, te, N)` in the out-of-place
-version.
+version. See [`reform!`](@ref) to evolve different amount of deviation vectors.
 """
 function evolve!(ws, te::TangentEvolver{true, false}, N::Int = 1)
     # iip with user jacobian
