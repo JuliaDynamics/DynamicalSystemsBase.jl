@@ -53,7 +53,10 @@ end
 
 DS = DynamicalSystem
 isautodiff(ds::DS{DEP, IIP, JAC, IAD}) where {DEP, IIP, JAC, IAD} = IAD
-
+problemtype(ds::DS{DEP, IIP, JAC, IAD}) where {DEP<:DiscreteProblem, IIP, JAC, IAD} =
+DiscreteProblem
+problemtype(ds::DS{DEP, IIP, JAC, IAD}) where {DEP<:ODEProblem, IIP, JAC, IAD} =
+ODEProblem
 
 function create_jacobian(prob)
     IIP = isinplace(prob)
@@ -146,21 +149,22 @@ function integrator(ds::DS{ODE};
 
     solver, newkw = extract_solver(diff_eq_kwargs)
 
-    tanprob = ODEProblem(ds.prob.f, u0, CDS_TSPAN, ds.prob.p)
-    integ = init(tanprob, solver; newkw...)
+    prob = ODEProblem(ds.prob.f, u0, CDS_TSPAN, ds.prob.p)
+    integ = init(prob, solver; newkw..., save_everystep = false)
 end
 
 function integrator(ds::DS{DD};
     u0 = ds.prob.u0) where {DD<:DiscreteProblem}
 
-    tanprob = DiscreteProblem(ds.prob.f, u0, DDS_TSPAN, ds.prob.p)
-    integ = init(tanprob, FunctionMap(); save_everystep = false)
+    prob = DiscreteProblem(ds.prob.f, u0, DDS_TSPAN, ds.prob.p)
+    integ = init(prob, FunctionMap(); save_everystep = false)
 end
 
 
+### Tangent integrators ###
 
-
-# in-place autodifferentiated jacobian
+# in-place autodifferentiated jacobian helper struct
+# (it exists solely to see if we can use JacobianConfig)
 struct TangentIIP{F, JM}
     f::F     # original eom
     J::JM    # Jacobian matrix (written in-place)
@@ -188,7 +192,7 @@ function tangent_integrator(ds::DS{ODE, true, JAC, true}, Q0;
     tangenteom = TangentIIP(ds.prob.f, similar(ds.prob.u0, D, D))
     initstate = hcat(u0, Q0)
     tanprob = ODEProblem(tangenteom, initstate, CDS_TSPAN, ds.prob.p)
-    integ = init(tanprob, solver; newkw...)
+    integ = init(tanprob, solver; newkw..., save_everystep = false)
 end
 function tangent_integrator(ds::DS{DD, true, JAC, true}, Q0;
     u0 = ds.prob.u0) where {DD<:DiscreteProblem, JAC}
@@ -197,7 +201,7 @@ function tangent_integrator(ds::DS{DD, true, JAC, true}, Q0;
     tangenteom = TangentIIP(ds.prob.f, similar(ds.prob.u0, D, D))
     initstate = hcat(u0, Q0)
     tanprob = DiscreteProblem(tangenteom, initstate, DDS_TSPAN, ds.prob.p)
-    integ = init(tanprob, FunctionMap())
+    integ = init(tanprob, FunctionMap(), save_everystep = false)
 end
 
 # In-place version:
@@ -218,7 +222,7 @@ function tangent_integrator(ds::DS{ODE, true, JAC, false}, Q0;
     solver, newkw = extract_solver(diff_eq_kwargs)
     initstate = hcat(u0, Q0)
     tanprob = ODEProblem(tangenteom, initstate, CDS_TSPAN, ds.prob.p)
-    integ = init(tanprob, solver; newkw...)
+    integ = init(tanprob, solver; newkw..., save_everystep = false)
 end
 function tangent_integrator(ds::DS{DD, true, JAC, false}, Q0;
     u0 = ds.prob.u0) where {DD<:DiscreteProblem, JAC}
@@ -234,10 +238,10 @@ function tangent_integrator(ds::DS{DD, true, JAC, false}, Q0;
     end
     initstate = cat(2, u0, Q0)
     tanprob = DiscreteProblem(tangenteom, initstate, DDS_TSPAN, ds.prob.p)
-    integ = init(tanprob, FunctionMap())
+    integ = init(tanprob, FunctionMap(), save_everystep = false)
 end
 
-# out-of-place version:
+# out-of-place version, same regardless of autodiff:
 function tangent_integrator(ds::DS{ODE, false, JAC, IAD}, Q0;
     u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS) where
     {ODE<:ODEProblem, JAC, IAD}
@@ -256,9 +260,28 @@ function tangent_integrator(ds::DS{ODE, false, JAC, IAD}, Q0;
     solver, newkw = extract_solver(diff_eq_kwargs)
     initstate = SMatrix{D, k+1}(u0..., Q0...)
     tanprob = ODEProblem(tangenteom, initstate, CDS_TSPAN, ds.prob.p)
-    integ = init(tanprob, solver; newkw...)
+    integ = init(tanprob, solver; newkw..., save_everystep = false)
 end
+function tangent_integrator(ds::DS{DP, false, JAC, IAD}, Q0;
+    u0 = ds.prob.u0) where
+    {DO<:DiscreteProblem, JAC, IAD}
 
+    D = dimension(ds)
+    k = size(Q0)[2]
+    ws_index = SVector{k, Int}((2:k+1)...)
+    tangenteom = (u, p, t) -> begin
+        du = ds.prob.f(u[:, 1], p, t)
+        J = ds.jacobian(u, p, t)
+
+        dW = J*u[:, ws_index]
+        return hcat(du, dW)
+    end
+
+    solver, newkw = extract_solver(diff_eq_kwargs)
+    initstate = SMatrix{D, k+1}(u0..., Q0...)
+    tanprob = ODEProblem(tangenteom, initstate, CDS_TSPAN, ds.prob.p)
+    integ = init(tanprob, FunctionMap(); save_everystep = false)
+end
 
 
 
