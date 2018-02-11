@@ -1,6 +1,6 @@
 julia 0.6
-OrdinaryDiffEq 3.0.1
-DiffEqBase 3.0.3
+OrdinaryDiffEq 3.1
+DiffEqBase 3.3
 DiffEqCallbacks 1.0.0
 ForwardDiff 0.5
 Requires 0.4.3
