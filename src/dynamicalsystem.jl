@@ -13,7 +13,6 @@ eltype(prob::DEProblem) = eltype(prob.u0)
 state(prob::DEProblem) = prob.u0
 hascallback(prob::DEProblem) = prob.callback != nothing
 statetype(prob::DEProblem) = eltype(prob.u0)
-set_parameter!(prob, index, value) = (prob.p[index] = value)
 
 systemtype(::ODEProblem) = "continuous"
 systemtype(::DiscreteProblem) = "discrete"
@@ -202,13 +201,20 @@ end
 #######################################################################################
 #                                    Integrators                                      #
 #######################################################################################
+safe_state_type(ds::DS{true}, u0) = typeof(u0) <: Vector ? u0 : Vector(u0)
+function safe_state_type(ds::DS{false}, u0)
+    typeof(u0) <: SVector ? u0 : SVector{dimension(ds)}(u0...)
+end
+
+
 """
     integrator(DS, u0 = ds.prob.u0)
 """
-function integrator(ds::DS, u0 = ds.prob.u0;
+function integrator(ds::CDS, u0 = ds.prob.u0;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS
     )
 
+    U0 = safe_state_type(ds, u0)
     solver, newkw = extract_solver(diff_eq_kwargs)
 
     prob = ODEProblem(ds.prob.f, u0, CDS_TSPAN, ds.prob.p)
@@ -216,7 +222,7 @@ function integrator(ds::DS, u0 = ds.prob.u0;
 end
 
 function integrator(ds::DDS, u0 = ds.prob.u0)
-
+    U0 = safe_state_type(ds, u0)
     prob = DiscreteProblem(ds.prob.f, u0, DDS_TSPAN, ds.prob.p)
     integ = init(prob, FunctionMap(); save_everystep = false)
 end
@@ -332,5 +338,15 @@ end
 
 
 #####################################################################################
-#                                   Set-State                                       #
+#                                    Auxilary                                       #
 #####################################################################################
+"""
+    set_parameter!(ds::DynamicalSystem, index, value)
+    set_parameter!(ds::DynamicalSystem, values)
+Change one or many parameters of the system
+by setting `p[index] = value` in the first case
+and `p .= values` in the second.
+"""
+set_parameter!(prob, index, value) = (prob.p[index] = value)
+set_parameter!(prob, values) = (prob.p .= values)
+set_parameter!(ds::DS, args...) = set_parameter!(ds.prob, args...)
