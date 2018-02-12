@@ -227,3 +227,15 @@ println("tangent")
 @time te = tangent_integrator(ds, orthonormal(3,3))
 step!(te); step!(te)
 @time step!(te)
+
+
+
+
+
+
+
+
+## Lyapunov Timings
+println("TIME LYAPUNOV OOP")
+lyapunov_oop(lopjac, 3)
+@time lyapunov_oop(lopjac, 3)
