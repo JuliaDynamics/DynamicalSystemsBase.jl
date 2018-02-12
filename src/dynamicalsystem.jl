@@ -2,7 +2,9 @@ using OrdinaryDiffEq, ForwardDiff, StaticArrays
 import OrdinaryDiffEq: isinplace, ODEIntegrator, step!
 import Base: eltype
 
-export dimension, state, DynamicalSystem, integrator, tangent_integrator
+export dimension, state, DynamicalSystem, DS, integrator, tangent_integrator
+export ContinuousDynamicalSystem, CDS, DiscreteDynamicalSystem, DDS
+export set_parameter!, step!
 
 #######################################################################################
 #                          Basic functions and interface                              #
@@ -217,13 +219,13 @@ function integrator(ds::CDS, u0 = ds.prob.u0;
     U0 = safe_state_type(ds, u0)
     solver, newkw = extract_solver(diff_eq_kwargs)
 
-    prob = ODEProblem(ds.prob.f, u0, CDS_TSPAN, ds.prob.p)
+    prob = ODEProblem(ds.prob.f, U0, CDS_TSPAN, ds.prob.p)
     integ = init(prob, solver; newkw..., save_everystep = false)
 end
 
 function integrator(ds::DDS, u0 = ds.prob.u0)
     U0 = safe_state_type(ds, u0)
-    prob = DiscreteProblem(ds.prob.f, u0, DDS_TSPAN, ds.prob.p)
+    prob = DiscreteProblem(ds.prob.f, U0, DDS_TSPAN, ds.prob.p)
     integ = init(prob, FunctionMap(); save_everystep = false)
 end
 
@@ -231,7 +233,6 @@ end
 ### Tangent integrators ###
 
 # in-place autodifferentiated jacobian helper struct
-# (it exists solely to see if we can use JacobianConfig)
 struct TangentIIP{F, JM, CFG}
     f::F     # original eom
     J::JM    # Jacobian matrix (written in-place)
@@ -245,15 +246,8 @@ function (j::TangentIIP)(du, u, p, t)
     # This performs dY/dt = J(u) ⋅ Y
     A_mul_B!((@view du[:, 2:end]), j.J, (@view u[:, 2:end]))
     return
-    # Notice that this is a temporary solution. It is not performant because
-    # it does not use JacobianConfig. But at the moment I couldn't find a way
-    # to make it work.
 end
-
 # In-place, autodifferentiated version:
-"""
-    tangent_integrator(ds, Q0; u0, diff_eq_kwargs)
-"""
 function tangent_integrator(ds::DS{true, true}, Q0;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, u0 = ds.prob.u0
     )
@@ -279,6 +273,9 @@ end
 
 
 # In-place version:
+"""
+    tangent_integrator(ds, Q0; u0, diff_eq_kwargs)
+"""
 function tangent_integrator(ds::DS{true, false}, Q0;
     u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
 

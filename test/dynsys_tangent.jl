@@ -239,3 +239,9 @@ step!(te); step!(te)
 println("TIME LYAPUNOV OOP")
 lyapunov_oop(lopjac, 3)
 @time lyapunov_oop(lopjac, 3)
+lyapunov_oop(hopjac, 2)
+@time lyapunov_oop(hopjac, 2)
+# There seems to be massive slowdown on lyapunov of discrete. I expected 2
+# orders of magnitude speed up. Plus old chaos tools found the exponents in
+# 1 milisecond if I recall (for discerete). Maybe there is something
+# wrong here.
