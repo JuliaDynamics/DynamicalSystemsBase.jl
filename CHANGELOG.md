@@ -1,14 +1,22 @@
 # v0.6
 ## Massively Breaking
-* Complete overhaul of Discrete Systems: all systems are now one, there is
-  no longer `DDS` and `BigDDS`. Everything is `DDS`!
+* Complete overhaul of all of DynamicalSystems: all systems are now one. More details
+  are in the official documentation (because I would had to write 10 pages of changelog
+  otherwise). The constructors also changed signature.
+* All `DynamicalSystem` are now under a single type. This type has a problem
+  `prob<:DEProblem` and the jacobian. It is *immutable*.
+* Advantage of Multiple dispatch is taken to distinguish between in-place,
+  out of place, continuous, discrete, heaven, hell, whatever.
+* All internals use `integrator` and `step!`.
 * `variational_integrator` renamed to `tangent_integrator`.
-* `DDS` is made up of 2 fundamental parts: a DiscreteProblem and a
-  TangentEvolver.
+
 ## Non-breaking
 * Massive performance boost of up to 8x in system evolution of continuous systems.
-* `ParallelEvolver`
-* `TangentEvolver`
+* increased the interaction between DiffEq and DynamicalSystems.
+* A dedicated integrator for discrete systems that is super fast is now employed
+  by default.
+* Out-of-place continuous systems are allowed. All famous systems are actually
+  out of place now.
 
 # v0.5.0
 

@@ -135,7 +135,7 @@ end
 #######################################################################################
 #                                      TIMINGS                                        #
 #######################################################################################
-println("Starting timings (using @time)..")
+println("\nStarting timings (using @time)..")
 
 println("\nAutodiff CDS (create/jacobian):")
 println("IIP")
@@ -170,6 +170,7 @@ println("OOP")
 jacobian(hopjac); @time jacobian(hopjac)
 
 
+error()
 
 ### Stepping of integrators
 

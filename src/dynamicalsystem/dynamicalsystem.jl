@@ -4,46 +4,8 @@ import Base: eltype
 
 export dimension, state, DynamicalSystem, integrator
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
-export set_parameter!, step!, jacobian, inittime
-
-#####################################################################################
-#                                    Auxilary                                       #
-#####################################################################################
-"""
-    set_parameter!(ds::DynamicalSystem, index, value)
-    set_parameter!(ds::DynamicalSystem, values)
-Change one or many parameters of the system
-by setting `p[index] = value` in the first case
-and `p .= values` in the second.
-"""
-set_parameter!(prob, index, value) = (prob.p[index] = value)
-set_parameter!(prob, values) = (prob.p .= values)
-
-dimension(prob::DEProblem) = length(prob.u0)
-eltype(prob::DEProblem) = eltype(prob.u0)
-state(prob::DEProblem) = prob.u0
-state(integ::DEIntegrator) = integ.u
-hascallback(prob::DEProblem) = :callback ∈ fieldnames(prob) && prob.callback != nothing
-statetype(prob::DEProblem) = eltype(prob.u0)
-systemtype(::ODEProblem) = "continuous"
-systemtype(::DiscreteProblem) = "discrete"
-inittime(prob::DEProblem) = prob.tspan[1]
-
-"""
-    step!(integrator [, Δt])
-Step forwards the `integrator` once. If `Δt` is given, step until there is a
-time difference ≥ Δt from before starting stepping.
-"""
-function step!(integ, Δt::Real)
-    t = integ.t
-    while integ.t < t + Δt
-        step!(integ)
-    end
-end
-
-safe_state_type(ds::DS{true}, u0) = Vector(u0)
-safe_state_type(ds::DS{false}, u0) = SVector{length(u0)}(u0...)
-safe_state_type(ds::DS{false}, u0::Number) = u0
+export set_parameter!, step!, inittime
+export trajectory
 
 #######################################################################################
 #                                  DynamicalSystem                                    #
@@ -55,10 +17,9 @@ The central structure of **DynamicalSystems.jl**. All functions of the suite tha
 handle systems "analytically" (in the sense that they can use known equations of
 motion) expect an instance of this type.
 
-Contains a "problem" defining the system as well as the jacobian function.
+Contains a problem defining the system as well as the jacobian function.
 
 ## Constructing a `DynamicalSystem`
-We suggest to use the constructors:
 ```julia
 DiscreteDynamicalSystem(eom, state, p [, jacobian]; t0::Int = 0, J0)
 ContinuousDynamicalSystem(eom, state, p [, jacobian]; t0 = 0.0, J0)
@@ -113,16 +74,15 @@ DynamicalSystem(prob::DEProblem [, jacobian]; J0)
 ```
 if you have
 an instance of `DEProblem`, because you may want to use the callback functionality of
-[**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/). Notice however,
-that most functions that use known equations of motion (and thus use `DynamicalSystem`)
-expect the vector field to be differentiable,
-limiting the use of callbacks significantly.
+[**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/). Notice however
+that callbacks do not propagate into methods that evolve tangent space,
+like e.g. [`lyapunovs`](@ref) or [`gali`](@ref).
 
-We give no guarantees that *any* function of **DynamicalSystems.jl** suite will
-give "reasonable" results when using callbacks of any kind.
+Using callbacks with **DynamicalSystems.jl** is very under-tested.
+Use at your own risk!
 
 ## Relevant Functions
-[`jacobian`](@ref), [`state`](@ref), [`trajectory`](@ref),
+[`state`](@ref), [`trajectory`](@ref), [`jacobian`](@ref),
 [`set_parameter!`](@ref), [`integrator`](@ref), [`tangent_integrator`](@ref),
 [`parallel_integrator`](@ref).
 """
@@ -146,27 +106,29 @@ ODEProblem
 
 function DynamicalSystem(prob::DEProblem)
     IIP = isinplace(prob)
-    jacobian = create_jacobian(prob)
+    jac = create_jacobian(prob)
     DEP = typeof(prob)
-    JAC = typeof(jacobian)
-    return DynamicalSystem(prob, jacobian)
+    JAC = typeof(jac)
+    return DynamicalSystem(prob, jac; iad = true)
 end
-function DynamicalSystem(prob::DEProblem, jacobian::JAC;
-    J0 = nothing) where {JAC}
+function DynamicalSystem(prob::DEProblem, jac::JAC;
+    J0 = nothing, iad = false) where {JAC}
 
-    if J0 == nothing
-        J = get_J(prob, jacobian)
-    else
-        J = J0
-    end
     IIP = isinplace(prob)
-    JIP = isinplace(jacobian, 4)
+    JIP = isinplace(jac, 4)
     JIP == IIP || throw(ArgumentError(
     "The jacobian function and the equations of motion are not of the same form!"*
     " The jacobian `isinlace` was $(JIP) while the eom `isinplace` was $(IIP)."))
+
+    if J0 == nothing
+        J = get_J(prob, jac)
+    else
+        J = J0
+    end
+
     DEP = typeof(prob)
     JM = typeof(J)
-    return DynamicalSystem{IIP, false, DEP, JAC, JM}(prob, jacobian, J)
+    return DynamicalSystem{IIP, iad, DEP, JAC, JM}(prob, jac, J)
 end
 
 # Expand methods
@@ -176,56 +138,6 @@ for f in (:isinplace, :dimension, :eltype, :statetype, :state, :systemtype,
         @inline ($f)(ds::DynamicalSystem, args...) = $(f)(ds.prob, args...)
     end
 end
-
-
-#####################################################################################
-#                                    Jacobians                                      #
-#####################################################################################
-function create_jacobian(prob) #creates jacobian function
-    IIP = isinplace(prob)
-    if IIP
-        dum = deepcopy(prob.u0)
-        cfg = ForwardDiff.JacobianConfig(
-            (y, x) -> prob.f(y, x, prob.p, prob.tspan[1]),
-            dum, prob.u0)
-        jacobian = (J, u, p, t) ->
-        ForwardDiff.jacobian!(J, (y, x) -> prob.f(y, x, p, t),
-        dum, u, cfg, Val{false}())
-    else
-        # SVector methods do *not* use the config
-        # cfg = ForwardDiff.JacobianConfig(
-        #     (x) -> prob.f(x, prob.p, prob.tspan[1]), prob.u0)
-        jacobian = (u, p, t) ->
-        ForwardDiff.jacobian((x) -> prob.f(x, p, t), u, #=cfg=#)
-    end
-    return jacobian
-end
-# Gets the jacobian at current state
-function get_J(prob, jacob)
-    D = dimension(prob)
-    if isinplace(prob)
-        J = similar(prob.u0, (D,D))
-        jacob(J, prob.u0, prob.p)
-    else
-        J = jacob(prob.u0, prob.p)
-    end
-    return J
-end
-
-
-# Jacobian function application
-"""
-    jacobian(ds::DynamicalSystem, u = ds.prob.u0)
-Return the jacobian of the system at `u` (at initial time).
-"""
-function jacobian(ds::DS{true}, u = ds.prob.u0)
-    D = dimension(ds)
-    J = similar(u, D, D)
-    ds.jacobian(J, u, ds.prob.p, inittime(ds.prob))
-    return J
-end
-jacobian(ds::DS{false}, u = ds.prob.u0) =
-ds.jacobian(u, ds.prob.p, inittime(ds.prob))
 
 #####################################################################################
 #                                Pretty-Printing                                    #
@@ -246,11 +158,60 @@ function Base.show(io::IO, ds::DS)
     )
 end
 
+#####################################################################################
+#                                    Jacobians                                      #
+#####################################################################################
+function create_jacobian(prob) #creates jacobian function
+    IIP = isinplace(prob)
+    if IIP
+        dum = deepcopy(prob.u0)
+        cfg = ForwardDiff.JacobianConfig(
+            (y, x) -> prob.f(y, x, prob.p, prob.tspan[1]),
+            dum, prob.u0)
+        jac = (J, u, p, t) ->
+        ForwardDiff.jacobian!(J, (y, x) -> prob.f(y, x, p, t),
+        dum, u, cfg, Val{false}())
+    else
+        # SVector methods do *not* use the config
+        # cfg = ForwardDiff.JacobianConfig(
+        #     (x) -> prob.f(x, prob.p, prob.tspan[1]), prob.u0)
+        jac = (u, p, t) ->
+        ForwardDiff.jacobian((x) -> prob.f(x, p, t), u, #=cfg=#)
+    end
+    return jac
+end
+# Gets the jacobian at current state
+function get_J(prob, jacob)
+    D = dimension(prob)
+    if isinplace(prob)
+        J = similar(prob.u0, (D,D))
+        jacob(J, prob.u0, prob.p, inittime(prob))
+    else
+        J = jacob(prob.u0, prob.p, inittime(prob))
+    end
+    return J
+end
+
+
+# Jacobian function application
+"""
+    jacobian(ds::DynamicalSystem, u = ds.prob.u0)
+Return the jacobian of the system at `u` (at initial time).
+"""
+function jacobian(ds::DS{true}, u = ds.prob.u0)
+    D = dimension(ds)
+    J = similar(u, D, D)
+    ds.jacobian(J, u, ds.prob.p, inittime(ds.prob))
+    return J
+end
+jacobian(ds::DS{false}, u = ds.prob.u0) =
+ds.jacobian(u, ds.prob.p, inittime(ds.prob))
+
 #######################################################################################
 #                                     Docstrings                                      #
 #######################################################################################
 """
-    integrator(ds::DynamicalSystem; diff_eq_kwargs) -> integ
+    integrator(ds::DynamicalSystem [, u0]; diff_eq_kwargs) -> integ
 Return a `DEIntegrator` object that can be used to evolve a system interactively
 using `step!(integ [, Δt])`.
 
@@ -285,3 +246,43 @@ with ``f`` being the equations of motion and ``u`` the system state.
 *Note* - the example shown is for discrete systems, for continuous use ``du/dt``.
 """
 function tangent_integrator end
+
+
+#####################################################################################
+#                                    Auxilary                                       #
+#####################################################################################
+"""
+    set_parameter!(ds::DynamicalSystem, index, value)
+    set_parameter!(ds::DynamicalSystem, values)
+Change one or many parameters of the system
+by setting `p[index] = value` in the first case
+and `p .= values` in the second.
+"""
+set_parameter!(prob, index, value) = (prob.p[index] = value)
+set_parameter!(prob, values) = (prob.p .= values)
+
+dimension(prob::DEProblem) = length(prob.u0)
+eltype(prob::DEProblem) = eltype(prob.u0)
+state(prob::DEProblem) = prob.u0
+state(integ::DEIntegrator) = integ.u
+hascallback(prob::DEProblem) = :callback ∈ fieldnames(prob) && prob.callback != nothing
+statetype(prob::DEProblem) = eltype(prob.u0)
+systemtype(::ODEProblem) = "continuous"
+systemtype(::DiscreteProblem) = "discrete"
+inittime(prob::DEProblem) = prob.tspan[1]
+
+"""
+    step!(integrator [, Δt])
+Step forwards the `integrator` once. If `Δt` is given, step until there is a
+time difference ≥ Δt from before starting stepping.
+"""
+function step!(integ, Δt::Real)
+    t = integ.t
+    while integ.t < t + Δt
+        step!(integ)
+    end
+end
+
+safe_state_type(ds::DS{true}, u0) = Vector(u0)
+safe_state_type(ds::DS{false}, u0) = SVector{length(u0)}(u0...)
+safe_state_type(ds::DS{false}, u0::Number) = u0

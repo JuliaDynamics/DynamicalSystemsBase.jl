@@ -3,8 +3,9 @@ Sub-module of the module `DynamicalSystemsBase`, which contains pre-defined
 famous systems.
 """
 module Systems
-using DynamicalSystemsBase, StaticArrays
-using DiffEqCallbacks
+using DynamicalSystemsBase
+using DiffEqCallbacks, StaticArrays
+using DynamicalSystemsBase: CDS, DDS
 const twopi = 2π
 #######################################################################################
 #                                    Continuous                                       #
@@ -192,7 +193,7 @@ function hheom!(du, u, p, t)
     return nothing
 end
 function hhjacob!(J, u, p, t)
-    o = 0, i = 1
+    o = 0; i = 1
     J[1,:] .= (o,    o,     i,    o)
     J[2,:] .= (o,    o,     o,    i)
     J[3,:] .= (-i - 2*u0[2],   -2*u0[1],   o,   o)
@@ -254,7 +255,7 @@ end
 @inbounds function duffing_jacob(u, p, t)
     ω, f, d, β = p
     return @SMatrix [0 1 ;
-    (-β - 3u[1]^2)  J[2,2] = -d]
+    (-β - 3u[1]^2) -d]
 end
 
 """

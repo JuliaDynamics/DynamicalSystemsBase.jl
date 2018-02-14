@@ -1,7 +1,7 @@
 using StaticArrays, ForwardDiff, DiffEqBase
 using DiffEqBase: isinplace
 using OrdinaryDiffEq: FunctionMap
-import DiffEqBase: init, step!, isinplace
+import DiffEqBase: init, step!, isinplace, reinit!
 import Base: show
 
 export MinimalDiscreteProblem, MinimalDiscreteIntegrator
@@ -101,6 +101,12 @@ function integrator(ds::DDS, u0::AbstractVector = ds.prob.u0)
     return integ
 end
 
+function reinit!(integ::MDI, u = integ.prob.u0)
+    integ.u = u
+    integ.dummy = u
+    integ.t = inittime(integ.prob)
+    return
+end
 
 #####################################################################################
 #                                   Stepping                                        #
@@ -158,4 +164,24 @@ function Base.show(io::IO, ds::MDI)
     rpad(" e.o.m.: ", ps)*"$(ds.prob.f)\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
     )
+end
+
+#####################################################################################
+#                                 Trajectory                                        #
+#####################################################################################
+function trajectory(ds::DDS, t, u = ds.prob.u0; dt::Int = 1)
+
+    D = dimension(ds); T = eltype(ds)
+    integ = integrator(ds, u)
+    ti = inittime(ds)
+    tvec = ti:dt:t
+    L = length(tvec)
+    data = Vector{SVector{D, T}}(L)
+    data[1] = u
+    for i in 2:L
+        step!(integ, dt)
+        data[i] = integ.u
+    end
+
+    return Dataset(data)
 end
