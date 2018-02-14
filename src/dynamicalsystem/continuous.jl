@@ -19,18 +19,16 @@ const CDS_TSPAN = (0.0, Inf)
 
 
 """
-    ContinuousDynamicalSystem(eom, state, p [, jacobian]; t0 = 0.0)
-See [`DynamicalSystem`](@ref) for more.
+    ContinuousDynamicalSystem
+Type-alias for a continuous `DynamicalSystem`.
 """
-ContinuousDynamicalSystem{IIP, IAD, PT, JAC} =
-DynamicalSystem{IIP, IAD, PT, JAC} where {IIP, IAD, PT<:ODEProblem, JAC}
+ContinuousDynamicalSystem{IIP, IAD, PT, JAC, JM} =
+DynamicalSystem{IIP, IAD, PT, JAC, JM} where {IIP, IAD, PT<:ODEProblem, JAC, JM}
 
 CDS = ContinuousDynamicalSystem
 
-
-# High level constructors (you can't deduce if system is discrete
-# or continuous from just the equations of motion!)
-function ContinuousDynamicalSystem(eom, state::AbstractVector, p, j = nothing; t0=0.0)
+function ContinuousDynamicalSystem(eom, state::AbstractVector, p, j = nothing; t0=0.0,
+    J0 = nothing)
     IIP = isinplace(eom, 4)
     # Ensure that there are only 2 cases: OOP with SVector or IIP with Vector
     # (requirement from ChaosTools)
@@ -41,9 +39,10 @@ function ContinuousDynamicalSystem(eom, state::AbstractVector, p, j = nothing; t
     if j == nothing
         return DS(prob)
     else
-        return DS(prob, j)
+        return DS(prob, j; J0 = J0)
     end
 end
+
 
 
 

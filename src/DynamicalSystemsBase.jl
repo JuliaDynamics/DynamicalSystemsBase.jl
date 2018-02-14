@@ -10,9 +10,11 @@ include("dataset.jl")
 include("reconstruction.jl")
 include("various.jl")
 
-include("discrete.jl")
-include("continuous.jl")
-include("famous_systems.jl")
+include("dynamicalsystem/dynamicalsystem.jl")
+include("dynamicalsystem/discrete.jl")
+include("dynamicalsystem/continuous.jl")
+include("dynamicalsystem/famous_systems.jl")
+include("dynamicalsystem/tangent.jl")
 
 export Systems
 

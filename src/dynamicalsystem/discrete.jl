@@ -30,18 +30,19 @@ function MinimalDiscreteProblem(eom::F, state, p::P = nothing, t0 = 0) where {F,
     IIP = isinplace(eom, 4)
     # Ensure that there are only 2 cases: OOP with SVector or IIP with Vector
     # (requirement from ChaosTools)
-    IIP || typeof(eom(state, p, 0)) <: SVector || error(
+    IIP || typeof(eom(state, p, 0)) <: Union{SVector, Number} || error(
     "Equations of motion must return an `SVector` for DynamicalSystems.jl")
     u0 = IIP ? Vector(state) : SVector{length(state)}(state...)
     S = typeof(u0)
     D = length(u0); T = eltype(u0)
+    D == 1 && (u0 = u0[1]) # handle 1D case
     MinimalDiscreteProblem{IIP, F, S, P, D, T}(eom, u0, p, t0)
 end
 
 isinplace(::MDP{IIP}) where {IIP} = IIP
 systemtype(::MinimalDiscreteProblem) = "discrete"
-problemtype(ds::DS{IIP, IAD, DEP, JAC}) where
-{DEP<:MinimalDiscreteProblem, IIP, JAC, IAD} = MinimalDiscreteProblem
+problemtype(ds::DS{IIP, IAD, DEP, JAC, JM}) where
+{DEP<:MinimalDiscreteProblem, IIP, JAC, IAD, JM} = MinimalDiscreteProblem
 inittime(prob::MDP) = prob.t0
 
 """
@@ -50,19 +51,19 @@ A `DynamicalSystem` restricted to discrete systems (also called *maps*).
 
 Relevant functions:
 """
-DiscreteDynamicalSystem{IIP, IAD, PT, JAC} =
-DynamicalSystem{IIP, IAD, PT, JAC} where
-{IIP, IAD, PT<:Union{DiscreteProblem, MinimalDiscreteProblem}, JAC}
+DiscreteDynamicalSystem{IIP, IAD, PT, JAC, JM} =
+DynamicalSystem{IIP, IAD, PT, JAC, JM} where
+{IIP, IAD, PT<:Union{DiscreteProblem, MinimalDiscreteProblem}, JAC, JM}
 
 DDS = DiscreteDynamicalSystem
 
 function DiscreteDynamicalSystem(
-    eom, state::AbstractVector, p, j = nothing; t0::Int = 0)
+    eom, state, p, j = nothing; t0::Int = 0, J0 = nothing)
     prob = MDP(eom, state, p, t0)
     if j == nothing
         return DS(prob)
     else
-        return DS(prob, j)
+        return DS(prob, j; J0 = J0)
     end
 end
 
@@ -87,7 +88,7 @@ function init(prob::MDP{IIP, F, S, P, D, T}, u::AbstractVector = prob.u0
 end
 
 function integrator(ds::DDS, u0::AbstractVector = ds.prob.u0)
-    U0 = safe_state_type(isinplace(ds), u0)
+    U0 = safe_state_type(ds, u0)
     if typeof(ds.prob) <: DiscreteProblem
         prob = DiscreteProblem(ds.prob.f, U0, DDS_TSPAN, ds.prob.p;
         callback = ds.prob.callback)
