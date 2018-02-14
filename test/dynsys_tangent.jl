@@ -85,7 +85,7 @@ function lyapunov_oop(ds::DS, k)
         tode.u = hcat(tode.u[:,1], Q)
         u_modified!(tode, true)
     end
-    λ = λ/tode.t # woooorks
+    λ./tode.t # woooorks
 end
 
 
