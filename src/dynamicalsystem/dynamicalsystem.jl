@@ -17,7 +17,7 @@ The central structure of **DynamicalSystems.jl**. All functions of the suite tha
 handle systems "analytically" (in the sense that they can use known equations of
 motion) expect an instance of this type.
 
-Contains a problem defining the system as well as the jacobian function.
+Contains a problem defining the system and the jacobian function.
 
 ## Constructing a `DynamicalSystem`
 ```julia
@@ -33,6 +33,9 @@ parameters.
 The first case creates an internal implementation of a discrete system,
 which is as fast as possible. With these constructors you also do not need to
 provide some final time, since it is not used by **DynamicalSystems.jl** in any manner.
+
+The keyword arguments `t0`, `J0` allow you to choose the initial time and provide
+an initialized Jacobian matrix.
 
 ### Equations of motion
 The are two "versions" for `DynamicalSystem`, depending on whether the
@@ -63,9 +66,6 @@ for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place ver
 
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
-
-`J0` is a keyword argument allowing you to pass a pre-initialized Jacobian matrix
-(very helpful for large systems).
 
 ### Using `DEProblem`
 You can always create a `DynamicalSystem` with the constructor
@@ -98,11 +98,11 @@ struct DynamicalSystem{
 end
 
 DS = DynamicalSystem
-isautodiff(ds::DS{IIP, IAD, DEP, JAC}) where {DEP, IIP, JAC, IAD} = IAD
-problemtype(ds::DS{IIP, IAD, DEP, JAC}) where {DEP<:DiscreteProblem, IIP, JAC, IAD} =
-DiscreteProblem
-problemtype(ds::DS{IIP, IAD, DEP, JAC}) where {DEP<:ODEProblem, IIP, JAC, IAD} =
-ODEProblem
+isautodiff(ds::DS{IIP, IAD, DEP, JAC, JM}) where {DEP, IIP, JAC, IAD, JM} = IAD
+# problemtype(ds::DS{IIP, IAD, DEP, JAC, JM, TAN}) where
+# {DEP<:DiscreteProblem, IIP, JAC, IAD, JM, TAN} = DiscreteProblem
+# problemtype(ds::DS{IIP, IAD, DEP, JAC, JM, TAN}) where {DEP<:ODEProblem, IIP, JAC, IAD} =
+# ODEProblem
 
 function DynamicalSystem(prob::DEProblem)
     IIP = isinplace(prob)
@@ -118,21 +118,25 @@ function DynamicalSystem(prob::DEProblem, jac::JAC;
     JIP = isinplace(jac, 4)
     JIP == IIP || throw(ArgumentError(
     "The jacobian function and the equations of motion are not of the same form!"*
-    " The jacobian `isinlace` was $(JIP) while the eom `isinplace` was $(IIP)."))
+    " The jacobian `isinplace` is $(JIP) while the eom `isinplace` is $(IIP)."))
 
     if J0 == nothing
         J = get_J(prob, jac)
+        IIP || typeof(J) <: SMatrix || throw(ArgumentError(
+        "The jacobian function must return an SMatrix for the out-of-place version"
+        ))
     else
-        J = J0
+        J = safe_matrix_type(IIP, J0)
     end
 
     DEP = typeof(prob)
     JM = typeof(J)
+
     return DynamicalSystem{IIP, iad, DEP, JAC, JM}(prob, jac, J)
 end
 
 # Expand methods
-for f in (:isinplace, :dimension, :eltype, :statetype, :state, :systemtype,
+for f in (:isinplace, :dimension, :statetype, :state, :systemtype,
     :set_parameter!, :inittime)
     @eval begin
         @inline ($f)(ds::DynamicalSystem, args...) = $(f)(ds.prob, args...)
@@ -158,9 +162,9 @@ function Base.show(io::IO, ds::DS)
     )
 end
 
-#####################################################################################
-#                                    Jacobians                                      #
-#####################################################################################
+#######################################################################################
+#                                    Jacobians                                        #
+#######################################################################################
 function create_jacobian(prob) #creates jacobian function
     IIP = isinplace(prob)
     if IIP
@@ -208,12 +212,57 @@ jacobian(ds::DS{false}, u = ds.prob.u0) =
 ds.jacobian(u, ds.prob.p, inittime(ds.prob))
 
 #######################################################################################
+#                                 Tanget Dynamics                                     #
+#######################################################################################
+function create_tangent(ds::DS{IIP}) where {IIP}
+    if IIP
+        J = deepcopy(ds.J)
+        tangentf = (du, u, p, t) -> begin
+            uv = @view u[:, 1]
+            ds.prob.f(view(du, :, 1), uv, p, t)
+            ds.jacobian(J, uv, p, t)
+            A_mul_B!((@view du[:, 2:end]), J, (@view u[:, 2:end]))
+            nothing
+        end
+    else
+        tangentf = (u, p, t) -> begin
+            du = ds.prob.f(u[:, 1], p, t)
+            J = ds.jacobian(u[:, 1], p, t)
+
+            dW = J*u[:, ws_index]
+            return hcat(du, dW)
+        end
+    end
+    return tangentf
+end
+
+# for the case of autodiffed systems, a specialized version is created
+# so that f! is not called twice in ForwardDiff
+function create_tangent(ds::DS{true, true})
+    J = deepcopy(ds.J)
+    cfg = ForwardDiff.JacobianConfig(
+        (du, u) -> (du, u, ds.prob.p, inittime(ds),
+        deepcopy(state(ds)), state(ds)
+    )
+    tangentf = (du, u, p, t) -> begin
+        uv = @view u[:, 1]
+        ForwardDiff.jacobian!(
+            J, (du, u) -> (du, u, p, t), view(du, :, 1), uv, cfg, Val{false}()
+        )
+        A_mul_B!((@view du[:, 2:end]), J, (@view u[:, 2:end]))
+        nothing
+    end
+    return tangentf
+end
+
+
+#######################################################################################
 #                                     Docstrings                                      #
 #######################################################################################
 """
     integrator(ds::DynamicalSystem [, u0]; diff_eq_kwargs) -> integ
 Return a `DEIntegrator` object that can be used to evolve a system interactively
-using `step!(integ [, Δt])`.
+using `step!(integ [, Δt])`. Optionally specify an initial state `u0`.
 
 See [`trajectory`](@ref) for `diff_eq_kwargs`.
 """
@@ -224,7 +273,7 @@ function integrator end
 Return a `DEIntegrator` object that evolves in parallel both the system as well
 as deviation vectors living on the tangent space.
 
-`Q0` is a *matrix* whose columns are initial values for deviation vectors `ws`. If
+`Q0` is a *matrix* whose columns are initial values for deviation vectors. If
 instead of a matrix `Q0` an integer `k` is given, then `k` random orthonormal
 vectors are choosen as initial conditions. You can also give as a keyword argument
 a different initial state for the system `u0`.
@@ -233,20 +282,49 @@ See [`trajectory`](@ref) for `diff_eq_kwargs`.
 
 ## Description
 
-If ``J`` is the jacobian of the system then the equations for the system
-and a deviation vector (or matrix) ``w`` are:
+If ``J`` is the jacobian of the system then the *tangent dynamics* are
+the equations that evolve in parallel the system as well as
+a deviation vector (or matrix) ``w``:
 ```math
 \\begin{aligned}
-u_{n+1} &= f(u_n, p, t) \\\\
-w_{n+1} &= J(u_n, p, t) \\times w_n
+\\dot{u} &= f(u, p, t) \\\\
+\\dot{w} &= J(u, p, t) \\times w
 \\end{aligned}
 ```
 with ``f`` being the equations of motion and ``u`` the system state.
+Similar equations hold for the discrete case.
 
-*Note* - the example shown is for discrete systems, for continuous use ``du/dt``.
+See [`trajectory`](@ref) for `diff_eq_kwargs`.
 """
 function tangent_integrator end
 
+"""
+    trajectory(ds::DynamicalSystem, T [, u]; kwargs...) -> dataset
+
+Return a dataset what will contain the trajectory of the sytem,
+after evolving it for total time `T`, optionally starting from state `u`.
+See [`Dataset`](@ref) for info on how to
+manipulate this object.
+
+For the discrete case, `T` is an integer and a `T×D` dataset is returned
+(`D` is the system dimensionality). For the
+continuous case, a `W×D` dataset is returned, with `W = length(t0:dt:T)` with
+`t0:dt:T` representing the time vector (*not* returned).
+
+## Keyword Arguments
+* `dt` :  Time step of value output during the solving
+  of the continuous system. For discrete systems it must be an integer. Defaults
+  to `0.01` for continuous and `1` for discrete.
+* `diff_eq_kwargs` : (only for continuous) A dictionary `Dict{Symbol, ANY}`
+  of keyword arguments
+  passed into the solvers of the [DifferentialEquations.jl](http://docs.juliadiffeq.org/latest/basics/common_solver_opts.html)
+  package, for example `Dict(:abstol => 1e-9)`. If you want to specify a solver,
+  do so by using the symbol `:solver`, e.g.:
+  `Dict(:solver => DP5(), :maxiters => 1e9)`. This requires you to have been first
+  `using OrdinaryDiffEq` to access the solvers. Defaults to
+  `Dict(:solver => Vern9(), :abstol => 1e-9, :reltol => 1e-9)`.
+"""
+function trajectory end
 
 #####################################################################################
 #                                    Auxilary                                       #
@@ -261,8 +339,11 @@ and `p .= values` in the second.
 set_parameter!(prob, index, value) = (prob.p[index] = value)
 set_parameter!(prob, values) = (prob.p .= values)
 
+"""
+    dimension(thing) -> D
+Return the dimension of the `thing`, in the sense of state-space dimensionality.
+"""
 dimension(prob::DEProblem) = length(prob.u0)
-eltype(prob::DEProblem) = eltype(prob.u0)
 state(prob::DEProblem) = prob.u0
 state(integ::DEIntegrator) = integ.u
 hascallback(prob::DEProblem) = :callback ∈ fieldnames(prob) && prob.callback != nothing
@@ -271,18 +352,14 @@ systemtype(::ODEProblem) = "continuous"
 systemtype(::DiscreteProblem) = "discrete"
 inittime(prob::DEProblem) = prob.tspan[1]
 
-"""
-    step!(integrator [, Δt])
-Step forwards the `integrator` once. If `Δt` is given, step until there is a
-time difference ≥ Δt from before starting stepping.
-"""
-function step!(integ, Δt::Real)
-    t = integ.t
-    while integ.t < t + Δt
-        step!(integ)
-    end
-end
-
 safe_state_type(ds::DS{true}, u0) = Vector(u0)
 safe_state_type(ds::DS{false}, u0) = SVector{length(u0)}(u0...)
 safe_state_type(ds::DS{false}, u0::Number) = u0
+
+safe_matrix_type(ds::DS{true}, Q::AbstractMatrix) = Matrix(Q)
+function safe_matrix_type(ds::DS{false}, Q::AbstractMatrix)
+    A, B = size(Q)
+    SMatrix{A, B}(Q)
+end
+safe_matrix_type(IIP::Bool, Q::AbstractMatrix) =
+IIP ? Matrix(Q) : SMatrix{size(Q)...}(Q)

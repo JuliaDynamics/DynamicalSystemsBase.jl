@@ -6,7 +6,7 @@
 #                                Pairwse Distance                                   #
 #####################################################################################
 using NearestNeighbors, StaticArrays
-export min_pairwise_distance
+export min_pairwise_distance, orthonormal
 
 # min_pairwise_distance contributed by Kristoffer Carlsson
 """
@@ -145,8 +145,6 @@ function to_vectorSvector(a::AbstractMatrix)
     end
     return ws
 end
-
-export orthonormal
 
 """
     orthonormal(D, k) -> ws
