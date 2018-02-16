@@ -4,7 +4,7 @@ famous systems.
 """
 module Systems
 using DynamicalSystemsBase
-using DiffEqCallbacks, StaticArrays
+using StaticArrays
 using DynamicalSystemsBase: CDS, DDS
 const twopi = 2π
 #######################################################################################
@@ -52,6 +52,24 @@ end
     ρ - u[3]  (-1)  (-u[1]);
     u[2]   u[1]  -β]
     return J
+end
+
+function lorenz_iip(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
+    return CDS(liip, u0, [σ, ρ, β], liip_jac)
+end
+@inline @inbounds function liip(du, u, p, t)
+    σ = p[1]; ρ = p[2]; β = p[3]
+    du[1] = σ*(u[2]-u[1])
+    du[2] = u[1]*(ρ-u[3]) - u[2]
+    du[3] = u[1]*u[2] - β*u[3]
+    return nothing
+end
+@inline @inbounds function liip_jac(J, u, p, t)
+    σ, ρ, β = p
+    J[1,1] = -σ; J[1, 2] = σ; J[1,3] = 0
+    J[2,1] = ρ - u[3]; J[2,2] = -1; J[2,3] = -u[1]
+    J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -β
+    return nothing
 end
 
 
@@ -134,7 +152,7 @@ end
 end
 
 """
-    henonhelies(u0=[0, -0.25, 0.42081,0]; conserveE = true)
+    henonhelies(u0=[0, -0.25, 0.42081,0])
 ```math
 \\begin{aligned}
 \\dot{x} &= p_x \\\\
@@ -152,12 +170,9 @@ for only but a few initial conditions.
 
 The default initial condition is a typical chaotic orbit.
 
-You can optionally choose to conserve energy, up to `1e-14` error level, but having
-slower integration as a drawback.
-
 [1] : Hénon, M. & Heiles, C., The Astronomical Journal **69**, pp 73–79 (1964)
 """
-function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
+function henonhelies(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
 
 
     i = one(eltype(u0))
@@ -165,24 +180,24 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
     J = zeros(eltype(u0), 4, 4)
 
 
-    @inline Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
-    @inline Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
-    @inline Hhh(q1, q2, p1, p2) = Thh(p1, p2) + Vhh(q1, q2)
-    @inline Hhh(u::AbstractVector) = Hhh(u...)
+    # @inline Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
+    # @inline Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
+    # @inline Hhh(q1, q2, p1, p2) = Thh(p1, p2) + Vhh(q1, q2)
+    # @inline Hhh(u::AbstractVector) = Hhh(u...)
+    #
+    # E = Hhh(u0)
+    #
+    # ghh! = (resid, u) -> begin
+    #     resid[1] = Hhh(u[1],u[2],u[3],u[4]) - E
+    #     resid[2:4] .= 0
+    # end
 
-    E = Hhh(u0)
-
-    ghh! = (resid, u) -> begin
-        resid[1] = Hhh(u[1],u[2],u[3],u[4]) - E
-        resid[2:4] .= 0
-    end
-
-    if conserveE
-        cb = ManifoldProjection(ghh!, nlopts=Dict(:ftol=>1e-13), save = false)
-        prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
-    else
-        prob = prob = ODEProblem(hheom!, u0, (0., 100.0))
-    end
+    # if conserveE
+    #     cb = ManifoldProjection(ghh!, nlopts=Dict(:ftol=>1e-13), save = false)
+    #     prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
+    # else
+        prob = ODEProblem(hheom!, u0, (0., 100.0))
+    # end
     return DynamicalSystem(prob, hhjacob!, J)
 end
 function hheom!(du, u, p, t)
@@ -512,20 +527,20 @@ function's documentation string.
 [1] : M. Hénon, Commun.Math. Phys. **50**, pp 69 (1976)
 """
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
-    return DDS(henon_eom, u0, [a,b], henon_jacob)
+    return DDS(hoop, u0, [a,b], hoop_jac)
 end # should give lyapunov exponents [0.4189, -1.6229]
-@inline henon_eom(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-@inline henon_jacob(x, p, n) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
+@inline hoop(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+@inline hoop_jac(x, p, n) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
 
 function henon_iip(u0=zeros(2); a = 1.4, b = 0.3)
     return DDS(henon_eom_iip, u0, [a, b], henon_jacob_iip)
 end
-function henon_eom_iip(dx, x, p, n)
+function hiip(dx, x, p, n)
     dx[1] = 1.0 - p[1]*x[1]^2 + x[2]
     dx[2] = p[2]*x[1]
     return
 end
-function henon_jacob_iip(J, x, p, n)
+function hiip_jac(J, x, p, n)
     J[1,1] = -2*p[1]*x[1]
     J[1,2] = 1.0
     J[2,1] = p[2]

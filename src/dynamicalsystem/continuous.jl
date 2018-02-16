@@ -3,6 +3,10 @@ using OrdinaryDiffEq, StaticArrays
 #####################################################################################
 #                                    Auxilary                                       #
 #####################################################################################
+const DEFAULT_DIFFEQ_KWARGS = Dict(:abstol => 1e-9, :reltol => 1e-9)
+const DEFAULT_SOLVER = Vern9()
+const CDS_TSPAN = (0.0, Inf)
+
 function extract_solver(diff_eq_kwargs)
     # Extract solver from kwargs
     if haskey(diff_eq_kwargs, :solver)
@@ -15,10 +19,6 @@ function extract_solver(diff_eq_kwargs)
     end
     return solver, newkw
 end
-
-const DEFAULT_DIFFEQ_KWARGS = Dict{Symbol, Any}(:abstol => 1e-9, :reltol => 1e-9)
-const DEFAULT_SOLVER = Vern9()
-const CDS_TSPAN = (0.0, Inf)
 
 #####################################################################################
 #                           ContinuousDynamicalSystem                               #
@@ -55,7 +55,7 @@ end
 function integrator(ds::CDS, u0 = ds.prob.u0;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, saveat = nothing, tspan = ds.prob.tspan)
     solver, newkw = extract_solver(diff_eq_kwargs)
-    prob = ODEProblem(ds.prob.f, ds.prob.u0, tspan, ds.prob.p; callback =
+    prob = ODEProblem(ds.prob.f, u0, tspan, ds.prob.p; callback =
     ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
     if saveat == nothing
         integ = init(prob, solver; newkw..., save_everystep = false)
@@ -88,7 +88,7 @@ end
 
 function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
     peom, st = create_parallel(ds, states)
-    pprob = ODEProblem{true}(peom, st, (inittime(ds), Inf), ds.prob.p)
+    pprob = ODEProblem(peom, st, (inittime(ds), Inf), ds.prob.p)
     solver, newkw = extract_solver(diff_eq_kwargs)
     return init(pprob, solver; newkw..., save_everystep = false)
 end

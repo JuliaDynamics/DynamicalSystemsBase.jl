@@ -2,10 +2,11 @@ using OrdinaryDiffEq, ForwardDiff, StaticArrays
 import OrdinaryDiffEq: isinplace, step!
 import Base: eltype
 
-export dimension, state, DynamicalSystem, integrator
+export dimension, state, DynamicalSystem, jacobian
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
 export set_parameter!, step!, inittime
 export trajectory
+export integrator, tangent_integrator, parallel_integrator
 
 #######################################################################################
 #                                  DynamicalSystem                                    #
@@ -29,15 +30,14 @@ with `eom` the equations of motion function.
 `p` is a parameter container, which we highly suggest to use a mutable object like
 `Array`, [`LMArray`](https://github.com/JuliaDiffEq/LabelledArrays.jl) or
 a dictionary. Pass `nothing` in the place of `p` if your system does not have
-parameters.
-
-The first case creates an internal implementation of a discrete system,
-which is as fast as possible. With these constructors you also do not need to
+parameters. With these constructors you also do not need to
 provide some final time, since it is not used by **DynamicalSystems.jl** in any manner.
 
 The keyword arguments `t0`, `J0` allow you to choose the initial time and provide
 an initialized Jacobian matrix.
 
+The discrete constructor creates an internal implementation of a discrete system,
+which is as fast as possible.
 The continuous uses [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/),
 see [`trajectory`](@ref) for default arguments.
 
@@ -77,7 +77,8 @@ You can always create a `DynamicalSystem` with the constructor
 DynamicalSystem(prob::DEProblem [, jacobian]; J0)
 ```
 if you have
-an instance of `DEProblem`, because you may want to use the callback functionality of
+an instance of `DEProblem` (either discrete or continuous),
+because you may want to use the callback functionality of
 [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/). Notice however
 that callbacks do not propagate into methods that evolve tangent space,
 like e.g. [`lyapunovs`](@ref) or [`gali`](@ref).
@@ -85,11 +86,11 @@ like e.g. [`lyapunovs`](@ref) or [`gali`](@ref).
 Using callbacks with **DynamicalSystems.jl** is very under-tested.
 Use at your own risk!
 
-### Getting a Solution struct
-Notice that, provided that you do not use the internal fast implementation of
+### Getting a `Solution` struct
+Provided that you do not use the internal fast implementation of
 a discrete problem, you can *always* take advantage of the full capabilities of
-[**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/) like for
-example automated plotting. Just do:
+the `Solution` struct of
+[**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/). Just do:
 ```julia
 typeof(ds) <: DynamicalSystem # true
 sol = solve(ds.prob, alg; kwargs...)
