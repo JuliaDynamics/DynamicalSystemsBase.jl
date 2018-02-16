@@ -18,25 +18,28 @@ const DDS_TSPAN = (0, Int(1e6))
 A minimal implementation of `DiscreteProblem` that is as fast as
 possible. Does not save any points and cannot use callbacks.
 """
-struct MinimalDiscreteProblem{IIP, F, S, P, D, T} <: DEProblem
-    # D, T are dimension and eltype of state
+struct MinimalDiscreteProblem{IIP, F, S, P} <: DEProblem
     f::F      # eom, but same syntax as ODEProblem
     u0::S     # initial state
     p::P      # parameter container
     t0::Int   # initial time
 end
 MDP = MinimalDiscreteProblem
-function MinimalDiscreteProblem(eom::F, state, p::P = nothing, t0 = 0) where {F, P}
+function MinimalDiscreteProblem(eom::F, state::AbstractArray{X},
+    p::P = nothing, t0 = 0) where {F, P, X}
     IIP = isinplace(eom, 4)
     # Ensure that there are only 2 cases: OOP with SVector or IIP with Vector
     # (requirement from ChaosTools)
-    IIP || typeof(eom(state, p, 0)) <: Union{SVector, Number} || error(
-    "Equations of motion must return an `SVector` for DynamicalSystems.jl")
-    u0 = IIP ? Vector(state) : SVector{length(state)}(state...)
+    if typeof(state) <: AbstractVector && X<:Number
+        IIP || typeof(eom(state, p, 0)) <: Union{SVector, Number} || error(
+        "Equations of motion must return an `SVector` for DynamicalSystems.jl")
+        u0 = IIP ? Vector(state) : SVector{length(state)}(state...)
+    else
+        u0 = state
+    end
     S = typeof(u0)
-    D = length(u0); T = eltype(u0)
-    D == 1 && (u0 = u0[1]) # handle 1D case
-    MinimalDiscreteProblem{IIP, F, S, P, D, T}(eom, u0, p, t0)
+    D = length(u0);
+    MinimalDiscreteProblem{IIP, F, S, P}(eom, u0, p, t0)
 end
 
 isinplace(::MDP{IIP}) where {IIP} = IIP
@@ -68,10 +71,10 @@ function DiscreteDynamicalSystem(
 end
 
 #####################################################################################
-#                                 integrator                                        #
+#                           MinimalDiscreteIntegrator                               #
 #####################################################################################
-mutable struct MinimalDiscreteIntegrator{IIP, F, S, P, D, T} <: DEIntegrator
-    prob::MDP{IIP, F, S, P, D, T}
+mutable struct MinimalDiscreteIntegrator{IIP, F, S, P} <: DEIntegrator
+    prob::MDP{IIP, F, S, P}
     u::S      # integrator state
     t::Int    # integrator "time" (counter)
     dummy::S  # dummy, used only in the IIP version
@@ -81,24 +84,13 @@ MDI = MinimalDiscreteIntegrator
 isinplace(::MDI{IIP}) where {IIP} = IIP
 
 init(prob::MDP, ::FunctionMap, u0::AbstractVector) = init(prob, u0)
-function init(prob::MDP{IIP, F, S, P, D, T}, u::AbstractVector = prob.u0
-    ) where {IIP, F, S, P, D, T}
+function init(prob::MDP{IIP, F, S, P}, u::AbstractVector) where
+    {IIP, F, S, P}
     u0 = IIP ? Vector(u) : SVector{length(u)}(u...)
-    return MDI{IIP, F, S, P, D, T}(prob, u0, prob.t0, deepcopy(u0), prob.p)
+    return MDI{IIP, F, S, P}(prob, u0, prob.t0, deepcopy(u0), prob.p)
 end
-
-function integrator(ds::DDS, u0::AbstractVector = ds.prob.u0)
-    U0 = safe_state_type(ds, u0)
-    if typeof(ds.prob) <: DiscreteProblem
-        prob = DiscreteProblem(ds.prob.f, U0, DDS_TSPAN, ds.prob.p;
-        callback = ds.prob.callback)
-        integ = init(prob, FunctionMap(); save_everystep = false)
-    elseif typeof(ds.prob) <: MDP
-        integ = init(ds.prob, U0)
-    else
-        error("wtf")
-    end
-    return integ
+function init(prob::MDP{IIP, F, S, P}) where {IIP, F, S, P}
+    return MDI{IIP, F, S, P}(prob, prob.u0, prob.t0, deepcopy(prob.u0), prob.p)
 end
 
 function reinit!(integ::MDI, u = integ.prob.u0)
@@ -164,6 +156,49 @@ function Base.show(io::IO, ds::MDI)
     rpad(" e.o.m.: ", ps)*"$(ds.prob.f)\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
     )
+end
+
+#####################################################################################
+#                                 Integrators                                       #
+#####################################################################################
+function integrator(ds::DDS, u0::AbstractVector = ds.prob.u0)
+    U0 = safe_state_type(ds, u0)
+    if typeof(ds.prob) <: DiscreteProblem
+        prob = DiscreteProblem(ds.prob.f, U0, DDS_TSPAN, ds.prob.p;
+        callback = ds.prob.callback)
+        integ = init(prob, FunctionMap(); save_everystep = false)
+    elseif typeof(ds.prob) <: MDP
+        integ = init(ds.prob, U0)
+    else
+        error("Unknown Discrete system Problem Type.")
+    end
+    return integ
+end
+
+function tangent_integrator(ds::DDS, k::Int;
+    u0 = ds.prob.u0)
+    return tangent_integrator(
+    ds, orthonormal(dimension(ds), k); u0 = u0)
+end
+
+function tangent_integrator(ds::DDS{IIP}, Q0::AbstractMatrix;
+    u0 = ds.prob.u0) where {IIP}
+
+    Q = safe_matrix_type(ds, Q0)
+    u = safe_state_type(ds, u0)
+    size(Q)[2] > dimension(ds) && throw(ArgumentError(
+    "It is not possible to evolve more tangent vectors than the system's dimension!"
+    ))
+
+    tangentf = create_tangent(ds, size(Q)[2])
+    tanprob = MDP(tangentf, hcat(u, Q), ds.prob.p, inittime(ds))
+    return init(tanprob)
+end
+
+function parallel_integrator(ds::DDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
+    peom, st = create_parallel(ds, states)
+    pprob = MDP(peom, st, ds.prob.p, ds.prob.t0)
+    return init(pprob)
 end
 
 #####################################################################################

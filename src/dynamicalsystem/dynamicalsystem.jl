@@ -17,7 +17,8 @@ The central structure of **DynamicalSystems.jl**. All functions of the suite tha
 handle systems "analytically" (in the sense that they can use known equations of
 motion) expect an instance of this type.
 
-Contains a problem defining the system and the jacobian function.
+Contains a problem defining the system (field `prob`) and the jacobian function
+(field `jacobian`).
 
 ## Constructing a `DynamicalSystem`
 ```julia
@@ -36,6 +37,9 @@ provide some final time, since it is not used by **DynamicalSystems.jl** in any 
 
 The keyword arguments `t0`, `J0` allow you to choose the initial time and provide
 an initialized Jacobian matrix.
+
+The continuous uses [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/),
+see [`trajectory`](@ref) for default arguments.
 
 ### Equations of motion
 The are two "versions" for `DynamicalSystem`, depending on whether the
@@ -81,10 +85,20 @@ like e.g. [`lyapunovs`](@ref) or [`gali`](@ref).
 Using callbacks with **DynamicalSystems.jl** is very under-tested.
 Use at your own risk!
 
+### Getting a Solution struct
+Notice that, provided that you do not use the internal fast implementation of
+a discrete problem, you can *always* take advantage of the full capabilities of
+[**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/) like for
+example automated plotting. Just do:
+```julia
+typeof(ds) <: DynamicalSystem # true
+sol = solve(ds.prob, alg; kwargs...)
+# do stuff with sol
+```
+
 ## Relevant Functions
-[`state`](@ref), [`trajectory`](@ref), [`jacobian`](@ref),
-[`set_parameter!`](@ref), [`integrator`](@ref), [`tangent_integrator`](@ref),
-[`parallel_integrator`](@ref).
+[`state`](@ref), [`trajectory`](@ref), [`jacobian`](@ref), [`dimension`](@ref),
+[`set_parameter!`](@ref).
 """
 struct DynamicalSystem{
         IIP, # is in place , for dispatch purposes and clarity
@@ -99,10 +113,6 @@ end
 
 DS = DynamicalSystem
 isautodiff(ds::DS{IIP, IAD, DEP, JAC, JM}) where {DEP, IIP, JAC, IAD, JM} = IAD
-# problemtype(ds::DS{IIP, IAD, DEP, JAC, JM, TAN}) where
-# {DEP<:DiscreteProblem, IIP, JAC, IAD, JM, TAN} = DiscreteProblem
-# problemtype(ds::DS{IIP, IAD, DEP, JAC, JM, TAN}) where {DEP<:ODEProblem, IIP, JAC, IAD} =
-# ODEProblem
 
 function DynamicalSystem(prob::DEProblem)
     IIP = isinplace(prob)
@@ -212,9 +222,10 @@ jacobian(ds::DS{false}, u = ds.prob.u0) =
 ds.jacobian(u, ds.prob.p, inittime(ds.prob))
 
 #######################################################################################
-#                                 Tanget Dynamics                                     #
+#                            Tanget & Parallel Dynamics                               #
 #######################################################################################
-function create_tangent(ds::DS{IIP}) where {IIP}
+# Create equations of motion of tangent dynamics
+function create_tangent(ds::DS{IIP}, k = dimension(ds)) where {IIP}
     if IIP
         J = deepcopy(ds.J)
         tangentf = (du, u, p, t) -> begin
@@ -225,6 +236,7 @@ function create_tangent(ds::DS{IIP}) where {IIP}
             nothing
         end
     else
+        ws_index = SVector{k, Int}(2:(k+1)...)
         tangentf = (u, p, t) -> begin
             du = ds.prob.f(u[:, 1], p, t)
             J = ds.jacobian(u[:, 1], p, t)
@@ -241,7 +253,7 @@ end
 function create_tangent(ds::DS{true, true})
     J = deepcopy(ds.J)
     cfg = ForwardDiff.JacobianConfig(
-        (du, u) -> (du, u, ds.prob.p, inittime(ds),
+        (du, u) -> (du, u, ds.prob.p, inittime(ds)),
         deepcopy(state(ds)), state(ds)
     )
     tangentf = (du, u, p, t) -> begin
@@ -255,6 +267,30 @@ function create_tangent(ds::DS{true, true})
     return tangentf
 end
 
+# Create equations of motion of evolving states in parallel
+function create_parallel(ds::DS{true}, states)
+    st = [Vector(s) for s in states]
+    L = length(st)
+    paralleleom = (du, u, p, t) -> begin
+        for i in 1:L
+            @inbounds ds.prob.f(du[i], u[i], p, t)
+        end
+    end
+    return paralleleom, st
+end
+
+function create_parallel(ds::DS{false}, states)
+    D = length(states[1])
+    st = [SVector{D}(s) for s in states]
+    L = length(st)
+    # The following may be inneficient
+    paralleleom = (du, u, p, t) -> begin
+        for i in 1:L
+            @inbounds du[i] = ds.prob.f(u[i], p, t)
+        end
+    end
+    return paralleleom, st
+end
 
 #######################################################################################
 #                                     Docstrings                                      #
@@ -297,6 +333,17 @@ Similar equations hold for the discrete case.
 See [`trajectory`](@ref) for `diff_eq_kwargs`.
 """
 function tangent_integrator end
+
+"""
+    parallel_integrator(ds::DynamicalSystem, states; diff_eq_kwargs) -> integ
+Return a `DEIntegrator` object that can be used to evolve many `states` of
+a system in parallel interactively using `step!(integ [, Δt])`.
+
+*Warning* : Callbacks do not propagate into `parallel_integrator`.
+
+See [`trajectory`](@ref) for `diff_eq_kwargs`.
+"""
+function parallel_integrator end
 
 """
     trajectory(ds::DynamicalSystem, T [, u]; kwargs...) -> dataset

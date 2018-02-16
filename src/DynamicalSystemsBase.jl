@@ -14,7 +14,6 @@ include("dynamicalsystem/dynamicalsystem.jl")
 include("dynamicalsystem/discrete.jl")
 include("dynamicalsystem/continuous.jl")
 include("dynamicalsystem/famous_systems.jl")
-include("dynamicalsystem/tangent.jl")
 
 export Systems
 

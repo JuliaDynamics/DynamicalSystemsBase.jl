@@ -67,7 +67,7 @@ end
 function tangent_integrator(ds::CDS, k::Int;
     u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
     return tangent_integrator(
-    ds, orthonormal(dimension(ds), k); u0 = u0; diff_eq_kwargs = diff_eq_kwargs)
+    ds, orthonormal(dimension(ds), k); u0 = u0, diff_eq_kwargs = diff_eq_kwargs)
 end
 
 function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
@@ -75,11 +75,22 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
 
     Q = safe_matrix_type(ds, Q0)
     u = safe_state_type(ds, u0)
-    tangentf = create_tangent(ds)
+    size(Q)[2] > dimension(ds) && throw(ArgumentError(
+    "It is not possible to evolve more tangent vectors than the system's dimension!"
+    ))
+
+    tangentf = create_tangent(ds, size(Q)[2])
     tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (inittime(ds), Inf), ds.prob.p)
 
     solver, newkw = extract_solver(diff_eq_kwargs)
     return init(tanprob, solver; newkw..., save_everystep = false)
+end
+
+function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
+    peom, st = create_parallel(ds, states)
+    pprob = ODEProblem{true}(peom, st, (inittime(ds), Inf), ds.prob.p)
+    solver, newkw = extract_solver(diff_eq_kwargs)
+    return init(pprob, solver; newkw..., save_everystep = false)
 end
 
 #####################################################################################
