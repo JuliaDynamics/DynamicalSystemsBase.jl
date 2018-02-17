@@ -66,14 +66,13 @@ function integrator(ds::CDS{iip}, u0 = ds.prob.u0;
     end
 end
 
-function tangent_integrator(ds::CDS, k::Int;
-    u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
-    return tangent_integrator(
-    ds, orthonormal(dimension(ds), k); u0 = u0, diff_eq_kwargs = diff_eq_kwargs)
+function tangent_integrator(ds::CDS, k::Int; kwargs...)
+    return tangent_integrator(ds, orthonormal(dimension(ds), k); kwargs...)
 end
 
 function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
-    u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS) where {IIP}
+    u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
+    t0 = inittime(ds)) where {IIP}
 
     Q = safe_matrix_type(ds, Q0)
     u = safe_state_type(ds, u0)
@@ -82,19 +81,20 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
     ))
 
     tangentf = create_tangent(ds, size(Q)[2])
-    tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (inittime(ds), Inf), ds.prob.p)
+    tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (t0, Inf), ds.prob.p)
 
     solver, newkw = extract_solver(diff_eq_kwargs)
     return init(tanprob, solver; newkw..., save_everystep = false)
 end
 
+# Vector-of-Vector does not work with DiffEq atm:
 # This is a workaround currently, until DiffEq allows Vector[Vector]
 function create_parallel(ds::CDS{true}, states)
-    st = hcat(states...)
-    L = length(st)
+    st = Matrix(hcat(states...))
+    L = size(st)[2]
     paralleleom = (du, u, p, t) -> begin
         for i in 1:L
-            ds.prob.f(view(du, i, :), view(u, i, :), p, t)
+            ds.prob.f(view(du, :, i), view(u, :, i), p, t)
         end
     end
     return paralleleom, st
@@ -105,11 +105,6 @@ function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KW
     pprob = ODEProblem(peom, st, (inittime(ds), Inf), ds.prob.p)
     solver, newkw = extract_solver(diff_eq_kwargs)
     return init(pprob, solver; newkw..., save_everystep = false)
-end
-
-# Vector-of-Vector does not work with DiffEq atm:
-function parallel_integrator(ds::CDS{true}, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
-    error("This is not supported by DiffEq at the moment.")
 end
 
 #####################################################################################

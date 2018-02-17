@@ -3,6 +3,7 @@ using Base.Test, StaticArrays
 using DynamicalSystemsBase: CDS, DDS
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
 using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
+using BenchmarkTools
 
 u0 = [0, 10.0, 0]
 p = [10, 28, 8/3]
@@ -32,7 +33,7 @@ for i in 1:8
 
     integ = integrator(ds)
     println("normal")
-    @time integ = integrator($ds)
+    @time integ = integrator(ds)
     step!(integ)
     @time step!(integ)
     te = tangent_integrator(ds, orthonormal(3,3))
@@ -45,5 +46,4 @@ for i in 1:8
     @time te = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]])
     step!(te); step!(te)
     @time step!(te)
-
 end

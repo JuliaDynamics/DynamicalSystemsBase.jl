@@ -82,8 +82,17 @@ for i in 1:8
             else
                 @test state(pinteg)[1] == state(integ)
             end
-
-
+        else
+            pinteg = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]])
+            puprev = deepcopy(state(pinteg))
+            step!(pinteg)
+            @test state(pinteg)[:, 1] == state(pinteg)[:, 2]
+            @test puprev != state(pinteg)
+            tt = pinteg.t
+            while integ.t < tt
+                step!(integ)
+            end
+            @test state(pinteg)[:, 1] ≈ integ(tt)
         end
     end
 end

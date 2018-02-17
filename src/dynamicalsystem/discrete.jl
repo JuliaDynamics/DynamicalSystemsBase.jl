@@ -100,6 +100,14 @@ function reinit!(integ::MDI, u = integ.prob.u0)
     return
 end
 
+@inline function (integ::MinimalDiscreteIntegrator)(t::Real)
+    if t == integ.t
+        return t
+    else
+        error("Cant extrapolate discrete systems")
+    end
+end
+
 #####################################################################################
 #                                   Stepping                                        #
 #####################################################################################

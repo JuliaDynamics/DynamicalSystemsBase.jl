@@ -309,14 +309,16 @@ See [`trajectory`](@ref) for `diff_eq_kwargs`.
 function integrator end
 
 """
-    tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; u0, diff_eq_kwargs)
+    tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; u0, t0, diff_eq_kwargs)
 Return a `DEIntegrator` object that evolves in parallel both the system as well
 as deviation vectors living on the tangent space.
 
 `Q0` is a *matrix* whose columns are initial values for deviation vectors. If
 instead of a matrix `Q0` an integer `k` is given, then `k` random orthonormal
-vectors are choosen as initial conditions. You can also give as a keyword argument
-a different initial state for the system `u0`.
+vectors are choosen as initial conditions.
+
+You can also give as a keyword argument
+a different initial state at time `u0, t0`.
 
 See [`trajectory`](@ref) for `diff_eq_kwargs`.
 
