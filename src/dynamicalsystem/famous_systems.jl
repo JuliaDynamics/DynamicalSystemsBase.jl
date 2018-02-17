@@ -128,7 +128,7 @@ The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
 function double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
-    return ContinuousDS(doublependulum_eom, u0, [G, L1, L2, M1, M2])
+    return CDS(doublependulum_eom, u0, [G, L1, L2, M1, M2])
 end
 @inbounds function doublependulum_eom(du, state, p, t)
     G, L1, L2, M1, M2 = p
@@ -259,7 +259,7 @@ function duffing(u0 = [rand(), rand()]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
 
     J = zeros(eltype(u0), 2, 2)
     J[1,2] = 1
-    return ContinuousDS(duffing_eom, u0, [ω, f, d, β], duffing_jacob)
+    return CDS(duffing_eom, u0, [ω, f, d, β], duffing_jacob)
 end
 @inbounds function duffing_eom(x, p, t)
     ω, f, d, β = p
@@ -281,7 +281,7 @@ Shinriki oscillator with all other parameters (besides `R1`) set to constants.
 function shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
     # # Jacobian caller for Shinriki:
     # shinriki_eom(::Type{Val{:jac}}, J, u, p, t) = (shi::Shinriki)(t, u, J)
-    return ContinuousDS(shinriki_eom, u0, [R1])
+    return CDS(shinriki_eom, u0, [R1])
 end
 shinriki_voltage(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
 function shinriki_eom(u, p, t)
@@ -296,7 +296,7 @@ function shinriki_eom(u, p, t)
     )
 
     du3 = (1/0.32)*(-u[3]*0.1 + u[2])
-    return SVector{3, Float64}(du1, du2, du3)
+    return SVector{3}(du1, du2, du3)
 end
 
 
@@ -320,14 +320,14 @@ function's documentation string.
 [1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
 """
 function gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
-    return ContinuousDS(gissinger_eom, u0, [μ, ν, Γ])
+    return CDS(gissinger_eom, u0, [μ, ν, Γ])
 end
 function gissinger_eom(u, p, t)
     μ, ν, Γ = p
     du1 = μ*u[1] - u[2]*u[3]
     du2 = -ν*u[2] + u[1]*u[3]
     du3 = Γ - u[3] + u[1]*u[2]
-    return SVector{3, Float64}(du1, du2, du3)
+    return SVector{3}(du1, du2, du3)
 end
 
 #######################################################################################

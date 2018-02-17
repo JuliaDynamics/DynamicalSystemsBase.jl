@@ -4,12 +4,12 @@ ti = time()
 
 # Mathematics:
 include("math_tests.jl")
-# Discrete:
-include("discrete_types.jl")
-include("discrete_systems.jl")
-include("discrete_tangent.jl")
-# Continuous:
+# Systems:
+include("dynsys_types.jl")
+include("dynsys_tangent.jl")
 include("continuous_systems.jl")
+include("discrete_systems.jl")
+
 # Dataset:
 include("dataset_tests.jl")
 # Reconstruction:

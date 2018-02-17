@@ -15,7 +15,7 @@ using Base.Test, StaticArrays
     c = data[:, 3]
 
     @test Dataset(a, b, c) == data
-    @test size(Dataset(a, b)) == (1000, 2)
+    @test size(Dataset(a, b)) == (1001, 2)
 
     @test data[:, 2:3][:, 1] == data[:, 2]
   end

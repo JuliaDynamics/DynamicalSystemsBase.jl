@@ -25,12 +25,12 @@ struct MinimalDiscreteProblem{IIP, F, S, P} <: DEProblem
     t0::Int   # initial time
 end
 MDP = MinimalDiscreteProblem
-function MinimalDiscreteProblem(eom::F, state::AbstractArray{X},
-    p::P = nothing, t0 = 0) where {F, P, X}
+function MinimalDiscreteProblem(eom::F, state,
+    p::P = nothing, t0 = 0) where {F, P}
     IIP = isinplace(eom, 4)
     # Ensure that there are only 2 cases: OOP with SVector or IIP with Vector
     # (requirement from ChaosTools)
-    if typeof(state) <: AbstractVector && X<:Number
+    if typeof(state) <: AbstractVector && eltype(state)<:Number
         IIP || typeof(eom(state, p, 0)) <: Union{SVector, Number} || error(
         "Equations of motion must return an `SVector` for DynamicalSystems.jl")
         u0 = IIP ? Vector(state) : SVector{length(state)}(state...)
@@ -38,7 +38,6 @@ function MinimalDiscreteProblem(eom::F, state::AbstractArray{X},
         u0 = state
     end
     S = typeof(u0)
-    D = length(u0);
     MinimalDiscreteProblem{IIP, F, S, P}(eom, u0, p, t0)
 end
 
@@ -83,14 +82,15 @@ end
 MDI = MinimalDiscreteIntegrator
 isinplace(::MDI{IIP}) where {IIP} = IIP
 
-init(prob::MDP, ::FunctionMap, u0::AbstractVector) = init(prob, u0)
-function init(prob::MDP{IIP, F, S, P}, u::AbstractVector) where
+init(prob::MDP, ::FunctionMap, u0) = init(prob, u0)
+function init(prob::MDP{IIP, F, S, P}, u = prob.u0) where
     {IIP, F, S, P}
-    u0 = IIP ? Vector(u) : SVector{length(u)}(u...)
+    if typeof(u) <: AbstractVector
+        u0 = IIP ? Vector(u) : SVector{length(u)}(u...)
+    else
+        u0 = u
+    end
     return MDI{IIP, F, S, P}(prob, u0, prob.t0, deepcopy(u0), prob.p)
-end
-function init(prob::MDP{IIP, F, S, P}) where {IIP, F, S, P}
-    return MDI{IIP, F, S, P}(prob, prob.u0, prob.t0, deepcopy(prob.u0), prob.p)
 end
 
 function reinit!(integ::MDI, u = integ.prob.u0)
@@ -163,7 +163,7 @@ end
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
-function integrator(ds::DDS, u0::AbstractVector = ds.prob.u0)
+function integrator(ds::DDS, u0 = ds.prob.u0)
     U0 = safe_state_type(ds, u0)
     if typeof(ds.prob) <: DiscreteProblem
         prob = DiscreteProblem(ds.prob.f, U0, DDS_TSPAN, ds.prob.p;
@@ -208,17 +208,37 @@ end
 #####################################################################################
 function trajectory(ds::DDS, t, u = ds.prob.u0; dt::Int = 1)
 
-    D = dimension(ds); T = eltype(ds)
-    integ = integrator(ds, u)
+    D = dimension(ds); T = eltype(state(ds))
+    if D == 1
+        return trajectory_1D(ds, t, u, dt)
+    else
+        integ = integrator(ds, u)
+        ti = inittime(ds)
+        tvec = ti:dt:t
+        L = length(tvec)
+        T = eltype(state(ds))
+        data = Vector{SVector{D, T}}(L)
+        data[1] = u
+        for i in 2:L
+            step!(integ, dt)
+            data[i] = SVector{D, T}(integ.u)
+        end
+
+        return Dataset(data)
+    end
+end
+
+function trajectory_1D(ds::DDS, t, u, dt)
     ti = inittime(ds)
     tvec = ti:dt:t
     L = length(tvec)
-    data = Vector{SVector{D, T}}(L)
+    integ = integrator(ds, u)
+    T = typeof(state(ds))
+    data = Vector{T}(L)
     data[1] = u
     for i in 2:L
         step!(integ, dt)
         data[i] = integ.u
     end
-
-    return Dataset(data)
+    return data
 end

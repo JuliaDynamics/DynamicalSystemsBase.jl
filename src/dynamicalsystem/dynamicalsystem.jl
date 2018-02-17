@@ -116,10 +116,7 @@ DS = DynamicalSystem
 isautodiff(ds::DS{IIP, IAD, DEP, JAC, JM}) where {DEP, IIP, JAC, IAD, JM} = IAD
 
 function DynamicalSystem(prob::DEProblem)
-    IIP = isinplace(prob)
     jac = create_jacobian(prob)
-    DEP = typeof(prob)
-    JAC = typeof(jac)
     return DynamicalSystem(prob, jac; iad = true)
 end
 function DynamicalSystem(prob::DEProblem, jac::JAC;
@@ -133,9 +130,11 @@ function DynamicalSystem(prob::DEProblem, jac::JAC;
 
     if J0 == nothing
         J = get_J(prob, jac)
-        IIP || typeof(J) <: SMatrix || throw(ArgumentError(
-        "The jacobian function must return an SMatrix for the out-of-place version"
-        ))
+        if !issubtype(typeof(J), Number)
+            IIP || typeof(J) <: SMatrix || throw(ArgumentError(
+            "The jacobian function must return an SMatrix for the out-of-place version"
+            ))
+        end
     else
         J = safe_matrix_type(IIP, J0)
     end
@@ -187,11 +186,15 @@ function create_jacobian(prob) #creates jacobian function
         ForwardDiff.jacobian!(J, (y, x) -> prob.f(y, x, p, t),
         dum, u, cfg, Val{false}())
     else
-        # SVector methods do *not* use the config
-        # cfg = ForwardDiff.JacobianConfig(
-        #     (x) -> prob.f(x, prob.p, prob.tspan[1]), prob.u0)
-        jac = (u, p, t) ->
-        ForwardDiff.jacobian((x) -> prob.f(x, p, t), u, #=cfg=#)
+        if dimension(prob) == 1
+            jac = (u, p, t) -> ForwardDiff.derivative((x) -> prob.f(x, p, t), u)
+        else
+            # SVector methods do *not* use the config
+            # cfg = ForwardDiff.JacobianConfig(
+            #     (x) -> prob.f(x, prob.p, prob.tspan[1]), prob.u0)
+            jac = (u, p, t) ->
+            ForwardDiff.jacobian((x) -> prob.f(x, p, t), u, #=cfg=#)
+        end
     end
     return jac
 end
@@ -411,3 +414,20 @@ function safe_matrix_type(ds::DS{false}, Q::AbstractMatrix)
 end
 safe_matrix_type(IIP::Bool, Q::AbstractMatrix) =
 IIP ? Matrix(Q) : SMatrix{size(Q)...}(Q)
+safe_matrix_type(ds::DS, a::Number) = a
+
+function set_state!(integ::DEIntegrator, s)
+  isinplace(integ.prob) ? (integ.u .= s) : integ.u = s
+  u_modified!(integ, true)
+  return
+end
+
+function set_state!(integ::DEIntegrator, indx::Int, s)
+  if eltype(state(integ)) <: SVector
+    integ.u[idx] = s
+  else
+    integ.u[idx] .= s
+  end
+  u_modified!(integ, true)
+  return
+end

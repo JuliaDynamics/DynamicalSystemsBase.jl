@@ -1,57 +1,89 @@
-if current_module() != DynamicalSystemsBase
-  using DynamicalSystemsBase
-end
-using Base.Test, StaticArrays, OrdinaryDiffEq
+using DynamicalSystemsBase
+using Base.Test, StaticArrays
+using DynamicalSystemsBase: CDS, DDS
+using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
+using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
 
-# Test:
-@inline @inbounds function liip(du, u, p, t)
-    σ = p[1]; ρ = p[2]; β = p[3]
-    du[1] = σ*(u[2]-u[1])
-    du[2] = u[1]*(ρ-u[3]) - u[2]
-    du[3] = u[1]*u[2] - β*u[3]
-    return nothing
-end
-@inline @inbounds function loop(u, p, t)
-    σ = p[1]; ρ = p[2]; β = p[3]
-    du1 = σ*(u[2]-u[1])
-    du2 = u[1]*(ρ-u[3]) - u[2]
-    du3 = u[1]*u[2] - β*u[3]
-    return SVector{3}(du1, du2, du3)
-end
-@inline @inbounds function lorenz63_jacob(J, u, p, t)
-    σ, ρ, β = p
-    J[1,1] = -σ; J[1, 2] = σ
-    J[2,1] = ρ - u[3]; J[2,3] = -u[1]
-    J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -β
-    return nothing
-end
+println("\nTesting dynamical systems...")
 
-@inline henon_eom(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-function henon_eom_iip(dx, x, p, n)
-    @inbounds dx[1] = 1.0 - p[1]*x[1]^2 + x[2]
-    @inbounds dx[2] = p[2]*x[1]
-    return
-end
-@inbounds function henon_jacob_iip(J, x, p, n)
-    J[1,1] = -2*p[1]*x[1]
-    J[1,2] = 1.0
-    J[2,1] = p[2]
-    J[2,2] = 0.0
-    return
-end
-
-u0 = rand(3)
+u0 = [0, 10.0, 0]
 p = [10, 28, 8/3]
-ds1 = CDS(liip, u0, p)
-ds2 = CDS(loop, u0, p)
-@assert isinplace(ds1)
-@assert !isinplace(ds2)
-
-u0h = zeros(2)
+u0h = ones(2)
 ph = [1.4, 0.3]
-he1 = DDS(henon_eom_iip, u0h, ph)
-he2 = DDS(henon_eom, u0h, ph)
-@assert isinplace(ds1)
-@assert !isinplace(ds2)
 
-J = rand(3,3)
+FUNCTIONS = [liip, liip_jac, loop, loop_jac, hiip, hiip_jac, hoop, hoop_jac]
+INITCOD = [u0, u0h]
+PARAMS = [p, ph]
+
+for i in 1:8
+    @testset "combination $i" begin
+        sysindx = i < 5 ? 1 : 2
+        if i < 5
+            if isodd(i)
+                ds = CDS(FUNCTIONS[i], INITCOD[sysindx], PARAMS[sysindx])
+            else
+                ds = CDS(FUNCTIONS[i-1], INITCOD[sysindx], PARAMS[sysindx], FUNCTIONS[i])
+            end
+        else
+            if isodd(i)
+                ds = DDS(FUNCTIONS[i], INITCOD[sysindx], PARAMS[sysindx])
+            else
+                ds = DDS(FUNCTIONS[i-1], INITCOD[sysindx], PARAMS[sysindx], FUNCTIONS[i])
+            end
+        end
+
+        isad = DynamicalSystemsBase.isautodiff(ds)
+        iip = DynamicalSystemsBase.isinplace(ds)
+        @test isodd(i) ? isad : !isad
+        @test mod(i-1, 4) < 2 ? iip : !iip
+        J = jacobian(ds)
+        @test typeof(J) <: (iip ? Matrix : SMatrix)
+
+        tinteg = tangent_integrator(ds, orthonormal(dimension(ds), dimension(ds)))
+        tuprev = deepcopy(state(tinteg))
+        step!(tinteg)
+        @test tuprev != state(tinteg)
+
+        integ = integrator(ds)
+        uprev = deepcopy(state(integ))
+        step!(integ)
+        @test uprev != state(integ)
+
+        if i < 5
+
+            tt = tinteg.t
+            while integ.t < tt
+                step!(integ)
+            end
+
+            @test state(tinteg)[:, 1] ≈ integ(tt)
+        else
+            @test state(tinteg)[:, 1] == state(integ)
+        end
+
+        # Currently the in-place version does not work from DiffEq's side:
+        if i > 2
+            pinteg = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]])
+            puprev = deepcopy(state(pinteg))
+            step!(pinteg)
+            @test state(pinteg)[1] == state(pinteg)[2]
+            @test puprev != state(pinteg)
+
+            if i < 5
+                # The below code does not work at the moment because there
+                # is no interpolation for Vector[SVector]
+
+                # tt = pinteg.t
+                # while integ.t < tt
+                #     step!(integ)
+                # end
+                # @test state(pinteg)[1] ≈ integ(tt)
+
+            else
+                @test state(pinteg)[1] == state(integ)
+            end
+
+
+        end
+    end
+end

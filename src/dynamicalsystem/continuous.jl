@@ -33,14 +33,14 @@ DynamicalSystem{IIP, IAD, PT, JAC, JM} where
 
 CDS = ContinuousDynamicalSystem
 
-function ContinuousDynamicalSystem(eom, state::AbstractVector, p, j = nothing; t0=0.0,
+function ContinuousDynamicalSystem(eom, s::AbstractVector, p, j = nothing; t0=0.0,
     J0 = nothing)
     IIP = isinplace(eom, 4)
     # Ensure that there are only 2 cases: OOP with SVector or IIP with Vector
     # (requirement from ChaosTools)
-    IIP || typeof(eom(state, p, 0)) <: SVector || error(
+    IIP || typeof(eom(s, p, 0)) <: SVector || error(
     "Equations of motion must return an `SVector` for DynamicalSystems.jl")
-    u0 = IIP ? Vector(state) : SVector{length(state)}(state...)
+    u0 = IIP ? Vector(s) : SVector{length(s)}(s...)
     prob = ODEProblem(eom, u0, (Float64(t0), Inf), p)
     if j == nothing
         return DS(prob)
@@ -52,10 +52,12 @@ end
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
-function integrator(ds::CDS, u0 = ds.prob.u0;
-    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, saveat = nothing, tspan = ds.prob.tspan)
+function integrator(ds::CDS{iip}, u0 = ds.prob.u0;
+    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
+    saveat = nothing, tspan = ds.prob.tspan) where {iip}
+
     solver, newkw = extract_solver(diff_eq_kwargs)
-    prob = ODEProblem(ds.prob.f, u0, tspan, ds.prob.p; callback =
+    prob = ODEProblem{iip}(ds.prob.f, u0, tspan, ds.prob.p; callback =
     ds.prob.callback, mass_matrix = ds.prob.mass_matrix)
     if saveat == nothing
         integ = init(prob, solver; newkw..., save_everystep = false)
@@ -86,11 +88,28 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
     return init(tanprob, solver; newkw..., save_everystep = false)
 end
 
+# This is a workaround currently, until DiffEq allows Vector[Vector]
+function create_parallel(ds::CDS{true}, states)
+    st = hcat(states...)
+    L = length(st)
+    paralleleom = (du, u, p, t) -> begin
+        for i in 1:L
+            ds.prob.f(view(du, i, :), view(u, i, :), p, t)
+        end
+    end
+    return paralleleom, st
+end
+
 function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
     peom, st = create_parallel(ds, states)
     pprob = ODEProblem(peom, st, (inittime(ds), Inf), ds.prob.p)
     solver, newkw = extract_solver(diff_eq_kwargs)
     return init(pprob, solver; newkw..., save_everystep = false)
+end
+
+# Vector-of-Vector does not work with DiffEq atm:
+function parallel_integrator(ds::CDS{true}, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
+    error("This is not supported by DiffEq at the moment.")
 end
 
 #####################################################################################
