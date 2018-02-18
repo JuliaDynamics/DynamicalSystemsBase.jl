@@ -12,7 +12,7 @@ include("various.jl")
 
 include("dynamicalsystem/dynamicalsystem.jl")
 include("dynamicalsystem/discrete.jl")
-include("dynamicalsystem/continuous.jl")
+# include("dynamicalsystem/continuous.jl")
 include("dynamicalsystem/famous_systems.jl")
 
 include("deprecations.jl")

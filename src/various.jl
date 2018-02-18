@@ -150,5 +150,11 @@ end
     orthonormal(D, k) -> ws
 Return a matrix `ws` with `k` columns, each being
 an `D`-dimensional orthonormal vector.
+
+Always returns `SMatrix` for stability reasons.
 """
-orthonormal(D, k) = qr(rand(D, D))[1][:, 1:k]
+function orthonormal(D::Int, k::Int)
+    k > D && throw(ArgumentError("k must be ≤ D"))
+    q = qr(rand(D, D))[1][:, 1:k]
+    return SMatrix{D, k, Float64}(q)
+end

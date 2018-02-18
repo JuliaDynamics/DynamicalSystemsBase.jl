@@ -37,7 +37,7 @@ The keyword arguments `t0`, `J0` allow you to choose the initial time and provid
 an initialized Jacobian matrix.
 
 The discrete constructor creates an internal implementation of a discrete system,
-which is as fast as possible.
+which is very efficient.
 The continuous uses [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/),
 see [`trajectory`](@ref) for default arguments.
 
@@ -71,10 +71,10 @@ for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place ver
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
 
-### Using `DEProblem`
-You can always create a `DynamicalSystem` with the constructor
+### Using `DDEProblem`
+You can always create a `ContinuousDynamicalSystem` with the constructor
 ```julia
-DynamicalSystem(prob::DEProblem [, jacobian]; J0)
+ContinuousDynamicalSystem(prob::ODEProblem [, jacobian [, J0]])
 ```
 if you have
 an instance of `DEProblem` (either discrete or continuous),
@@ -101,63 +101,77 @@ sol = solve(ds.prob, alg; kwargs...)
 [`state`](@ref), [`trajectory`](@ref), [`jacobian`](@ref), [`dimension`](@ref),
 [`set_parameter!`](@ref).
 """
-struct DynamicalSystem{
-        IIP, # is in place , for dispatch purposes and clarity
-        IAD, # is auto differentiated? Only for constructing tangent_integrator
-        PT<:DEProblem, # problem type
-        JAC, # jacobian function (either user-provided or FD)
-        JM}  # initialized jacobian matrix
-    prob::PT
-    jacobian::JAC
-    J::JM
+abstract type DynamicalSystem{
+        IIP,     # is in place , for dispatch purposes and clarity
+        S,       # state type
+        D,       # dimension
+        F,       # equations of motion
+        P,       # parameters
+        JAC,     # jacobian
+        JM,      # jacobian matrix
+        IAD}     # is auto-differentiated
+    # one-liner: {IIP, S, D, F, P, JAC, JM, IAD}
+    # Subtypes of DynamicalSystem have fields:
+    # 1. prob
+    # 2. jacobian (function)
+    # 3. jacobian (matrix)  <- will allow Sparse implementation in the future
 end
 
-DS = DynamicalSystem
-isautodiff(ds::DS{IIP, IAD, DEP, JAC, JM}) where {DEP, IIP, JAC, IAD, JM} = IAD
-
-function DynamicalSystem(prob::DEProblem)
-    jac = create_jacobian(prob)
-    return DynamicalSystem(prob, jac; iad = true)
-end
-function DynamicalSystem(prob::DEProblem, jac::JAC;
-    J0 = nothing, iad = false) where {JAC}
-
-    IIP = isinplace(prob)
-    JIP = isinplace(jac, 4)
-    JIP == IIP || throw(ArgumentError(
-    "The jacobian function and the equations of motion are not of the same form!"*
-    " The jacobian `isinplace` is $(JIP) while the eom `isinplace` is $(IIP)."))
-
-    if J0 == nothing
-        J = get_J(prob, jac)
-        if !issubtype(typeof(J), Number)
-            IIP || typeof(J) <: SMatrix || throw(ArgumentError(
-            "The jacobian function must return an SMatrix for the out-of-place version"
-            ))
-        end
-    else
-        J = safe_matrix_type(IIP, J0)
-    end
-
-    DEP = typeof(prob)
-    JM = typeof(J)
-
-    return DynamicalSystem{IIP, iad, DEP, JAC, JM}(prob, jac, J)
-end
+const DS = DynamicalSystem
 
 # Expand methods
-for f in (:isinplace, :dimension, :statetype, :state, :systemtype,
-    :set_parameter!, :inittime)
-    @eval begin
-        @inline ($f)(ds::DynamicalSystem, args...) = $(f)(ds.prob, args...)
-    end
+isinplace(ds::DS{IIP}) where {IIP} = IIP
+statetype(ds::DS{IIP, S}) where {IIP, S} = S
+isautodiff(ds::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
+{IIP, S, D, F, P, JAC, JM, IAD} = IAD
+
+"""
+    dimension(thing) -> D
+Return the dimension of the `thing`, in the sense of state-space dimensionality.
+"""
+dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
+state(ds::DS) = ds.prob.u0
+#####################################################################################
+#                                    Auxilary                                       #
+#####################################################################################
+"""
+    set_parameter!(ds::DynamicalSystem, index, value)
+    set_parameter!(ds::DynamicalSystem, values)
+Change one or many parameters of the system
+by setting `p[index] = value` in the first case
+and `p .= values` in the second.
+"""
+set_parameter!(prob, index, value) = (prob.p[index] = value)
+set_parameter!(prob, values) = (prob.p .= values)
+set_parameter!(ds::DS, args...) = set_parameter!(ds.prob, args...)
+
+dimension(prob::DEProblem) = length(prob.u0)
+state(integ::DEIntegrator) = integ.u
+hascallback(prob::ODEProblem) = prob.callback != nothing
+# statetype(prob::DEProblem) = eltype(prob.u0)
+inittime(prob::DEProblem) = prob.tspan[1]
+inittime(ds::DS) = inittime(ds.prob)
+
+safe_state_type(::Val{true}, u0) = Vector(u0)
+safe_state_type(::Val{false}, u0) = SVector{length(u0)}(u0...)
+safe_state_type(::Val{false}, u0::SVector) = u0
+safe_state_type(::Val{false}, u0::Number) = u0
+
+safe_matrix_type(::Val{true}, Q::AbstractMatrix) = Matrix(Q)
+function safe_matrix_type(::Val{false}, Q::AbstractMatrix)
+    A, B = size(Q)
+    SMatrix{A, B}(Q)
 end
+save_matrix_type(::Val{false}, Q::SMatrix) = Q
+safe_matrix_type(_, a::Number) = a
 
 #####################################################################################
 #                                Pretty-Printing                                    #
 #####################################################################################
+systemtype(::ODEProblem) = "continuous"
+systemtype(something) = "discrete"
 Base.summary(ds::DS) =
-"$(dimension(ds))-dimensional "*systemtype(ds)*" dynamical system"
+"$(dimension(ds))-dimensional "*systemtype(ds.prob)*" dynamical system"
 
 jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(ds.jacobian)"
 
@@ -175,41 +189,30 @@ end
 #######################################################################################
 #                                    Jacobians                                        #
 #######################################################################################
-function create_jacobian(prob) #creates jacobian function
-    IIP = isinplace(prob)
+function create_jacobian(
+    f::F, ::Val{IIP}, s::S, p::P, t::T, x::Val{D}) where {F, IIP, S, P, T, D}
     if IIP
-        dum = deepcopy(prob.u0)
+        dum = deepcopy(s)
         cfg = ForwardDiff.JacobianConfig(
-            (y, x) -> prob.f(y, x, prob.p, prob.tspan[1]),
-            dum, prob.u0)
+        (y, x) -> f(y, x, p, t), dum, s)
         jac = (J, u, p, t) ->
         ForwardDiff.jacobian!(J, (y, x) -> prob.f(y, x, p, t),
         dum, u, cfg, Val{false}())
+        return jac
     else
-        if dimension(prob) == 1
-            jac = (u, p, t) -> ForwardDiff.derivative((x) -> prob.f(x, p, t), u)
+        if x == Val{1}()
+            return jac = (u, p, t) -> ForwardDiff.derivative((x) -> f(x, p, t), u)
         else
             # SVector methods do *not* use the config
             # cfg = ForwardDiff.JacobianConfig(
             #     (x) -> prob.f(x, prob.p, prob.tspan[1]), prob.u0)
-            jac = (u, p, t) ->
-            ForwardDiff.jacobian((x) -> prob.f(x, p, t), u, #=cfg=#)
+            return jac = (u, p, t) ->
+            ForwardDiff.jacobian((x) -> f(x, p, t), u #=, cfg=#)
         end
     end
-    return jac
-end
-# Gets the jacobian at current state
-function get_J(prob, jacob)
-    D = dimension(prob)
-    if isinplace(prob)
-        J = similar(prob.u0, (D,D))
-        jacob(J, prob.u0, prob.p, inittime(prob))
-    else
-        J = jacob(prob.u0, prob.p, inittime(prob))
-    end
-    return J
 end
 
+# get_J function is defined at individual files
 
 # Jacobian function application
 """
@@ -229,46 +232,49 @@ ds.jacobian(u, ds.prob.p, inittime(ds.prob))
 #                            Tanget & Parallel Dynamics                               #
 #######################################################################################
 # Create equations of motion of tangent dynamics
-function create_tangent(ds::DS{IIP}, k = dimension(ds)) where {IIP}
+function create_tangent(f::F, jacobian::JAC, J::JM,
+    ::Val{IIP}, ::Val{k}) where {F, JAC, IIP, JM, k}
     if IIP
-        J = deepcopy(ds.J)
+        J = deepcopy(J)
         tangentf = (du, u, p, t) -> begin
             uv = @view u[:, 1]
-            ds.prob.f(view(du, :, 1), uv, p, t)
-            ds.jacobian(J, uv, p, t)
-            A_mul_B!((@view du[:, 2:end]), J, (@view u[:, 2:end]))
+            f(view(du, :, 1), uv, p, t)
+            jacobian(J, uv, p, t)
+            A_mul_B!((@view du[:, 2:(k+1)]), J, (@view u[:, 2:(k+1)]))
             nothing
         end
+        return tangentf
     else
         ws_index = SVector{k, Int}(2:(k+1)...)
         tangentf = (u, p, t) -> begin
-            du = ds.prob.f(u[:, 1], p, t)
-            J = ds.jacobian(u[:, 1], p, t)
-
+            du = f(u[:, 1], p, t)
+            J = jacobian(u[:, 1], p, t)
             dW = J*u[:, ws_index]
             return hcat(du, dW)
         end
+        return tangentf
     end
-    return tangentf
 end
 
 # for the case of autodiffed systems, a specialized version is created
 # so that f! is not called twice in ForwardDiff
-function create_tangent(ds::DS{true, true})
-    J = deepcopy(ds.J)
-    cfg = ForwardDiff.JacobianConfig(
-        (du, u) -> (du, u, ds.prob.p, inittime(ds)),
-        deepcopy(state(ds)), state(ds)
-    )
-    tangentf = (du, u, p, t) -> begin
-        uv = @view u[:, 1]
-        ForwardDiff.jacobian!(
-            J, (du, u) -> (du, u, p, t), view(du, :, 1), uv, cfg, Val{false}()
+function create_tangent_iad(ds::DS)
+    let
+        J = deepcopy(ds.J)
+        cfg = ForwardDiff.JacobianConfig(
+            (du, u) -> (du, u, ds.prob.p, inittime(ds)),
+            deepcopy(state(ds)), state(ds)
         )
-        A_mul_B!((@view du[:, 2:end]), J, (@view u[:, 2:end]))
-        nothing
+        tangentf = (du, u, p, t) -> begin
+            uv = @view u[:, 1]
+            ForwardDiff.jacobian!(
+                J, (du, u) -> (du, u, p, t), view(du, :, 1), uv, cfg, Val{false}()
+            )
+            A_mul_B!((@view du[:, 2:end]), J, (@view u[:, 2:end]))
+            nothing
+        end
+        return tangentf
     end
-    return tangentf
 end
 
 # Create equations of motion of evolving states in parallel
@@ -378,58 +384,3 @@ continuous case, a `W×D` dataset is returned, with `W = length(t0:dt:T)` with
   `Dict(:solver => Vern9(), :abstol => 1e-9, :reltol => 1e-9)`.
 """
 function trajectory end
-
-#####################################################################################
-#                                    Auxilary                                       #
-#####################################################################################
-"""
-    set_parameter!(ds::DynamicalSystem, index, value)
-    set_parameter!(ds::DynamicalSystem, values)
-Change one or many parameters of the system
-by setting `p[index] = value` in the first case
-and `p .= values` in the second.
-"""
-set_parameter!(prob, index, value) = (prob.p[index] = value)
-set_parameter!(prob, values) = (prob.p .= values)
-
-"""
-    dimension(thing) -> D
-Return the dimension of the `thing`, in the sense of state-space dimensionality.
-"""
-dimension(prob::DEProblem) = length(prob.u0)
-state(prob::DEProblem) = prob.u0
-state(integ::DEIntegrator) = integ.u
-hascallback(prob::DEProblem) = :callback ∈ fieldnames(prob) && prob.callback != nothing
-statetype(prob::DEProblem) = eltype(prob.u0)
-systemtype(::ODEProblem) = "continuous"
-systemtype(::DiscreteProblem) = "discrete"
-inittime(prob::DEProblem) = prob.tspan[1]
-
-safe_state_type(ds::DS{true}, u0) = Vector(u0)
-safe_state_type(ds::DS{false}, u0) = SVector{length(u0)}(u0...)
-safe_state_type(ds::DS{false}, u0::Number) = u0
-
-safe_matrix_type(ds::DS{true}, Q::AbstractMatrix) = Matrix(Q)
-function safe_matrix_type(ds::DS{false}, Q::AbstractMatrix)
-    A, B = size(Q)
-    SMatrix{A, B}(Q)
-end
-safe_matrix_type(IIP::Bool, Q::AbstractMatrix) =
-IIP ? Matrix(Q) : SMatrix{size(Q)...}(Q)
-safe_matrix_type(ds::DS, a::Number) = a
-
-function set_state!(integ::DEIntegrator, s)
-  isinplace(integ.prob) ? (integ.u .= s) : integ.u = s
-  u_modified!(integ, true)
-  return
-end
-
-function set_state!(integ::DEIntegrator, indx::Int, s)
-  if eltype(state(integ)) <: SVector
-    integ.u[idx] = s
-  else
-    integ.u[idx] .= s
-  end
-  u_modified!(integ, true)
-  return
-end

@@ -5,7 +5,8 @@ famous systems.
 module Systems
 using DynamicalSystemsBase
 using StaticArrays
-using DynamicalSystemsBase: CDS, DDS
+using DynamicalSystemsBase: DDS
+# using DynamicalSystemsBase: CDS
 const twopi = 2π
 #######################################################################################
 #                                    Continuous                                       #
@@ -364,7 +365,6 @@ end# should result in lyapunovs: [0.432207,0.378834,-3.74638]
     0.1*( (x2+0.35)*(1-2*x3) - 1 )*(1 - 1.9*x1),
     3.78*x3*(1-x3)+0.2*x2 )
 end
-
 @inline function jacob_towel(x, p, n)
     @SMatrix [3.8*(1 - 2x[1]) -0.05*(1-2x[3]) 0.1*(x[2] + 0.35);
     -0.19((x[2] + 0.35)*(1-2x[3]) - 1)  0.1*(1-2x[3])*(1-1.9x[1])  -0.2*(x[2] + 0.35)*(1-1.9x[1]);
@@ -533,7 +533,7 @@ end # should give lyapunov exponents [0.4189, -1.6229]
 @inline hoop_jac(x, p, n) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
 
 function henon_iip(u0=zeros(2); a = 1.4, b = 0.3)
-    return DDS(henon_eom_iip, u0, [a, b], henon_jacob_iip)
+    return DDS(hiip, u0, [a, b], hiip_jac)
 end
 function hiip(dx, x, p, n)
     dx[1] = 1.0 - p[1]*x[1]^2 + x[2]
