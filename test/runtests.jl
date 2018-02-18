@@ -7,6 +7,7 @@ include("math_tests.jl")
 # Systems:
 include("dynsys_types.jl")
 include("dynsys_tangent.jl")
+include("dynsys_inference.jl")
 include("continuous_systems.jl")
 include("discrete_systems.jl")
 

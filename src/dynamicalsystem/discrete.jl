@@ -6,7 +6,7 @@ export MinimalDiscreteProblem, MinimalDiscreteIntegrator
 export DiscreteDynamicalSystem
 
 #####################################################################################
-#                          Minimal Discrete Problem                                 #
+#                          Discrete Dynamical System                                #
 #####################################################################################
 """
     MinimalDiscreteProblem(eom, state, p = nothing, t0 = 0)
@@ -53,16 +53,6 @@ struct DiscreteDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <: DynamicalSystem
 end
 const DDS = DiscreteDynamicalSystem
 
-function get_J(prob::MDP{IIP, S, D}, jacob::JAC) where {IIP, S, D, JAC}
-    if IIP
-        J = similar(prob.u0, (D,D))
-        jacob(J, prob.u0, prob.p, inittime(prob))
-    else
-        J = jacob(prob.u0, prob.p, inittime(prob))
-    end
-    return J
-end
-
 function DiscreteDynamicalSystem(
     eom::F, s, p::P, j::JAC, J0::JM; t0::Int = 0) where {F, P, JAC, JM}
     prob = MDP(eom, s, p, t0)
@@ -87,7 +77,7 @@ function DiscreteDynamicalSystem(
     S = typeof(prob.u0)
     IIP = isinplace(prob)
     D = length(s)
-    j = create_jacobian(eom, Val{IIP}(), prob.u0, p, t0)
+    j = create_jacobian(eom, Val{IIP}(), prob.u0, p, t0, Val{D}())
     J0 = get_J(prob, j)
     JM = typeof(J0); JAC = typeof(j)
     return DDS{IIP, S, D, F, P, JAC, JM, true}(prob, j, J0)
@@ -111,7 +101,7 @@ function init(prob::MDP{IIP, S, D, F, P}, u0 = prob.u0) where {IIP, S, D, F, P}
     return MDI{IIP, S, D, F, P}(prob.f, S(u0), prob.t0, S(deepcopy(u0)), prob.p)
 end
 
-function reinit!(integ::MDI, u = integ.prob.u0)
+function reinit!(integ::MDI, u = integ.prob.u0, t = inittime(integ.prob))
     integ.u = u
     integ.dummy = u
     integ.t = inittime(integ.prob)
@@ -197,7 +187,31 @@ function tangent_integrator(ds::DDS{IIP, S, D, F, P}, Q0::AbstractMatrix;
     return MDI{IIP, SS, R, TF, P}(tangentf, s, ds.prob.t0, deepcopy(s), ds.prob.p)
 end
 
-function parallel_integrator(ds::DDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
+# Auto-diffed in-place version
+function tangent_integrator(ds::DDS{true, S, D, F, P, JAC, JM, true},
+    Q0::AbstractMatrix;
+    u0 = ds.prob.u0, t0 = inittime(ds)) where {S, D, F, P, JAC, JM}
+
+    R = D + length(Q0)
+    k = size(Q0)[2]
+    Q = safe_matrix_type(Val{true}(), Q0)
+    u = safe_state_type(Val{true}(), u0)
+    size(Q)[2] > dimension(ds) && throw(ArgumentError(
+    "It is not possible to evolve more tangent vectors than the system's dimension!"
+    ))
+
+    tangentf = tangentf = create_tangent_iad(
+        ds.prob.f, ds.J, u, ds.prob.p, t0, Val{k}())
+    tanprob = MDP(tangentf, hcat(u, Q), ds.prob.p, t0)
+    TF = typeof(tangentf)
+
+    s = hcat(u, Q)
+    SS = typeof(s)
+
+    return MDI{true, SS, R, TF, P}(tangentf, s, ds.prob.t0, deepcopy(s), ds.prob.p)
+end
+
+function parallel_integrator(ds::DDS, states)
     peom, st = create_parallel(ds, states)
     pprob = MDP(peom, st, ds.prob.p, ds.prob.t0)
     return init(pprob)
@@ -222,7 +236,7 @@ function trajectory(ds::DDS{IIP, S, D}, t, u = ds.prob.u0; dt::Int = 1) where {I
     return Dataset(data)
 end
 
-function trajectory(ds::DDS{false, S, 1}, t, u, dt) where {S}
+function trajectory(ds::DDS{false, S, 1}, t, u = ds.prob.u0; dt::Int = 1) where {S}
     ti = inittime(ds)
     tvec = ti:dt:t
     L = length(tvec)

@@ -18,13 +18,13 @@ The central structure of **DynamicalSystems.jl**. All functions of the suite tha
 handle systems "analytically" (in the sense that they can use known equations of
 motion) expect an instance of this type.
 
-Contains a problem defining the system (field `prob`) and the jacobian function
-(field `jacobian`).
+Contains a problem defining the system (field `prob`), the jacobian function
+(field `jacobian`) and the initialized Jacobian matrix (field `J`).
 
 ## Constructing a `DynamicalSystem`
 ```julia
-DiscreteDynamicalSystem(eom, state, p [, jacobian]; t0::Int = 0, J0)
-ContinuousDynamicalSystem(eom, state, p [, jacobian]; t0 = 0.0, J0)
+DiscreteDynamicalSystem(eom, state, p [, jacobian [, J0]]; t0::Int = 0)
+ContinuousDynamicalSystem(eom, state, p [, jacobian [, J0]]; t0 = 0.0)
 ```
 with `eom` the equations of motion function.
 `p` is a parameter container, which we highly suggest to use a mutable object like
@@ -33,7 +33,7 @@ a dictionary. Pass `nothing` in the place of `p` if your system does not have
 parameters. With these constructors you also do not need to
 provide some final time, since it is not used by **DynamicalSystems.jl** in any manner.
 
-The keyword arguments `t0`, `J0` allow you to choose the initial time and provide
+`t0`, `J0` allow you to choose the initial time and provide
 an initialized Jacobian matrix.
 
 The discrete constructor creates an internal implementation of a discrete system,
@@ -51,14 +51,16 @@ Here is how to define them:
   `p` it returns an [`SVector`](http://juliaarrays.github.io/StaticArrays.jl/stable/pages/api.html#SVector-1)
   containing the next state.
 * **oop** : The `eom` **must** be in the form `eom!(xnew, x, p, t)`
-  which means that given a state `Vector` `x` and some parameter container `p`,
+  which means that given a state `x::Vector` and some parameter container `p`,
   it writes in-place the new state in `xnew`.
 
 `t` stands for time (integer for discrete systems).
-iip is suggested for big systems, whereas oop is suggested for small systems
-(break-even point at around 10 dimensions).
+iip is suggested for big systems, whereas oop is suggested for small systems.
+The break-even point at around 100 dimensions, and for using functions that use the
+tangent space (like e.g. [`lyapunovs`](@ref) or [`gali`](@ref), the break-even
+point is at around 10 dimensions.
 
-The constructor deduces automatically whether the EOM are iip or oop. It is not
+The constructor deduces automatically whether `eom` is iip or oop. It is not
 possible however to deduce whether the system is continuous or discrete just from the
 equations of motion, hence the 2 constructors.
 
@@ -71,28 +73,13 @@ for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place ver
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
 
-### Using `DDEProblem`
-You can always create a `ContinuousDynamicalSystem` with the constructor
-```julia
-ContinuousDynamicalSystem(prob::ODEProblem [, jacobian [, J0]])
-```
-if you have
-an instance of `DEProblem` (either discrete or continuous),
-because you may want to use the callback functionality of
-[**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/). Notice however
-that callbacks do not propagate into methods that evolve tangent space,
-like e.g. [`lyapunovs`](@ref) or [`gali`](@ref).
-
-Using callbacks with **DynamicalSystems.jl** is very under-tested.
-Use at your own risk!
-
 ### Getting a `Solution` struct
-Provided that you do not use the internal fast implementation of
-a discrete problem, you can *always* take advantage of the full capabilities of
-the `Solution` struct of
-[**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/). Just do:
+The continuous constructor creates a standard
+[ODEProblem](http://docs.juliadiffeq.org/latest/types/ode_types.html) from
+[**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/).
+You can *always* take advantage of the full capabilities of
+the `Solution` struct of by doing:
 ```julia
-typeof(ds) <: DynamicalSystem # true
 sol = solve(ds.prob, alg; kwargs...)
 # do stuff with sol
 ```
@@ -114,7 +101,7 @@ abstract type DynamicalSystem{
     # Subtypes of DynamicalSystem have fields:
     # 1. prob
     # 2. jacobian (function)
-    # 3. jacobian (matrix)  <- will allow Sparse implementation in the future
+    # 3. J (matrix)  <- will allow Sparse implementation in the future
 end
 
 const DS = DynamicalSystem
@@ -152,12 +139,12 @@ hascallback(prob::ODEProblem) = prob.callback != nothing
 inittime(prob::DEProblem) = prob.tspan[1]
 inittime(ds::DS) = inittime(ds.prob)
 
-safe_state_type(::Val{true}, u0) = Vector(u0)
+safe_state_type(::Val{true}, u0) = u0
 safe_state_type(::Val{false}, u0) = SVector{length(u0)}(u0...)
 safe_state_type(::Val{false}, u0::SVector) = u0
 safe_state_type(::Val{false}, u0::Number) = u0
 
-safe_matrix_type(::Val{true}, Q::AbstractMatrix) = Matrix(Q)
+safe_matrix_type(::Val{true}, Q::AbstractMatrix) = Q
 function safe_matrix_type(::Val{false}, Q::AbstractMatrix)
     A, B = size(Q)
     SMatrix{A, B}(Q)
@@ -196,7 +183,7 @@ function create_jacobian(
         cfg = ForwardDiff.JacobianConfig(
         (y, x) -> f(y, x, p, t), dum, s)
         jac = (J, u, p, t) ->
-        ForwardDiff.jacobian!(J, (y, x) -> prob.f(y, x, p, t),
+        ForwardDiff.jacobian!(J, (y, x) -> f(y, x, p, t),
         dum, u, cfg, Val{false}())
         return jac
     else
@@ -228,8 +215,29 @@ end
 jacobian(ds::DS{false}, u = ds.prob.u0) =
 ds.jacobian(u, ds.prob.p, inittime(ds.prob))
 
+function get_J(prob, jacob::JAC) where {JAC}
+    D = length(prob.u0)
+    if isinplace(prob)
+        J = similar(prob.u0, (D,D))
+        jacob(J, prob.u0, prob.p, inittime(prob))
+    else
+        J = jacob(prob.u0, prob.p, inittime(prob))
+    end
+    return J
+end
+function get_J(jacob::JAC, u, p, t) where {JAC}
+    D = length(u)
+    if isinplace(jacob, 4)
+        J = similar(u, (D,D))
+        jacob(J, u, p, t)
+    else
+        J = jacob(u, p, t)
+    end
+    return J
+end
+
 #######################################################################################
-#                            Tanget & Parallel Dynamics                               #
+#                                 Tanget Dynamics                                     #
 #######################################################################################
 # IIP Tangent Space dynamics
 function create_tangent(f::F, jacobian::JAC, J::JM,
@@ -266,25 +274,27 @@ end
 
 # for the case of autodiffed systems, a specialized version is created
 # so that f! is not called twice in ForwardDiff
-function create_tangent_iad(ds::DS)
+function create_tangent_iad(f::F, J::JM, u, p, t, ::Val{k}) where {F, JM, k}
     let
-        J = deepcopy(ds.J)
+        J = deepcopy(J)
         cfg = ForwardDiff.JacobianConfig(
-            (du, u) -> (du, u, ds.prob.p, inittime(ds)),
-            deepcopy(state(ds)), state(ds)
+            (du, u) -> f(du, u, p, p), deepcopy(u), deepcopy(u)
         )
         tangentf = (du, u, p, t) -> begin
             uv = @view u[:, 1]
             ForwardDiff.jacobian!(
-                J, (du, u) -> (du, u, p, t), view(du, :, 1), uv, cfg, Val{false}()
+                J, (du, u) -> f(du, u, p, t), view(du, :, 1), uv, cfg, Val{false}()
             )
-            A_mul_B!((@view du[:, 2:end]), J, (@view u[:, 2:end]))
+            A_mul_B!((@view du[:, 2:k+1]), J, (@view u[:, 2:k+1]))
             nothing
         end
         return tangentf
     end
 end
 
+#######################################################################################
+#                                Parallel Dynamics                                    #
+#######################################################################################
 # Create equations of motion of evolving states in parallel
 function create_parallel(ds::DS{true}, states)
     st = [Vector(s) for s in states]
@@ -298,7 +308,7 @@ function create_parallel(ds::DS{true}, states)
 end
 
 function create_parallel(ds::DS{false}, states)
-    D = length(states[1])
+    D = dimension(ds)
     st = [SVector{D}(s) for s in states]
     L = length(st)
     # The following may be inneficient

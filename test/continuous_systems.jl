@@ -4,38 +4,38 @@ using DynamicalSystemsBase: CDS, DS
 using Base.Test, StaticArrays, OrdinaryDiffEq
 using DiffEqCallbacks
 
-println("\nTesting continuous systems...")
+println("\nTesting continuous system evolution...")
 
-@testset "ODEProblem conservation" begin
-
-  lo11 = Systems.lorenz() #with Jac
-  lo22 = DS(lo11.prob) #without Jac
-
-  @test lo11.prob == lo22.prob
-
-  t = (0.0, 100.0)
-  p = [5,5,5.0]
-  # Event when event_f(t,u) == 0
-  condition = (u, t, integrator) -> u[1]
-
-  affect! = (integrator) -> (integrator.u[2] = -integrator.u[2])
-
-  cb = ContinuousCallback(condition, affect!)
-
-  prob1 = ODEProblem(lo11.prob.f, rand(SVector{3}), t, p; callback = cb)
-  ds = DS(prob1)
-  ds2 = DS(prob1, lo11.jacobian; J0 = lo11.J)
-
-  @test ds.prob.callback == cb
-  @test ds2.prob.callback == cb
-
-end
+# @testset "ODEProblem conservation" begin
+#
+#   lo11 = Systems.lorenz() #with Jac
+#   lo22 = DS(lo11.prob) #without Jac
+#
+#   @test lo11.prob == lo22.prob
+#
+#   t = (0.0, 100.0)
+#   p = [5,5,5.0]
+#   # Event when event_f(t,u) == 0
+#   condition = (u, t, integrator) -> u[1]
+#
+#   affect! = (integrator) -> (integrator.u[2] = -integrator.u[2])
+#
+#   cb = ContinuousCallback(condition, affect!)
+#
+#   prob1 = ODEProblem(lo11.prob.f, rand(SVector{3}), t, p; callback = cb)
+#   ds = DS(prob1)
+#   ds2 = DS(prob1, lo11.jacobian; J0 = lo11.J)
+#
+#   @test ds.prob.callback == cb
+#   @test ds2.prob.callback == cb
+#
+# end
 
 
 @testset "Lorenz System" begin
 
   lo11 = Systems.lorenz() #with Jac
-  lo22 = DS(lo11.prob) #without Jac
+  lo22 = CDS(lo11.prob.f, lo11.prob.u0, lo11.prob.p) #without Jac
   lo33 = Systems.lorenz(big.([0.0, 10.0, 0.0]))
 
   @testset "trajectory" begin

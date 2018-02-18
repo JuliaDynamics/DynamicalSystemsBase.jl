@@ -6,7 +6,7 @@ module Systems
 using DynamicalSystemsBase
 using StaticArrays
 using DynamicalSystemsBase: DDS
-# using DynamicalSystemsBase: CDS
+using DynamicalSystemsBase: CDS
 const twopi = 2π
 #######################################################################################
 #                                    Continuous                                       #
@@ -460,8 +460,9 @@ function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
         J[i, i+M] = 1
         J[i+M, i+M] = 1
     end
-
-    return DDS(csm, u0, [ks, Γ], csm; J0 = J)
+    p = [ks, Γ]
+    csm(J, u0, p, 0)
+    return DDS(csm, u0, p, csm, J)
 end
 mutable struct CoupledStandardMaps{N}
     idxs::SVector{N, Int}
