@@ -231,29 +231,37 @@ ds.jacobian(u, ds.prob.p, inittime(ds.prob))
 #######################################################################################
 #                            Tanget & Parallel Dynamics                               #
 #######################################################################################
-# Create equations of motion of tangent dynamics
+# IIP Tangent Space dynamics
 function create_tangent(f::F, jacobian::JAC, J::JM,
-    ::Val{IIP}, ::Val{k}) where {F, JAC, IIP, JM, k}
-    if IIP
-        J = deepcopy(J)
-        tangentf = (du, u, p, t) -> begin
-            uv = @view u[:, 1]
-            f(view(du, :, 1), uv, p, t)
-            jacobian(J, uv, p, t)
-            A_mul_B!((@view du[:, 2:(k+1)]), J, (@view u[:, 2:(k+1)]))
-            nothing
-        end
-        return tangentf
-    else
-        ws_index = SVector{k, Int}(2:(k+1)...)
-        tangentf = (u, p, t) -> begin
-            du = f(u[:, 1], p, t)
-            J = jacobian(u[:, 1], p, t)
-            dW = J*u[:, ws_index]
-            return hcat(du, dW)
-        end
-        return tangentf
+    ::Val{true}, ::Val{k}) where {F, JAC, JM, k}
+    J = deepcopy(J)
+    tangentf = (du, u, p, t) -> begin
+        uv = @view u[:, 1]
+        f(view(du, :, 1), uv, p, t)
+        jacobian(J, uv, p, t)
+        A_mul_B!((@view du[:, 2:(k+1)]), J, (@view u[:, 2:(k+1)]))
+        nothing
     end
+    return tangentf
+end
+# OOP Tangent Space dynamics
+function create_tangent(f::F, jacobian::JAC, J::JM,
+    ::Val{false}, ::Val{k}) where {F, JAC, JM, k}
+
+    ws_index = SVector{k, Int}(2:(k+1)...)
+    tangentf = TangentOOP(f, jacobian, ws_index)
+    return tangentf
+end
+struct TangentOOP{F, JAC, k}
+    f::F
+    jacobian::JAC
+    ws::SVector{k, Int}
+end
+@inline function (tan::TangentOOP)(u, p, t)
+    du = tan.f(u[:, 1], p, t)
+    J = tan.jacobian(u[:, 1], p, t)
+    dW = J*u[:, tan.ws]
+    return hcat(du, dW)
 end
 
 # for the case of autodiffed systems, a specialized version is created
