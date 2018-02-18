@@ -101,18 +101,18 @@ function init(prob::MDP{IIP, S, D, F, P}, u0 = prob.u0) where {IIP, S, D, F, P}
     return MDI{IIP, S, D, F, P}(prob.f, S(u0), prob.t0, S(deepcopy(u0)), prob.p)
 end
 
-function reinit!(integ::MDI, u = integ.prob.u0, t = inittime(integ.prob))
+function reinit!(integ::MDI, u, t = 0)
     integ.u = u
     integ.dummy = u
-    integ.t = inittime(integ.prob)
+    integ.t = t
     return
 end
 
 @inline function (integ::MinimalDiscreteIntegrator)(t::Real)
     if t == integ.t
-        return t
+        return integ.u
     else
-        error("Cant extrapolate discrete systems")
+        error("Can't extrapolate discrete systems!")
     end
 end
 
