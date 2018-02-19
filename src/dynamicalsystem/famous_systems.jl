@@ -459,18 +459,18 @@ function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
         J[i, i+M] = 1
         J[i+M, i+M] = 1
     end
-    p = [ks, Γ]
+    p = (ks, Γ)
     csm(J, u0, p, 0)
     return DDS(csm, u0, p, csm, J)
 end
-mutable struct CoupledStandardMaps{N}
+struct CoupledStandardMaps{N}
     idxs::SVector{N, Int}
     idxsm1::SVector{N, Int}
     idxsp1::SVector{N, Int}
 end
-@inbounds function (f::CoupledStandardMaps{N})(xnew::AbstractVector, x, p, n) where {N}
+function (f::CoupledStandardMaps{N})(xnew::AbstractVector, x, p, n) where {N}
     ks, Γ = p
-    for i in f.idxs
+    @inbounds for i in f.idxs
 
         xnew[i+N] = mod2pi(
             x[i+N] + ks[i]*sin(x[i]) -

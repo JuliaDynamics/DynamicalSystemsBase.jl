@@ -3,7 +3,7 @@ import DiffEqBase: init, step!, isinplace, reinit!
 import Base: show
 
 export MinimalDiscreteProblem, MinimalDiscreteIntegrator
-export DiscreteDynamicalSystem
+export DiscreteDynamicalSystem, reinit!
 
 #####################################################################################
 #                          Discrete Dynamical System                                #
