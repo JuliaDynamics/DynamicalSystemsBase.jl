@@ -57,7 +57,7 @@ Here is how to define them:
 `t` stands for time (integer for discrete systems).
 iip is suggested for big systems, whereas oop is suggested for small systems.
 The break-even point at around 100 dimensions, and for using functions that use the
-tangent space (like e.g. [`lyapunovs`](@ref) or [`gali`](@ref), the break-even
+tangent space (like e.g. `lyapunovs` or `gali`), the break-even
 point is at around 10 dimensions.
 
 The constructor deduces automatically whether `eom` is iip or oop. It is not
