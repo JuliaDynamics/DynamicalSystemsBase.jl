@@ -3,8 +3,10 @@ Sub-module of the module `DynamicalSystemsBase`, which contains pre-defined
 famous systems.
 """
 module Systems
-using DynamicalSystemsBase, StaticArrays
-using DiffEqCallbacks
+using DynamicalSystemsBase
+using StaticArrays
+using DynamicalSystemsBase: DDS
+using DynamicalSystemsBase: CDS
 const twopi = 2π
 #######################################################################################
 #                                    Continuous                                       #
@@ -36,29 +38,40 @@ function's documentation string.
 [1] : E. N. Lorenz, J. atmos. Sci. **20**, pp 130 (1963)
 """
 function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
-
-    J = zeros(eltype(u0), 3, 3)
-    J[1,:] .= (-σ,          σ,    0)
-    J[2,:] .= (ρ - u0[3],  -1,   -u0[1])
-    J[3,:] .= (u0[2],   u0[1],   -β)
-
-    return ContinuousDS(u0, lorenz63_eom, lorenz63_jacob, J; parameters = [σ, ρ, β])
+    return CDS(loop, u0, [σ, ρ, β], loop_jac)
 end
-@inline @inbounds function lorenz63_eom(du, u, p, t)
+@inline @inbounds function loop(u, p, t)
+    σ = p[1]; ρ = p[2]; β = p[3]
+    du1 = σ*(u[2]-u[1])
+    du2 = u[1]*(ρ-u[3]) - u[2]
+    du3 = u[1]*u[2] - β*u[3]
+    return SVector{3}(du1, du2, du3)
+end
+@inline @inbounds function loop_jac(u, p, t)
+    σ, ρ, β = p
+    J = @SMatrix [-σ  σ  0;
+    ρ - u[3]  (-1)  (-u[1]);
+    u[2]   u[1]  -β]
+    return J
+end
+
+function lorenz_iip(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
+    return CDS(liip, u0, [σ, ρ, β], liip_jac)
+end
+@inline @inbounds function liip(du, u, p, t)
     σ = p[1]; ρ = p[2]; β = p[3]
     du[1] = σ*(u[2]-u[1])
     du[2] = u[1]*(ρ-u[3]) - u[2]
     du[3] = u[1]*u[2] - β*u[3]
     return nothing
 end
-@inline @inbounds function lorenz63_jacob(J, u, p, t)
+@inline @inbounds function liip_jac(J, u, p, t)
     σ, ρ, β = p
-    J[1,1] = -σ; J[1, 2] = σ
-    J[2,1] = ρ - u[3]; J[2,3] = -u[1]
+    J[1,1] = -σ; J[1, 2] = σ; J[1,3] = 0
+    J[2,1] = ρ - u[3]; J[2,2] = -1; J[2,3] = -u[1]
     J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -β
     return nothing
 end
-
 
 
 """
@@ -85,26 +98,20 @@ function's documentation string.
 [1] : O. E. Rössler, Phys. Lett. **57A**, pp 397 (1976)
 """
 function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
-    i = one(eltype(u0))
-    o = zero(eltype(u0))
-    J = zeros(eltype(u0), 3, 3)
-    J[1,:] .= [o, -i,      -i]
-    J[2,:] .= [i,  a,       o]
-    J[3,:] .= [u0[3], o, u0[1] - c]
-
-    return ContinuousDS(u0, roessler_eom, roessler_jacob, J; parameters = [a, b, c])
+    return CDS(roessler_eom, u0, [a, b, c], roessler_jacob)
 end
 @inline @inbounds function roessler_eom(du, u, p, t)
     a, b, c = p
-    du[1] = -u[2]-u[3]
-    du[2] = u[1] + a*u[2]
-    du[3] = b + u[3]*(u[1] - c)
-    return nothing
+    du1 = -u[2]-u[3]
+    du2 = u[1] + a*u[2]
+    du3 = b + u[3]*(u[1] - c)
+    return SVector{3, Float64}(du1, du2, du3)
 end
-@inline @inbounds function roessler_jacob(J, u, p, t)
-    J[2,2] = p[1]
-    J[3,1] = u[3]; J[3,3] = u[1] - p[3]
-    return nothing
+@inline @inbounds function roessler_jacob(u, p, t)
+    a, b, c = p
+    return @SMatrix [0  1 (-1);
+                     1  a   0;
+                     u[3] 0 u0[1] - c]
 end
 
 """
@@ -122,31 +129,31 @@ The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
 function double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
-    return ContinuousDS(u0, doublependulum_eom; parameters = [G, L1, L2, M1, M2])
+    return CDS(doublependulum_eom, u0, [G, L1, L2, M1, M2])
 end
 @inbounds function doublependulum_eom(du, state, p, t)
     G, L1, L2, M1, M2 = p
 
-    du[1] = state[2]
+    du1 = state[2]
     del_ = state[3] - state[1]
     den1 = (M1 + M2)*L1 - M2*L1*cos(del_)*cos(del_)
-    du[2] = (M2*L1*state[2]*state[2]*sin(del_)*cos(del_) +
+    du2 = (M2*L1*state[2]*state[2]*sin(del_)*cos(del_) +
                M2*G*sin(state[3])*cos(del_) +
                M2*L2*state[4]*state[4]*sin(del_) -
                (M1 + M2)*G*sin(state[1]))/den1
 
-    du[3] = state[4]
+    du3 = state[4]
 
     den2 = (L2/L1)*den1
-    du[4] = (-M2*L2*state[4]*state[4]*sin(del_)*cos(del_) +
+    du4 = (-M2*L2*state[4]*state[4]*sin(del_)*cos(del_) +
                (M1 + M2)*G*sin(state[1])*cos(del_) -
                (M1 + M2)*L1*state[2]*state[2]*sin(del_) -
                (M1 + M2)*G*sin(state[3]))/den2
-    return nothing
+    return SVector{4, Float64}(du1, du2, du3, du4)
 end
 
 """
-    henonhelies(u0=[0, -0.25, 0.42081,0]; conserveE = true)
+    henonhelies(u0=[0, -0.25, 0.42081,0])
 ```math
 \\begin{aligned}
 \\dot{x} &= p_x \\\\
@@ -164,41 +171,34 @@ for only but a few initial conditions.
 
 The default initial condition is a typical chaotic orbit.
 
-You can optionally choose to conserve energy, up to `1e-14` error level, but having
-slower integration as a drawback.
-
 [1] : Hénon, M. & Heiles, C., The Astronomical Journal **69**, pp 73–79 (1964)
 """
-function henonhelies(u0=[0, -0.25, 0.42081, 0]; conserveE::Bool = true)
+function henonhelies(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
 
 
     i = one(eltype(u0))
     o = zero(eltype(u0))
     J = zeros(eltype(u0), 4, 4)
-    J[1,:] = [o,    o,     i,    o]
-    J[2,:] = [o,    o,     o,    i]
-    J[3,:] = [ -i - 2*u0[2],   -2*u0[1],   o,   o]
-    J[4,:] = [-2*u0[1],  -1 + 2*u0[2],  o,   o]
 
-    @inline Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
-    @inline Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
-    @inline Hhh(q1, q2, p1, p2) = Thh(p1, p2) + Vhh(q1, q2)
-    @inline Hhh(u::AbstractVector) = Hhh(u...)
+    # @inline Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
+    # @inline Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
+    # @inline Hhh(q1, q2, p1, p2) = Thh(p1, p2) + Vhh(q1, q2)
+    # @inline Hhh(u::AbstractVector) = Hhh(u...)
+    #
+    # E = Hhh(u0)
+    #
+    # ghh! = (resid, u) -> begin
+    #     resid[1] = Hhh(u[1],u[2],u[3],u[4]) - E
+    #     resid[2:4] .= 0
+    # end
 
-    E = Hhh(u0)
-
-    ghh! = (resid, u) -> begin
-        resid[1] = Hhh(u[1],u[2],u[3],u[4]) - E
-        resid[2:4] .= 0
-    end
-
-    if conserveE
-        cb = ManifoldProjection(ghh!, nlopts=Dict(:ftol=>1e-13), save = false)
-        prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
-    else
-        prob = prob = ODEProblem(hheom!, u0, (0., 100.0))
-    end
-    return ContinuousDS(prob, hhjacob!, J)
+    # if conserveE
+    #     cb = ManifoldProjection(ghh!, nlopts=Dict(:ftol=>1e-13), save = false)
+    #     prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
+    # else
+        # prob = ODEProblem(hheom!, u0, (0., 100.0))
+    # end
+    return CDS(hheom!, u0, nothing, hhjacob!, J)
 end
 function hheom!(du, u, p, t)
     du[1] = u[3]
@@ -208,8 +208,11 @@ function hheom!(du, u, p, t)
     return nothing
 end
 function hhjacob!(J, u, p, t)
-    J[3,1] = -1 - 2u[2]; J[3,2] = -2u[1]
-    J[4,1] = -2u[1]; J[4,2] =  -1 + 2u[2]
+    o = 0; i = 1
+    J[1,:] .= (o,    o,     i,    o)
+    J[2,:] .= (o,    o,     o,    i)
+    J[3,:] .= (-i - 2*u[2],   -2*u[1],   o,   o)
+    J[4,:] .= (-2*u[1],  -1 + 2*u[2],  o,   o)
     return nothing
 end
 
@@ -223,7 +226,7 @@ end
 function lorenz96(N::Int, u0 = rand(N); F=0.01)
     @assert N ≥ 3 "`N` must be at least 3"
     lor96 = Lorenz96{N}() # create struct
-    return ContinuousDS(u0, lor96; parameters = [F])
+    return CDS(lor96, u0, [F])
 end
 struct Lorenz96{N} end # Structure for size type
 function (obj::Lorenz96{N})(dx, x, p, t) where {N}
@@ -256,18 +259,18 @@ function duffing(u0 = [rand(), rand()]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
 
     J = zeros(eltype(u0), 2, 2)
     J[1,2] = 1
-    return ContinuousDS(u0, duffing_eom, duffing_jacob, J; parameters = [ω, f, d, β])
+    return CDS(duffing_eom, u0, [ω, f, d, β], duffing_jacob)
 end
-@inbounds function duffing_eom(dx, x, p, t)
+@inbounds function duffing_eom(x, p, t)
     ω, f, d, β = p
-    dx[1] = x[2]
-    dx[2] = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
-    return nothing
+    dx1 = x[2]
+    dx2 = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
+    return SVector{2, Float64}(dx1, dx2)
 end
-@inbounds function  duffing_jacob(J, u, p, t)
+@inbounds function duffing_jacob(u, p, t)
     ω, f, d, β = p
-    J[2,1] = -β - 3u[1]^2
-    J[2,2] = -d
+    return @SMatrix [0 1 ;
+    (-β - 3u[1]^2) -d]
 end
 
 """
@@ -278,7 +281,7 @@ Shinriki oscillator with all other parameters (besides `R1`) set to constants.
 function shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
     # # Jacobian caller for Shinriki:
     # shinriki_eom(::Type{Val{:jac}}, J, u, p, t) = (shi::Shinriki)(t, u, J)
-    return ContinuousDS(u0, shinriki_eom; parameters = [R1])
+    return CDS(shinriki_eom, u0, [R1])
 end
 shinriki_voltage(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
 function shinriki_eom(du, u, p, t)
@@ -293,7 +296,7 @@ function shinriki_eom(du, u, p, t)
     )
 
     du[3] = (1/0.32)*(-u[3]*0.1 + u[2])
-    return nothing
+    return nothing #SVector{3}(du1, du2, du3)
 end
 
 
@@ -317,14 +320,14 @@ function's documentation string.
 [1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
 """
 function gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
-    return ContinuousDS(u0, gissinger_eom; parameters = [μ, ν, Γ])
+    return CDS(gissinger_eom, u0, [μ, ν, Γ])
 end
-function gissinger_eom(du, u, p, t)
+function gissinger_eom(u, p, t)
     μ, ν, Γ = p
-    du[1] = μ*u[1] - u[2]*u[3]
-    du[2] = -ν*u[2] + u[1]*u[3]
-    du[3] = Γ - u[3] + u[1]*u[2]
-    return nothing
+    du1 = μ*u[1] - u[2]*u[3]
+    du2 = -ν*u[2] + u[1]*u[3]
+    du3 = Γ - u[3] + u[1]*u[2]
+    return SVector{3}(du1, du2, du3)
 end
 
 #######################################################################################
@@ -353,16 +356,15 @@ Default values are the ones used in the original paper.
 [1] : O. E. Rössler, Phys. Lett. **71A**, pp 155 (1979)
 """
 function towel(u0=[0.085, -0.121, 0.075])
-    return DDS(u0, eom_towel, jacob_towel)
+    return DDS(eom_towel, u0, nothing, jacob_towel)
 end# should result in lyapunovs: [0.432207,0.378834,-3.74638]
-@inline function eom_towel(x, p)
+@inline function eom_towel(x, p, n)
     @inbounds x1, x2, x3 = x[1], x[2], x[3]
     SVector( 3.8*x1*(1-x1) - 0.05*(x2+0.35)*(1-2*x3),
     0.1*( (x2+0.35)*(1-2*x3) - 1 )*(1 - 1.9*x1),
     3.78*x3*(1-x3)+0.2*x2 )
 end
-
-@inline function jacob_towel(x, p)
+@inline function jacob_towel(x, p, n)
     @SMatrix [3.8*(1 - 2x[1]) -0.05*(1-2x[3]) 0.1*(x[2] + 0.35);
     -0.19((x[2] + 0.35)*(1-2x[3]) - 1)  0.1*(1-2x[3])*(1-1.9x[1])  -0.2*(x[2] + 0.35)*(1-1.9x[1]);
     0.0  0.2  3.78(1-2x[3]) ]
@@ -402,9 +404,9 @@ Nuclear Physics, Novosibirsk (1969)
 [2] : J. M. Greene, J. Math. Phys. **20**, pp 1183 (1979)
 """
 function standardmap(u0=0.001rand(2); k = 0.971635)
-    return DDS(u0, standardmap_eom, standardmap_jacob; p = [k])
+    return DDS(standardmap_eom, u0, [k], standardmap_jacob)
 end
-@inline @inbounds function standardmap_eom(x, par)
+@inline @inbounds function standardmap_eom(x, par, n)
     theta = x[1]; p = x[2]
     p += par[1]*sin(theta)
     theta += p
@@ -414,7 +416,7 @@ end
     while p < 0; p += twopi; end
     return SVector(theta, p)
 end
-@inline @inbounds standardmap_jacob(x, p) =
+@inline @inbounds standardmap_jacob(x, p, n) =
 @SMatrix [1 + p[1]*cos(x[1])    1;
           p[1]*cos(x[1])        1]
 
@@ -444,9 +446,10 @@ function's documentation string.
 function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
     ks = ones(M), Γ = 1.0)
 
-    idxs = 1:M # indexes of thetas
-    idxsm1 = circshift(idxs, +1)  #indexes of thetas - 1
-    idxsp1 = circshift(idxs, -1)  #indexes of thetas + 1
+    SV = SVector{M, Int}
+    idxs = SV(1:M...) # indexes of thetas
+    idxsm1 = SV(circshift(idxs, +1)...)  #indexes of thetas - 1
+    idxsp1 = SV(circshift(idxs, -1)...)  #indexes of thetas + 1
 
     csm = CoupledStandardMaps{M}(idxs, idxsm1, idxsp1)
     J = zeros(eltype(u0), 2M, 2M)
@@ -456,15 +459,16 @@ function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
         J[i, i+M] = 1
         J[i+M, i+M] = 1
     end
-
-    return DDS(u0, csm, csm, J; p = [ks, Γ])
+    p = [ks, Γ]
+    csm(J, u0, p, 0)
+    return DDS(csm, u0, p, csm, J)
 end
 mutable struct CoupledStandardMaps{N}
-    idxs::UnitRange{Int}
-    idxsm1::Vector{Int}
-    idxsp1::Vector{Int}
+    idxs::SVector{N, Int}
+    idxsm1::SVector{N, Int}
+    idxsp1::SVector{N, Int}
 end
-@inbounds function (f::CoupledStandardMaps{N})(xnew::AbstractVector, x, p) where {N}
+@inbounds function (f::CoupledStandardMaps{N})(xnew::AbstractVector, x, p, n) where {N}
     ks, Γ = p
     for i in f.idxs
 
@@ -478,7 +482,7 @@ end
     return nothing
 end
 function (f::CoupledStandardMaps{M})(
-    J::AbstractMatrix, x, p) where {M}
+    J::AbstractMatrix, x, p, n) where {M}
 
     ks, Γ = p
     # x[i] ≡ θᵢ
@@ -523,20 +527,20 @@ function's documentation string.
 [1] : M. Hénon, Commun.Math. Phys. **50**, pp 69 (1976)
 """
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
-    return DDS(u0, henon_eom, henon_jacob; p = [a, b])
+    return DDS(hoop, u0, [a,b], hoop_jac)
 end # should give lyapunov exponents [0.4189, -1.6229]
-@inline henon_eom(x, p) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-@inline henon_jacob(x, p) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
+@inline hoop(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+@inline hoop_jac(x, p, n) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
 
 function henon_iip(u0=zeros(2); a = 1.4, b = 0.3)
-    return DDS(u0, henon_eom_iip, henon_jacob_iip, p = [a, b])
+    return DDS(hiip, u0, [a, b], hiip_jac)
 end
-function henon_eom_iip(dx, x, p)
+function hiip(dx, x, p, n)
     dx[1] = 1.0 - p[1]*x[1]^2 + x[2]
     dx[2] = p[2]*x[1]
     return
 end
-function henon_jacob_iip(J, x, p)
+function hiip_jac(J, x, p, n)
     J[1,1] = -2*p[1]*x[1]
     J[1,2] = 1.0
     J[2,1] = p[2]
@@ -567,29 +571,9 @@ function's documentation string.
 [2] : M. J. Feigenbaum, J. Stat. Phys. **19**, pp 25 (1978)
 """
 function logistic(x0=rand(); r = 4.0)
-    return DDS(x0, logistic_eom, logistic_jacob; p = [r])
+    return DDS(logistic_eom, x0, [r], logistic_jacob)
 end
-@inline logistic_eom(x, p) = p[1]*x*(1-x)
-@inline logistic_jacob(x, p) = p[1]*(1-2x)
-
-
-
-"""
-    circlemap(x0=rand(); Ω = 1.0, K = 0.99)
-
-```math
-\\theta_{n+1} = \\theta_n + 2\\pi\\Omega - K\\sin(\\theta_n)
-```
-Notice that the map *does not use* `mod2pi` at the equation of motion.
-
-The parameter container has the parameters in the same order as stated in this
-function's documentation string.
-"""
-function circlemap(x0=rand(); K = 0.99, Ω = 1.0, usemod::Bool = false)
-    return DDS(x0, circlemap_eom, circlemap_jacob; p = [Ω, K])
-end
-@inline circlemap_eom(x, p) = x + twopi*p[1] - p[2]*sin(x)
-@inline circlemap_jacob(x, p) = -p[2]*cos(x)
-
+@inline logistic_eom(x, p, n) = p[1]*x*(1-x)
+@inline logistic_jacob(x, p, n) = p[1]*(1-2x)
 
 end# Systems module
