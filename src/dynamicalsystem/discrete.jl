@@ -102,10 +102,10 @@ function init(prob::MDP{IIP, S, D, F, P}, u0 = prob.u0) where {IIP, S, D, F, P}
     return MDI{IIP, S, D, F, P}(prob.f, S(u0), prob.t0, S(deepcopy(u0)), prob.p, prob.t0)
 end
 
-function reinit!(integ::MDI, u, t = integ.t0)
+function reinit!(integ::MDI, u; t0 = integ.t0)
     integ.u = u
     integ.dummy = u
-    integ.t = t
+    integ.t = t0
     return
 end
 
