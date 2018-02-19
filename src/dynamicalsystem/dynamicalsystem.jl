@@ -325,7 +325,7 @@ end
 #######################################################################################
 """
     integrator(ds::DynamicalSystem [, u0]; diff_eq_kwargs) -> integ
-Return a `DEIntegrator` object that can be used to evolve a system interactively
+Return an integrator object that can be used to evolve a system interactively
 using `step!(integ [, Δt])`. Optionally specify an initial state `u0`.
 
 See [`trajectory`](@ref) for `diff_eq_kwargs`.
@@ -334,7 +334,7 @@ function integrator end
 
 """
     tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; u0, t0, diff_eq_kwargs)
-Return a `DEIntegrator` object that evolves in parallel both the system as well
+Return an integrator object that evolves in parallel both the system as well
 as deviation vectors living on the tangent space.
 
 `Q0` is a *matrix* whose columns are initial values for deviation vectors. If
@@ -360,16 +360,22 @@ a deviation vector (or matrix) ``w``:
 with ``f`` being the equations of motion and ``u`` the system state.
 Similar equations hold for the discrete case.
 
+Internally the integrator propagates a matrix, with the first column being the state
+and each subsequent one being a deviation vector.
+
 See [`trajectory`](@ref) for `diff_eq_kwargs`.
 """
 function tangent_integrator end
 
 """
     parallel_integrator(ds::DynamicalSystem, states; diff_eq_kwargs) -> integ
-Return a `DEIntegrator` object that can be used to evolve many `states` of
+Return an integrator object that can be used to evolve many `states` of
 a system in parallel interactively using `step!(integ [, Δt])`.
 
-*Warning* : Callbacks do not propagate into `parallel_integrator`.
+Internally the integrator propagates a vector of vectors, each one being a state.
+Only for the case of in-place continuous systems, the integrator propagates a matrix
+with each column being a state, because at the moment DifferentialEquations.jl does
+not support `Vector[Vector]` as state.
 
 See [`trajectory`](@ref) for `diff_eq_kwargs`.
 """

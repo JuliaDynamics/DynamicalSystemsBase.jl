@@ -180,7 +180,6 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
     o = zero(eltype(u0))
     J = zeros(eltype(u0), 4, 4)
 
-
     # @inline Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
     # @inline Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
     # @inline Hhh(q1, q2, p1, p2) = Thh(p1, p2) + Vhh(q1, q2)
@@ -197,9 +196,9 @@ function henonhelies(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
     #     cb = ManifoldProjection(ghh!, nlopts=Dict(:ftol=>1e-13), save = false)
     #     prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
     # else
-        prob = ODEProblem(hheom!, u0, (0., 100.0))
+        # prob = ODEProblem(hheom!, u0, (0., 100.0))
     # end
-    return DynamicalSystem(prob, hhjacob!, J)
+    return CDS(hheom!, u0, nothing, hhjacob!, J)
 end
 function hheom!(du, u, p, t)
     du[1] = u[3]
@@ -212,8 +211,8 @@ function hhjacob!(J, u, p, t)
     o = 0; i = 1
     J[1,:] .= (o,    o,     i,    o)
     J[2,:] .= (o,    o,     o,    i)
-    J[3,:] .= (-i - 2*u0[2],   -2*u0[1],   o,   o)
-    J[4,:] .= (-2*u0[1],  -1 + 2*u0[2],  o,   o)
+    J[3,:] .= (-i - 2*u[2],   -2*u[1],   o,   o)
+    J[4,:] .= (-2*u[1],  -1 + 2*u[2],  o,   o)
     return nothing
 end
 

@@ -93,15 +93,16 @@ mutable struct MinimalDiscreteIntegrator{IIP, S, D, F, P} <: DEIntegrator
     t::Int    # integrator "time" (counter)
     dummy::S  # dummy, used only in the IIP version
     p::P      # parameter container, I don't know why
+    t0::Int   # initial time (only for reinit!)
 end
 const MDI = MinimalDiscreteIntegrator
 isinplace(::MDI{IIP}) where {IIP} = IIP
 
 function init(prob::MDP{IIP, S, D, F, P}, u0 = prob.u0) where {IIP, S, D, F, P}
-    return MDI{IIP, S, D, F, P}(prob.f, S(u0), prob.t0, S(deepcopy(u0)), prob.p)
+    return MDI{IIP, S, D, F, P}(prob.f, S(u0), prob.t0, S(deepcopy(u0)), prob.p, prob.t0)
 end
 
-function reinit!(integ::MDI, u, t = 0)
+function reinit!(integ::MDI, u, t = integ.t0)
     integ.u = u
     integ.dummy = u
     integ.t = t
@@ -158,7 +159,7 @@ DiffEqBase.u_modified!(integ::MDI, ::Bool) = nothing
 #####################################################################################
 function integrator(ds::DDS{IIP, S, D, F, P}, u0 = ds.prob.u0) where {IIP, S, D, F, P}
     return MinimalDiscreteIntegrator{IIP, S, D, F, P}(
-    ds.prob.f, S(u0), ds.prob.t0, S(deepcopy(u0)), ds.prob.p)
+    ds.prob.f, S(u0), ds.prob.t0, S(deepcopy(u0)), ds.prob.p, ds.prob.t0)
 end
 
 function tangent_integrator(ds::DDS, k::Int; kwargs...)
@@ -184,7 +185,7 @@ function tangent_integrator(ds::DDS{IIP, S, D, F, P}, Q0::AbstractMatrix;
     s = hcat(u, Q)
     SS = typeof(s)
 
-    return MDI{IIP, SS, R, TF, P}(tangentf, s, ds.prob.t0, deepcopy(s), ds.prob.p)
+    return MDI{IIP, SS, R, TF, P}(tangentf, s, ds.prob.t0, deepcopy(s), ds.prob.p, ds.prob.t0)
 end
 
 # Auto-diffed in-place version
@@ -208,7 +209,7 @@ function tangent_integrator(ds::DDS{true, S, D, F, P, JAC, JM, true},
     s = hcat(u, Q)
     SS = typeof(s)
 
-    return MDI{true, SS, R, TF, P}(tangentf, s, ds.prob.t0, deepcopy(s), ds.prob.p)
+    return MDI{true, SS, R, TF, P}(tangentf, s, t0, deepcopy(s), ds.prob.p, t0)
 end
 
 function parallel_integrator(ds::DDS, states)

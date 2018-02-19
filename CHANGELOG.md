@@ -1,10 +1,10 @@
 # v0.6
 ## Massively Breaking
-* Complete overhaul of all of DynamicalSystems: all systems are now one. More details
+* Complete overhaul of all of DynamicalSystems. More details
   are in the official documentation (because I would had to write 10 pages of changelog
   otherwise). The constructors also changed signature.
-* All `DynamicalSystem` are now under a single type. This type has a problem
-  `prob<:DEProblem` and the jacobian. It is *immutable*.
+* All `DynamicalSystem`s are now  *immutable* and contain a problem,
+  a jacobian and a jacobian matrix.
 * Advantage of Multiple dispatch is taken to distinguish between in-place,
   out of place, continuous, discrete, heaven, hell, whatever.
 * All internals use `integrator` and `step!`.
@@ -14,9 +14,11 @@
 * Massive performance boost of up to 8x in system evolution of continuous systems.
 * increased the interaction between DiffEq and DynamicalSystems.
 * A dedicated integrator for discrete systems that is super fast is now employed
-  by default.
+  by default. It follows the same high level DiffEq interface but the implementation
+  is totally internal.
 * Out-of-place continuous systems are allowed. All famous systems are actually
   out of place now.
+* `parallel_integrator` added.
 
 # v0.5.0
 

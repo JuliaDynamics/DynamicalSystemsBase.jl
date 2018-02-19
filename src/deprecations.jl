@@ -5,7 +5,7 @@ ContinuousDS(args...; kwargs...) = (warn(
 Please see the documentation string of `DynamicalSystem`"))
 
 DiscreteDS(args...; kwargs...) = (warn(
-"DiscreteDS has changed to ContinuousDynamicalSystem"
+"ContinuousDS has changed to ContinuousDynamicalSystem"
 ); error("DiscreteDS syntax is not valid anymore.
 
 Please see the documentation string of `DynamicalSystem`"))
