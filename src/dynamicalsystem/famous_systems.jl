@@ -284,19 +284,19 @@ function shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
     return CDS(shinriki_eom, u0, [R1])
 end
 shinriki_voltage(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
-function shinriki_eom(u, p, t)
+function shinriki_eom(du, u, p, t)
     R1 = p[1]
 
-    du1 = (1/0.01)*(
+    du[1] = (1/0.01)*(
     u[1]*(1/6.9 - 1/R1) - shinriki_voltage(u[1] - u[2]) - (u[1] - u[2])/14.5
     )
 
-    du2 = (1/0.1)*(
+    du[2] = (1/0.1)*(
     shinriki_voltage(u[1] - u[2]) + (u[1] - u[2])/14.5 - u[3]
     )
 
-    du3 = (1/0.32)*(-u[3]*0.1 + u[2])
-    return SVector{3}(du1, du2, du3)
+    du[3] = (1/0.32)*(-u[3]*0.1 + u[2])
+    return nothing #SVector{3}(du1, du2, du3)
 end
 
 
