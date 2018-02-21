@@ -49,6 +49,7 @@ Here is how to define them:
 * **iip** : The `eom` **must** be in the form `eom(x, p, t) -> SVector`
   which means that given a state `x::SVector` and some parameter container
   `p` it returns an [`SVector`](http://juliaarrays.github.io/StaticArrays.jl/stable/pages/api.html#SVector-1)
+  (from the [StaticArrays](https://github.com/JuliaArrays/StaticArrays.jl) module)
   containing the next state.
 * **oop** : The `eom` **must** be in the form `eom!(xnew, x, p, t)`
   which means that given a state `x::Vector` and some parameter container `p`,
@@ -65,9 +66,9 @@ possible however to deduce whether the system is continuous or discrete just fro
 equations of motion, hence the 2 constructors.
 
 ### Jacobian
-The final optional argument (`jacobian`) for the constructors
+The optional argument `jacobian` for the constructors
 is a *function* and (if given) must also be of the same form as the `eom`,
-`jacobian(x, p, n) -> [SMatrix](http://juliaarrays.github.io/StaticArrays.jl/stable/pages/api.html#SMatrix-1)`
+`jacobian(x, p, n) -> SMatrix`
 for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place version.
 
 If `jacobian` is not given, it is constructed automatically using
@@ -85,7 +86,7 @@ sol = solve(ds.prob, alg; kwargs...)
 ```
 
 ## Relevant Functions
-[`state`](@ref), [`trajectory`](@ref), [`jacobian`](@ref), [`dimension`](@ref),
+[`trajectory`](@ref), [`jacobian`](@ref), [`dimension`](@ref),
 [`set_parameter!`](@ref).
 """
 abstract type DynamicalSystem{
