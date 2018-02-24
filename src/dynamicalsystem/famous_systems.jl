@@ -100,7 +100,7 @@ function's documentation string.
 function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
     return CDS(roessler_eom, u0, [a, b, c], roessler_jacob)
 end
-@inline @inbounds function roessler_eom(du, u, p, t)
+@inline @inbounds function roessler_eom(u, p, t)
     a, b, c = p
     du1 = -u[2]-u[3]
     du2 = u[1] + a*u[2]
@@ -109,9 +109,9 @@ end
 end
 @inline @inbounds function roessler_jacob(u, p, t)
     a, b, c = p
-    return @SMatrix [0  1 (-1);
-                     1  a   0;
-                     u[3] 0 u0[1] - c]
+    return @SMatrix [0 (-1) (-1);
+                     1 a 0;
+                     u[3] 0 (u[1]-c)]
 end
 
 """
