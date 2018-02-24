@@ -82,7 +82,7 @@ roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
 \\begin{aligned}
 \\dot{x} &= -y-z \\\\
 \\dot{y} &= x+ay \\\\
-\\dot{z} &= -b + z(x-c)
+\\dot{z} &= b + z(x-c)
 \\end{aligned}
 ```
 This three-dimensional continuous system is due to Rössler [1].
