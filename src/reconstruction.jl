@@ -12,6 +12,11 @@ created from a timeseries `s` with `T` type numbers.
 
 Use `Reconstruction(s::AbstractVector{T}, D, τ)` to create an instance.
 
+Use `Reconstruction(s::SizedAray{S1, S2}, D, τ)` to create a reconstruction using
+a multi-dimensional timeseries. Note that a reconstruction created this way will
+have `S2*D` total dimensions and *not* `D`, as a result of each dimension of 
+`s` having `D` delayed dimensions.
+
 ## Description
 The ``n``th row of a `Reconstruction` is the `D`-dimensional vector
 ```math
@@ -48,6 +53,9 @@ end
 Reconstruction(s::AbstractVector{T}, D, τ) where {T} =
 Reconstruction{D, T, τ}(reconstruct(s, Val{D}(), τ))
 
+Reconstruction(s::SizedArray{Tuple{S1, S2}, T, 2, M}, D, τ) where {S1, S2, T, M} =
+    Reconstruction{S2*D, T, τ}(reconstruct(s, Val{D}(), τ))
+
 @inline delay(::Reconstruction{D, T, t}) where {T,D,t} = t
 
 function reconstruct_impl(::Type{Val{D}}) where D
@@ -66,10 +74,29 @@ function reconstruct_impl(::Type{Val{D}}) where D
     end
 end
 
+function reconstructmat_impl(::Type{Val{S2}}, ::Type{Val{D}}) where {S2, D}
+    gens = [:(s[i + $k*τ, $d]) for k=0:D-1 for d=1:S2]
+
+    quote
+        L = size(s,1) - ($(D-1))*τ;
+        T = eltype(s)
+        data = Vector{SVector{$D*$S2, T}}(L)
+        for i in 1:L
+            data[i] = SVector{$D*$S2,T}($(gens...))
+        end
+        V = typeof(s)
+        T = eltype(s)
+        data
+    end
+end
+
 @generated function reconstruct(s::AbstractVector{T}, ::Val{D}, τ) where {D, T}
     reconstruct_impl(Val{D})
 end
 
+@generated function reconstruct(s::SizedArray{Tuple{S1, S2}, T, 2, M}, ::Val{D}, τ) where {S1, S2, T, M, D}
+    reconstructmat_impl(Val{S2}, Val{D})
+end
 
 # Pretty print:
 matname(d::Reconstruction{D, T, τ}) where {D, T, τ} =
