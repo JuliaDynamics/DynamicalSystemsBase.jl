@@ -153,7 +153,7 @@ end
 end
 
 """
-    henonhelies(u0=[0, -0.25, 0.42081,0])
+    henonheiles(u0=[0, -0.25, 0.42081,0])
 ```math
 \\begin{aligned}
 \\dot{x} &= p_x \\\\
@@ -173,7 +173,7 @@ The default initial condition is a typical chaotic orbit.
 
 [1] : Hénon, M. & Heiles, C., The Astronomical Journal **69**, pp 73–79 (1964)
 """
-function henonhelies(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
+function henonheiles(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
 
 
     i = one(eltype(u0))
