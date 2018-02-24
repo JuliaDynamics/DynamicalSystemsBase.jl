@@ -12,6 +12,20 @@ created from a timeseries `s` with `T` type numbers.
 
 Use `Reconstruction(s::AbstractVector{T}, D, τ)` to create an instance.
 
+Use `Reconstruction(s::SizedAray{S1, S2}, D, τ)` to create a reconstruction using
+a multi-dimensional timeseries. Note that a reconstruction created this way will
+have `S2*D` total dimensions, a result of each dimension of `s` having `D` delayed
+dimensions.
+
+## Example
+
+```julia
+using StaticArrays
+data = rand(1000,4)
+s = Size(1000,4)(data)
+R = Reconstruction(s, D, τ)
+```
+
 ## Description
 The ``n``th row of a `Reconstruction` is the `D`-dimensional vector
 ```math
