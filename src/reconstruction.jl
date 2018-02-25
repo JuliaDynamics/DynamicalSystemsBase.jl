@@ -11,7 +11,7 @@ export Reconstruction
 created from a timeseries `s` with `T` type numbers.
 ```julia
 Reconstruction(tr::SizedAray{S1, S2}, D, τ)
-Reconstruction(tr::AbstractDataset, D, τ)
+Reconstruction(tr::AbstractDataset{S2}, D, τ)
 ```
 Create a reconstruction using
 a trajectory (i.e. multi-dimensional timeseries). Note that a reconstruction created
@@ -33,17 +33,11 @@ The reconstruction object `R` can have same
 invariant quantities (like e.g. lyapunov exponents) with the original system
 that the timeseries were recorded from, for proper `D` and `τ` [1, 2].
 
-`R` can be accessed similarly to a [`Dataset`](@ref):
-```julia
-s = rand(1e6)
-R = Reconstruction(s, 4, 1) # dimension 4 and delay 1
-R[3] # third point of reconstruction, ≡ (s[3], s[4], s[5], s[6])
-R[1, 2] # Second element of first point of reconstruction, ≡ s[2]
-```
+`R` can be accessed similarly to a [`Dataset`](@ref)
 and can also be given to all functions that accept a `Dataset`
 (like e.g. `generalized_dim` from module `ChaosTools`).
 
-The functions `dimension(R)` and `delay(R)` return `D` and `τ` respectively.
+Use `delay(R)` to get `τ`.
 
 ## References
 
