@@ -1,6 +1,7 @@
 ![DynamicalSystems.jl logo: The Double Pendulum](https://i.imgur.com/nFQFdB0.gif)
 
-Repository containing core system and data definitions used in the ecosystem of [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/latest/).
+Repository containing core system and data definitions used in the library
+[DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/latest/).
 
 | **Documentation**   |  **Travis**     | **AppVeyor** | Gitter |
 |:--------:|:-------------------:|:-----:|:-----:|
