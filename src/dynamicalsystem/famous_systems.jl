@@ -82,7 +82,7 @@ roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
 \\begin{aligned}
 \\dot{x} &= -y-z \\\\
 \\dot{y} &= x+ay \\\\
-\\dot{z} &= -b + z(x-c)
+\\dot{z} &= b + z(x-c)
 \\end{aligned}
 ```
 This three-dimensional continuous system is due to Rössler [1].
@@ -100,7 +100,7 @@ function's documentation string.
 function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
     return CDS(roessler_eom, u0, [a, b, c], roessler_jacob)
 end
-@inline @inbounds function roessler_eom(du, u, p, t)
+@inline @inbounds function roessler_eom(u, p, t)
     a, b, c = p
     du1 = -u[2]-u[3]
     du2 = u[1] + a*u[2]
@@ -109,9 +109,9 @@ end
 end
 @inline @inbounds function roessler_jacob(u, p, t)
     a, b, c = p
-    return @SMatrix [0  1 (-1);
-                     1  a   0;
-                     u[3] 0 u0[1] - c]
+    return @SMatrix [0 (-1) (-1);
+                     1 a 0;
+                     u[3] 0 (u[1]-c)]
 end
 
 """
@@ -153,7 +153,7 @@ end
 end
 
 """
-    henonhelies(u0=[0, -0.25, 0.42081,0])
+    henonheiles(u0=[0, -0.25, 0.42081,0])
 ```math
 \\begin{aligned}
 \\dot{x} &= p_x \\\\
@@ -173,7 +173,7 @@ The default initial condition is a typical chaotic orbit.
 
 [1] : Hénon, M. & Heiles, C., The Astronomical Journal **69**, pp 73–79 (1964)
 """
-function henonhelies(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
+function henonheiles(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
 
 
     i = one(eltype(u0))

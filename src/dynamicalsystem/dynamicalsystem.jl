@@ -328,6 +328,8 @@ end
 Return an integrator object that can be used to evolve a system interactively
 using `step!(integ [, Δt])`. Optionally specify an initial state `u0`.
 
+The state of this integrator is a vector.
+
 See [`trajectory`](@ref) for `diff_eq_kwargs`.
 """
 function integrator end
@@ -343,6 +345,9 @@ vectors are choosen as initial conditions.
 
 You can also give as a keyword argument
 a different initial state at time `u0, t0`.
+
+The state of this integrator is a matrix with the first column the system state
+and all other columns being deviation vectors.
 
 See [`trajectory`](@ref) for `diff_eq_kwargs`.
 
@@ -372,7 +377,8 @@ function tangent_integrator end
 Return an integrator object that can be used to evolve many `states` of
 a system in parallel interactively using `step!(integ [, Δt])`.
 
-Internally the integrator propagates a vector of vectors, each one being a state.
+The states of this integrator are a vector of vectors, each one being an actual
+state of the dynamical system.
 Only for the case of in-place continuous systems, the integrator propagates a matrix
 with each column being a state, because at the moment DifferentialEquations.jl does
 not support `Vector[Vector]` as state.
@@ -384,15 +390,13 @@ function parallel_integrator end
 """
     trajectory(ds::DynamicalSystem, T [, u]; kwargs...) -> dataset
 
-Return a dataset what will contain the trajectory of the sytem,
+Return a dataset that will contain the trajectory of the sytem,
 after evolving it for total time `T`, optionally starting from state `u`.
-See [`Dataset`](@ref) for info on how to
-manipulate this object.
+See [`Dataset`](@ref) for info on how to use this object.
 
-For the discrete case, `T` is an integer and a `T×D` dataset is returned
-(`D` is the system dimensionality). For the
-continuous case, a `W×D` dataset is returned, with `W = length(t0:dt:T)` with
-`t0:dt:T` representing the time vector (*not* returned).
+A `W×D` dataset is returned, with `W = length(t0:dt:T)` with
+`t0:dt:T` representing the time vector (*not* returned) and `D` the system dimension.
+For discrete systems both `T` and `dt` must be integers.
 
 ## Keyword Arguments
 * `dt` :  Time step of value output during the solving

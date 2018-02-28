@@ -92,7 +92,7 @@ end
 
 #=
 @testset "ManifoldProjection" begin
-  ds1 = Systems.henonhelies() #with Jac
+  ds1 = Systems.henonheiles() #with Jac
   ds2 = CDS(ds1.prob) #without Jac
   @inline Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
   @inline Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
