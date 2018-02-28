@@ -36,10 +36,9 @@ provide some final time, since it is not used by **DynamicalSystems.jl** in any 
 `t0`, `J0` allow you to choose the initial time and provide
 an initialized Jacobian matrix.
 
-The discrete constructor creates an internal implementation of a discrete system,
-which is very efficient.
-The continuous uses [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/),
-see [`trajectory`](@ref) for default arguments.
+Continuous system solvers use [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/)
+and by default are integrated with a 9th order Verner solver `Vern9()` with tolerances
+`abstol = reltol = 1e-9`.
 
 ### Equations of motion
 The are two "versions" for `DynamicalSystem`, depending on whether the
@@ -406,6 +405,7 @@ continuous case, a `W×D` dataset is returned, with `W = length(t0:dt:T)` with
   do so by using the symbol `:solver`, e.g.:
   `Dict(:solver => DP5(), :maxiters => 1e9)`. This requires you to have been first
   `using OrdinaryDiffEq` to access the solvers. Defaults to
-  `Dict(:solver => Vern9(), :abstol => 1e-9, :reltol => 1e-9)`.
+  `Dict(:solver => Vern9(), :abstol => 1e-9, :reltol => 1e-9)`, i.e. a 9th order
+  Verner algorithm.
 """
 function trajectory end
