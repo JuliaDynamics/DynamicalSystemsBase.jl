@@ -1,8 +1,7 @@
-println("\nTesting Reconstruction")
-if current_module() != DynamicalSystemsBase
-  using DynamicalSystemsBase
-end
+using DynamicalSystemsBase
 using Base.Test, StaticArrays
+
+println("\nTesting Reconstruction")
 
 ds = Systems.towel()
 data = trajectory(ds, 10000)

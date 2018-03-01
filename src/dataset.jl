@@ -69,16 +69,11 @@ Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
     Dataset{D, T} <: AbstractDataset{D,T}
 A dedicated interface for datasets, i.e. vectors of vectors.
 It contains *equally-sized datapoints* of length `D`,
-represented by `SVector{D, T}`, containing numbers of type `T`.
+represented by `SVector{D, T}`.
 
-The internal data representation is more efficient than having a `Matrix` and
-also leads
-to faster numerical computation of other quantities (like e.g. entropies). However,
-it can be used exactly like a matrix that has each of the columns be the
+It can be used exactly like a matrix that has each of the columns be the
 timeseries of each of the dynamic variables. [`trajectory`](@ref) always returns
-a `Dataset`.
-
-For example,
+a `Dataset`. For example,
 ```julia
 ds = Systems.towel()
 data = trajectory(ds, 1000) #this returns a dataset
@@ -87,12 +82,10 @@ data[1] == data[1, :] # this is the first datapoint (D-dimensional)
 data[5, 3] # value of the third variable, at the 5th timepoint
 ```
 
-Use `Matrix(dataset)` or `reinterpret(Matrix, dataset)` to create a `Matrix`
-from a `dataset`, the first method returning a matrix where each column is a
-a timeseries while the second returning a matrix where each column is
-a datapoint. Similarly, use
-`Dataset(matrix)` or `reinterpret(Dataset, matrix)` to create a `Dataset` from
-a `matrix` that has structure as noted by the `Matrix` methods.
+Use `Matrix(dataset)` or `reinterpret(Matrix, dataset)` and
+`Dataset(matrix)` or `reinterpret(Dataset, matrix)` to convert. The `reinterpret`
+methods are cheaper but assume that each variable/timeseries is a *row* and not
+column of the `matrix`.
 
 If you have various timeseries vectors `x, y, z, ...` pass them like
 `Dataset(x, y, z, ...)`. You can use `columns(dataset)` to obtain the reverse,
@@ -294,6 +287,8 @@ with numbers of type `T`.
 
 Optionally skip the first `skipstart` rows of the file (that may e.g.
 contain headers).
+
+Call like `read_dataset("file.txt", Dataset{3, Float64})`.
 """
 function read_dataset(filename, ::Type{Dataset{D, T}}, delim::Char = '\t';
     skipstart = 0) where {D, T}
@@ -318,6 +313,3 @@ Write a `dataset` in a `delim`-delimited text file.
 """
 write_dataset(f, dataset::AbstractDataset, delim::Char = '\t'; opts...) =
 writedlm(f, dataset.data, delim; opts...)
-
-# x = rand(3*100)
-# reinterpret(SVector{3, Float64}, x, (100,))
