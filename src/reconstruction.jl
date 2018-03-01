@@ -28,20 +28,22 @@ and can also be given to all functions that accept a `Dataset`
 
 Use `delay(R)` to get `τ`.
 
-## Multi-dimensional Reconstruction
+## Multi-dimensional `Reconstruction`
 To make a reconstruction out of a multi-dimensional timeseries (i.e. trajectory) use
 ```julia
 Reconstruction(tr::SizedAray{A, B}, D, τ)
 Reconstruction(tr::AbstractDataset{B}, D, τ)
 ```
-Note that a reconstruction created
-this way will have `B*D` total dimensions and *not* `D`, as a result of
-each dimension of `s` having `D` delayed dimensions.
+with `B` the "base" dimensions.
 
 If the trajectory is for example ``(x, y)``, then the reconstruction is
 ```math
 (x(n), y(n), x(n+\\tau), y(n+\\tau), \\dots, x(n+(D-1)\\tau), y(n+(D-1)\\tau))
 ```
+
+Note that a reconstruction created
+this way will have `B*D` total dimensions and *not* `D`, as a result of
+each dimension of `s` having `D` delayed dimensions.
 
 ## References
 
