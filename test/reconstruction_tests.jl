@@ -1,7 +1,5 @@
 println("\nTesting Reconstruction")
-if current_module() != DynamicalSystemsBase
-  using DynamicalSystemsBase
-end
+using DynamicalSystemsBase
 using Base.Test, StaticArrays
 
 ds = Systems.towel()
@@ -23,9 +21,9 @@ end
 
         si = Matrix(data[:,1:basedim])
         s = Size(10001,basedim)(si)
-        R = Reconstruction(s, D, τ)
+        R = MDReconstruction(s, D, τ)
         tr = Dataset(si)
-        R2 = Reconstruction(tr, D, τ)
+        R2 = MDReconstruction(tr, D, τ)
 
         for dim in 1:basedim
             @test R[(1+τ):end, dim] == R[1:end-τ, dim+basedim]
