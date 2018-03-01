@@ -1,6 +1,7 @@
-println("\nTesting Reconstruction")
 using DynamicalSystemsBase
 using Base.Test, StaticArrays
+
+println("\nTesting Reconstruction")
 
 ds = Systems.towel()
 data = trajectory(ds, 10000)
@@ -21,9 +22,9 @@ end
 
         si = Matrix(data[:,1:basedim])
         s = Size(10001,basedim)(si)
-        R = MDReconstruction(s, D, τ)
+        R = Reconstruction(s, D, τ)
         tr = Dataset(si)
-        R2 = MDReconstruction(tr, D, τ)
+        R2 = Reconstruction(tr, D, τ)
 
         for dim in 1:basedim
             @test R[(1+τ):end, dim] == R[1:end-τ, dim+basedim]

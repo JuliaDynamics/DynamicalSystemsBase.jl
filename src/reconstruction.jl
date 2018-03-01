@@ -28,6 +28,21 @@ and can also be given to all functions that accept a `Dataset`
 
 Use `delay(R)` to get `τ`.
 
+## Multi-dimensional Reconstruction
+To make a reconstruction out of a multi-dimensional timeseries (i.e. trajectory) use
+```julia
+Reconstruction(tr::SizedAray{A, B}, D, τ)
+Reconstruction(tr::AbstractDataset{B}, D, τ)
+```
+Note that a reconstruction created
+this way will have `B*D` total dimensions and *not* `D`, as a result of
+each dimension of `s` having `D` delayed dimensions.
+
+If the trajectory is for example ``(x, y)``, then the reconstruction is
+```math
+(x(n), y(n), x(n+\\tau), y(n+\\tau), \\dots, x(n+(D-1)\\tau), y(n+(D-1)\\tau))
+```
+
 ## References
 
 [1] : F. Takens, *Detecting Strange Attractors in Turbulence — Dynamical
@@ -70,31 +85,14 @@ matname(d::Reconstruction{D, T, τ}) where {D, T, τ} =
 #####################################################################################
 #                              MultiDimensional R                                   #
 #####################################################################################
-"""
-```julia
-MDReconstruction(tr::SizedAray{A, B}, D, τ)
-MDReconstruction(tr::AbstractDataset{B}, D, τ)
-```
-Create a multi-dimensional reconstruction using
-a trajectory (i.e. multi-dimensional timeseries). Note that a reconstruction created
-this way will have `B*D` total dimensions and *not* `D`, as a result of
-each dimension of `s` having `D` delayed dimensions.
-
-If the trajectory is for example ``(x, y)``, then the reconstruction is
-```math
-(x(n), y(n), x(n+\\tau), y(n+\\tau), \\dots, x(n+(D-1)\\tau), y(n+(D-1)\\tau))
-```
-
-See [`Reconstruction`](@ref) for more.
-"""
 struct MDReconstruction{DxB, D, B, T<:Number, τ} <: AbstractReconstruction{DxB, T, τ}
     data::Vector{SVector{DxB,T}}
 end
 
-MDReconstruction(s::AbstractDataset{B, T}, D, τ) where {B, T} =
+Reconstruction(s::AbstractDataset{B, T}, D, τ) where {B, T} =
 MDReconstruction{B*D, D, B, T, τ}(reconstruct(s, Val{D}(), τ))
 
-MDReconstruction(s::SizedArray{Tuple{A, B}, T, 2, M}, D, τ) where {A, B, T, M} =
+Reconstruction(s::SizedArray{Tuple{A, B}, T, 2, M}, D, τ) where {A, B, T, M} =
 MDReconstruction{B*D, D, B, T, τ}(reconstruct(s, Val{D}(), τ))
 
 
@@ -123,4 +121,4 @@ end
 
 # Pretty print:
 matname(d::MDReconstruction{DxB, D, B, T, τ}) where {DxB, D, B, T, τ} =
-"(D=$(D), τ=$(τ)) - delay coordinates $(B)DReconstruction"
+"(B=$(B), D=$(D), τ=$(τ)) - delay coordinates multi-dimensional Reconstruction"
