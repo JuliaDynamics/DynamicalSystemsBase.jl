@@ -9,6 +9,7 @@ module DynamicalSystemsBase
 include("dataset.jl")
 include("reconstruction.jl")
 include("various.jl")
+include("neighborhoods.jl")
 
 include("dynamicalsystem/dynamicalsystem.jl")
 include("dynamicalsystem/discrete.jl")
