@@ -12,21 +12,23 @@ abstract type AbstractReconstruction{D, T, τ} <: AbstractDataset{D, T} end
 created from a timeseries `s`.
 
 ## Description
-In the case of reconstrucing a timeseries, the ``n``th row of a `Reconstruction`
-is the `D`-dimensional vector
+If `τ` is an integer, then the ``n``th row of a `Reconstruction`
+is
 ```math
 (s(n), s(n+\\tau), s(n+2\\tau), \\dots, s(n+(D-1)\\tau))
+```
+If instead `τ` is a vector of integers, so that `length(τ) == D`,
+then the ``n``th row is
+```math
+(s(n+\\tau[1]), s(n+\\tau[2]), s(n+\\tau[3]), \\dots, s(n+\\tau[D]))
 ```
 
 The reconstruction object `R` can have same
 invariant quantities (like e.g. lyapunov exponents) with the original system
 that the timeseries were recorded from, for proper `D` and `τ` [1, 2].
 
-`R` can be accessed similarly to a [`Dataset`](@ref)
-and can also be given to all functions that accept a `Dataset`
-(like e.g. `generalized_dim` from module `ChaosTools`).
-
-Use `delay(R)` to get `τ`.
+The case of different delay times allows reconstructing systems with many time scales,
+see [3].
 
 ## Multi-dimensional `Reconstruction`
 To make a reconstruction out of a multi-dimensional timeseries (i.e. trajectory) use
@@ -36,9 +38,14 @@ Reconstruction(tr::AbstractDataset{B}, D, τ)
 ```
 with `B` the "base" dimensions.
 
-If the trajectory is for example ``(x, y)``, then the reconstruction is
+If the trajectory is for example ``(x, y)``, then the ``n``th row is
 ```math
 (x(n), y(n), x(n+\\tau), y(n+\\tau), \\dots, x(n+(D-1)\\tau), y(n+(D-1)\\tau))
+```
+for integer `τ` and if `τ` is an `AbstractMatrix{Int}`, so that `size(τ) == (D, B)`,
+then the ``n``th row is
+```math
+(x(n+\\tau[1, 1]), y(n+\\tau[1, 2]), \\dots, x(n+\\tau[D, 1]), y(n+\\tau[D, 2]))
 ```
 
 Note that a reconstruction created
@@ -51,15 +58,26 @@ each dimension of `s` having `D` delayed dimensions.
 Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 
 [2] : T. Sauer *et al.*, J. Stat. Phys. **65**, pp 579 (1991)
+
+[3] : K. Judd & A. Mees, [Physica D **120**, pp 273 (1998)](https://www.sciencedirect.com/science/article/pii/S0167278997001188)
 """
 struct Reconstruction{D, T<:Number, τ} <: AbstractReconstruction{D, T, τ}
     data::Vector{SVector{D,T}}
+    delay::τ
 end
 
-@inline delay(::Reconstruction{D, T, t}) where {T,D,t} = t
-
-Reconstruction(s::AbstractVector{T}, D, τ) where {T} =
-Reconstruction{D, T, τ}(reconstruct(s, Val{D}(), τ))
+function Reconstruction(s::AbstractVector{T}, D, τ::DT) where {T, DT}
+    if DT <: AbstractVector{Int}
+        length(τ) != D && throw(ArgumentError(
+        "The delay vector must have `length(τ) == D`."
+        ))
+    elseif DT != Int
+        throw(ArgumentError(
+        "Only Int or AbstractVector{Int} types are allowed for the delay."
+        ))
+    end
+    Reconstruction{D, T, DT}(reconstruct(s, Val{D}(), τ), τ)
+end
 
 function reconstruct_impl(::Val{D}) where D
     gens = [:(s[i + $k*τ]) for k=0:D-1]
@@ -76,27 +94,40 @@ function reconstruct_impl(::Val{D}) where D
         data
     end
 end
-@generated function reconstruct(s::AbstractVector{T}, ::Val{D}, τ) where {D, T}
+function reconstruct_impl_tvec(::Val{D}) where D
+    gens = [:(s[i + τ[$k]]) for k=1:D]
+
+    quote
+        L = length(s) - ($(D-1))*maximum(τ);
+        T = eltype(s)
+        data = Vector{SVector{$D, T}}(L)
+        for i in 1:L
+            data[i] = SVector{$D,T}($(gens...))
+        end
+        V = typeof(s)
+        T = eltype(s)
+        data
+    end
+end
+@generated function reconstruct(s::AbstractVector{T}, ::Val{D}, τ::Int) where {D, T}
     reconstruct_impl(Val{D}())
+end
+@generated function reconstruct(
+    s::AbstractVector{T}, ::Val{D}, τ::AbstractArray{Int}) where {D, T}
+    reconstruct_impl_tvec(Val{D}())
 end
 
 
 # Pretty print:
 matname(d::Reconstruction{D, T, τ}) where {D, T, τ} =
-"(D=$(D), τ=$(τ)) - delay coordinates Reconstruction"
+"(D=$(D), τ=$(d.delay)) - delay coordinates Reconstruction"
 #####################################################################################
 #                              MultiDimensional R                                   #
 #####################################################################################
 struct MDReconstruction{DxB, D, B, T<:Number, τ} <: AbstractReconstruction{DxB, T, τ}
     data::Vector{SVector{DxB,T}}
+    delay::τ
 end
-
-Reconstruction(s::AbstractDataset{B, T}, D, τ) where {B, T} =
-MDReconstruction{B*D, D, B, T, τ}(reconstruct(s, Val{D}(), τ))
-
-Reconstruction(s::SizedArray{Tuple{A, B}, T, 2, M}, D, τ) where {A, B, T, M} =
-MDReconstruction{B*D, D, B, T, τ}(reconstruct(s, Val{D}(), τ))
-
 
 function reconstructmat_impl(::Val{S2}, ::Val{D}) where {S2, D}
     gens = [:(s[i + $k*τ, $d]) for k=0:D-1 for d=1:S2]
@@ -113,6 +144,7 @@ function reconstructmat_impl(::Val{S2}, ::Val{D}) where {S2, D}
         data
     end
 end
+
 @generated function reconstruct(s::SizedArray{Tuple{A, B}, T, 2, M}, ::Val{D}, τ) where {A, B, T, M, D}
     reconstructmat_impl(Val{B}(), Val{D}())
 end
@@ -120,7 +152,53 @@ end
     reconstructmat_impl(Val{B}(), Val{D}())
 end
 
+Reconstruction(s::AbstractDataset{B, T}, D, τ::Int) where {B, T} =
+MDReconstruction{B*D, D, B, T, Int}(reconstruct(s, Val{D}(), τ), τ)
+
+Reconstruction(s::SizedArray{Tuple{A, B}, T, 2, M}, D, τ::Int) where {A, B, T, M} =
+MDReconstruction{B*D, D, B, T, Int}(reconstruct(s, Val{D}(), τ), τ)
+
+## Multi-time version
+function reconstructmat_impl_tvec(::Val{S2}, ::Val{D}) where {S2, D}
+    gens = [:(s[i + τ[$k, $d], $d]) for k=1:D for d=1:S2]
+
+    quote
+        L = size(s,1) - maximum(τ);
+        T = eltype(s)
+        data = Vector{SVector{$D*$S2, T}}(L)
+        for i in 1:L
+            data[i] = SVector{$D*$S2,T}($(gens...))
+        end
+        V = typeof(s)
+        T = eltype(s)
+        data
+    end
+end
+
+@generated function reconstruct_multi(s::SizedArray{Tuple{A, B}, T, 2, M}, ::Val{D}, τ) where {A, B, T, M, D}
+    reconstructmat_impl_tvec(Val{B}(), Val{D}())
+end
+@generated function reconstruct_multi(s::AbstractDataset{B, T}, ::Val{D}, τ) where {B, T, D}
+    reconstructmat_impl_tvec(Val{B}(), Val{D}())
+end
+
+function Reconstruction(
+    s::AbstractDataset{B, T}, D, τ::DT) where {B, T, DT<:AbstractMatrix{Int}}
+    size(τ) != (D, B) && throw(ArgumentError(
+    "The delay matrix must have `size(τ) == (D, B)`."
+    ))
+    return MDReconstruction{B*D, D, B, T, DT}(reconstruct_multi(s, Val{D}(), τ), τ)
+end
+
+function Reconstruction(
+    s::SizedArray{Tuple{A, B}, T, 2, M}, D, τ::DT
+    ) where {A, B, T, M, DT<:AbstractMatrix{Int}}
+    size(τ) != (D, B) && throw(ArgumentError(
+    "The delay matrix must have `size(τ) == (D, B)`."
+    ))
+    return MDReconstruction{B*D, D, B, T, DT}(reconstruct_multi(s, Val{D}(), τ), τ)
+end
 
 # Pretty print:
 matname(d::MDReconstruction{DxB, D, B, T, τ}) where {DxB, D, B, T, τ} =
-"(B=$(B), D=$(D), τ=$(τ)) - delay coordinates multi-dimensional Reconstruction"
+"(B=$(B), D=$(D), τ=$(d.delay)) - delay coordinates multi-dimensional Reconstruction"

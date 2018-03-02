@@ -2,7 +2,7 @@ if current_module() != DynamicalSystemsBase
   using DynamicalSystemsBase
 end
 using Base.Test, StaticArrays
-println("\nTesting custom QR-decomposition...")
+println("Testing custom QR-decomposition...")
 
 @testset "QR-decomposition" begin
     tol = 1e-10
