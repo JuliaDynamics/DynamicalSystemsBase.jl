@@ -55,3 +55,27 @@ end
         @test size(R2) == (size(s,1) - τ*(D - 1), D*basedim)
     end
 end
+
+@testset "Multidim Multi-time" begin
+
+    taus = [0 0; 2 3; 4 6; 6 8]
+    data2 = data[:, 1:2]
+    data3 = Size(10001, 2)(Matrix(data2))
+    R1 = Reconstruction(data2, 4, taus)
+    R2 = Reconstruction(data3, 4, taus)
+
+    @test R1 == R2
+    @test R1[:, 1] == data2[1:end-8, 1]
+    @test R1[:, 2] == data2[1:end-8, 2]
+    @test R1[:, 3] == data2[3:end-6, 1]
+
+    # test error throws:
+    taus = [0 0 0; 2 3 0; 4 6 0; 6 8 0]
+    try
+        R1 = Reconstruction(data2, 4, taus)
+    catch err
+        @test isa(err, ArgumentError)
+        @test contains(err.msg, "delay matrix")
+    end
+
+end
