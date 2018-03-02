@@ -45,7 +45,7 @@ If the trajectory is for example ``(x, y)``, then the ``n``th row is
 for integer `τ` and if `τ` is an `AbstractMatrix{Int}`, so that `size(τ) == (D, B)`,
 then the ``n``th row is
 ```math
-(x(n+\\tau[1, 1]), y(n+\\tau[1, 2]), \\dots, x(n++\\tau[D, 1]), y(n++\\tau[D, 2]))
+(x(n+\\tau[1, 1]), y(n+\\tau[1, 2]), \\dots, x(n+\\tau[D, 1]), y(n+\\tau[D, 2]))
 ```
 
 Note that a reconstruction created
