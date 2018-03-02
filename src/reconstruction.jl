@@ -113,7 +113,7 @@ end
     reconstruct_impl(Val{D}())
 end
 @generated function reconstruct(
-    s::AbstractVector{T}, ::Val{D}, τ::AbstractVector{Int}) where {D, T}
+    s::AbstractVector{T}, ::Val{D}, τ::AbstractArray{Int}) where {D, T}
     reconstruct_impl_tvec(Val{D}())
 end
 
