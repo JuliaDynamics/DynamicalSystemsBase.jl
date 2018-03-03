@@ -84,6 +84,7 @@ function DiscreteDynamicalSystem(
     return DDS{IIP, S, D, F, P, JAC, JM, true}(prob, j, J0)
 end
 
+timetype(::DDS) = Int
 
 #####################################################################################
 #                           MinimalDiscreteIntegrator                               #
@@ -119,8 +120,6 @@ end
         error("Can't extrapolate discrete systems!")
     end
 end
-
-stateeltype(::MDI{IIP, S}) where {IIP, S} = eltype(S)
 
 #####################################################################################
 #                                   Stepping                                        #

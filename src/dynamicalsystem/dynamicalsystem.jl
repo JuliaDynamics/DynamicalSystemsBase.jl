@@ -1,7 +1,7 @@
 using OrdinaryDiffEq, ForwardDiff, StaticArrays
 import OrdinaryDiffEq: isinplace, step!
 
-export dimension, state, DynamicalSystem, jacobian, stateeltype
+export dimension, state, DynamicalSystem, jacobian
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
 export set_parameter!, step!, inittime
 export trajectory
