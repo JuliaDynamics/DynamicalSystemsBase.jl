@@ -7,3 +7,4 @@ StaticArrays 0.5.0
 StatsBase 0.8.2
 IterTools
 NearestNeighbors
+LsqFit 0.3.0
