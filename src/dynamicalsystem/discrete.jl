@@ -41,6 +41,7 @@ systemtype(::MinimalDiscreteProblem) = "discrete"
 inittime(prob::MDP) = prob.t0
 dimension(::MinimalDiscreteProblem{IIP, S, D}) where {IIP, S, D} = D
 state(prob::MDP) = prob.u0
+stateeltype(::MDP{IIP, S}) where {IIP, S} = eltype(S)
 
 """
     DiscreteDynamicalSystem(eom, state, p [, jacobian [, J]]; t0::Int = 0)
@@ -97,6 +98,8 @@ mutable struct MinimalDiscreteIntegrator{IIP, S, D, F, P} <: DEIntegrator
 end
 const MDI = MinimalDiscreteIntegrator
 isinplace(::MDI{IIP}) where {IIP} = IIP
+stateeltype(::MDI{IIP, S}) where {IIP, S} = eltype(S)
+stateeltype(::MDI{IIP, S}) where {IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
 function init(prob::MDP{IIP, S, D, F, P}, u0 = prob.u0) where {IIP, S, D, F, P}
     return MDI{IIP, S, D, F, P}(prob.f, S(u0), prob.t0, S(deepcopy(u0)), prob.p, prob.t0)
@@ -116,6 +119,8 @@ end
         error("Can't extrapolate discrete systems!")
     end
 end
+
+stateeltype(::MDI{IIP, S}) where {IIP, S} = eltype(S)
 
 #####################################################################################
 #                                   Stepping                                        #
