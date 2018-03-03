@@ -1,7 +1,7 @@
 using DynamicalSystemsBase
 using Base.Test, StaticArrays
 using DynamicalSystemsBase: CDS, DDS, isinplace
-using DynamicalSystemsBase: create_jacobian, create_tangent
+using DynamicalSystemsBase: create_jacobian, create_tangent, stateeltype
 
 println("\nTesting inference...")
 
