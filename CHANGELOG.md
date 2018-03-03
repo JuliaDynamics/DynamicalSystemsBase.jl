@@ -1,3 +1,15 @@
+# v0.8
+## New features
+* Multi-dimensional Reconstruction
+* Multi-time Reconstruction
+* Multi-dimensional, multi-time Reconstruction
+* Methods for estimating Reconstruction parameters are now here.
+* Reconstruction from Dataset
+## Breaking
+* Corrected name `helies -> heiles`
+* Reconstructions now have field `delay` which is the delay time/times and are
+  instead parameterized on the type of the delay.
+
 # v0.6
 ## Massively Breaking
 * Complete overhaul of all of DynamicalSystems. More details
