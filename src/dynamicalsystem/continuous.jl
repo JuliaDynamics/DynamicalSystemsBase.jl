@@ -1,4 +1,5 @@
 using OrdinaryDiffEq, StaticArrays
+using OrdinaryDiffEq: ODEIntegrator
 
 export ContinuousDynamicalSystem, CDS
 #####################################################################################
@@ -36,6 +37,11 @@ struct ContinuousDynamicalSystem{
 end
 
 const CDS = ContinuousDynamicalSystem
+stateeltype(::CDS{IIP, S}) where {IIP, S} = eltype(S)
+stateeltype(::ODEProblem{S}) where {S} = eltype(S)
+timetype(::ContinuousDynamicalSystem{
+IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM}) where
+{IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM} = tType
 
 function ContinuousDynamicalSystem(
     prob::ODEProblem{S, tType, IIP, P, F, JPROT, C, MM, DiffEqBase.StandardODEProblem},
@@ -78,6 +84,10 @@ end
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
+stateeltype(::ODEIntegrator{Alg, S}) where {Alg, S} = eltype(S)
+stateeltype(::ODEIntegrator{Alg, S}) where {
+    Alg, S<:Vector{<:AbstractArray{T}}} where {T} = T
+
 function integrator(ds::CDS{iip}, u0 = ds.prob.u0;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
     saveat = nothing, tspan = ds.prob.tspan) where {iip}
