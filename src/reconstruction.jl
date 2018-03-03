@@ -271,15 +271,15 @@ end
     estimate_delay(s) -> τ
 Estimate an optimal delay to be used in [`Reconstruction`](@ref).
 Methods:
-"first_zero" finds first delay at which the auto-correlation function becomes 0
-"first_min" returns delay of first minimum of the auto-correlation function
-"exp_decay" performes an exponential fit to
+`first_zero` finds first delay at which the auto-correlation function becomes 0
+`first_min` returns delay of first minimum of the auto-correlation function
+`exp_decay` performes an exponential fit to
 the `abs.(c)` with `c` the auto-correlation function of `s`.
 Return the exponential decay time `τ` rounded to an integer.
 """
 function estimate_delay(x::AbstractVector, method::String)
-    @assert method ∈ ["first_zero", "first_min", "exp_decay"]#,"mutual_inf"]
-    if method=="first_zero"
+    method ∈ ["first_zero", "first_min", "exp_decay"] || throw(ArgumentError("Unknown method"))
+     if method=="first_zero"
         c = autocor(x, 0:length(x)÷10; demean=true)
         i = 1
         # Find 0 crossing:
