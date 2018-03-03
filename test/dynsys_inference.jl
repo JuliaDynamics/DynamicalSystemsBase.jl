@@ -16,5 +16,6 @@ println("\nTesting inference...")
         IIP = isinplace(ds)
         @test_nowarn @inferred create_jacobian(f, Val{IIP}(), s, p, t, Val{D}())
         @test_nowarn @inferred create_tangent(f, ds.jacobian, ds.J, Val{IIP}(), Val{2}())
+        @test_nowarn @inferred jacobian(ds)
     end
 end

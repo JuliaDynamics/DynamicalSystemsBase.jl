@@ -1,6 +1,5 @@
 using OrdinaryDiffEq, ForwardDiff, StaticArrays
 import OrdinaryDiffEq: isinplace, step!
-import Base: eltype
 
 export dimension, state, DynamicalSystem, jacobian
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
@@ -106,11 +105,14 @@ end
 
 const DS = DynamicalSystem
 
-# Expand methods
+# Type stability methods:
 isinplace(ds::DS{IIP}) where {IIP} = IIP
 statetype(ds::DS{IIP, S}) where {IIP, S} = S
+stateeltype(ds::DS{IIP, S}) where {IIP, S} = eltype(S)
+
 isautodiff(ds::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
 {IIP, S, D, F, P, JAC, JM, IAD} = IAD
+
 
 """
     dimension(thing) -> D
@@ -135,7 +137,6 @@ set_parameter!(ds::DS, args...) = set_parameter!(ds.prob, args...)
 dimension(prob::DEProblem) = length(prob.u0)
 state(integ::DEIntegrator) = integ.u
 hascallback(prob::ODEProblem) = prob.callback != nothing
-# statetype(prob::DEProblem) = eltype(prob.u0)
 inittime(prob::DEProblem) = prob.tspan[1]
 inittime(ds::DS) = inittime(ds.prob)
 
