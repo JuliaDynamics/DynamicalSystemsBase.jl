@@ -22,7 +22,7 @@ Concrete subtypes:
 Notice that these distances are always computed using the Euclidean distance
 in `D`-dimensional space.
 
-See also [`neighborhood`](@ref) or [`numericallyapunov`](@ref).
+See also [`neighborhood`](@ref).
 """
 abstract type AbstractNeighborhood end
 struct FixedMassNeighborhood <: AbstractNeighborhood
