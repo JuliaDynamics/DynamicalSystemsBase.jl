@@ -268,14 +268,16 @@ function exponential_decay(c::AbstractVector)
 end
 
 """
-    estimate_delay(s) -> τ
+    estimate_delay(s, method::String) -> τ
+
 Estimate an optimal delay to be used in [`Reconstruction`](@ref).
-Methods:
-`first_zero` finds first delay at which the auto-correlation function becomes 0
-`first_min` returns delay of first minimum of the auto-correlation function
-`exp_decay` performes an exponential fit to
-the `abs.(c)` with `c` the auto-correlation function of `s`.
-Return the exponential decay time `τ` rounded to an integer.
+                        
+The `method` can be one of the following:
+
+* `first_zero` : find first delay at which the auto-correlation function becomes 0.
+* `first_min` : return delay of first minimum of the auto-correlation function.
+* `exp_decay` : perform an exponential fit to the `abs.(c)` with `c` the auto-correlation function of `s`.
+  Return the exponential decay time `τ` rounded to an integer.
 """
 function estimate_delay(x::AbstractVector, method::String)
     method ∈ ["first_zero", "first_min", "exp_decay"] || throw(ArgumentError("Unknown method"))
