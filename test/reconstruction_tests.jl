@@ -79,3 +79,29 @@ end
     end
 
 end
+
+
+@testset "Estimate Delay" begin
+
+    ds = Systems.henon()
+    data = trajectory(ds,100)
+    x = data[:,1]
+    @test estimate_delay(x,"first_zero") <= 2
+    @test estimate_delay(x,"first_min")  <= 2
+    @test estimate_delay(x,"exp_decay")  <= 2
+
+    ds = Systems.lorenz()
+    data = trajectory(ds,200,dt=0.01)
+    x = data[:,1]
+    @test estimate_delay(x,"first_zero") <= 1400
+    @test estimate_delay(x,"first_min")  <= 200
+    @test estimate_delay(x,"exp_decay")  <= 80
+
+
+    data = trajectory(ds,2000,dt=0.1)
+    x = data[:,1]
+    @test estimate_delay(x,"first_zero") <= 70
+    @test estimate_delay(x,"first_min")  <= 10
+    @test estimate_delay(x,"exp_decay")  <= 6
+
+end
