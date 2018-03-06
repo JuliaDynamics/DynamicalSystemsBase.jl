@@ -79,3 +79,44 @@ end
     end
 
 end
+
+
+@testset "Estimate Delay" begin
+
+    ds = Systems.henon()
+    data = trajectory(ds,100)
+    x = data[:,1]
+    @test estimate_delay(x,"first_zero") <= 2
+    @test estimate_delay(x,"first_min")  <= 2
+    @test estimate_delay(x,"exp_decay")  <= 2
+
+    ds = Systems.roessler()
+    dt = 0.01
+    data = trajectory(ds,2000,dt=dt)
+    x = data[:,1]
+    @test 1.3 <= estimate_delay(x,"first_zero")*dt <= 1.7
+    @test 2.6 <= estimate_delay(x,"first_min")*dt  <= 3.4
+
+    dt = 0.1
+    data = trajectory(ds,2000,dt=dt)
+    x = data[:,1]
+    @test 1.3 <= estimate_delay(x,"first_zero")*dt <= 1.7
+    @test 2.6 <= estimate_delay(x,"first_min")*dt  <= 3.4
+
+
+    # ds = Systems.lorenz()
+    #
+    # dt = 0.01
+    # data = trajectory(ds,2000;dt=dt)
+    # x = data[500:end,1]
+    # println(estimate_delay(x,"exp_decay"))
+    # #plot(autocor(x, 0:length(x)÷10, demean=true))
+    # @test 2.5 <= estimate_delay(x,"exp_decay")*dt  <= 3.5
+    #
+    # dt = 0.1
+    # data = trajectory(ds,2000;dt=dt)
+    # x = data[:,1]
+    # @test 2.5 <= estimate_delay(x,"exp_decay")*dt  <= 3.5
+    # println(estimate_delay(x,"exp_decay"))
+
+end

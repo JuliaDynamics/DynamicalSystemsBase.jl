@@ -29,6 +29,19 @@ abstract type AbstractDataset{D, T} end
 @inline Base.getindex(d::AbstractDataset, i::Int, j::Range) =
 [d.data[i][k] for k in j]
 
+function Base.getindex(d::AbstractDataset{D,T}, i::Range,
+    j::Range) where {D,T}
+    I = length(i)
+    J = length(j)
+    ret = zeros(T, J,I)
+    for k=1:I
+        for l=1:J
+            ret[l,k] = d[i[k],j[l]]
+        end
+    end
+    return reinterpret(Dataset, ret)
+end
+
 function Base.getindex(d::AbstractDataset{D,T},
     ::Colon, j::VI) where {D, T, VI <: AbstractVector{Int}}
     L = length(d)

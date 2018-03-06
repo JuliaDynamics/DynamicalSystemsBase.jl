@@ -18,6 +18,9 @@ using Base.Test, StaticArrays
     @test size(Dataset(a, b)) == (1001, 2)
 
     @test data[:, 2:3][:, 1] == data[:, 2]
+
+    @test size(data[1:10,1:2]) == (10,2)
+    @test data[1:10,1:2] == Dataset(a[1:10], b[1:10])
   end
 
   @testset "minmax" begin

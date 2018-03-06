@@ -268,25 +268,53 @@ function exponential_decay(c::AbstractVector)
 end
 
 """
-    estimate_delay(s) -> τ
-Estimate an optimal delay to be used in [`Reconstruction`](@ref),
-by performing an exponential fit to
-the `abs.(c)` with `c` the auto-correlation function of `s`.
-Return the exponential decay time `τ` rounded to an integer.
+    estimate_delay(s, method::String) -> τ
+
+Estimate an optimal delay to be used in [`Reconstruction`](@ref).
+                        
+The `method` can be one of the following:
+
+* `first_zero` : find first delay at which the auto-correlation function becomes 0.
+* `first_min` : return delay of first minimum of the auto-correlation function.
+* `exp_decay` : perform an exponential fit to the `abs.(c)` with `c` the auto-correlation function of `s`.
+  Return the exponential decay time `τ` rounded to an integer.
 """
-function estimate_delay(x::AbstractVector)
-    c = autocor(x, 0:length(x)÷10)
-    i = 1
-    # Find 0 crossing:
-    while c[i] > 0
-        i+= 1
-        i == length(c) && break
+function estimate_delay(x::AbstractVector, method::String)
+    method ∈ ["first_zero", "first_min", "exp_decay"] || throw(ArgumentError("Unknown method"))
+     if method=="first_zero"
+        c = autocor(x, 0:length(x)÷10; demean=true)
+        i = 1
+        # Find 0 crossing:
+        while c[i] > 0
+            i+= 1
+            i == length(c) && break
+        end
+        return i
+
+    elseif method=="first_min"
+        c = autocor(x, 0:length(x)÷10, demean=true)
+        i = 1
+        # Find min crossing:
+        while  c[i+1] < c[i]
+            i+= 1
+            i == length(c)-1 && break
+        end
+        return i
+    elseif method=="exp_decay"
+        c = autocor(x, 0:length(x)÷10, demean=true)
+        # Find exponential fit:
+        τ = exponential_decay(c)
+        return round(Int,τ)
+    #Need a package that can be precompiled...
+    # elseif method=="mutual_inf"
+    #     m = get_mutual_information(s,s)
+    #     for i=1:length(x)÷10
+    #         n = get_mutual_information(s[1:end-i],s[1+i:end])
+    #         m > n && break
+    #     end
     end
-    # Find exponential fit:
-    τ = exponential_decay(c)
-    # Is there a method to deduce which one of the 2 is the better approach?
-    return round(Int, τ)
 end
+
 
 # function estimate_dimension(s::AbstractVector)
   # Estimate number of “false nearest neighbors” due to
