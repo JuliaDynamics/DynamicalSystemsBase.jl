@@ -293,7 +293,7 @@ function estimate_delay(x::AbstractVector, method::String)
         c = autocor(x, 0:length(x)÷10, demean=true)
         i = 1
         # Find min crossing:
-        while  abs(c[i+1]) < abs(c[i]) && c[i] > 0
+        while  c[i+1] < c[i]
             i+= 1
             i == length(c)-1 && break
         end
