@@ -29,8 +29,8 @@ abstract type AbstractDataset{D, T} end
 @inline Base.getindex(d::AbstractDataset, i::Int, j::Range) =
 [d.data[i][k] for k in j]
 
-function Base.getindex(d::AbstractDataset{D,T}, i::Range,
-    j::Range) where {D,T}
+function Base.getindex(d::AbstractDataset{D,T}, i::AbstractVector{Int},
+    j::AbstractVector{Int}) where {D,T}
     I = length(i)
     J = length(j)
     ret = zeros(T, J,I)
@@ -42,17 +42,29 @@ function Base.getindex(d::AbstractDataset{D,T}, i::Range,
     return reinterpret(Dataset, ret)
 end
 
-function Base.getindex(d::AbstractDataset{D,T},
-    ::Colon, j::VI) where {D, T, VI <: AbstractVector{Int}}
-    L = length(d)
-    ret = zeros(T, length(j), L)
-    for i in 1:L
-        for k in 1:length(j)
-            p = j[k]
-            ret[k, i] = d[i, p]
-        end
+# This function should be re-enabled in Julia 0.7
+# function mygetindex(d::AbstractDataset{D,T}, I::AbstractVector{Int},
+#     J::AbstractVector{Int}) where {D,T}
+#
+#     L = length(J)
+#     sind::SVector{L, Int} = SVector{L, Int}(J)
+#
+#     return Base.getindex(d, I, sind)
+# end
+function Base.getindex(d::AbstractDataset{D, T}, I::AbstractVector{Int},
+    sind::SVector{L, Int}) where {D, T, L}
+    ret::Vector{SVector{L, T}} = Vector{SVector{L, T}}(length(I))
+    i = 1
+    for k ∈ I
+        ret[i] = d[k][sind]
+        i += 1
     end
-    return reinterpret(Dataset, ret)
+    return Dataset{L, T}(ret)
+end
+
+function Base.getindex(d::AbstractDataset{D,T},
+    ::Colon, j::AbstractVector{Int}) where {D, T}
+    return Base.getindex(d, 1:length(d), j)
 end
 
 """
