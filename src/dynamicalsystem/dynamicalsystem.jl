@@ -77,7 +77,7 @@ The continuous constructor creates a standard
 [ODEProblem](http://docs.juliadiffeq.org/latest/types/ode_types.html) from
 [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/).
 You can *always* take advantage of the full capabilities of
-the `Solution` struct of by doing:
+the `Solution` struct by doing:
 ```julia
 sol = solve(ds.prob, alg; kwargs...)
 # do stuff with sol
