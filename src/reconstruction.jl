@@ -1,7 +1,5 @@
 using StaticArrays
-
 export Reconstruction, MDReconstruction
-export E1,E2
 
 #####################################################################################
 #                            Reconstruction Object                                  #
@@ -273,7 +271,7 @@ end
     estimate_delay(s, method::String) -> τ
 
 Estimate an optimal delay to be used in [`Reconstruction`](@ref).
-                        
+
 The `method` can be one of the following:
 
 * `first_zero` : find first delay at which the auto-correlation function becomes 0.
@@ -325,51 +323,45 @@ end
 
 
 
-function E(s::AbstractVector{T},D,τ) where T
+function average_a(s::AbstractVector{T},D,τ) where T
     #Sum over all a(i,d) of the Ddim Reconstructed space
-    method = FixedMassNeighborhood(1)
+    method = FixedMassNeighborhood(2)
     R1 = Reconstruction(s,D+1,τ)
     tree1 = KDTree(R1)
     R2 = Reconstruction(s,D,τ)
-
-    e = 0.
-    for i=1:length(R1)
-        #Find nearest neighbor of R1[i]
-        j = DynamicalSystemsBase.neighborhood(i,R1[i], tree1,method)[1]
+    nind = (x = neighborhood(R1.data, tree1, method); [ind[1] for ind in x])
+    e=0.
+    for (i,j) in enumerate(nind)
         e += norm(R1[i]-R1[j], Inf) / norm(R2[i]-R2[j], Inf) / length(R1)
     end
     return e
 end
 
-function E1(s,D,τ)
-    return E(s,D+1,τ)/E(s,D,τ)
+function dimension_indicator(s,D,τ) #E1
+    return average_a(s,D+1,τ)/average_a(s,D,τ)
 end
 
 
-function E2(s::AbstractVector{T},D,τ) where T
+function stochastic_indicator(s::AbstractVector{T},D,τ) where T #E2
     #This function tries to tell the difference between deterministic
     #and stochastic signals
-    method = FixedMassNeighborhood(1)
-
     #Calculate E* for Dimension D+1
     R1 = Reconstruction(s,D+1,τ)
     tree1 = KDTree(R1[1:end-1-τ])
+    method = FixedMassNeighborhood(2)
+
     Es1 = 0.
-    for i=1:length(R1)-τ
-        j = DynamicalSystemsBase.neighborhood(i,R1[i], tree1,method)[1][1]
-        #Es1 += abs(R1[i+D*τ][1] - R1[j+D*τ][1]) / length(R1)
+    nind = (x = neighborhood(R1[1:end-τ], tree1, method); [ind[1] for ind in x])
+    for  (i,j) ∈ enumerate(nind)
         Es1 += abs(R1[i+τ][end] - R1[j+τ][end]) / length(R1)
-        #The second approach is equivalent to the first (only 1 τ)
-        #But does not require to shorten the KDTree as much.
     end
 
     #Calculate E* for Dimension D
     R2 = Reconstruction(s,D,τ)
     tree2 = KDTree(R2[1:end-1-τ])
     Es2 = 0.
-    for i=1:length(R2)-τ
-        j = DynamicalSystemsBase.neighborhood(i,R2[i], tree2,method)[1][1]
-        #Es2 += abs(R2[i+D*τ][1] - R2[j+D*τ][1]) / length(R2)
+    nind = (x = neighborhood(R2[1:end-τ], tree2, method); [ind[1] for ind in x])
+    for  (i,j) ∈ enumerate(nind)
         Es2 += abs(R2[i+τ][end] - R2[j+τ][end]) / length(R2)
     end
     return Es1/Es2
