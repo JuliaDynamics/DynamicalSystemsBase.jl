@@ -317,14 +317,13 @@ end
 
 
 # function estimate_dimension(s::AbstractVector)
-  # Estimate number of “false nearest neighbors” due to
   # projection into a too low dimension reconstruction space
 # end
 
 
 
 function average_a(s::AbstractVector{T},D,τ) where T
-    #Sum over all a(i,d) of the Ddim Reconstructed space
+    #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
     method = FixedMassNeighborhood(2)
     R1 = Reconstruction(s,D+1,τ)
     tree1 = KDTree(R1)
@@ -337,12 +336,12 @@ function average_a(s::AbstractVector{T},D,τ) where T
     return e
 end
 
-function dimension_indicator(s,D,τ) #E1
+function dimension_indicator(s,D,τ) #this is E1, equation (3) of Cao
     return average_a(s,D+1,τ)/average_a(s,D,τ)
 end
 
 
-function stochastic_indicator(s::AbstractVector{T},D,τ) where T #E2
+function stochastic_indicator(s::AbstractVector{T},D,τ) where T # E2, equation (5)
     #This function tries to tell the difference between deterministic
     #and stochastic signals
     #Calculate E* for Dimension D+1
