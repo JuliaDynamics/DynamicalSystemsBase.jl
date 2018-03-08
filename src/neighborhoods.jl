@@ -1,5 +1,5 @@
 using NearestNeighbors, StaticArrays
-using Distances: Euclidean
+using Distances: Euclidean, Metric
 import NearestNeighbors: KDTree
 
 export AbstractNeighborhood
@@ -14,67 +14,68 @@ export neighborhood, KDTree
 Supertype of methods for deciding the neighborhood of points for a given point.
 
 Concrete subtypes:
-* `FixedMassNeighborhood(K::Int)`  : The neighborhood of a point consists of the `K`
+* `FixedMassNeighborhood(K::Int)` :
+  The neighborhood of a point consists of the `K`
   nearest neighbors of the point.
-* `FixedSizeNeighborhood(ε::Real)` : The neighborhood of a point consists of all
+* `FixedSizeNeighborhood(ε::Real)` :
+  The neighborhood of a point consists of all
   neighbors that have distance < `ε` from the point.
 
-Notice that these distances are always computed using the Euclidean distance
-in `D`-dimensional space.
-
-See also [`neighborhood`](@ref).
+See [`neighborhood`](@ref) for more.
 """
 abstract type AbstractNeighborhood end
+
 struct FixedMassNeighborhood <: AbstractNeighborhood
     K::Int
 end
 FixedMassNeighborhood() = FixedMassNeighborhood(1)
+
 struct FixedSizeNeighborhood <: AbstractNeighborhood
     ε::Float64
 end
-FixedSizeNeighborhood() = FixedSizeNeighborhood(0.001)
+FixedSizeNeighborhood() = FixedSizeNeighborhood(0.01)
 
 """
-    neighborhood([n,] point, tree::KDTree, method::AbstractNeighborhood)
-Return a vector of indices which are the neighborhood of `point`.
-`n` is the index of the `point` in the original dataset. Do not pass any index
-if the `point` is not part of the dataset.
+    neighborhood(point, tree, ntype)
+    neighborhood(point, tree, ntype, n::Int, w::Int = 1)
 
-If the original dataset is `data <: AbstractDataset`, then
-use `tree = KDTree(data)` to obtain the `tree` instance (which also
-contains a copy of the data).
+Return a vector of indices which are the neighborhood of `point` in some
+`data`, where the `tree` was created using `tree = KDTree(data [, metric])`.
+The `ntype` is the type of neighborhood and can be any subtype
+of [`AbstractNeighborhood`](@ref).
 
-The `method` can be a subtype of [`AbstractNeighborhood`](@ref).
-
-`neighborhood` works for *any* subtype of `AbstractDataset`.
+Use the second method when the `point` belongs in the data,
+i.e. `point = data[n]`. Then `w` stands for the Theiler window (positive integer).
+Only points that have index
+`abs(i - n) ≥ w` are returned as a neighborhood, to exclude close temporal neighbors.
+The default `w=1` is the case of exluding the `point` itself.
 
 ## References
 
 `neighborhood` simply interfaces the functions
 `knn` and `inrange` from
 [NearestNeighbors.jl](https://github.com/KristofferC/NearestNeighbors.jl) by using
-the last argument, `method`.
+the argument `ntype`.
 """
-function neighborhood(
-    n::Int, point::AbstractVector, tree::KDTree, method::FixedMassNeighborhood)
-    idxs, = knn(tree, point, method.K, false, i -> i==n)
+function neighborhood(point::AbstractVector, tree,
+                      ntype::FixedMassNeighborhood, n::Int, w::Int = 1)
+    idxs, = knn(tree, point, ntype.K, false, i -> abs(i-n) < w)
     return idxs
 end
-function neighborhood(
-    n::Int, point::AbstractVector, tree::KDTree, method::FixedSizeNeighborhood)
-    idxs = inrange(tree, point, method.ε)
-    deleteat!(idxs, findin(idxs, n)) # unfortunately this has to be done...
-    return idxs
-end
-function neighborhood(
-    point::AbstractVector, tree::KDTree, method::FixedMassNeighborhood)
-    idxs, = knn(tree, point, method.K, false)
-    return idxs
-end
-function neighborhood(
-    point::AbstractVector, tree::KDTree, method::FixedSizeNeighborhood)
-    idxs = inrange(tree, point, method.ε)
+function neighborhood(point::AbstractVector, tree, ntype::FixedMassNeighborhood)
+    idxs, = knn(tree, point, ntype.K, false)
     return idxs
 end
 
-KDTree(D::AbstractDataset) = KDTree(D.data, Euclidean())
+function neighborhood(point::AbstractVector, tree,
+                      ntype::FixedSizeNeighborhood, n::Int, w::Int = 1)
+    idxs = inrange(tree, point, ntype.ε)
+    filter!((el) -> abs(el - n) ≥ w, idxs)
+    return idxs
+end
+function neighborhood(point::AbstractVector, tree, ntype::FixedSizeNeighborhood)
+    idxs = inrange(tree, point, ntype.ε)
+    return idxs
+end
+
+KDTree(D::AbstractDataset, metric::Metric = Euclidean()) = KDTree(D.data, metric)
