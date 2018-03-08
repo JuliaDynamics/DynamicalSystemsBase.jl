@@ -324,11 +324,10 @@ end
 
 function average_a(s::AbstractVector{T},D,τ) where T
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
-    method = FixedMassNeighborhood(2)
     R1 = Reconstruction(s,D+1,τ)
     tree1 = KDTree(R1)
     R2 = Reconstruction(s,D,τ)
-    nind = (x = neighborhood(R1.data, tree1, method); [ind[1] for ind in x])
+    nind = (x = knn(tree, R1.data, 2)[1]; [ind[1] for ind in x])
     e=0.
     for (i,j) in enumerate(nind)
         e += norm(R1[i]-R1[j], Inf) / norm(R2[i]-R2[j], Inf) / length(R1)
