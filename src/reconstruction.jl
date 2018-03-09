@@ -206,7 +206,7 @@ matname(d::MDReconstruction{DxB, D, B, T, τ}) where {DxB, D, B, T, τ} =
 
 
 #####################################################################################
-#                      Estimate Reconstruction Parameters                           #
+#                               Estimate Delay Times                                #
 #####################################################################################
 using LsqFit: curve_fit
 using StatsBase: autocor
@@ -316,9 +316,9 @@ function estimate_delay(x::AbstractVector, method::String)
 end
 
 
-# function estimate_dimension(s::AbstractVector)
-  # projection into a too low dimension reconstruction space
-# end
+#####################################################################################
+#                                Estimate Dimension                                 #
+#####################################################################################
 
 
 
