@@ -327,7 +327,7 @@ function average_a(s::AbstractVector{T},D,τ) where T
     R1 = Reconstruction(s,D+1,τ)
     tree1 = KDTree(R1)
     R2 = Reconstruction(s,D,τ)
-    nind = (x = knn(tree, R1.data, 2)[1]; [ind[1] for ind in x])
+    nind = (x = knn(tree1, R1.data, 2)[1]; [ind[1] for ind in x])
     e=0.
     for (i,j) in enumerate(nind)
         e += norm(R1[i]-R1[j], Inf) / norm(R2[i]-R2[j], Inf) / length(R1)
