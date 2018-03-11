@@ -1,5 +1,7 @@
 using StaticArrays
 export Reconstruction, MDReconstruction
+export estimate_delay
+export estimate_dimension
 
 #####################################################################################
 #                            Reconstruction Object                                  #
@@ -322,7 +324,7 @@ end
 
 
 
-function average_a(s::AbstractVector{T},D,τ) where T
+function _average_a(s::AbstractVector{T},D,τ) where T
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
     R1 = Reconstruction(s,D+1,τ)
     tree1 = KDTree(R1)
@@ -330,15 +332,28 @@ function average_a(s::AbstractVector{T},D,τ) where T
     nind = (x = knn(tree1, R1.data, 2)[1]; [ind[1] for ind in x])
     e=0.
     for (i,j) in enumerate(nind)
-        e += norm(R1[i]-R1[j], Inf) / norm(R2[i]-R2[j], Inf) / length(R1)
+        e += norm(R1[i]-R1[j], Inf) / norm(R2[i]-R2[j], Inf)
     end
-    return e
+    return e / length(R1)
 end
 
 function dimension_indicator(s,D,τ) #this is E1, equation (3) of Cao
     return average_a(s,D+1,τ)/average_a(s,D,τ)
 end
 
+function estimate_dimension(s::AbstractVector{T}, τ::Int, Ds = 1:6) where {T}
+    E1s = zeros(T, length(Ds))
+    aafter = zero(T)
+    aprev = average_a(s, Ds[1], τ)
+    for (i, D) ∈ enumerate(Ds)
+        aafter = _average_a(s, D+1, τ)
+        E1s[i] = aafter/aprev
+        aprev = aafter
+    end
+    return E1s
+end
+
+# then use function `saturation_point(Ds, E1s)` from ChaosTools
 
 function stochastic_indicator(s::AbstractVector{T},D,τ) where T # E2, equation (5)
     #This function tries to tell the difference between deterministic
