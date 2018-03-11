@@ -274,15 +274,16 @@ function mutual_info(Xm::Vararg{<:AbstractVector,M}; k=1) where M
     @assert M > 1
     @assert (size.(Xm,1) .== size(Xm[1],1)) |> prod
     N = size(Xm[1],1)
-    
+
     d = Dataset(Xm...)
-    tree = KDTree(d.data, Chebyshev())
-    
+    tree = KDTree(d.data, Chebyshev()) # replacing this with Euclidean() gives a
+                                       # speed-up of x4
+
     n_x_m = zeros(M)
 
     Xm_sp = zeros(Int, N, M)
     Xm_revsp = zeros(Int, N, M)
-    for m in 1:M
+    for m in 1:M #this loop takes 5% of time
         Xm_sp[:,m] .= sortperm(Xm[m]; alg=QuickSort)
         Xm_revsp[:,m] .= sortperm(sortperm(Xm[m]; alg=QuickSort); alg=QuickSort)
     end
@@ -293,12 +294,12 @@ function mutual_info(Xm::Vararg{<:AbstractVector,M}; k=1) where M
     # Makes more sense computationally to loop over N rather than M
     for i in 1:N
         point = d[i]
-        idxs, dists = knn(tree, point, k+1)
+        idxs, dists = knn(tree, point, k+1)  # this line takes 80% of time
 
         ϵi = idxs[indmax(dists)]
-        ϵ = abs.(d[ϵi] - point)
+        ϵ = abs.(d[ϵi] - point)  # surprisingly, this takes a significant amount of time
 
-        for m in 1:M
+        for m in 1:M # this loop takes 8% of time
             hb = lb = Xm_revsp[i,m]
             while abs(Xm[m][Xm_sp[hb,m]] - Xm[m][i]) <= ϵ[m] && hb < N
                 hb += 1
@@ -324,7 +325,7 @@ end
     estimate_delay(s, method::String) -> τ
 
 Estimate an optimal delay to be used in [`Reconstruction`](@ref).
-                        
+
 The `method` can be one of the following:
 
 * `first_zero` : find first delay at which the auto-correlation function becomes 0.
