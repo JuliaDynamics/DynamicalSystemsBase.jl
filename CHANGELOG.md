@@ -1,5 +1,6 @@
 # v0.9
 * Theiler window is now part of the `neighborhood` function
+* Two new methods for `estimate_delay`.
 
 # v0.8
 ## New features
