@@ -341,6 +341,26 @@ function dimension_indicator(s,D,τ) #this is E1, equation (3) of Cao
     return _average_a(s,D+1,τ)/_average_a(s,D,τ)
 end
 
+
+"""
+    estimate_dimension(s::AbstractVector, τ:Int, Ds) -> E1s
+
+Estimate an optimal embedding dimension to be used in [`Reconstruction`](@ref).
+
+## Description
+Take a skalar timeseries `s`, the embedding delay `τ` and a the dimensions `Ds` to check,
+and compute the paramter `E1` for each dimension according to Cao's Method. [1]
+
+Return a vector of all computed `E1`s. To estimate a dimension from this,
+find the dimension for which the value `E1` saturates to 1. (See
+[`saturation_point`](@ref))
+
+
+## References
+
+[1] : Liangyue Cao, *Practical method for determining the minimum embedding dimension
+of a scalar time series*, Physica D, pp. 43-50 (1997)
+"""
 function estimate_dimension(s::AbstractVector{T}, τ::Int, Ds = 1:6) where {T}
     E1s = zeros(T, length(Ds))
     aafter = zero(T)
