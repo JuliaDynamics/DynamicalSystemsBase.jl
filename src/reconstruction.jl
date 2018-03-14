@@ -338,13 +338,13 @@ function _average_a(s::AbstractVector{T},D,τ) where T
 end
 
 function dimension_indicator(s,D,τ) #this is E1, equation (3) of Cao
-    return average_a(s,D+1,τ)/average_a(s,D,τ)
+    return _average_a(s,D+1,τ)/_average_a(s,D,τ)
 end
 
 function estimate_dimension(s::AbstractVector{T}, τ::Int, Ds = 1:6) where {T}
     E1s = zeros(T, length(Ds))
     aafter = zero(T)
-    aprev = average_a(s, Ds[1], τ)
+    aprev = _average_a(s, Ds[1], τ)
     for (i, D) ∈ enumerate(Ds)
         aafter = _average_a(s, D+1, τ)
         E1s[i] = aafter/aprev
