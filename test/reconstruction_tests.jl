@@ -1,6 +1,5 @@
 using DynamicalSystemsBase
 using Base.Test, StaticArrays
-using ChaosTools
 
 println("\nTesting Reconstruction")
 
@@ -121,6 +120,47 @@ end
     # println(estimate_delay(x,"exp_decay"))
 
 end
+
+function saturation_point(Ds, E1s; threshold = 0.01, kwargs...)
+    lrs, slops = linear_regions(Ds, E1s; kwargs...)
+    i = findfirst(x -> x < threshold, slops)
+    return i == 0 ? Ds[end] : Ds[lrs[i]]
+end
+function linear_regions(x::AbstractVector, y::AbstractVector;
+    dxi::Int = 1, tol::Real = 0.2)
+
+    maxit = length(x) ÷ dxi
+
+    tangents = Float64[linreg(view(x, 1:max(dxi, 2)), view(y, 1:max(dxi, 2)))[2]]
+
+    prevtang = tangents[1]
+    lrs = Int[1] #start of first linear region is always 1
+    lastk = 1
+
+    # Start loop over all partitions of `x` into `dxi` intervals:
+    for k in 1:maxit-1
+        tang = linreg(view(x, k*dxi:(k+1)*dxi), view(y, k*dxi:(k+1)*dxi))[2]
+        if isapprox(tang, prevtang, rtol=tol)
+            # Tanget is similar with initial previous one (based on tolerance)
+            continue
+        else
+            # Tangent is not similar.
+            # Push new tangent for a new linear region
+            push!(tangents, tang)
+
+            # Set the START of a new linear region
+            # which is also the END of the previous linear region
+            push!(lrs, k*dxi)
+            lastk = k
+        end
+
+        # Set new previous tangent (only if it was not the same as current)
+        prevtang = tang
+    end
+    push!(lrs, length(x))
+    return lrs, tangents
+end
+
 
 @testset "Estimate Dimension" begin
     s = sin.(0:0.1:1000)
