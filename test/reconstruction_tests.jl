@@ -1,5 +1,6 @@
 using DynamicalSystemsBase
 using Base.Test, StaticArrays
+using ChaosTools
 
 println("\nTesting Reconstruction")
 
@@ -119,4 +120,20 @@ end
     # @test 2.5 <= estimate_delay(x,"exp_decay")*dt  <= 3.5
     # println(estimate_delay(x,"exp_decay"))
 
+end
+
+@testset "Estimate Dimension" begin
+    ds = Systems.roessler();τ=15; dt=0.1
+    data = trajectory(ds,1000;dt=dt)
+    s = data[:,1]
+    D = 1:7
+    E1s = estimate_dimension(s,τ,D)
+    @test saturation_point(D,E1s; threshold=0.03) == 3
+
+    ds = Systems.lorenz();τ=5; dt=0.01
+    data = trajectory(ds,500;dt=dt)
+    s = data[:,1]
+    D = 1:7
+    E1s = estimate_dimension(s,τ,D)
+    @test saturation_point(D,E1s; threshold=0.03) == 3
 end
