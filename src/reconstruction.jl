@@ -327,11 +327,16 @@ end
 function _average_a(s::AbstractVector{T},D,τ) where T
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
     R1 = Reconstruction(s,D+1,τ)
-    tree1 = KDTree(R1)
-    R2 = Reconstruction(s,D,τ)
-    nind = (x = knn(tree1, R1.data, 2)[1]; [ind[1] for ind in x])
+    R2 = Reconstruction(s[1:end-τ],D,τ)
+    tree2 = KDTree(R2)
+
+    #This command is super neat but it fails when tree2 contains a point more than once
+    #At least I think so. For highdim chaos with low d this causes NaN values in e
+    nind = (x = knn(tree2, R2.data, 2)[1]; [ind[1] for ind in x])
     e=0.
     for (i,j) in enumerate(nind)
+        #i!=j || println(true)
+        #norm(R2[i]-R2[j], Inf) != 0 || println("Two points equal")
         e += norm(R1[i]-R1[j], Inf) / norm(R2[i]-R2[j], Inf)
     end
     return e / length(R1)
