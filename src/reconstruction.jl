@@ -329,24 +329,16 @@ function _average_a(s::AbstractVector{T},D,τ) where T
     R1 = Reconstruction(s,D+1,τ)
     R2 = Reconstruction(s[1:end-τ],D,τ)
     tree2 = KDTree(R2)
-
-    #This command is super neat but it fails when tree2 contains a point more than once
-    #At least I think so. For highdim chaos with low d this causes NaN values in e
     nind = (x = knn(tree2, R2.data, 2)[1]; [ind[1] for ind in x])
-    #Alternative
-    #second slower method
-    #nind = Int[]
-    #for i=1:length(R2)
-    #    push!(nind, knn(tree2,R2[i],1,false, (j -> j==i))[1][1])
-    #end
-
-
     e=0.
     for (i,j) in enumerate(nind)
-        #i!=j || println(true)
-        #CHANGE this
-        norm(R2[i]-R2[j], Inf) != 0 || continue
-        e += norm(R1[i]-R1[j], Inf) / norm(R2[i]-R2[j], Inf)
+        δ = norm(R2[i]-R2[j], Inf)
+        #If R2[i] and R2[j] are still identical, choose the next nearest neighbor
+        if δ == 0.
+            j = knn(tree2, R2[i], 3, true)[1][end]
+            δ = norm(R2[i]-R2[j], Inf)
+        end
+        e += norm(R1[i]-R1[j], Inf) / δ
     end
     return e / length(R1)
 end
