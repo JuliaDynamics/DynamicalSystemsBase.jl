@@ -232,12 +232,12 @@ struct Lorenz96{N} end # Structure for size type
 function (obj::Lorenz96{N})(dx, x, p, t) where {N}
     F = p[1]
     # 3 edge cases
-    dx[1] = (x[2] - x[N - 1]) * x[N] - x[1] + F
-    dx[2] = (x[3] - x[N]) * x[1] - x[2] + F
-    dx[N] = (x[1] - x[N - 2]) * x[N - 1] - x[N] + F
+    @inbounds dx[1] = (x[2] - x[N - 1]) * x[N] - x[1] + F
+    @inbounds dx[2] = (x[3] - x[N]) * x[1] - x[2] + F
+    @inbounds dx[N] = (x[1] - x[N - 2]) * x[N - 1] - x[N] + F
     # then the general case
     for n in 3:(N - 1)
-      dx[n] = (x[n + 1] - x[n - 2]) * x[n - 1] - x[n] + F
+      @inbounds dx[n] = (x[n + 1] - x[n - 2]) * x[n - 1] - x[n] + F
     end
     return nothing
 end
