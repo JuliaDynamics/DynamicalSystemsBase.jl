@@ -175,12 +175,12 @@ end
     s = data[:,1]
     D = 1:7
     E1s = estimate_dimension(s,τ,D)
-    @test saturation_point(D,E1s; threshold=0.03) == 3
+    @test saturation_point(D,E1s; threshold=0.1) == 3
 
     ds = Systems.lorenz();τ=5; dt=0.01
     data = trajectory(ds,500;dt=dt)
     s = data[:,1]
     D = 1:7
     E1s = estimate_dimension(s,τ,D)
-    @test saturation_point(D,E1s; threshold=0.03) == 3
+    @test saturation_point(D,E1s; threshold=0.1) == 3
 end
