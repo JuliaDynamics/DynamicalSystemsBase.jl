@@ -1,6 +1,8 @@
 using StaticArrays
-
 export Reconstruction, MDReconstruction
+export estimate_delay
+export estimate_dimension
+
 #####################################################################################
 #                            Reconstruction Object                                  #
 #####################################################################################
@@ -206,7 +208,7 @@ matname(d::MDReconstruction{DxB, D, B, T, τ}) where {DxB, D, B, T, τ} =
 
 
 #####################################################################################
-#                      Estimate Reconstruction Parameters                           #
+#                               Estimate Delay Times                                #
 #####################################################################################
 using LsqFit: curve_fit
 using StatsBase: autocor
@@ -271,7 +273,7 @@ end
     estimate_delay(s, method::String) -> τ
 
 Estimate an optimal delay to be used in [`Reconstruction`](@ref).
-                        
+
 The `method` can be one of the following:
 
 * `first_zero` : find first delay at which the auto-correlation function becomes 0.
@@ -316,7 +318,92 @@ function estimate_delay(x::AbstractVector, method::String)
 end
 
 
-# function estimate_dimension(s::AbstractVector)
-  # Estimate number of “false nearest neighbors” due to
-  # projection into a too low dimension reconstruction space
-# end
+#####################################################################################
+#                                Estimate Dimension                                 #
+#####################################################################################
+
+
+
+function _average_a(s::AbstractVector{T},D,τ) where T
+    #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
+    R1 = Reconstruction(s,D+1,τ)
+    R2 = Reconstruction(s[1:end-τ],D,τ)
+    tree2 = KDTree(R2)
+    nind = (x = knn(tree2, R2.data, 2)[1]; [ind[1] for ind in x])
+    e=0.
+    for (i,j) in enumerate(nind)
+        δ = norm(R2[i]-R2[j], Inf)
+        #If R2[i] and R2[j] are still identical, choose the next nearest neighbor
+        if δ == 0.
+            j = knn(tree2, R2[i], 3, true)[1][end]
+            δ = norm(R2[i]-R2[j], Inf)
+        end
+        e += norm(R1[i]-R1[j], Inf) / δ
+    end
+    return e / length(R1)
+end
+
+function dimension_indicator(s,D,τ) #this is E1, equation (3) of Cao
+    return _average_a(s,D+1,τ)/_average_a(s,D,τ)
+end
+
+
+"""
+    estimate_dimension(s::AbstractVector, τ:Int, Ds) -> E1s
+
+Estimate an optimal embedding dimension to be used in [`Reconstruction`](@ref).
+
+## Description
+Take a scalar timeseries `s`, the embedding delay `τ` and a the dimensions `Ds` to check,
+and compute the paramter `E1` for each dimension according to Cao's Method [1].
+
+Return a vector of all computed `E1`s. To estimate a dimension from this,
+find the dimension for which the value `E1` saturates to 1 (see
+`saturation_point` from `ChaosTools`).
+
+*Note: This method does not work for datasets with perfectly periodic signals.*
+
+
+## References
+
+[1] : Liangyue Cao, *Practical method for determining the minimum embedding dimension
+of a scalar time series*, Physica D, pp. 43-50 (1997)
+"""
+function estimate_dimension(s::AbstractVector{T}, τ::Int, Ds = 1:6) where {T}
+    E1s = zeros(T, length(Ds))
+    aafter = zero(T)
+    aprev = _average_a(s, Ds[1], τ)
+    for (i, D) ∈ enumerate(Ds)
+        aafter = _average_a(s, D+1, τ)
+        E1s[i] = aafter/aprev
+        aprev = aafter
+    end
+    return E1s
+end
+
+# then use function `saturation_point(Ds, E1s)` from ChaosTools
+
+function stochastic_indicator(s::AbstractVector{T},D,τ) where T # E2, equation (5)
+    #This function tries to tell the difference between deterministic
+    #and stochastic signals
+    #Calculate E* for Dimension D+1
+    R1 = Reconstruction(s,D+1,τ)
+    tree1 = KDTree(R1[1:end-1-τ])
+    method = FixedMassNeighborhood(2)
+
+    Es1 = 0.
+    nind = (x = neighborhood(R1[1:end-τ], tree1, method); [ind[1] for ind in x])
+    for  (i,j) ∈ enumerate(nind)
+        Es1 += abs(R1[i+τ][end] - R1[j+τ][end]) / length(R1)
+    end
+
+    #Calculate E* for Dimension D
+    R2 = Reconstruction(s,D,τ)
+    tree2 = KDTree(R2[1:end-1-τ])
+    Es2 = 0.
+    nind = (x = neighborhood(R2[1:end-τ], tree2, method); [ind[1] for ind in x])
+    for  (i,j) ∈ enumerate(nind)
+        Es2 += abs(R2[i+τ][end] - R2[j+τ][end]) / length(R2)
+    end
+    return Es1/Es2
+end
