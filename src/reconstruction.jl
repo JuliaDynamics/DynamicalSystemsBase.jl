@@ -210,10 +210,13 @@ matname(d::MDReconstruction{DxB, D, B, T, τ}) where {DxB, D, B, T, τ} =
 #####################################################################################
 #                               Estimate Delay Times                                #
 #####################################################################################
+using NearestNeighbors
+using Distances: chebyshev
+using SpecialFunctions: digamma
 using LsqFit: curve_fit
 using StatsBase: autocor
 
-export estimate_delay
+export estimate_delay, mutual_info
 
 """
     localextrema(y) -> max_ind, min_ind
@@ -269,6 +272,57 @@ function exponential_decay(c::AbstractVector)
     return decay
 end
 
+function mutual_info(Xm::Vararg{<:AbstractVector,M}; k=1) where M
+    @assert M > 1
+    @assert (size.(Xm,1) .== size(Xm[1],1)) |> prod
+    N = size(Xm[1],1)
+
+    d = Dataset(Xm...)
+    tree = KDTree(d.data, Chebyshev()) # replacing this with Euclidean() gives a
+                                       # speed-up of x4
+
+    n_x_m = zeros(M)
+
+    Xm_sp = zeros(Int, N, M)
+    Xm_revsp = zeros(Int, N, M)
+    for m in 1:M #this loop takes 5% of time
+        Xm_sp[:,m] .= sortperm(Xm[m]; alg=QuickSort)
+        Xm_revsp[:,m] .= sortperm(sortperm(Xm[m]; alg=QuickSort); alg=QuickSort)
+    end
+
+    I = digamma(k) - (M-1)/k + (M-1)*digamma(N)
+
+    I_itr = zeros(M)
+    # Makes more sense computationally to loop over N rather than M
+    for i in 1:N
+        point = d[i]
+        idxs, dists = knn(tree, point, k+1)  # this line takes 80% of time
+
+        ϵi = idxs[indmax(dists)]
+        ϵ = abs.(d[ϵi] - point)  # surprisingly, this takes a significant amount of time
+
+        for m in 1:M # this loop takes 8% of time
+            hb = lb = Xm_revsp[i,m]
+            while abs(Xm[m][Xm_sp[hb,m]] - Xm[m][i]) <= ϵ[m] && hb < N
+                hb += 1
+            end
+            while abs(Xm[m][Xm_sp[lb,m]] - Xm[m][i]) <= ϵ[m] && lb > 1
+                lb -= 1
+            end
+            n_x_m[m] = hb - lb
+        end
+
+        I_itr .+= digamma.(n_x_m)
+    end
+
+    I_itr ./= N
+
+    I -= sum(I_itr)
+
+    return max(0, I)
+end
+
+
 """
     estimate_delay(s, method::String) -> τ
 
@@ -281,8 +335,8 @@ The `method` can be one of the following:
 * `exp_decay` : perform an exponential fit to the `abs.(c)` with `c` the auto-correlation function of `s`.
   Return the exponential decay time `τ` rounded to an integer.
 """
-function estimate_delay(x::AbstractVector, method::String)
-    method ∈ ["first_zero", "first_min", "exp_decay"] || throw(ArgumentError("Unknown method"))
+function estimate_delay(x::AbstractVector, method::String; maxtau=100, k=1)
+    method ∈ ["first_zero", "first_min", "exp_decay", "mutual_inf"] || throw(ArgumentError("Unknown method"))
      if method=="first_zero"
         c = autocor(x, 0:length(x)÷10; demean=true)
         i = 1
@@ -308,12 +362,13 @@ function estimate_delay(x::AbstractVector, method::String)
         τ = exponential_decay(c)
         return round(Int,τ)
     #Need a package that can be precompiled...
-    # elseif method=="mutual_inf"
-    #     m = get_mutual_information(s,s)
-    #     for i=1:length(x)÷10
-    #         n = get_mutual_information(s[1:end-i],s[1+i:end])
-    #         m > n && break
-    #     end
+    elseif method=="mutual_inf"
+        m = mutual_info(x,x; k=k)
+        for i=1:maxtau
+            n = mutual_info(x[1:end-i],x[1+i:end]; k=k)
+            n > m && return i
+            m = n
+        end
     end
 end
 
