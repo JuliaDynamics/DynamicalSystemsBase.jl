@@ -224,7 +224,7 @@ end
 (parameter container only contains `F`)
 """
 function lorenz96(N::Int, u0 = rand(N); F=0.01)
-    @assert N ≥ 3 "`N` must be at least 3"
+    @assert N ≥ 4 "`N` must be at least 4"
     lor96 = Lorenz96{N}() # create struct
     return CDS(lor96, u0, [F])
 end

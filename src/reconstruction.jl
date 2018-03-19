@@ -333,10 +333,19 @@ function _average_a(s::AbstractVector{T},D,τ) where T
     #This command is super neat but it fails when tree2 contains a point more than once
     #At least I think so. For highdim chaos with low d this causes NaN values in e
     nind = (x = knn(tree2, R2.data, 2)[1]; [ind[1] for ind in x])
+    #Alternative
+    #second slower method
+    #nind = Int[]
+    #for i=1:length(R2)
+    #    push!(nind, knn(tree2,R2[i],1,false, (j -> j==i))[1][1])
+    #end
+
+
     e=0.
     for (i,j) in enumerate(nind)
         #i!=j || println(true)
-        #norm(R2[i]-R2[j], Inf) != 0 || println("Two points equal")
+        #CHANGE this
+        norm(R2[i]-R2[j], Inf) != 0 || continue
         e += norm(R1[i]-R1[j], Inf) / norm(R2[i]-R2[j], Inf)
     end
     return e / length(R1)
@@ -353,12 +362,14 @@ end
 Estimate an optimal embedding dimension to be used in [`Reconstruction`](@ref).
 
 ## Description
-Take a skalar timeseries `s`, the embedding delay `τ` and a the dimensions `Ds` to check,
-and compute the paramter `E1` for each dimension according to Cao's Method. [1]
+Take a scalar timeseries `s`, the embedding delay `τ` and a the dimensions `Ds` to check,
+and compute the paramter `E1` for each dimension according to Cao's Method [1].
 
 Return a vector of all computed `E1`s. To estimate a dimension from this,
-find the dimension for which the value `E1` saturates to 1. (See
-[`saturation_point`](@ref))
+find the dimension for which the value `E1` saturates to 1 (see
+`saturation_point` from `ChaosTools`).
+
+*Note: This method does not work for datasets with perfectly periodic signals.*
 
 
 ## References
