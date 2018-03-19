@@ -1,6 +1,7 @@
 # v0.9
 * Theiler window is now part of the `neighborhood` function
-* Two new methods for `estimate_delay`.
+* Methods that estimate parameters for `Reconstruction` have moved back to
+  `ChaosTools`.
 
 # v0.8
 ## New features
