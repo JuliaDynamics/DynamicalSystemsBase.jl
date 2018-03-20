@@ -1,9 +1,8 @@
 cd()
 println("\nTesting Dataset (file at $(pwd()))...")
-if current_module() != DynamicalSystemsBase
-  using DynamicalSystemsBase
-end
+using DynamicalSystemsBase
 using Base.Test, StaticArrays
+using DynamicalSystemsBase: read_dataset, write_dataset
 
 @testset "Dataset" begin
   ds = Systems.towel()
