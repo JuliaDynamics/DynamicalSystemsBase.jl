@@ -48,7 +48,7 @@ Use the second method when the `point` belongs in the data,
 i.e. `point = data[n]`. Then `w` stands for the Theiler window (positive integer).
 Only points that have index
 `abs(i - n) ≥ w` are returned as a neighborhood, to exclude close temporal neighbors.
-The default `w=1` is the case of exluding the `point` itself.
+The default `w=1` is the case of excluding the `point` itself.
 
 ## References
 
