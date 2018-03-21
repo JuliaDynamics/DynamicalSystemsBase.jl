@@ -44,12 +44,12 @@ The are two "versions" for `DynamicalSystem`, depending on whether the
 equations of motion (`eom`) are in-place (iip) or out-of-place (oop).
 Here is how to define them:
 
-* **iip** : The `eom` **must** be in the form `eom(x, p, t) -> SVector`
+* **oop** : The `eom` **must** be in the form `eom(x, p, t) -> SVector`
   which means that given a state `x::SVector` and some parameter container
   `p` it returns an [`SVector`](http://juliaarrays.github.io/StaticArrays.jl/stable/pages/api.html#SVector-1)
   (from the [StaticArrays](https://github.com/JuliaArrays/StaticArrays.jl) module)
   containing the next state.
-* **oop** : The `eom` **must** be in the form `eom!(xnew, x, p, t)`
+* **iip** : The `eom` **must** be in the form `eom!(xnew, x, p, t)`
   which means that given a state `x::Vector` and some parameter container `p`,
   it writes in-place the new state in `xnew`.
 
