@@ -80,7 +80,7 @@ The continuous constructor creates a standard
 You can *always* take advantage of the full capabilities of
 the `Solution` struct. Simply define
 ```julia
-using DifferentioalEquations
+using DifferentialEquations
 prob = continuousds.prob
 prob2 = remake(prob1; tspan=(0.0,2.0))
 sol = solve(prob2, Tsit5())
