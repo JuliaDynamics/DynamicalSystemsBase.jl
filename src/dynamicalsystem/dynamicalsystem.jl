@@ -76,12 +76,20 @@ the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
 The continuous constructor creates a standard
 [ODEProblem](http://docs.juliadiffeq.org/latest/types/ode_types.html) from
 [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/).
+
 You can *always* take advantage of the full capabilities of
-the `Solution` struct by doing:
+the `Solution` struct. Simply define
 ```julia
-sol = solve(ds.prob, alg; kwargs...)
-# do stuff with sol
+using DifferentioalEquations
+prob = continuousds.prob
+prob2 = remake(prob1; tspan=(0.0,2.0))
+sol = solve(prob2, Tsit5())
+# do stuff with sol...
 ```
+The line `remake...` is necessary because by default the `tspan` of all problems
+ends at infinity. See the
+[remake documentation](http://docs.juliadiffeq.org/latest/basics/problem.html)
+for more info.
 
 ## Relevant Functions
 [`trajectory`](@ref), [`jacobian`](@ref), [`dimension`](@ref),
