@@ -344,6 +344,7 @@ See [`trajectory`](@ref) for `diff_eq_kwargs`.
 function integrator end
 
 get_state(integ) = integ.u
+set_state!(integ, u) = (integ.u = u)
 
 """
     tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; u0, t0, diff_eq_kwargs)

@@ -21,24 +21,24 @@ PARAMS = [p, ph]
 # minimalistic lyapunov
 function lyapunov_iip(ds::DS, k)
     D = dimension(ds)
-    tode = tangent_integrator(ds, orthonormal(D,k))
+    tode = tangent_integrator2(ds, orthonormal(D,k))
     λ = zeros(k)
     for t in 1:1000
         while tode.t < t
             step!(tode)
         end
         # println("K = $K")
-        Q, R = qr(view(tode.u, :, 2:k+1))
+        Q, R = qr(get_tangent(tode))
         λ .+= log.(abs.(diag(R)))
 
-        view(tode.u, :, 2:k+1) .= Q
+        set_tangent!(tode, Q)
         u_modified!(tode, true)
     end
     λ = λ/tode.t # woooorks
 end
 function lyapunov_oop(ds::DS, k)
     D = dimension(ds)
-    tode = tangent_integrator(ds, orthonormal(D,k))
+    tode = tangent_integrator2(ds, orthonormal(D,k))
     λ = zeros(k)
     ws_idx = SVector{k, Int}(collect(2:k+1))
     for t in 1:1000
@@ -46,10 +46,10 @@ function lyapunov_oop(ds::DS, k)
             step!(tode)
         end
         # println("K = $K")
-        Q, R = qr(tode.u[:, ws_idx])
+        Q, R = qr(get_tangent(tode))
         λ .+= log.(abs.(diag(R)))
 
-        tode.u = hcat(tode.u[:,1], Q)
+        set_tangent!(tode, Q)
         u_modified!(tode, true)
     end
     λ./tode.t # woooorks

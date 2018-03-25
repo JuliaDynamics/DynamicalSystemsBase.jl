@@ -195,7 +195,25 @@ get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} = integ.u
 get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Vector{<:AbstractVector}} =
     integ.u[1]
 
+function set_state!(
+    integ::ODEIntegrator{Alg, S}, u::AbstractVector, k::Int = 1
+    ) where {Alg, S<:Vector{<:AbstractVector}}
+    integ.u[k] = u
+end
+function set_state!(
+    integ::ODEIntegrator{Alg, S}, u::AbstractVector, k::Int = 1
+    ) where {Alg, S<:AbstractMatrix}
+    integ.u[:, k] .= u
+end
+
 get_tangent(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} =
     error("It has no tangent dude")
-get_tangent(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} =
+get_tangent(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
+    @view integ.u[:, 2:end]
+get_tangent(integ::ODEIntegrator{Alg, S}) where {Alg, S<:SMatrix} =
     integ.u[:, 2:end]
+
+set_tangent!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:Matrix} =
+    (integ.u[:, 2:end] .= Q)
+set_tangent!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:SMatrix} =
+    (integ.u = hcat(integ.u[:,1], Q))

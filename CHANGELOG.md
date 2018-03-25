@@ -1,3 +1,17 @@
+# v0.10
+
+## TODO
+* Add docstrings to `get_state`, `get_tangent`, `set_state!` and
+  `set_tangent!`.
+* Decide if `state` and `get_state` should be merged into one.
+
+## DONE
+* Created specialized tangent integrator for discrete systems, which is about 10-20% faster. This is a "breaking" change.
+
+* Created functions `get_state`, `get_tangent`, `set_state!` and
+  `set_tangent!` that really return the
+  tangent matrix or the state correctly fro *any* integrator.
+
 # v0.9
 * Theiler window is now part of the `neighborhood` function
 * Methods that estimate parameters for `Reconstruction` have moved back to
