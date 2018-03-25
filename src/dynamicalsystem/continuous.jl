@@ -186,3 +186,16 @@ function trajectory(ds::DynamicalSystem, T, u = ds.prob.u0;
     solve!(integ)
     return Dataset(integ.sol.u)
 end
+
+#####################################################################################
+#                                    Get States                                     #
+#####################################################################################
+get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} = integ.u
+get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} = integ.u[:, 1]
+get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Vector{<:AbstractVector}} =
+    integ.u[1]
+
+get_tangent(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} =
+    error("It has no tangent dude")
+get_tangent(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} =
+    integ.u[:, 2:end]

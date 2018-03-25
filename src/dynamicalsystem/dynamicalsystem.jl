@@ -343,6 +343,8 @@ See [`trajectory`](@ref) for `diff_eq_kwargs`.
 """
 function integrator end
 
+get_state(integ) = integ.u
+
 """
     tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; u0, t0, diff_eq_kwargs)
 Return an integrator object that evolves in parallel both the system as well
