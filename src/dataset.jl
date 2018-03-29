@@ -138,7 +138,7 @@ function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
     return Dataset{D, T}(data)
 end
 
-@generated function _dataset(::Val{D}, vecs::Vararg{<:AbstractVector{T}}) where {D, T}
+@generated function _dataset(vecs::Vararg{<:AbstractVector{T},D}) where {D, T}
     gens = [:(vecs[$k][i]) for k=1:D]
 
     quote
@@ -152,8 +152,7 @@ end
 end
 
 function Dataset(vecs::Vararg{<:AbstractVector{T}}) where {T}
-    D = length(vecs)
-    return Dataset(_dataset(Val{D}(), vecs...))
+    return Dataset(_dataset(vecs...))
 end
 
 
