@@ -55,6 +55,12 @@ end
 function ContinuousDynamicalSystem(
     eom::F, s, p::P, j::JAC, J0::JM; t0 = 0.0, iad = false) where {F, P, JAC, JM}
 
+    if !(typeof(s) <: AbstractVector)
+        throw(ArgumentError("
+        The state of a dynamical system *must* be <: AbstractVector in order
+        to be able to create the tangent space."))
+    end
+    
     IIP = isinplace(eom, 4)
     # Ensure that there are only 2 cases: OOP with SVector or IIP with Vector
     # (requirement from ChaosTools)

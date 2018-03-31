@@ -56,6 +56,11 @@ const DDS = DiscreteDynamicalSystem
 
 function DiscreteDynamicalSystem(
     eom::F, s, p::P, j::JAC, J0::JM; t0::Int = 0) where {F, P, JAC, JM}
+    if !(typeof(s) <: AbstractVector)
+        throw(ArgumentError("
+        The state of a dynamical system *must* be <: AbstractVector in order
+        to be able to create the tangent space."))
+    end 
     prob = MDP(eom, s, p, t0)
     IIP = isinplace(prob)
     S = typeof(state(prob))
@@ -64,6 +69,11 @@ function DiscreteDynamicalSystem(
 end
 function DiscreteDynamicalSystem(
     eom::F, s, p::P, j::JAC; t0::Int = 0)  where {F, P, JAC}
+    if !(typeof(s) <: AbstractVector)
+        throw(ArgumentError("
+        The state of a dynamical system *must* be <: AbstractVector in order
+        to be able to create the tangent space."))
+    end
     prob = MDP(eom, s, p, t0)
     S = typeof(prob.u0)
     IIP = isinplace(prob)
@@ -74,6 +84,11 @@ function DiscreteDynamicalSystem(
 end
 function DiscreteDynamicalSystem(
     eom::F, s, p::P; t0::Int = 0) where {F, P}
+    if !(typeof(s) <: AbstractVector)
+        throw(ArgumentError("
+        The state of a dynamical system *must* be <: AbstractVector in order
+        to be able to create the tangent space."))
+    end
     prob = MDP(eom, s, p, t0)
     S = typeof(prob.u0)
     IIP = isinplace(prob)
