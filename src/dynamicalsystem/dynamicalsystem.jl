@@ -399,7 +399,7 @@ function parallel_integrator end
 """
     trajectory(ds::DynamicalSystem, T [, u]; kwargs...) -> dataset
 
-Return a dataset that will contain the trajectory of the sytem,
+Return a dataset that will contain the trajectory of the system,
 after evolving it for total time `T`, optionally starting from state `u`.
 See [`Dataset`](@ref) for info on how to use this object.
 
