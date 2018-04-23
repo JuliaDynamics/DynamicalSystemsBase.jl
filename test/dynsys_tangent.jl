@@ -28,10 +28,10 @@ function lyapunov_iip(ds::DS, k)
             step!(tode)
         end
         # println("K = $K")
-        Q, R = qr(get_tangent(tode))
+        Q, R = qr(get_deviations(tode))
         λ .+= log.(abs.(diag(R)))
 
-        set_tangent!(tode, Q)
+        set_deviations!(tode, Q)
         u_modified!(tode, true)
     end
     λ = λ/tode.t # woooorks
@@ -46,10 +46,10 @@ function lyapunov_oop(ds::DS, k)
             step!(tode)
         end
         # println("K = $K")
-        Q, R = qr(get_tangent(tode))
+        Q, R = qr(get_deviations(tode))
         λ .+= log.(abs.(diag(R)))
 
-        set_tangent!(tode, Q)
+        set_deviations!(tode, Q)
         u_modified!(tode, true)
     end
     λ./tode.t # woooorks

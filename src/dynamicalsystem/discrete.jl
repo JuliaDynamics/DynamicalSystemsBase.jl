@@ -136,38 +136,27 @@ end
     end
 end
 
-mutable struct TangentDiscreteIntegrator{IIP, S, D, F, P, JAC, JM} <: DEIntegrator
-    f::F            # integrator eom
-    u::S            # integrator state
-    t::Int          # integrator "time" (counter)
-    dummy::S        # dummy, used only in the IIP version
-    p::P            # parameter container, I don't know why
-    t0::Int         # initial time (only for reinit!)
-    jacobian::JAC   # jacobian function
-    J::JM           # jacobian matrix
-    W::JM           # tangent vectors (in form of matrix)
-    dummyW::JM      # dummy, only used in IIP version
-end
-
-const TDI = TangentDiscreteIntegrator
-
-get_tangent(t::TDI) = t.W
-set_tangent!(t::TDI, Q) = (t.W = Q)
-u_modified!(t::TDI, a) = nothing
-get_tangent(integ::MDI{Alg, S}) where {Alg, S<:Matrix} =
-    @view integ.u[:, 2:end]
-get_tangent(integ::MDI{Alg, S}) where {Alg, S<:SMatrix} =
-    integ.u[:, 2:end]
-set_tangent!(integ::MDI{Alg, S}, Q) where {Alg, S<:Matrix} =
-    (integ.u[:, 2:end] .= Q)
-set_tangent!(integ::MDI{Alg, S}, Q) where {Alg, S<:SMatrix} =
-    (integ.u = hcat(integ.u[:,1], Q))
-
+# Get state for parallel:
+get_state(a::MDI{IIP, S}) where {IIP, S<:Vector{<:AbstractVector}} = a.u[1]
+get_state(a::MDI{IIP, S}, k) where {IIP, S<:Vector{<:AbstractVector}} = a.u[k]
 function set_state!(
     integ::MDI{Alg, S}, u::AbstractVector, k::Int = 1
     ) where {Alg, S<:Vector{<:AbstractVector}}
     integ.u[k] = u
 end
+
+
+# for autodiffed in-place version
+get_state(integ::MDI{Alg, S}) where {Alg, S<:AbstractMatrix} = integ.u[:, 1]
+set_state!(integ::MDI{Alg, S}, u) where {Alg, S<:AbstractMatrix} = (integ.u[:, 1] .= u)
+get_deviations(integ::MDI{Alg, S}) where {Alg, S<:Matrix} =
+    @view integ.u[:, 2:end]
+get_deviations(integ::MDI{Alg, S}) where {Alg, S<:SMatrix} =
+    integ.u[:, 2:end]
+set_deviations!(integ::MDI{Alg, S}, Q) where {Alg, S<:Matrix} =
+    (integ.u[:, 2:end] .= Q)
+set_deviations!(integ::MDI{Alg, S}, Q) where {Alg, S<:SMatrix} =
+    (integ.u = hcat(integ.u[:,1], Q))
 
 #####################################################################################
 #                                   Stepping                                        #
@@ -206,6 +195,33 @@ end
 DiffEqBase.u_modified!(integ::MDI, ::Bool) = nothing
 
 step!(integ::MDI, N, stop_at_tdt) = step!(integ, N)
+
+#####################################################################################
+#                           TangentDiscreteIntegrator                               #
+#####################################################################################
+mutable struct TangentDiscreteIntegrator{IIP, S, D, F, P, JAC, JM} <: DEIntegrator
+    f::F            # integrator eom
+    u::S            # integrator state
+    t::Int          # integrator "time" (counter)
+    dummy::S        # dummy, used only in the IIP version
+    p::P            # parameter container, I don't know why
+    t0::Int         # initial time (only for reinit!)
+    jacobian::JAC   # jacobian function
+    J::JM           # jacobian matrix
+    W::JM           # tangent vectors (in form of matrix)
+    dummyW::JM      # dummy, only used in IIP version
+end
+
+const TDI = TangentDiscreteIntegrator
+u_modified!(t::TDI, a) = nothing
+
+# set_state is same as in standard
+
+get_deviations(t::TDI) = t.W
+set_deviations!(t::TDI, Q) = (t.W = Q)
+
+get_deviations(t::TDI) = t.W
+set_deviations!(t::TDI, Q) = (t.W = Q)
 
 #####################################################################################
 #                                 Tangent Stepping                                  #

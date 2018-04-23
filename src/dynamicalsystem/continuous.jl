@@ -212,14 +212,14 @@ function set_state!(
     integ.u[:, k] .= u
 end
 
-get_tangent(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} =
+get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} =
     error("It has no tangent dude")
-get_tangent(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
+get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
     @view integ.u[:, 2:end]
-get_tangent(integ::ODEIntegrator{Alg, S}) where {Alg, S<:SMatrix} =
+get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:SMatrix} =
     integ.u[:, 2:end]
 
-set_tangent!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:Matrix} =
+set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:Matrix} =
     (integ.u[:, 2:end] .= Q)
-set_tangent!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:SMatrix} =
+set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:SMatrix} =
     (integ.u = hcat(integ.u[:,1], Q))
