@@ -196,7 +196,7 @@ step!(integ::MDI, N, stop_at_tdt) = step!(integ, N)
 #####################################################################################
 #                           TangentDiscreteIntegrator                               #
 #####################################################################################
-mutable struct TangentDiscreteIntegrator{IIP, S, D, F, P, JAC, JM} <: DEIntegrator
+mutable struct TangentDiscreteIntegrator{IIP, S, D, F, P, JAC, JM, WM} <: DEIntegrator
     f::F            # integrator eom
     u::S            # integrator state
     t::Int          # integrator "time" (counter)
@@ -205,11 +205,13 @@ mutable struct TangentDiscreteIntegrator{IIP, S, D, F, P, JAC, JM} <: DEIntegrat
     t0::Int         # initial time (only for reinit!)
     jacobian::JAC   # jacobian function
     J::JM           # jacobian matrix
-    W::JM           # tangent vectors (in form of matrix)
-    dummyW::JM      # dummy, only used in IIP version
+    W::WM           # tangent vectors (in form of matrix)
+    dummyW::WM      # dummy, only used in IIP version
 end
 
 const TDI = TangentDiscreteIntegrator
+stateeltype(::TDI{IIP, S}) where {IIP, S} = eltype(S)
+
 u_modified!(t::TDI, a) = nothing
 
 # set_state is same as in standard
@@ -277,27 +279,6 @@ function tangent_integrator(ds::DDS, k::Int; kwargs...)
     ds, orthonormal(dimension(ds), k); kwargs...)
 end
 
-# function tangent_integrator(ds::DDS{IIP, S, D, F, P}, Q0::AbstractMatrix;
-#     u0 = ds.prob.u0, t0 = inittime(ds)) where {IIP, S, D, F, P}
-#
-#     R = D + length(Q0)
-#     k = size(Q0)[2]
-#     Q = safe_matrix_type(Val{IIP}(), Q0)
-#     u = safe_state_type(Val{IIP}(), u0)
-#     size(Q)[2] > dimension(ds) && throw(ArgumentError(
-#     "It is not possible to evolve more tangent vectors than the system's dimension!"
-#     ))
-#
-#     tangentf = create_tangent(ds.prob.f, ds.jacobian, ds.J, Val{IIP}(), Val{k}())
-#     tanprob = MDP(tangentf, hcat(u, Q), ds.prob.p, t0)
-#     TF = typeof(tangentf)
-#
-#     s = hcat(u, Q)
-#     SS = typeof(s)
-#
-#     return MDI{IIP, SS, R, TF, P}(tangentf, s, ds.prob.t0, deepcopy(s), ds.prob.p, ds.prob.t0)
-# end
-
 function tangent_integrator(ds::DDS{IIP, S, D, F, P, JAC, JM}, Q0::AbstractMatrix;
     u0 = ds.prob.u0, t0 = inittime(ds)) where {IIP, S, D, F, P, JAC, JM}
 
@@ -307,7 +288,9 @@ function tangent_integrator(ds::DDS{IIP, S, D, F, P, JAC, JM}, Q0::AbstractMatri
     "It is not possible to evolve more tangent vectors than the system's dimension!"
     ))
 
-    return TDI{IIP, S, D, F, P, JAC, JM}(ds.prob.f, s, ds.prob.t0, deepcopy(s),
+    WM = typeof(Q)
+
+    return TDI{IIP, S, D, F, P, JAC, JM, WM}(ds.prob.f, s, ds.prob.t0, deepcopy(s),
     ds.prob.p, ds.prob.t0, ds.jacobian::JAC, deepcopy(ds.J), Q, deepcopy(Q))
 end
 
