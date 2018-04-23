@@ -144,7 +144,6 @@ set_parameter!(prob, values) = (prob.p .= values)
 set_parameter!(ds::DS, args...) = set_parameter!(ds.prob, args...)
 
 dimension(prob::DEProblem) = length(prob.u0)
-state(integ::DEIntegrator) = integ.u
 hascallback(prob::ODEProblem) = prob.callback != nothing
 inittime(prob::DEProblem) = prob.tspan[1]
 inittime(ds::DS) = inittime(ds.prob)
@@ -345,20 +344,20 @@ See [`trajectory`](@ref) for `diff_eq_kwargs`.
 function integrator end
 
 """
-    get_state(integ [, k = 1])
+    get_state(integ [, i::Int = 1])
 Return the state of the integrator, in the sense of the state of the dynamical system.
 
-If the integrator is a [`parallel_integrator`](@ref), passing `k` will return
-the `k`-th state.
+If the integrator is a [`parallel_integrator`](@ref), passing `i` will return
+the `i`-th state.
 """
 get_state(integ) = integ.u
 
 """
-    set_state!(integ, u [, k = 1])
+    set_state!(integ, u [, k::Int = 1])
 Set the state of the integrator to `u`, in the sense of the state of the
 dynamical system. Works for any integrator (normal, tangent, parallel).
 
-For parallel integrator, you can choose which state to set (using `k`).
+For parallel integrator, you can choose which state to set (using `i`).
 """
 set_state!(integ, u) = (integ.u = u)
 

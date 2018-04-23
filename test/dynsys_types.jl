@@ -40,14 +40,14 @@ for i in 1:8
         @test typeof(J) <: (iip ? Matrix : SMatrix)
 
         tinteg = tangent_integrator(ds, orthonormal(dimension(ds), dimension(ds)))
-        tuprev = deepcopy(state(tinteg))
+        tuprev = deepcopy(get_state(tinteg))
         step!(tinteg)
-        @test tuprev != state(tinteg)
+        @test tuprev != get_state(tinteg)
 
         integ = integrator(ds)
-        uprev = deepcopy(state(integ))
+        uprev = deepcopy(get_state(integ))
         step!(integ)
-        @test uprev != state(integ)
+        @test uprev != get_state(integ)
 
         if i < 5
 
@@ -56,18 +56,18 @@ for i in 1:8
                 step!(integ)
             end
 
-            @test state(tinteg)[:, 1] ≈ integ(tt)
+            @test get_state(tinteg) ≈ integ(tt)
         else
-            @test state(tinteg)[:, 1] == state(integ)
+            @test get_state(tinteg) == get_state(integ)
         end
 
         # Currently the in-place version does not work from DiffEq's side:
         if i > 2
             pinteg = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]])
-            puprev = deepcopy(state(pinteg))
+            puprev = deepcopy(get_state(pinteg))
             step!(pinteg)
-            @test state(pinteg)[1] == state(pinteg)[2]
-            @test puprev != state(pinteg)
+            @test get_state(pinteg, 1) == get_state(pinteg, 2) == get_state(pinteg)
+            @test puprev != get_state(pinteg)
 
             if i < 5
                 # The below code does not work at the moment because there
@@ -80,19 +80,19 @@ for i in 1:8
                 # @test state(pinteg)[1] ≈ integ(tt)
 
             else
-                @test state(pinteg)[1] == state(integ)
+                @test get_state(pinteg) == get_state(integ)
             end
         else
             pinteg = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]])
-            puprev = deepcopy(state(pinteg))
+            puprev = deepcopy(get_state(pinteg))
             step!(pinteg)
-            @test state(pinteg)[:, 1] == state(pinteg)[:, 2]
-            @test puprev != state(pinteg)
+            @test get_state(pinteg, 1) == get_state(pinteg, 2) == get_state(pinteg)
+            @test puprev != get_state(pinteg)
             tt = pinteg.t
             while integ.t < tt
                 step!(integ)
             end
-            @test state(pinteg)[:, 1] ≈ integ(tt)
+            @test get_state(pinteg, 1) ≈ integ(tt)
         end
     end
 end

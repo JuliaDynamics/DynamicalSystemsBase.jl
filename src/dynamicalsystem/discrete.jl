@@ -217,9 +217,6 @@ u_modified!(t::TDI, a) = nothing
 get_deviations(t::TDI) = t.W
 set_deviations!(t::TDI, Q) = (t.W = Q)
 
-get_deviations(t::TDI) = t.W
-set_deviations!(t::TDI, Q) = (t.W = Q)
-
 #####################################################################################
 #                                 Tangent Stepping                                  #
 #####################################################################################

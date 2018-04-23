@@ -199,8 +199,10 @@ get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} = integ.u
 get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} = integ.u[:, 1]
 get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Vector{<:AbstractVector}} =
     integ.u[1]
-get_state(integ::ODEIntegrator{Alg, S}, k) where {Alg, S<:Vector{<:AbstractVector}} =
+get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {Alg, S<:Vector{<:AbstractVector}} =
     integ.u[k]
+get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {Alg, S<:AbstractMatrix} =
+    integ.u[:, k]
 
 function set_state!(
     integ::ODEIntegrator{Alg, S}, u::AbstractVector, k::Int = 1
