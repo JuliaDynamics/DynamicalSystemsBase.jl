@@ -57,15 +57,14 @@ function ContinuousDynamicalSystem(
 
     if !(typeof(s) <: Union{AbstractVector, Number})
         throw(ArgumentError("
-        The state of a dynamical system *must* be <: AbstractVector/Number
-        in order to be able to create the tangent space."))
+        The state of a dynamical system *must* be <: AbstractVector/Number!"))
     end
 
     IIP = isinplace(eom, 4)
     # Ensure that there are only 2 cases: OOP with SVector or IIP with Vector
     # (requirement from ChaosTools)
-    IIP || typeof(eom(s, p, 0)) <: SVector || error(
-    "Equations of motion must return an `SVector` for DynamicalSystems.jl")
+    IIP || typeof(eom(s, p, t0)) <: SVector || error(
+    "Equations of motion must return an `SVector` for out-of-place form!")
     u0 = safe_state_type(Val{IIP}(), s)
 
     prob = ODEProblem(eom, u0, (t0, oftype(t0, Inf)), p)
@@ -200,6 +199,8 @@ get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} = integ.u
 get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} = integ.u[:, 1]
 get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Vector{<:AbstractVector}} =
     integ.u[1]
+get_state(integ::ODEIntegrator{Alg, S}, k) where {Alg, S<:Vector{<:AbstractVector}} =
+    integ.u[k]
 
 function set_state!(
     integ::ODEIntegrator{Alg, S}, u::AbstractVector, k::Int = 1
@@ -213,13 +214,13 @@ function set_state!(
 end
 
 get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} =
-    error("It has no tangent dude")
+    error("It isn't a tangent integrator dude/dudete")
 get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
     @view integ.u[:, 2:end]
 get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:SMatrix} =
     integ.u[:, 2:end]
 
 set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:Matrix} =
-    (integ.u[:, 2:end] .= Q)
+    (integ.u[:, 2:end] = Q)
 set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:SMatrix} =
     (integ.u = hcat(integ.u[:,1], Q))
