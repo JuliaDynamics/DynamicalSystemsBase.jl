@@ -9,7 +9,7 @@ println("\nTesting inference...")
     for ds in [Systems.towel(), Systems.henon_iip()]
         @test_nowarn @inferred integrator(ds)
         f = ds.prob.f
-        s = state(ds)
+        s = get_state(ds)
         p = ds.prob.p
         t = 0
         D = dimension(ds)
@@ -28,7 +28,7 @@ println("\nTesting inference...")
         @test_nowarn @inferred stateeltype(integ)
         @test stateeltype(integ) == Float64
 
-        integ = parallel_integrator(ds, [state(ds)])
+        integ = parallel_integrator(ds, [get_state(ds)])
         @test_nowarn @inferred stateeltype(integ)
         @test stateeltype(integ) == Float64
     end

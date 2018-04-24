@@ -1,5 +1,5 @@
 using StaticArrays, ForwardDiff, DiffEqBase
-import DiffEqBase: init, step!, isinplace, reinit!
+import DiffEqBase: init, step!, isinplace, reinit!, u_modified!
 import Base: show
 
 export MinimalDiscreteProblem, MinimalDiscreteIntegrator
@@ -40,7 +40,7 @@ isinplace(::MDP{IIP}) where {IIP} = IIP
 systemtype(::MinimalDiscreteProblem) = "discrete"
 inittime(prob::MDP) = prob.t0
 dimension(::MinimalDiscreteProblem{IIP, S, D}) where {IIP, S, D} = D
-state(prob::MDP) = prob.u0
+get_state(prob::MDP) = prob.u0
 stateeltype(::MDP{IIP, S}) where {IIP, S} = eltype(S)
 
 """
@@ -62,7 +62,7 @@ function DiscreteDynamicalSystem(
     end
     prob = MDP(eom, s, p, t0)
     IIP = isinplace(prob)
-    S = typeof(state(prob))
+    S = typeof(get_state(prob))
     D = length(s)
     return DDS{IIP, S, D, F, P, JAC, JM, false}(prob, j, J0)
 end
@@ -151,7 +151,7 @@ get_deviations(integ::MDI{Alg, S}) where {Alg, S<:Matrix} =
 get_deviations(integ::MDI{Alg, S}) where {Alg, S<:SMatrix} =
     integ.u[:, 2:end]
 set_deviations!(integ::MDI{Alg, S}, Q) where {Alg, S<:Matrix} =
-    (integ.u[:, 2:end] .= Q)
+    (integ.u[:, 2:end] = Q)
 set_deviations!(integ::MDI{Alg, S}, Q) where {Alg, S<:SMatrix} =
     (integ.u = hcat(integ.u[:,1], Q))
 
@@ -189,7 +189,7 @@ function step!(integ::MDI{false}, N::Int)
     return
 end
 
-DiffEqBase.u_modified!(integ::MDI, ::Bool) = nothing
+u_modified!(integ::MDI, ::Bool) = nothing
 
 step!(integ::MDI, N, stop_at_tdt) = step!(integ, N)
 
@@ -327,13 +327,14 @@ end
 #####################################################################################
 #                                 Trajectory                                        #
 #####################################################################################
-function trajectory(ds::DDS{IIP, S, D}, t, u = ds.prob.u0; dt::Int = 1) where {IIP, S, D}
+function trajectory(ds::DDS{IIP, S, D}, t, u = ds.prob.u0;
+    dt::Int = 1) where {IIP, S, D}
     T = eltype(S)
     integ = integrator(ds, u)
     ti = inittime(ds)
     tvec = ti:dt:t
     L = length(tvec)
-    T = eltype(state(ds))
+    T = eltype(get_state(ds))
     data = Vector{SVector{D, T}}(L)
     data[1] = u
     for i in 2:L
@@ -370,7 +371,7 @@ function Base.show(io::IO, ds::MDP)
     ps = 12
     text = summary(ds)
     print(io, text*"\n",
-    rpad(" state: ", ps)*"$(state(ds))\n",
+    rpad(" state: ", ps)*"$(get_state(ds))\n",
     rpad(" e.o.m.: ", ps)*"$(ds.f)\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
     )
@@ -379,7 +380,7 @@ function Base.show(io::IO, ds::MDI)
     ps = 12
     text = summary(ds)
     print(io, text*"\n",
-    rpad(" state: ", ps)*"$(state(ds))\n",
+    rpad(" state: ", ps)*"$(get_state(ds))\n",
     rpad(" e.o.m.: ", ps)*"$(ds.prob.f)\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
     )

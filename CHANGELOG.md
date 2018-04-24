@@ -1,16 +1,16 @@
 # v0.10
 
+*some of the following changes are breaking*
+
 ## TODO
-* Add docstrings to `get_state`, `get_deviations`, `set_state!` and
-  `set_deviations!`.
-* Decide if `state` and `get_state` should be merged into one.
-
-## DONE
-* Created specialized tangent integrator for discrete systems, which is about 10-20% faster. This is a "breaking" change.
-
+* `state` function no longer exists and has been merged into `get_state`.
+* Created specialized tangent integrator for discrete systems, which is about
+  20% faster. This is a "breaking" change.
 * Created functions `get_state`, `get_deviations`, `set_state!` and
-  `set_deviations!` that really return the
-  tangent matrix or the state correctly fro *any* integrator.
+  `set_deviations!` that always correctly return either the system
+  state or the deviation vectors (in a form of a matrix) from *any* integrator!!!
+* Dynamical Systems with matrices as states are no longer available.
+* Added note in reconstruction about how many temporal neighbors there are.
 
 # v0.9
 * Theiler window is now part of the `neighborhood` function
