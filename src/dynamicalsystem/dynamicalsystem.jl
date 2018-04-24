@@ -1,7 +1,7 @@
 using OrdinaryDiffEq, ForwardDiff, StaticArrays
 import OrdinaryDiffEq: isinplace, step!
 
-export dimension, state, DynamicalSystem, jacobian
+export dimension, get_state, DynamicalSystem, jacobian
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
 export set_parameter!, step!, inittime
 export trajectory
@@ -128,7 +128,7 @@ isautodiff(ds::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
 Return the dimension of the `thing`, in the sense of state-space dimensionality.
 """
 dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
-state(ds::DS) = ds.prob.u0
+get_state(ds::DS) = ds.prob.u0
 #####################################################################################
 #                                    Auxilary                                       #
 #####################################################################################
@@ -153,7 +153,8 @@ safe_state_type(::Val{false}, u0) = SVector{length(u0)}(u0...)
 safe_state_type(::Val{false}, u0::SVector) = u0
 safe_state_type(::Val{false}, u0::Number) = u0
 
-safe_matrix_type(::Val{true}, Q::AbstractMatrix) = Q
+safe_matrix_type(::Val{true}, Q::Matrix) = Q
+safe_matrix_type(::Val{true}, Q::AbstractMatrix) = Matrix(Q)
 function safe_matrix_type(::Val{false}, Q::AbstractMatrix)
     A, B = size(Q)
     SMatrix{A, B}(Q)
@@ -344,16 +345,20 @@ See [`trajectory`](@ref) for `diff_eq_kwargs`.
 function integrator end
 
 """
+    get_state(ds::DynamicalSystem)
+Return the state of `ds`.
+
     get_state(integ [, i::Int = 1])
 Return the state of the integrator, in the sense of the state of the dynamical system.
 
 If the integrator is a [`parallel_integrator`](@ref), passing `i` will return
-the `i`-th state.
+the `i`-th state. The function also correctly returns the true state of the system
+for tangent integrators.
 """
 get_state(integ) = integ.u
 
 """
-    set_state!(integ, u [, k::Int = 1])
+    set_state!(integ, u [, i::Int = 1])
 Set the state of the integrator to `u`, in the sense of the state of the
 dynamical system. Works for any integrator (normal, tangent, parallel).
 
@@ -369,9 +374,8 @@ as deviation vectors living on the tangent space.
 `Q0` is a *matrix* whose columns are initial values for deviation vectors. If
 instead of a matrix `Q0` an integer `k` is given, then `k` random orthonormal
 vectors are choosen as initial conditions.
-
 You can also give as a keyword argument
-a different initial state at time `u0, t0`.
+a different initial state or time `u0, t0`.
 
 The state of this integrator is a matrix with the first column the system state
 and all other columns being deviation vectors.
@@ -391,18 +395,13 @@ a deviation vector (or matrix) ``w``:
 ```
 with ``f`` being the equations of motion and ``u`` the system state.
 Similar equations hold for the discrete case.
-
-Internally the integrator propagates a matrix, with the first column being the state
-and each subsequent one being a deviation vector.
-
-See [`trajectory`](@ref) for `diff_eq_kwargs`.
 """
 function tangent_integrator end
 
 """
     get_deviations(tang_integ)
-Return the deviation vectors of the [`tangent_integrator`](@ref) (always returns
-a matrix with columns the vectors).
+Return the deviation vectors of the [`tangent_integrator`](@ref) in a form
+of a matrix with columns the vectors.
 """
 function get_deviations end
 
@@ -410,15 +409,13 @@ function get_deviations end
     set_deviations!(tang_integ, Q)
 Set the deviation vectors of the [`tangent_integrator`](@ref) to `Q`, which must
 be a matrix with each column being a deviation vector.
-
-Passing `Q::SMatrix` in the case of out-of-place systems is more performant.
 """
 function set_deviations end
 
 """
-    parallel_integrator(ds::DynamicalSystem, states; diff_eq_kwargs) -> integ
+    parallel_integrator(ds::DynamicalSystem, states; diff_eq_kwargs)
 Return an integrator object that can be used to evolve many `states` of
-a system in parallel interactively using `step!(integ [, Δt])`.
+a system in parallel at the *exact same times*, using `step!(integ [, Δt])`.
 
 The states of this integrator are a vector of vectors, each one being an actual
 state of the dynamical system.

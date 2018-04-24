@@ -21,7 +21,7 @@ PARAMS = [p, ph]
 # minimalistic lyapunov
 function lyapunov_iip(ds::DS, k)
     D = dimension(ds)
-    tode = tangent_integrator2(ds, orthonormal(D,k))
+    tode = tangent_integrator(ds, orthonormal(D,k))
     λ = zeros(k)
     for t in 1:1000
         while tode.t < t
@@ -38,7 +38,7 @@ function lyapunov_iip(ds::DS, k)
 end
 function lyapunov_oop(ds::DS, k)
     D = dimension(ds)
-    tode = tangent_integrator2(ds, orthonormal(D,k))
+    tode = tangent_integrator(ds, orthonormal(D,k))
     λ = zeros(k)
     ws_idx = SVector{k, Int}(collect(2:k+1))
     for t in 1:1000

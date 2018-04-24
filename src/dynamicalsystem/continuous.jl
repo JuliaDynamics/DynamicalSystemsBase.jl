@@ -181,7 +181,7 @@ end
 #####################################################################################
 #                                 Trajectory                                        #
 #####################################################################################
-function trajectory(ds::DynamicalSystem, T, u = ds.prob.u0;
+function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.prob.u0;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, dt = 0.01)
 
     tvec = inittime(ds):dt:(T+inittime(ds))
