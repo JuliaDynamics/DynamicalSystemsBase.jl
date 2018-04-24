@@ -69,6 +69,8 @@ struct Reconstruction{D, T<:Number, τ} <: AbstractReconstruction{D, T, τ}
 end
 
 function Reconstruction(s::AbstractVector{T}, D, τ::DT) where {T, DT}
+    D == 1 && throw(ArgumentError("A Reconstruction with `D = 1` does not"*
+    " make sense, as it has 0 temporal neighbors"))
     if DT <: AbstractVector{Int}
         length(τ) != D && throw(ArgumentError(
         "The delay vector must have `length(τ) == D`."
