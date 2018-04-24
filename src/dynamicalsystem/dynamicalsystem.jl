@@ -176,7 +176,7 @@ function Base.show(io::IO, ds::DS)
     ps = 12
     text = summary(ds)
     print(io, text*"\n",
-    rpad(" state: ", ps)*"$(state(ds))\n",
+    rpad(" state: ", ps)*"$(get_state(ds))\n",
     rpad(" e.o.m.: ", ps)*"$(ds.prob.f)\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
     rpad(" jacobian: ", ps)*"$(jacobianstring(ds))\n"
