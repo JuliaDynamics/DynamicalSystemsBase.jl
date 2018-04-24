@@ -56,6 +56,10 @@ const DDS = DiscreteDynamicalSystem
 
 function DiscreteDynamicalSystem(
     eom::F, s, p::P, j::JAC, J0::JM; t0::Int = 0) where {F, P, JAC, JM}
+    if !(typeof(s) <: Union{AbstractVector, Number})
+        throw(ArgumentError("
+        The state of a dynamical system *must* be <: AbstractVector/Number!"))
+    end
     prob = MDP(eom, s, p, t0)
     IIP = isinplace(prob)
     S = typeof(state(prob))
@@ -64,6 +68,10 @@ function DiscreteDynamicalSystem(
 end
 function DiscreteDynamicalSystem(
     eom::F, s, p::P, j::JAC; t0::Int = 0)  where {F, P, JAC}
+    if !(typeof(s) <: Union{AbstractVector, Number})
+        throw(ArgumentError("
+        The state of a dynamical system *must* be <: AbstractVector/Number!"))
+    end
     prob = MDP(eom, s, p, t0)
     S = typeof(prob.u0)
     IIP = isinplace(prob)
@@ -74,6 +82,10 @@ function DiscreteDynamicalSystem(
 end
 function DiscreteDynamicalSystem(
     eom::F, s, p::P; t0::Int = 0) where {F, P}
+    if !(typeof(s) <: Union{AbstractVector, Number})
+        throw(ArgumentError("
+        The state of a dynamical system *must* be <: AbstractVector/Number!"))
+    end
     prob = MDP(eom, s, p, t0)
     S = typeof(prob.u0)
     IIP = isinplace(prob)
@@ -121,6 +133,28 @@ end
     end
 end
 
+# Get state for parallel:
+get_state(a::MDI{IIP, S}) where {IIP, S<:Vector{<:AbstractVector}} = a.u[1]
+get_state(a::MDI{IIP, S}, k) where {IIP, S<:Vector{<:AbstractVector}} = a.u[k]
+function set_state!(
+    integ::MDI{Alg, S}, u::AbstractVector, k::Int = 1
+    ) where {Alg, S<:Vector{<:AbstractVector}}
+    integ.u[k] = u
+end
+
+
+# for autodiffed in-place version
+get_state(integ::MDI{Alg, S}) where {Alg, S<:AbstractMatrix} = integ.u[:, 1]
+set_state!(integ::MDI{Alg, S}, u) where {Alg, S<:AbstractMatrix} = (integ.u[:, 1] .= u)
+get_deviations(integ::MDI{Alg, S}) where {Alg, S<:Matrix} =
+    @view integ.u[:, 2:end]
+get_deviations(integ::MDI{Alg, S}) where {Alg, S<:SMatrix} =
+    integ.u[:, 2:end]
+set_deviations!(integ::MDI{Alg, S}, Q) where {Alg, S<:Matrix} =
+    (integ.u[:, 2:end] .= Q)
+set_deviations!(integ::MDI{Alg, S}, Q) where {Alg, S<:SMatrix} =
+    (integ.u = hcat(integ.u[:,1], Q))
+
 #####################################################################################
 #                                   Stepping                                        #
 #####################################################################################
@@ -158,6 +192,80 @@ end
 DiffEqBase.u_modified!(integ::MDI, ::Bool) = nothing
 
 step!(integ::MDI, N, stop_at_tdt) = step!(integ, N)
+
+#####################################################################################
+#                           TangentDiscreteIntegrator                               #
+#####################################################################################
+mutable struct TangentDiscreteIntegrator{IIP, S, D, F, P, JAC, JM, WM} <: DEIntegrator
+    f::F            # integrator eom
+    u::S            # integrator state
+    t::Int          # integrator "time" (counter)
+    dummy::S        # dummy, used only in the IIP version
+    p::P            # parameter container, I don't know why
+    t0::Int         # initial time (only for reinit!)
+    jacobian::JAC   # jacobian function
+    J::JM           # jacobian matrix
+    W::WM           # tangent vectors (in form of matrix)
+    dummyW::WM      # dummy, only used in IIP version
+end
+
+const TDI = TangentDiscreteIntegrator
+stateeltype(::TDI{IIP, S}) where {IIP, S} = eltype(S)
+
+u_modified!(t::TDI, a) = nothing
+
+# set_state is same as in standard
+
+get_deviations(t::TDI) = t.W
+set_deviations!(t::TDI, Q) = (t.W = Q)
+
+#####################################################################################
+#                                 Tangent Stepping                                  #
+#####################################################################################
+function step!(integ::TDI{true})
+    # try vector swap
+    integ.dummy, integ.u = integ.u, integ.dummy
+    integ.dummyW, integ.W = integ.W, integ.dummyW
+
+    integ.f(integ.u, integ.dummy, integ.p, integ.t)
+    integ.jacobian(integ.J, integ.u, integ.p, integ.t)
+
+    A_mul_B!(integ.W, integ.J, integ.dummyW)
+    integ.t += 1
+    return
+end
+function step!(integ::TDI{true}, N::Int)
+    for i in 1:N
+        # try vector swap
+        integ.dummy, integ.u = integ.u, integ.dummy
+        integ.dummyW, integ.W = integ.W, integ.dummyW
+
+        integ.f(integ.u, integ.dummy, integ.p, integ.t)
+        integ.jacobian(integ.J, integ.u, integ.p, integ.t)
+
+        A_mul_B!(integ.W, integ.J, integ.dummyW)
+        integ.t += 1
+    end
+    return
+end
+
+function step!(integ::TDI{false})
+    integ.u = integ.f(integ.u, integ.p, integ.t)
+    J = integ.jacobian(integ.u, integ.p, integ.t)
+    integ.W = J*integ.W
+    integ.t += 1
+    return
+end
+function step!(integ::TDI{false}, N::Int)
+    for i in 1:N
+        integ.u = integ.f(integ.u, integ.p, integ.t)
+        J = integ.jacobian(integ.u, integ.p, integ.t)
+        integ.W = J*integ.W
+        integ.t += 1
+    end
+    return
+end
+
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
@@ -171,25 +279,19 @@ function tangent_integrator(ds::DDS, k::Int; kwargs...)
     ds, orthonormal(dimension(ds), k); kwargs...)
 end
 
-function tangent_integrator(ds::DDS{IIP, S, D, F, P}, Q0::AbstractMatrix;
-    u0 = ds.prob.u0, t0 = inittime(ds)) where {IIP, S, D, F, P}
+function tangent_integrator(ds::DDS{IIP, S, D, F, P, JAC, JM}, Q0::AbstractMatrix;
+    u0 = ds.prob.u0, t0 = inittime(ds)) where {IIP, S, D, F, P, JAC, JM}
 
-    R = D + length(Q0)
-    k = size(Q0)[2]
     Q = safe_matrix_type(Val{IIP}(), Q0)
-    u = safe_state_type(Val{IIP}(), u0)
+    s = safe_state_type(Val{IIP}(), u0)
     size(Q)[2] > dimension(ds) && throw(ArgumentError(
     "It is not possible to evolve more tangent vectors than the system's dimension!"
     ))
 
-    tangentf = create_tangent(ds.prob.f, ds.jacobian, ds.J, Val{IIP}(), Val{k}())
-    tanprob = MDP(tangentf, hcat(u, Q), ds.prob.p, t0)
-    TF = typeof(tangentf)
+    WM = typeof(Q)
 
-    s = hcat(u, Q)
-    SS = typeof(s)
-
-    return MDI{IIP, SS, R, TF, P}(tangentf, s, ds.prob.t0, deepcopy(s), ds.prob.p, ds.prob.t0)
+    return TDI{IIP, S, D, F, P, JAC, JM, WM}(ds.prob.f, s, ds.prob.t0, deepcopy(s),
+    ds.prob.p, ds.prob.t0, ds.jacobian::JAC, deepcopy(ds.J), Q, deepcopy(Q))
 end
 
 # Auto-diffed in-place version

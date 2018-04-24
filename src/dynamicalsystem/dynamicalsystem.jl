@@ -6,6 +6,7 @@ export ContinuousDynamicalSystem, DiscreteDynamicalSystem
 export set_parameter!, step!, inittime
 export trajectory
 export integrator, tangent_integrator, parallel_integrator
+export set_state!, get_state, get_deviations, set_deviations!
 
 #######################################################################################
 #                                  DynamicalSystem                                    #
@@ -143,7 +144,6 @@ set_parameter!(prob, values) = (prob.p .= values)
 set_parameter!(ds::DS, args...) = set_parameter!(ds.prob, args...)
 
 dimension(prob::DEProblem) = length(prob.u0)
-state(integ::DEIntegrator) = integ.u
 hascallback(prob::ODEProblem) = prob.callback != nothing
 inittime(prob::DEProblem) = prob.tspan[1]
 inittime(ds::DS) = inittime(ds.prob)
@@ -344,6 +344,24 @@ See [`trajectory`](@ref) for `diff_eq_kwargs`.
 function integrator end
 
 """
+    get_state(integ [, i::Int = 1])
+Return the state of the integrator, in the sense of the state of the dynamical system.
+
+If the integrator is a [`parallel_integrator`](@ref), passing `i` will return
+the `i`-th state.
+"""
+get_state(integ) = integ.u
+
+"""
+    set_state!(integ, u [, k::Int = 1])
+Set the state of the integrator to `u`, in the sense of the state of the
+dynamical system. Works for any integrator (normal, tangent, parallel).
+
+For parallel integrator, you can choose which state to set (using `i`).
+"""
+set_state!(integ, u) = (integ.u = u)
+
+"""
     tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; u0, t0, diff_eq_kwargs)
 Return an integrator object that evolves in parallel both the system as well
 as deviation vectors living on the tangent space.
@@ -380,6 +398,22 @@ and each subsequent one being a deviation vector.
 See [`trajectory`](@ref) for `diff_eq_kwargs`.
 """
 function tangent_integrator end
+
+"""
+    get_deviations(tang_integ)
+Return the deviation vectors of the [`tangent_integrator`](@ref) (always returns
+a matrix with columns the vectors).
+"""
+function get_deviations end
+
+"""
+    set_deviations!(tang_integ, Q)
+Set the deviation vectors of the [`tangent_integrator`](@ref) to `Q`, which must
+be a matrix with each column being a deviation vector.
+
+Passing `Q::SMatrix` in the case of out-of-place systems is more performant.
+"""
+function set_deviations end
 
 """
     parallel_integrator(ds::DynamicalSystem, states; diff_eq_kwargs) -> integ
