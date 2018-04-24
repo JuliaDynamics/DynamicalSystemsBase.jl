@@ -11,6 +11,8 @@ abstract type AbstractReconstruction{D, T, τ} <: AbstractDataset{D, T} end
 `D`-dimensional delay-coordinates reconstruction object with delay `τ`,
 created from a timeseries `s`.
 
+Notice that the number of temporal neighbors is `D-1`!
+
 ## Description
 If `τ` is an integer, then the ``n``th row of a `Reconstruction`
 is
