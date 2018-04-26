@@ -222,8 +222,8 @@ get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
 @generated function get_deviations(
     integ::ODEIntegrator{Alg, S}) where {Alg, S<:SMatrix{D,K}} where {D,K}
     gens = [:($k) for k=2:K]
-    sind = SVector{$(K-1)}($(gens...))
     quote
+        sind = SVector{$(K-1)}($(gens...))
         integ.u[:, sind]
     end
 end
