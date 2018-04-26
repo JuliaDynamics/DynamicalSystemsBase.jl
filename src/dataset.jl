@@ -26,6 +26,8 @@ abstract type AbstractDataset{D, T} end
 # Indexing with ranges
 @inline Base.getindex(d::AbstractDataset, i::Range, j::Int) =
 [d.data[k][j] for k in i]
+@inline Base.getindex(d::AbstractDataset, i::Range, ::Colon) =
+Dataset([d[k] for k in i])
 @inline Base.getindex(d::AbstractDataset, i::Int, j::Range) =
 [d.data[i][k] for k in j]
 
