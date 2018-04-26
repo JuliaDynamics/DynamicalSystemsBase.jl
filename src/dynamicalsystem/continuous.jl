@@ -215,14 +215,20 @@ function set_state!(
     integ.u[:, k] .= u
 end
 
-get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} =
-    error("It isn't a tangent integrator dude/dudete")
 get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
     @view integ.u[:, 2:end]
-get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:SMatrix} =
-    integ.u[:, 2:end]
+
+
+@generated function get_deviations(
+    integ::ODEIntegrator{Alg, S}) where {Alg, S<:SMatrix{D,K}} where {D,K}
+    gens = [:($k) for k=2:K]
+    sind = SVector{$(K-1)}($(gens...))
+    quote
+        integ.u[:, sind]
+    end
+end
 
 set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:Matrix} =
-    (integ.u[:, 2:end] = Q)
+    (integ.u[:, 2:end] = Q; u_modified!(integ, true))
 set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:SMatrix} =
-    (integ.u = hcat(integ.u[:,1], Q))
+    (integ.u = hcat(integ.u[:,1], Q); u_modified!(integ, true))

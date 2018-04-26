@@ -409,6 +409,8 @@ function get_deviations end
     set_deviations!(tang_integ, Q)
 Set the deviation vectors of the [`tangent_integrator`](@ref) to `Q`, which must
 be a matrix with each column being a deviation vector.
+
+Automatically does `u_modified!(tang_integ, true)`.
 """
 function set_deviations end
 
