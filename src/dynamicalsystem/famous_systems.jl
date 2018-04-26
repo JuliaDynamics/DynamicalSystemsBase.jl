@@ -437,6 +437,8 @@ The *total* dimension of the system
 is `2M`. The maps are coupled through `Γ`
 and the `i`-th map has a nonlinear parameter `ks[i]`.
 
+The first `M` entries of the state are the angles, the last `M` are the momenta.
+
 [1] : H. Kantz & P. Grassberger, J. Phys. A **21**, pp 127–133 (1988)
 """
 function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
