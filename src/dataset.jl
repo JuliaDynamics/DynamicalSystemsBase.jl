@@ -102,7 +102,7 @@ When indexed with 1 index, a `dataset` is like a vector of datapoints.
 When indexed with 2 indices it behaves like a matrix that has each of the columns be the
 timeseries of each of the dynamic variables.
 
-## Description
+## Description of indexing
 In the following let `i, j` be integers,  `typeof(data) <: AbstractDataset`
 and `v1, v2` be `<: AbstractVector{Int}` (`v1, v2` could also be ranges).
 
