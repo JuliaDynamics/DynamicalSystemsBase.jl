@@ -94,19 +94,26 @@ Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
 
 """
     Dataset{D, T} <: AbstractDataset{D,T}
-A dedicated interface for datasets, i.e. vectors of vectors.
-It contains *equally-sized datapoints* of length `D`,
-represented by `SVector{D, T}`.
+A dedicated interface for datasets.
+It contains *equally-sized datapoints* of length `D`, represented by `SVector{D, T}`.
 
-It can be used exactly like a matrix that has each of the columns be the
-timeseries of each of the dynamic variables. [`trajectory`](@ref) always returns
-a `Dataset`. For example,
-```julia
-ds = Systems.towel()
-data = trajectory(ds, 1000) #this returns a dataset
-data[:, 2] # this is the second variable timeseries
-data[1] == data[1, :] # this is the first datapoint (D-dimensional)
-data[5, 3] # value of the third variable, at the 5th timepoint
+When indexed with 1 index, a `dataset` is like a vector of datapoints.
+
+When indexed with 2 indices it behaves like a matrix that has each of the columns be the
+timeseries of each of the dynamic variables.
+
+## Description
+In the following let `i, j` be integers,  `typeof(data) <: AbstractDataset`
+and `v1, v2` be `<: AbstractVector{Int}` (`v1, v2` could also be ranges).
+
+* `data[i]` gives the `i`th datapoint (returns an `SVector`)
+* `data[v1]` will return a vector of datapoints
+* `data[v1, :]` using a `Colon` as a second index will return a `Dataset` of
+  these points
+* `data[:, j]` gives the `j`th` variable timeseries, as `Vector`
+* `data[v1, v2]` returns a `Dataset` with the appropriate entries (first indices
+  being "time"/point index, while second being dynamic variables)
+* `data[i, j]` value of the `j`th variable, at the `i`th timepoint
 ```
 
 Use `Matrix(dataset)` or `reinterpret(Matrix, dataset)` and
