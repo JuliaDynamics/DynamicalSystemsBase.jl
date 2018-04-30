@@ -206,9 +206,9 @@ end
 #####################################################################################
 #                                   Pretty Printing                                 #
 #####################################################################################
-function matname(d::Dataset{D, T}) where {D, T}
+function Base.summary(d::Dataset{D, T}) where {D, T}
     N = length(d)
-    return "$D-dimensional Dataset{$(T)} with $N points:"
+    return "$D-dimensional Dataset{$(T)} with $N points"
 end
 
 function matstring(d::AbstractDataset{D, T}) where {D, T}
@@ -223,7 +223,7 @@ function matstring(d::AbstractDataset{D, T}) where {D, T}
     end
     s = sprint(io -> show(IOContext(io, limit=true), MIME"text/plain"(), mat))
     s = join(split(s, '\n')[2:end], '\n')
-    tos = matname(d)*"\n"*s
+    tos = summary(d)*"\n"*s
     return tos
 end
 

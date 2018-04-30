@@ -121,7 +121,7 @@ end
 
 
 # Pretty print:
-matname(d::Reconstruction{D, T, τ}) where {D, T, τ} =
+Base.summary(d::Reconstruction{D, T, τ}) where {D, T, τ} =
 "(D=$(D), τ=$(d.delay)) - delay coordinates Reconstruction"
 #####################################################################################
 #                              MultiDimensional R                                   #
@@ -202,5 +202,5 @@ function Reconstruction(
 end
 
 # Pretty print:
-matname(d::MDReconstruction{DxB, D, B, T, τ}) where {DxB, D, B, T, τ} =
+Base.summary(d::MDReconstruction{DxB, D, B, T, τ}) where {DxB, D, B, T, τ} =
 "(B=$(B), D=$(D), τ=$(d.delay)) - delay coordinates multi-dimensional Reconstruction"
