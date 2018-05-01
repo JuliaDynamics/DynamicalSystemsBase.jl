@@ -332,7 +332,7 @@ function trajectory(ds::DDS{IIP, S, D}, t, u = ds.prob.u0;
     T = eltype(S)
     integ = integrator(ds, u)
     ti = inittime(ds)
-    tvec = ti:dt:t
+    tvec = ti:dt:t+ti
     L = length(tvec)
     T = eltype(get_state(ds))
     data = Vector{SVector{D, T}}(L)
@@ -346,7 +346,7 @@ end
 
 function trajectory(ds::DDS{false, S, 1}, t, u = ds.prob.u0; dt::Int = 1) where {S}
     ti = inittime(ds)
-    tvec = ti:dt:t
+    tvec = ti:dt:t+ti
     L = length(tvec)
     integ = integrator(ds, u)
     data = Vector{S}(L)
