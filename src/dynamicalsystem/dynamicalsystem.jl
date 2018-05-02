@@ -412,7 +412,7 @@ be a matrix with each column being a deviation vector.
 
 Automatically does `u_modified!(tang_integ, true)`.
 """
-function set_deviations end
+function set_deviations! end
 
 """
     parallel_integrator(ds::DynamicalSystem, states; diff_eq_kwargs)
