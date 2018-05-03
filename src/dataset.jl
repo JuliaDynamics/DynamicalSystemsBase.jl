@@ -110,7 +110,7 @@ and `v1, v2` be `<: AbstractVector{Int}` (`v1, v2` could also be ranges).
 * `data[v1]` will return a vector of datapoints
 * `data[v1, :]` using a `Colon` as a second index will return a `Dataset` of
   these points
-* `data[:, j]` gives the `j`th` variable timeseries, as `Vector`
+* `data[:, j]` gives the `j`th variable timeseries, as `Vector`
 * `data[v1, v2]` returns a `Dataset` with the appropriate entries (first indices
   being "time"/point index, while second being dynamic variables)
 * `data[i, j]` value of the `j`th variable, at the `i`th timepoint
