@@ -210,9 +210,14 @@ function set_state!(
     integ.u[k] = u
 end
 function set_state!(
-    integ::ODEIntegrator{Alg, S}, u::AbstractVector, k::Int = 1
-    ) where {Alg, S<:AbstractMatrix}
-    integ.u[:, k] .= u
+    integ::ODEIntegrator{Alg, S}, u::AbstractVector) where {Alg, S<:Matrix}
+    integ.u[:, 1] .= u
+end
+function set_state!(
+    integ::ODEIntegrator{Alg, S}, u::AbstractVector
+    ) where {Alg, S<:SMatrix{D, K}} where {D, K}
+    integ.u = hcat(SVector{D}(u), integ.u[:, SVector{K-1}(2:K...)])
+    return
 end
 
 get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
