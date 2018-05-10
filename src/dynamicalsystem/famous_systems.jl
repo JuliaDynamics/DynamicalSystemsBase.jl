@@ -220,6 +220,11 @@ end
 
 """
     lorenz96(N::Int, u0 = rand(M); F=0.01)
+
+```math
+\\frac{dx_i}{dt} = (x_{i+1}-x_{i-2})x_{i-1} - x_i + F
+```
+
 `N` is the chain length, `F` the forcing. Jacobian is created automatically.
 (parameter container only contains `F`)
 """
