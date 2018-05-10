@@ -149,7 +149,7 @@ end
                (M1 + M2)*G*sin(state[1])*cos(del_) -
                (M1 + M2)*L1*state[2]*state[2]*sin(del_) -
                (M1 + M2)*G*sin(state[3]))/den2
-    return SVector{4, Float64}(du1, du2, du3, du4)
+    return SVector{4}(du1, du2, du3, du4)
 end
 
 """
