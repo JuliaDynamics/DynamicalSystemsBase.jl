@@ -115,7 +115,8 @@ end
 end
 
 """
-    double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
+    double_pendulum(u0 = [π/2, 0, 0, rand()];
+                    G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
 Famous chaotic double pendulum system (also used for our logo!). Keywords
 are gravity (G), lengths of each rod and mass of each ball (all assumed SI units).
 
@@ -128,10 +129,10 @@ Jacobian is created automatically (thus methods that use the Jacobian will be sl
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
-function double_pendulum(u0=rand(4); G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
+function double_pendulum(u0=[π/2, 0, 0, rand()]; G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
     return CDS(doublependulum_eom, u0, [G, L1, L2, M1, M2])
 end
-@inbounds function doublependulum_eom(du, state, p, t)
+@inbounds function doublependulum_eom(state, p, t)
     G, L1, L2, M1, M2 = p
 
     du1 = state[2]
