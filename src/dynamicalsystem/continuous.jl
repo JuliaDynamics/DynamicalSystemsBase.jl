@@ -172,10 +172,20 @@ function create_parallel(ds::CDS{true}, states)
     return paralleleom, st
 end
 
+const STIFFSOLVERS = [ImplicitEuler, ImplicitMidpoint, Trapezoid, TRBDF2,
+GenericImplicitEuler,
+GenericTrapezoid, SDIRK2, Kvaerno3, KenCarp3, Cash4, Hairer4, Hairer42, Kvaerno4,
+KenCarp4, Kvaerno5, KenCarp5, Rosenbrock23,
+Rosenbrock32, ROS3P, Rodas3, RosShamp4, Veldd4, Velds4, GRK4T,
+GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P]
+
 function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
     peom, st = create_parallel(ds, states)
     pprob = ODEProblem(peom, st, (inittime(ds), Inf), ds.prob.p)
     solver, newkw = extract_solver(diff_eq_kwargs)
+    # if typeof(solver) ∈ STIFFSOLVERS
+    #     error("Stiff solvers can't support a parallel integrator.")
+    # end
     return init(pprob, solver; newkw..., save_everystep = false)
 end
 
