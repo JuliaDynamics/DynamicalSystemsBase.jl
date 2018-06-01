@@ -335,6 +335,34 @@ function gissinger_eom(u, p, t)
     return SVector{3}(du1, du2, du3)
 end
 
+"""
+```julia
+rikitake(u0 = [1, 0, 0.6]; μ = 1.0, α = 1.0)
+```
+```math
+\\begin{aligned}
+\\dot{x} &= -\\mu x +yz \\\\
+\\dot{y} &= -\\mu y +x(z-\\alpha) \\\\
+\\dot{V} &= 1 - xz
+\\end{aligned}
+```
+Rikitake's dynamo is a system that tries to model the magnetic reversal events
+by means of a double-disk dynamo system.
+
+[1] : T. Rikitake Math. Proc. Camb. Phil. Soc. **54**, pp 89–105, (1958)
+"""
+function rikitake(u0 = [1, 0, 0.6]; μ = 1.0, α = 1.0)
+    return CDS(rikitake_eom, u0, [μ, α])
+end
+function rikitake_eom(u, p, t)
+    μ, α = p
+    x,y,z = u
+    xdot = -μ*x + y*z
+    ydot = -μ*y + x*(z - α)
+    zdot = 1 - x*y
+    return SVector{3}(xdot, ydot, zdot)
+end
+
 #######################################################################################
 #                                     Discrete                                        #
 #######################################################################################
