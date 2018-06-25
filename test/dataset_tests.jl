@@ -1,7 +1,7 @@
 cd()
 println("\nTesting Dataset (file at $(pwd()))...")
 using DynamicalSystemsBase
-using Base.Test, StaticArrays
+using Test, StaticArrays
 using DynamicalSystemsBase: read_dataset, write_dataset
 
 @testset "Dataset" begin

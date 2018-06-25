@@ -22,13 +22,13 @@ abstract type AbstractDataset{D, T} end
 @inline Base.getindex(d::AbstractDataset, i::Colon, j::Int) =
 [d.data[k][j] for k in 1:length(d)]
 @inline Base.getindex(d::AbstractDataset, i::Int, j::Colon) = d.data[i]
-@inline Base.getindex(d::AbstractDataset, r::Range) = d.data[r]
+@inline Base.getindex(d::AbstractDataset, r::AbstractRange) = d.data[r]
 # Indexing with ranges
-@inline Base.getindex(d::AbstractDataset, i::Range, j::Int) =
+@inline Base.getindex(d::AbstractDataset, i::AbstractRange, j::Int) =
 [d.data[k][j] for k in i]
-@inline Base.getindex(d::AbstractDataset, i::Range, ::Colon) =
+@inline Base.getindex(d::AbstractDataset, i::AbstractRange, ::Colon) =
 Dataset([d[k] for k in i])
-@inline Base.getindex(d::AbstractDataset, i::Int, j::Range) =
+@inline Base.getindex(d::AbstractDataset, i::Int, j::AbstractRange) =
 [d.data[i][k] for k in j]
 
 function Base.getindex(d::AbstractDataset{D,T}, i::AbstractVector{Int},

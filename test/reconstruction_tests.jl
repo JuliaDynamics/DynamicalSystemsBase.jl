@@ -1,5 +1,5 @@
 using DynamicalSystemsBase
-using Base.Test, StaticArrays
+using Test, StaticArrays
 
 println("\nTesting Reconstruction")
 

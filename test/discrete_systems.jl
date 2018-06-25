@@ -1,5 +1,5 @@
 using DynamicalSystemsBase
-using Base.Test, StaticArrays
+using Test, StaticArrays
 using DynamicalSystemsBase: DDS, DS
 
 println("\nTesting discrete system evolution...")
