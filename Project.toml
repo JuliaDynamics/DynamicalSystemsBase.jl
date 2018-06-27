@@ -1,6 +1,7 @@
 name = "DynamicalSystemsBase"
 repo = "https://github.com/JuliaDynamics/DynamicalSystemsBase.jl.git"
 uuid = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
+version = "0.10.3+"
 
 [deps]
 DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
