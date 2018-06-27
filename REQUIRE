@@ -1,4 +1,4 @@
-julia 0.6
+julia 0.7-beta
 OrdinaryDiffEq 3.1
 DiffEqBase 3.5
 ForwardDiff 0.5
