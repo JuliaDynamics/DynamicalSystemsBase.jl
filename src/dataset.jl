@@ -11,7 +11,7 @@ abstract type AbstractDataset{D, T} end
 @inline Base.length(d::AbstractDataset) = length(d.data)
 @inline Base.size(d::AbstractDataset{D,T}) where {D,T} = (length(d.data), D)
 @inline Base.size(d::AbstractDataset, i::Int) = size(d)[i]
-@inline Base.iteratorsize(d::AbstractDataset) = Base.HasLength()
+@inline Base.IteratorSize(d::AbstractDataset) = Base.HasLength()
 
 # 1D indexing  over the container elements:
 @inline Base.getindex(d::AbstractDataset, i) = d.data[i]
@@ -227,7 +227,7 @@ function matstring(d::AbstractDataset{D, T}) where {D, T}
     return tos
 end
 
-@require Juno begin
+@require Juno="e5e0dc1b-0480-54bc-9374-aad01c23163d" begin
     function Juno.render(i::Juno.Inline, d::AbstractDataset)
     tos = matstring(d)
     Juno.render(i, Juno.Tree(Text(tos), []))
@@ -306,7 +306,7 @@ end
     svd(d::AbstractDataset) -> U, S, Vtr
 Perform singular value decomposition on the dataset.
 """
-function Base.svd(d::AbstractDataset)
+function svd(d::AbstractDataset)
     F = svdfact(Matrix(d))
     return F[:U], F[:S], F[:Vt]
 end
