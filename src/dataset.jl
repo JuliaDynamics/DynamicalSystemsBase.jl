@@ -1,4 +1,4 @@
-using StaticArrays, Requires
+using StaticArrays, Requires, LinearAlgebra
 using IterTools: chain
 import Base: ==
 
