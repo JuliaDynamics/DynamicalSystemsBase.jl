@@ -5,15 +5,22 @@ export ContinuousDynamicalSystem, CDS
 #####################################################################################
 #                                    Auxilary                                       #
 #####################################################################################
+const DEFAULT_DIFFEQ_KWARGS = Dict(
+    :abstol => 1e-9, :reltol => 1e-9, :maxiters => typemax(Int))
 const DEFAULT_SOLVER = Vern9()
-const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-9, reltol = 1e-9,
-                               maxiters = typemax(Int), solver = DEFAULT_SOLVER)
 const CDS_TSPAN = (0.0, Inf)
-const DEKW = DEFAULT_DIFFEQ_KWARGS
 
 function extract_solver(diff_eq_kwargs)
-    solver = diff_eq_kwargs.solver
-    return solver, delete(diff_eq_kwargs.solver)
+    # Extract solver from kwargs
+    if haskey(diff_eq_kwargs, :solver)
+        newkw = deepcopy(diff_eq_kwargs)
+        solver = diff_eq_kwargs[:solver]
+        pop!(newkw, :solver)
+    else
+        solver = DEFAULT_SOLVER
+        newkw = diff_eq_kwargs
+    end
+    return solver, newkw
 end
 
 #####################################################################################
@@ -21,7 +28,7 @@ end
 #####################################################################################
 """
     ContinuousDynamicalSystem(eom, state, p [, jacobian [, J]]; t0 = 0.0)
-A `DynamicalSystem` restricted to systems with continuous time (also called *ODEs*).
+    A `DynamicalSystem` restricted to continuous systems (also called *flows*).
 """
 struct ContinuousDynamicalSystem{
     IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM} <: DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
@@ -88,13 +95,20 @@ stateeltype(::ODEIntegrator{Alg, S}) where {
     Alg, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
 function integrator(ds::CDS{iip}, u0 = ds.prob.u0;
-    diff_eq_kwargs = DEKW, tspan = ds.prob.tspan) where {iip}
+    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
+    saveat = nothing, tspan = ds.prob.tspan) where {iip}
 
     u = safe_state_type(Val{iip}(), u0)
-    solver, newkw = extract_solver(merge(diff_eq_kwargs, DEKW))
+    solver, newkw = extract_solver(diff_eq_kwargs)
     prob = ODEProblem{iip}(ds.prob.f, u, tspan, ds.prob.p)
 
-    integ = init(prob, solver; newkw..., save_everystep = false)
+    saveat != nothing && tspan[2] == Inf && error("Infinite solving!")
+
+    if saveat == nothing
+        integ = init(prob, solver; newkw..., save_everystep = false)
+    else
+        integ = init(prob, solver; newkw..., saveat = saveat, save_everystep = false)
+    end
 end
 
 ############################### Tangent ##############################################
