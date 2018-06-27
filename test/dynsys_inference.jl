@@ -1,5 +1,5 @@
 using DynamicalSystemsBase
-using Base.Test, StaticArrays
+using Test, StaticArrays
 using DynamicalSystemsBase: CDS, DDS, isinplace
 using DynamicalSystemsBase: create_jacobian, create_tangent, stateeltype
 

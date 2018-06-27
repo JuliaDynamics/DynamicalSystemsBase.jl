@@ -1,7 +1,7 @@
 if current_module() != DynamicalSystemsBase
   using DynamicalSystemsBase
 end
-using Base.Test, StaticArrays
+using Test, StaticArrays
 println("Testing custom QR-decomposition...")
 
 @testset "QR-decomposition" begin

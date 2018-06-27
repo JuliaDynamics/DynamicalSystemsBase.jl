@@ -1,7 +1,7 @@
 using DynamicalSystemsBase
-using Base.Test, StaticArrays
+using Test, StaticArrays
 using DynamicalSystemsBase: CDS, DS
-using Base.Test, StaticArrays, OrdinaryDiffEq
+using Test, StaticArrays, OrdinaryDiffEq
 using DiffEqCallbacks
 
 println("\nTesting continuous system evolution...")
