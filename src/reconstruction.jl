@@ -1,3 +1,13 @@
+# TODO:
+# separate reconstruction to multidim and standard
+# (since wehave STRec anyway)
+# Clean up source
+# Add tests of type stability when calling the reconstructors
+# Decide on naming: I think Reconstruction should be made normal function,
+# with small letters and renamed to `reconstruct`. The type Reconstruction
+# still stays because I'd prefer to have the pretty printing with τ
+
+
 using StaticArrays
 export Reconstruction, MDReconstruction
 
@@ -63,66 +73,48 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 
 [3] : K. Judd & A. Mees, [Physica D **120**, pp 273 (1998)](https://www.sciencedirect.com/science/article/pii/S0167278997001188)
 """
-struct Reconstruction{D, T<:Number, τ} <: AbstractReconstruction{D, T, τ}
+struct Reconstruction{D, T<:Number, TAU}# <: AbstractReconstruction{D, T, τ}
     data::Vector{SVector{D,T}}
-    delay::τ
+    τ::TAU
 end
 
-function Reconstruction(s::AbstractVector{T}, D, τ::DT) where {T, DT}
-    if DT <: AbstractVector{Int}
-        length(τ) != D && throw(ArgumentError(
-        "The delay vector must have `length(τ) == D`."
-        ))
-    elseif DT != Int
-        throw(ArgumentError(
-        "Only Int or AbstractVector{Int} types are allowed for the delay."
-        ))
-    end
-    Reconstruction{D, T, DT}(reconstruct(s, Val{D}(), τ), τ)
+Base.summary(d::Reconstruction{D, T}) where {D, T} =
+"(D=$(D), τ=$(d.τ)) - delay coordinates Reconstruction"
+
+struct Reconstructor{D, TAU}
+    τ::TAU
 end
 
-function reconstruct_impl(::Val{D}) where D
-    gens = [:(s[i + $k*τ]) for k=0:D-1]
-
+@generated function (r::Reconstructor{D, Int})(s::AbstractArray{T}, i) where {D, T}
+    gens = [:(Base.unsafe_getindex(s, i + $k*r.τ)) for k=0:D-1]
     quote
-        L = length(s) - ($(D-1))*τ;
-        T = eltype(s)
-        data = Vector{SVector{$D, T}}(L)
-        for i in 1:L
-            data[i] = SVector{$D,T}($(gens...))
-        end
-        V = typeof(s)
-        T = eltype(s)
-        data
+        @inbounds return SVector{$D,T}($(gens...))
     end
 end
-function reconstruct_impl_tvec(::Val{D}) where D
-    gens = [:(s[i + τ[$k]]) for k=1:D]
-
+@generated function (r::Reconstructor{D, Vector{<:Integer}})(s::AbstractArray{T}, i) where {D, T}
+    gens = [:(Base.unsafe_getindex(s, i + r.τ[$k])) for k=1:D]
     quote
-        L = length(s) - ($(D-1))*maximum(τ);
-        T = eltype(s)
-        data = Vector{SVector{$D, T}}(L)
-        for i in 1:L
-            data[i] = SVector{$D,T}($(gens...))
-        end
-        V = typeof(s)
-        T = eltype(s)
-        data
+        SVector{$D,T}($(gens...))
     end
 end
-@generated function reconstruct(s::AbstractVector{T}, ::Val{D}, τ::Int) where {D, T}
-    reconstruct_impl(Val{D}())
-end
-@generated function reconstruct(
-    s::AbstractVector{T}, ::Val{D}, τ::AbstractArray{Int}) where {D, T}
-    reconstruct_impl_tvec(Val{D}())
+
+reconstructed_length(s, D, τ::Integer) = length(s) - ((D-1))*τ;
+reconstructed_length(s, D, τ::AbstractVector{<:Integer}) = length(s) - ((D-1))*maximum(τ);
+
+@inline function reconstruct(s::AbstractVector{T}, D::Int, τ::DT) where {T, DT}
+    L = reconstructed_length(s, D, τ)
+    r = Reconstructor{D,DT}(τ)
+    data = Vector{SVector{D, T}}(undef, L)
+    @inbounds for i in 1:L
+        data[i] = r(s, i)
+    end
+    return Reconstruction{D, T, DT}(data, τ)
 end
 
 
-# Pretty print:
-Base.summary(d::Reconstruction{D, T, τ}) where {D, T, τ} =
-"(D=$(D), τ=$(d.delay)) - delay coordinates Reconstruction"
+
+
+
 #####################################################################################
 #                              MultiDimensional R                                   #
 #####################################################################################
