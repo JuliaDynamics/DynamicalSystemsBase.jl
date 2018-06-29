@@ -101,7 +101,7 @@ end
 reconstructed_length(s, D, τ::Integer) = length(s) - ((D-1))*τ;
 reconstructed_length(s, D, τ::AbstractVector{<:Integer}) = length(s) - ((D-1))*maximum(τ);
 
-@inline function reconstruct(s::AbstractVector{T}, D::Int, τ::DT) where {T, DT}
+@inline function delaycoordinates(s::AbstractVector{T}, D::Int, τ::DT) where {T, DT}
     L = reconstructed_length(s, D, τ)
     r = Reconstructor{D,DT}(τ)
     data = Vector{SVector{D, T}}(undef, L)
