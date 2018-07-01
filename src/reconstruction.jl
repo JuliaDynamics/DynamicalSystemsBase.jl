@@ -25,13 +25,13 @@ as a [`Dataset`](@ref).
 Notice that the dimension of the reconstructed space is `D+1`!
 
 ## Description
-If `τ` is an integer, then the ``n``th row of the reconstruction
+If `τ` is an integer, then the ``n``-th row of the reconstruction
 is
 ```math
 (s(n), s(n+\\tau), s(n+2\\tau), \\dots, s(n+(D-1)\\tau))
 ```
 If instead `τ` is a vector of integers, so that `length(τ) == D`,
-then the ``n``th row is
+then the ``n``-th row is
 ```math
 (s(n), s(n+\\tau[1]), s(n+\\tau[2]), \\dots, s(n+\\tau[D]))
 ```

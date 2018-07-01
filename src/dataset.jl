@@ -1,6 +1,5 @@
-using StaticArrays, LinearAlgebra
+using StaticArrays
 using IterTools: chain
-import Base: ==
 
 export Dataset, AbstractDataset, minima, maxima
 export minmaxima, columns
@@ -9,13 +8,19 @@ abstract type AbstractDataset{D, T} end
 
 # Size:
 @inline Base.length(d::AbstractDataset) = length(d.data)
-@inline Base.size(d::AbstractDataset{D,T}) where {D,T} = (length(d.data), D)
-@inline Base.size(d::AbstractDataset, i::Int) = size(d)[i]
+@inline Base.size(d::AbstractDataset{D,T}, i = 1) where {D,T} = (length(d.data), D)[1]
 @inline Base.IteratorSize(d::AbstractDataset) = Base.HasLength()
+
+# Itereting interface:
+@inline Base.eachindex(D::AbstractDataset) = Base.OneTo(length(D.data))
+@inline Base.iterate(d::AbstractDataset, state = 1) = iterate(d.data, state)
+@inline Base.eltype(::Type{<:AbstractDataset{D, T}}) where {D, T} = SVector{D, T}
 
 # 1D indexing  over the container elements:
 @inline Base.getindex(d::AbstractDataset, i) = d.data[i]
-@inline Base.endof(d::AbstractDataset) = endof(d.data)
+@inline Base.lastindex(d::AbstractDataset) = length(d)
+@inline Base.firstindex(d::AbstractDataset) = 1
+
 # 2D indexing exactly like if the dataset was a matrix
 # with each column a dynamic variable
 @inline Base.getindex(d::AbstractDataset, i::Int, j::Int) = d.data[i][j]
@@ -31,37 +36,27 @@ Dataset([d[k] for k in i])
 @inline Base.getindex(d::AbstractDataset, i::Int, j::AbstractRange) =
 [d.data[i][k] for k in j]
 
+# this function could be done generated
 function Base.getindex(d::AbstractDataset{D,T}, i::AbstractVector{Int},
     j::AbstractVector{Int}) where {D,T}
     I = length(i)
     J = length(j)
-    ret = zeros(T, J,I)
+    ret = zeros(T, J, I)
     for k=1:I
         for l=1:J
             ret[l,k] = d[i[k],j[l]]
         end
     end
-    return reinterpret(Dataset, ret)
+    return Dataset{J, T}(ret')
 end
 
-# This function should be re-enabled in Julia 0.7
-# function mygetindex(d::AbstractDataset{D,T}, I::AbstractVector{Int},
-#     J::AbstractVector{Int}) where {D,T}
-#
-#     L = length(J)
-#     sind::SVector{L, Int} = SVector{L, Int}(J)
-#
-#     return Base.getindex(d, I, sind)
-# end
-function Base.getindex(d::AbstractDataset{D, T}, I::AbstractVector{Int},
-    sind::SVector{L, Int}) where {D, T, L}
-    ret::Vector{SVector{L, T}} = Vector{SVector{L, T}}(length(I))
-    i = 1
-    for k ∈ I
-        ret[i] = d[k][sind]
-        i += 1
-    end
-    return Dataset{L, T}(ret)
+function mygetindex(d::AbstractDataset{D,T}, I::AbstractVector{Int},
+    J::AbstractVector{Int}) where {D,T}
+
+    L = length(J)
+    sind::SVector{L, Int} = SVector{L, Int}(J)
+
+    return Base.getindex(d, I, sind)
 end
 
 function Base.getindex(d::AbstractDataset{D,T},
@@ -79,17 +74,12 @@ function columns end
     quote tuple($(gens...)) end
 end
 
-# Itereting interface:
-@inline Base.eachindex(D::AbstractDataset) = Base.OneTo(length(D.data))
-@inline Base.start(d::AbstractDataset) = 1
-@inline Base.next(d::AbstractDataset, state) = (d[state], state + 1)
-@inline Base.done(d::AbstractDataset, state) = state ≥ length(d.data) + 1
-
 # Other commonly used functions:
 Base.append!(d1::AbstractDataset, d2::AbstractDataset) = append!(d1.data, d2.data)
 Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
 @inline dimension(::AbstractDataset{D,T}) where {D,T} = D
 @inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T
+import Base: ==
 ==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
 
 """
@@ -116,11 +106,8 @@ and `v1, v2` be `<: AbstractVector{Int}` (`v1, v2` could also be ranges).
 * `data[i, j]` value of the `j`th variable, at the `i`th timepoint
 ```
 
-Use `Matrix(dataset)` or `reinterpret(Matrix, dataset)` and
-`Dataset(matrix)` or `reinterpret(Dataset, matrix)` to convert. The `reinterpret`
-methods are cheaper but assume that each variable/timeseries is a *row* and not
-column of the `matrix`.
-
+Use `Matrix(dataset)` or `Dataset(matrix)` to convert. It is assumed
+that each *column* of the `matrix` is one dynamic variable.
 If you have various timeseries vectors `x, y, z, ...` pass them like
 `Dataset(x, y, z, ...)`. You can use `columns(dataset)` to obtain the reverse,
 i.e. all columns of the dataset in a tuple.
@@ -137,7 +124,7 @@ Dataset{D, T}() where {D,T} = Dataset(SVector{D,T}[])
 function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
     D = length(v[1])
     L = length(v)
-    data = Vector{SVector{D, T}}(L)
+    data = Vector{SVector{D, T}}(undef, L)
     for i in 1:length(v)
         D != length(v[i]) && throw(ArgumentError(
         "All data-points in a Dataset must have same size"
@@ -152,9 +139,9 @@ end
 
     quote
         L = length(vecs[1])
-        data = Vector{SVector{$D, T}}(L)
+        data = Vector{SVector{$D, T}}(undef, L)
         for i in 1:L
-            data[i] = SVector{$D, T}($(gens...))
+            @inbounds data[i] = SVector{$D, T}($(gens...))
         end
         data
     end
@@ -168,9 +155,8 @@ end
 #####################################################################################
 #                                Dataset <-> Matrix                                 #
 #####################################################################################
-#### From dataset to matrix ####
-function Base.convert(::Type{Matrix{S}}, d::AbstractDataset{D,T}) where {S, D, T}
-    mat = Matrix{S}(length(d), D)
+function Base.Matrix{S}(d::AbstractDataset{D,T}) where {S, D, T}
+    mat = Matrix{S}(undef, length(d), D)
     for j in 1:D
         for i in 1:length(d)
             @inbounds mat[i,j] = d.data[i][j]
@@ -178,29 +164,11 @@ function Base.convert(::Type{Matrix{S}}, d::AbstractDataset{D,T}) where {S, D, T
     end
     mat
 end
-Base.convert(::Type{Matrix}, d::AbstractDataset{D,T}) where {D, T} =
-convert(Matrix{T}, d)
+Base.Matrix(d::AbstractDataset{D,T}) where {D, T} = Matrix{T}(d)
 
-function Base.reinterpret(::Type{M}, d::AbstractDataset{D,T}) where {M<:Matrix, D, T}
-    L = length(d)
-    reinterpret(T, d.data, (D,L))
-end
-
-#### From matrix to dataset ####
-function Base.convert(::Type{Dataset}, mat::AbstractMatrix)
-    m = transpose(mat)
-    reinterpret(Dataset, m)
-end
-
-function Base.reinterpret(::Type{Dataset}, mat::Array{T,2}) where {T<:Real}
-    s = size(mat)
-    D = s[1]; N = s[2]
-    Dataset(reinterpret(SVector{D, T}, mat, (N,)))
-end
-
-function Base.convert(::Type{Dataset}, y::Vector{T}) where {T}
-    data = reinterpret(SVector{1,T}, y, (length(y),))
-    return Dataset(data)
+function Dataset(mat::AbstractMatrix{T}) where {T}
+    N, D = size(mat)
+    Dataset(reshape(reinterpret(SVector{D,T}, vec(transpose(mat))), (N,))
 end
 
 #####################################################################################
@@ -296,6 +264,7 @@ end
 #####################################################################################
 #                                     SVD                                           #
 #####################################################################################
+using LinearAlgebra
 # SVD of Base seems to be much faster when the "long" dimension of the matrix
 # is the first one, probably due to Julia's column major structure.
 # This does not depend on using `svd` or `svdfact`, both give same timings.
