@@ -9,92 +9,107 @@
 
 
 using StaticArrays
-export Reconstruction, MDReconstruction
+export reconstruct, DelayEmbedding, AbstractEmbedding
 
 #####################################################################################
 #                            Reconstruction Object                                  #
 #####################################################################################
-abstract type AbstractReconstruction{D, T, τ} <: AbstractDataset{D, T} end
+"""
+    AbstractEmbedding
+Super-type of embedding methods. Use `subtypes(AbstractEmbedding)` for available
+methods.
+"""
+abstract type AbstractEmbedding end
 
 """
-    reconstruct(s::AbstractVector, D, τ)
-Reconstruct timeseries `s` using delay coordinates embedding with `D`
-temporal neighbors and delay `τ` (integer or vector). Return the result
-as a [`Dataset`](@ref).
+    DelayEmbedding(D, τ)
+Return a delay coordiantes embedding method to be used with [`reconstruct`](@ref),
+having `D` temporal neighbors and delay `τ` (integer or vector).
+Notice that the dimension of the reconstructed space will be `D+1`!
 
-Notice that the dimension of the reconstructed space is `D+1`!
+This embedding can be used to reconstructed one, or multiple timeseries.
 
 ## Description
-If `τ` is an integer, then the ``n``-th row of the reconstruction
-is
+### Single Timeseries
+If `τ` is an integer, then the ``n``-th entry of the embedded space is
 ```math
-(s(n), s(n+\\tau), s(n+2\\tau), \\dots, s(n+(D-1)\\tau))
+(s(n), s(n+\\tau), s(n+2\\tau), \\dots, s(n+D\\tau))
 ```
 If instead `τ` is a vector of integers, so that `length(τ) == D`,
-then the ``n``-th row is
+then the ``n``-th entry is
 ```math
 (s(n), s(n+\\tau[1]), s(n+\\tau[2]), \\dots, s(n+\\tau[D]))
 ```
+
+The case of different delay times allows reconstructing systems with many time scales,
+see [3].
+
+## References
+
+[3] : K. Judd & A. Mees, [Physica D **120**, pp 273 (1998)](https://www.sciencedirect.com/science/article/pii/S0167278997001188)
+"""
+struct DelayEmbedding{D}
+    delays::SVector{D, Int}
+end
+
+function DelayEmbedding(D, τ)
+    if typeof(τ) <: Integer
+        idxs = [k*τ for k in 1:D]
+        return DelayEmbedding{D}(SVector{D, Int}(idxs...))
+    elseif typeof(τ) <: AbstractArray{<:Integer}
+        D != length(τ) && throw(ArgumentError(
+        "Delay time vector length must equal the number of spatial neighbors."
+        ))
+        if !issorted(τ)
+            @warn "Delay times are not sorted. Sorting now."
+            τ = sort(τ)
+        end
+        return DelayEmbedding{D}(SVector{D, Int}(τ...))
+    end
+end
+
+@generated function (r::DelayEmbedding{D})(s::AbstractArray{T}, i) where {D, T}
+    gens = [:(s[i + r.delays[$k]]) for k=1:D]
+    quote
+        @inbounds return SVector{$D,T}($(gens...))
+    end
+end
+
+"""
+    reconstruct(s, de::AbstractEmbedding)
+Reconstruct `s` using the embedding `de` (any subtype of `AbstractEmbedding`,
+like e.g. [`DelayEmbedding`](@ref)).
+Return the result as a [`Dataset`](@ref). See the documentations of the individual
+embedding methods for what kind of data can be reconstructed.
 
 The reconstructed dataset can have same
 invariant quantities (like e.g. lyapunov exponents) with the original system
 that the timeseries were recorded from, for proper `D` and `τ` [1, 2].
 
-The case of different delay times allows reconstructing systems with many time scales,
-see [3].
-
-
 ## References
-
 [1] : F. Takens, *Detecting Strange Attractors in Turbulence — Dynamical
 Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 
 [2] : T. Sauer *et al.*, J. Stat. Phys. **65**, pp 579 (1991)
-
-[3] : K. Judd & A. Mees, [Physica D **120**, pp 273 (1998)](https://www.sciencedirect.com/science/article/pii/S0167278997001188)
 """
-@inline function reconstruct(s::AbstractVector{T}, D::Int, τ::DT) where {T, DT}
-
-    if DT !<: Integer
-        D != length(τ) && throw(ArgumentError(
-        "Delay time vector length must equal the number of spatial neighbors."
-        ))
-    end
-
-    L = reconstructed_length(s, D, τ)
-    r = DelayVector{D, DT}(τ)
+@inline function reconstruct(s::AbstractVector{T}, de::DelayEmbedding{D}) where {T, D}
+    L = length(s) - D*de.delays[end]
     data = Vector{SVector{D+1, T}}(undef, L)
     @inbounds for i in 1:L
-        data[i] = r(s, i)
+        data[i] = de(s, i)
     end
     return Dataset{D+1, T}(data)
 end
 
-struct DelayVector{D, TAU}
-    τ::TAU
-end
-
-@generated function (r::DelayVector{D, Int})(s::AbstractArray{T}, i) where {D, T}
-    gens = [:(s[i + $k*r.τ]) for k=0:D]
-    quote
-        @inbounds return SVector{$D,T}($(gens...))
-    end
-end
-@generated function (r::DelayVector{D, Vector{<:Integer}})(s::AbstractArray{T}, i) where {D, T}
-    gens = [:(s[i + r.τ[$k]]) for k=1:D]
-    quote
-        @inline return SVector{$D,T}(s[i], $(gens...))
-    end
-end
-
-reconstructed_length(s, D, τ::Integer) = length(s) - ((D-1))*τ;
-reconstructed_length(s, D, τ::AbstractVector{<:Integer}) = length(s) - ((D-1))*maximum(τ);
-
-
-
 #####################################################################################
 #                              MultiDimensional R                                   #
 #####################################################################################
+# TODO:
+struct MTDelayEmbedding <: AbstractEmbedding
+    delays::Matrix{Int}
+end
+
+
 struct MDReconstruction{DxB, D, B, T<:Number, τ} <: AbstractReconstruction{DxB, T, τ}
     data::Vector{SVector{DxB,T}}
     delay::τ
