@@ -280,39 +280,3 @@ function svd(d::AbstractDataset)
     F = svdfact(Matrix(d))
     return F[:U], F[:S], F[:Vt]
 end
-#####################################################################################
-#                                    Dataset IO                                     #
-#####################################################################################
-"""
-    read_dataset(file, ::Type{<:Dataset}, delim::Char = '\t'; skipstart = 0)
-Read a `delim`-delimited text file directly into a dataset of dimension `D`
-with numbers of type `T`.
-
-Optionally skip the first `skipstart` rows of the file (that may e.g.
-contain headers).
-
-Call like `read_dataset("file.txt", Dataset{3, Float64})`.
-"""
-function read_dataset(filename, ::Type{Dataset{D, T}}, delim::Char = '\t';
-    skipstart = 0) where {D, T}
-
-    V = SVector{D, T}
-    data = SVector{D, T}[]
-    open(filename) do io
-        for (i, ss) in enumerate(eachline(io))
-            i ≤ skipstart && continue
-            s = split(ss, delim)
-            push!(data, V(ntuple(k -> parse(T, s[k]), Val(D))))
-        end
-    end
-    return Dataset(data)
-end
-
-"""
-    write_dataset(file, dataset::AbstractDataset, delim::Char = '\t'; opts...)
-Write a `dataset` in a `delim`-delimited text file.
-
-`opts` are keyword arguments passed into `writedlm`.
-"""
-write_dataset(f, dataset::AbstractDataset, delim::Char = '\t'; opts...) =
-writedlm(f, dataset.data, delim; opts...)

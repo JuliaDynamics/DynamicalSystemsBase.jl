@@ -1,8 +1,6 @@
 cd()
-println("\nTesting Dataset (file at $(pwd()))...")
 using DynamicalSystemsBase
 using Test, StaticArrays
-using DynamicalSystemsBase: read_dataset, write_dataset
 
 @testset "Dataset" begin
   ds = Systems.towel()
@@ -37,41 +35,9 @@ using DynamicalSystemsBase: read_dataset, write_dataset
   @testset "Conversions" begin
     m = Matrix(data)
     @test Dataset(m) == data
-    @test reinterpret(Dataset, reinterpret(Matrix, data)) == data
-    @test transpose(m) == reinterpret(Matrix, data)
 
     m = rand(1000, 4)
-    @test reinterpret(Matrix, reinterpret(Dataset, m)) == m
-    @test Dataset(m) !== Dataset(transpose(m))
-    @test Dataset(m) == reinterpret(Dataset, transpose(m))
+    @test Matrix(Dataset(m)) == m
   end
 
-  @testset "IO" begin
-    @test !isfile("test.txt")
-    write_dataset("test.txt", data)
-    @test isfile("test.txt")
-
-    data3 = read_dataset("test.txt", Dataset{3, Float64})
-    @test dimension(data3) == 3
-    @test data3 == data
-
-    data2 = read_dataset("test.txt", Dataset{2, Float64})
-    @test dimension(data2) == 2
-
-    rm("test.txt")
-
-    write_dataset("test.txt", data, ',')
-    @test isfile("test.txt")
-
-    data3 = read_dataset("test.txt", Dataset{3, Float64}, ',')
-    @test dimension(data3) == 3
-    @test data3 == data
-
-    data2 = read_dataset("test.txt", Dataset{2, Float64}, ',')
-    @test dimension(data2) == 2
-
-    rm("test.txt")
-
-    @test !isfile("test.txt") # make extra sure!
-  end
 end
