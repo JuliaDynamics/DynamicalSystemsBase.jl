@@ -8,7 +8,8 @@ abstract type AbstractDataset{D, T} end
 
 # Size:
 @inline Base.length(d::AbstractDataset) = length(d.data)
-@inline Base.size(d::AbstractDataset{D,T}, i = 1) where {D,T} = (length(d.data), D)[1]
+@inline Base.size(d::AbstractDataset{D,T}) where {D,T} = (length(d.data), D)
+@inline Base.size(d::AbstractDataset, i) = size(d)[i]
 @inline Base.IteratorSize(d::AbstractDataset) = Base.HasLength()
 
 # Itereting interface:
