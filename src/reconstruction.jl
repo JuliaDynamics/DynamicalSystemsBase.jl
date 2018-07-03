@@ -140,7 +140,7 @@ end
 function MTDelayEmbedding(D, τ, B)
     X = (D+1)*B
     if typeof(τ) <: Integer
-        idxs = @SMatrix [k*τ for k in 0:D, j in 1:B]
+        idxs = SMatrix([k*τ for k in 0:D, j in 1:B]...)
         return MTDelayEmbedding{D+1, B, X}(idxs)
     elseif typeof(τ) <: AbstracMatrix{<:Integer}
         D != size(τ)[1] && throw(ArgumentError(
