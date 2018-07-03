@@ -1,4 +1,4 @@
-using StaticArrays
+using StaticArrays, Requires
 using IterTools: chain
 
 export Dataset, AbstractDataset, minima, maxima
@@ -169,7 +169,7 @@ Base.Matrix(d::AbstractDataset{D,T}) where {D, T} = Matrix{T}(d)
 
 function Dataset(mat::AbstractMatrix{T}) where {T}
     N, D = size(mat)
-    Dataset(reshape(reinterpret(SVector{D,T}, vec(transpose(mat))), (N,))
+    Dataset(reshape(reinterpret(SVector{D,T}, vec(transpose(mat)))), (N,))
 end
 
 #####################################################################################
