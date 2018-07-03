@@ -157,7 +157,7 @@ end
     gens = [:(s[i + τ[$k, $d], $d]) for k=1:D for d=1:B]
 
     quote
-        @inbounds return SVector{$D*$B),T}($(gens...))
+        @inbounds return SVector{$D*$B,T}($(gens...))
     end
 end
 
