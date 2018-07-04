@@ -150,7 +150,7 @@ function MTDelayEmbedding(D, τ, B)
     end
 end
 
-@generated function (r::MTDelayEmbedding{D, B, Int})(
+@generated function (r::MTDelayEmbedding{D, B, X})(
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     i) where {D, A, B, T, M, X}
 
@@ -163,7 +163,7 @@ end
 
 function reconstruct(
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
-    D, τ) where {D, A, B, T, M, X}
+    D, τ) where {A, B, T, M}
 
     de = MTDelayEmbedding(D, τ, B)
     L = length(s) - D*maximum(de.delays)
