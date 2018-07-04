@@ -107,7 +107,7 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 """
 @inline function reconstruct(s::AbstractVector{T}, D, τ) where {T}
     de = DelayEmbedding(D, τ)
-    L = length(s) - D*de.delays[end]
+    L = length(s) - de.delays[end]
     data = Vector{SVector{D+1, T}}(undef, L)
     @inbounds for i in 1:L
         data[i] = de(s, i)
@@ -172,5 +172,5 @@ function reconstruct(
     @inbounds for i in 1:L
         data[i] = de(s, i)
     end
-    return Dataset{D+1, T}(data)
+    return Dataset{B*(D+1), T}(data)
 end
