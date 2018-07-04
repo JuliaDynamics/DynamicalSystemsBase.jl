@@ -156,7 +156,7 @@ end
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     i) where {D, A, B, T, M, X}
 
-    gens = [:(s[i + $(τ[k, d]), $d]) for k=1:D for d=1:B]
+    gens = [:(s[i + r.delays[$k, $d], $d]) for k=1:D for d=1:B]
 
     quote
         @inbounds return SVector{$D*$B,T}($(gens...))
