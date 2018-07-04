@@ -140,13 +140,15 @@ end
 function MTDelayEmbedding(D, τ, B)
     X = (D+1)*B
     if typeof(τ) <: Integer
-        idxs = SMatrix([k*τ for k in 0:D, j in 1:B]...)
+        idxs = SMatrix{D+1,B,Int,X}([k*τ for k in 0:D, j in 1:B])
         return MTDelayEmbedding{D+1, B, X}(idxs)
-    elseif typeof(τ) <: AbstracMatrix{<:Integer}
+    elseif typeof(τ) <: AbstractMatrix{<:Integer}
         D != size(τ)[1] && throw(ArgumentError(
         "`size(τ)[1]` must equal the number of spatial neighbors."
         ))
         return MTDelayEmbedding{D+1, B, X}(SMatrix{D+1, B, Int, X}(zeros(B)..., τ...))
+    else
+	return ArgumentError("Please make sure τ is a Matrix")
     end
 end
 
