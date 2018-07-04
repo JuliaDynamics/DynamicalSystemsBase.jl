@@ -168,7 +168,7 @@ function reconstruct(
     D, τ) where {A, B, T, M}
 
     de = MTDelayEmbedding(D, τ, B)
-    L = length(s) - D*maximum(de.delays)
+    L = length(s) - maximum(de.delays)
     X = (D+1)*B
     data = Vector{SVector{X, T}}(undef, L)
     @inbounds for i in 1:L
