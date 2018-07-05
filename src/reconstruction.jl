@@ -138,6 +138,7 @@ struct MTDelayEmbedding{D, B, X} <: AbstractEmbedding
     delays::SMatrix{D, B, Int, X} # X = D*B = total dimension number
 end
 
+# notice that here D is the number of temporal neighbors WITHOUT +1 !
 function MTDelayEmbedding(D, τ, B)
     X = (D+1)*B
     if typeof(τ) <: Integer
@@ -149,7 +150,7 @@ function MTDelayEmbedding(D, τ, B)
         ))
         return MTDelayEmbedding{D+1, B, X}(SMatrix{D+1, B, Int, X}(zeros(B)..., τ...))
     else
-	return ArgumentError("Please make sure τ is a Matrix")
+    	throw(ArgumentError("Please make sure τ is a Matrix or an Integer."))
     end
 end
 

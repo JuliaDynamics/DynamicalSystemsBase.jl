@@ -37,20 +37,22 @@ end
 end
 
 @testset "Multidim R" begin
-    @testset "D = $(D), τ = $(τ), base = $(basedim)" for     D in [2,3], τ in [2,3], basedim in [2,3]
+    @testset "D = $(D), B = $(basedim)" for  D in [2,3], basedim in [2,3]
 
+        τ = 3
         si = Matrix(data[:,1:basedim])
-        s = Size(10001,basedim)(si)
-        R = reconstruct(s, D, τ)
+        sizedsi = Size(N,basedim)(si)
+        R = reconstruct(sizedsi, D, τ)
         tr = Dataset(si)
         R2 = reconstruct(tr, D, τ)
+
+        @test R == R2
 
         for dim in 1:basedim
             @test R[(1+τ):end, dim] == R[1:end-τ, dim+basedim]
             @test R2[(1+τ):end, dim] == R[1:end-τ, dim+basedim]
         end
-        @test size(R) == (size(s,1) - τ*(D - 1), D*basedim)
-        @test size(R2) == (size(s,1) - τ*(D - 1), D*basedim)
+        @test size(R) == (size(s,1) - τ*D, (D+1)*basedim)
     end
 end
 
@@ -69,11 +71,6 @@ end
 
     # test error throws:
     taus = [0 0 0; 2 3 0; 4 6 0; 6 8 0]
-    try
-        R1 = reconstruct(data2, 4, taus)
-    catch err
-        @test isa(err, ArgumentError)
-        @test contains(err.msg, "delay matrix")
-    end
+    @test_throws ArgumentError reconstruct(data2, 4, taus)
 
 end
