@@ -1,5 +1,6 @@
-using DynamicalSystemsBase
 using Test, StaticArrays
+
+println("\nTesting Dataset...")
 
 @testset "Dataset" begin
   data = Dataset(rand(1001,3))

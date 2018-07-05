@@ -9,7 +9,7 @@ export reconstruct, DelayEmbedding, AbstractEmbedding
 Super-type of embedding methods. Use `subtypes(AbstractEmbedding)` for available
 methods.
 """
-abstract type AbstractEmbedding end
+abstract type AbstractEmbedding <: Function end
 
 """
     DelayEmbedding(D, τ) -> `embedding`
@@ -148,7 +148,8 @@ function MTDelayEmbedding(D, τ, B)
         D != size(τ)[1] && throw(ArgumentError(
         "`size(τ)[1]` must equal the number of spatial neighbors."
         ))
-        return MTDelayEmbedding{D+1, B, X}(SMatrix{D+1, B, Int, X}(zeros(B)..., τ...))
+        return MTDelayEmbedding{D+1, B, X}(SMatrix{D+1, B, Int, X}(
+        vcat(zeros(Int, B)', τ)))
     else
     	throw(ArgumentError("Please make sure τ is a Matrix or an Integer."))
     end
@@ -170,7 +171,7 @@ function reconstruct(
     D, τ) where {A, B, T, M}
 
     de = MTDelayEmbedding(D, τ, B)
-    L = length(s) - maximum(de.delays)
+    L = size(s)[1] - maximum(de.delays)
     X = (D+1)*B
     data = Vector{SVector{X, T}}(undef, L)
     @inbounds for i in 1:L
