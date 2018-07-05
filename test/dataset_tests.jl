@@ -1,11 +1,8 @@
-cd()
 using DynamicalSystemsBase
 using Test, StaticArrays
 
 @testset "Dataset" begin
-  ds = Systems.towel()
-  data = trajectory(ds, 1000)
-
+  data = Dataset(rand(1001,3))
   @testset "Methods & Indexing" begin
     a = data[:, 1]
     b = data[:, 2]

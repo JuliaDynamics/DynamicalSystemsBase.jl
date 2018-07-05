@@ -1,5 +1,5 @@
 using StaticArrays, Requires, LinearAlgebra
-using IterTools: chain
+using Base.Iterators: flatten
 
 export Dataset, AbstractDataset, minima, maxima
 export minmaxima, columns
@@ -48,7 +48,7 @@ function Base.getindex(d::AbstractDataset{D,T}, i::AbstractVector{Int},
             ret[l,k] = d[i[k],j[l]]
         end
     end
-    return Dataset{J, T}(ret')
+    return Dataset(transpose(ret))
 end
 
 function mygetindex(d::AbstractDataset{D,T}, I::AbstractVector{Int},
@@ -113,7 +113,7 @@ If you have various timeseries vectors `x, y, z, ...` pass them like
 `Dataset(x, y, z, ...)`. You can use `columns(dataset)` to obtain the reverse,
 i.e. all columns of the dataset in a tuple.
 """
-struct Dataset{D, T<:Number} <: AbstractDataset{D,T}
+struct Dataset{D, T} <: AbstractDataset{D,T}
     data::Vector{SVector{D,T}}
 end
 # Empty dataset:
@@ -169,7 +169,7 @@ Base.Matrix(d::AbstractDataset{D,T}) where {D, T} = Matrix{T}(d)
 
 function Dataset(mat::AbstractMatrix{T}) where {T}
     N, D = size(mat)
-    Dataset(reshape(reinterpret(SVector{D,T}, vec(transpose(mat)))), (N,))
+    Dataset{D,T}(reshape(reinterpret(SVector{D,T}, vec(transpose(mat))), (N,)))
 end
 
 #####################################################################################
@@ -184,13 +184,13 @@ function matstring(d::AbstractDataset{D, T}) where {D, T}
     N = length(d)
     if N > 50
         mat = zeros(eltype(d), 50, D)
-        for (i, a) in enumerate(chain(1:25, N-24:N))
+        for (i, a) in enumerate(flatten((1:25, N-24:N)))
             mat[i, :] .= d[a]
         end
     else
         mat = Matrix(d)
     end
-    s = sprint(io -> show(IOContext(io, limit=true), MIME"text/plain"(), mat))
+    s = sprint(io -> show(IOContext(io, :limit=>true), MIME"text/plain"(), mat))
     s = join(split(s, '\n')[2:end], '\n')
     tos = summary(d)*"\n"*s
     return tos
