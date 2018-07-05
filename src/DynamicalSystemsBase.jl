@@ -5,6 +5,7 @@ Definitions of core system and data types used
 in in the ecosystem of DynamicalSystems.jl
 """
 module DynamicalSystemsBase
+using StaticArrays
 
 include("dataset.jl")
 include("reconstruction.jl")

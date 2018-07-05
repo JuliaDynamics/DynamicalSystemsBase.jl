@@ -1,8 +1,24 @@
+# v1.0
+
+## Breaking
+
+* Dropped support of Julia versions < 0.7
+* `Reconstruction` does not exist anymore. Instead, `reconstruct` is used in it's
+  place. The function now also always returns a `Dataset`.
+* In the `reconstruct` function, `D` now stands for the number of temporal neighbors
+  which is **one less** than the dimensionality of the reconstructed space.
+
+
+## New Features
+* `reconstruct` creates internally a subtype of `AbstractEmbedding`. These objects
+  can be used as functors to create the `i`-th reconstructed vector on demand.
+
+
+  
 # v0.10
 
 *some of the following changes are breaking*
 
-## TODO
 * `state` function no longer exists and has been merged into `get_state`.
 * Created specialized tangent integrator for discrete systems, which is about
   20% faster. This is a "breaking" change.
