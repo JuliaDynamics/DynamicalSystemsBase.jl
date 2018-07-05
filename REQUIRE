@@ -9,3 +9,4 @@ IterTools
 NearestNeighbors
 LsqFit 0.3.0
 Distances
+LinearAlgebra

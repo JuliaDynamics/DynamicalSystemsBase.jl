@@ -1,4 +1,4 @@
-using StaticArrays, Requires
+using StaticArrays, Requires, LinearAlgebra
 using IterTools: chain
 
 export Dataset, AbstractDataset, minima, maxima
@@ -277,6 +277,6 @@ using LinearAlgebra
 Perform singular value decomposition on the dataset.
 """
 function svd(d::AbstractDataset)
-    F = svdfact(Matrix(d))
+    F = svd(Matrix(d))
     return F[:U], F[:S], F[:Vt]
 end
