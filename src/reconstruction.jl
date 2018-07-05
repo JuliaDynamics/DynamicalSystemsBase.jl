@@ -1,7 +1,8 @@
+using StaticArrays
 export reconstruct, DelayEmbedding, AbstractEmbedding
 
 #####################################################################################
-#                            Reconstruction Object                                  #
+#                        Delay Embedding Reconstruction                             #
 #####################################################################################
 """
     AbstractEmbedding

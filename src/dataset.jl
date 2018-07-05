@@ -20,6 +20,7 @@ abstract type AbstractDataset{D, T} end
 # 1D indexing  over the container elements:
 @inline Base.getindex(d::AbstractDataset, i) = d.data[i]
 @inline Base.lastindex(d::AbstractDataset) = length(d)
+@inline Base.lastindex(d::AbstractDataset, k) = size(d)[k]
 @inline Base.firstindex(d::AbstractDataset) = 1
 
 # 2D indexing exactly like if the dataset was a matrix
