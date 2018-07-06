@@ -1,7 +1,3 @@
-# Mathematical functions that do some stuff
-# very fast or very conveniently.
-# Also includes helper/conversion functions
-
 #####################################################################################
 #                                Pairwse Distance                                   #
 #####################################################################################
@@ -51,80 +47,6 @@ function min_pairwise_distance(
     return min_pair, min_d
 end
 
-
-#####################################################################################
-#                                      QR                                           #
-#####################################################################################
-function qr_gs(A::SMatrix{D,D,T}) where {D, T<:Real}
-    es = SVector{D,T}[]
-    push!(es, normalize(A[:,1]))
-    for k in 2:D
-        ak = A[:, k]
-        uk = ak - sum(dot(ak, es[i])*es[i] for i in 1:k-1 )
-        push!(es, normalize(uk))
-    end
-    Q::SMatrix = hcat(es...)
-    Rdiag = SVector{D,T}(ntuple(k -> dot(A[:, k],es[k]), Val{D}))
-    return Q, Rdiag
-end
-
-# qr_sq contributed by Max Roßner
-"""
-    qr_sq(m::AbstractMatrix) -> (Q, R)
-Perform QR decomposition on a square matrix `m`.
-
-This method is faster than `Base.qr` for small matrices. For sizes of larger
-than (20, 20) `Base.qr` is faster.
-"""
-function qr_sq(m::AbstractMatrix)    # faster version for square matrices
-	s = size(m, 1)
-	t = zeros(s, s)
-	v = zeros(s)
-	r = copy(m)
-	w = 0.
-
-	for i=1:(s-1)
-		w = 0.
-		for j=i:s
-			v[j] = r[j, i]
-			w += v[j]*v[j]
-		end
-
-		v[i] += (r[1, i] >= 0 ? 1. : -1.)*sqrt(w)
-		w = 0.
-
-		for j=i:s w += v[j]*v[j] end
-		w = 2.0/w
-
-		for j=1:s, k=1:s
-			t[j, k] = k == j ? 1. : 0.
-			if j>=i && k>=i
-			    t[j, k] -= w*v[j]*v[k]
-			end
-		end
-
-		for j=1:s
-			for k=1:s
-				v[k] = r[k, j]
-			end
-
-			for l=1:s
-				w = 0.
-				for h=1:s
-					w += v[h]*t[l, h]
-				end
-				r[l, j] = w
-			end
-		end
-	end
-
-	for j=1:(s-1), k=(j+1):s
-	 	r[k, j] = 0.
-	end
-
-	return (m*inv(r), r)
-end
-
 #####################################################################################
 #                                Conversions                                        #
 #####################################################################################
@@ -155,6 +77,6 @@ Always returns `SMatrix` for stability reasons.
 """
 function orthonormal(D::Int, k::Int)
     k > D && throw(ArgumentError("k must be ≤ D"))
-    q = qr(rand(D, D))[1][:, 1:k]
+    q = qr(rand(D, D)).Q[:, 1:k]
     return SMatrix{D, k, Float64}(q)
 end

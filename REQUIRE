@@ -1,11 +1,7 @@
 julia 0.7-beta
-OrdinaryDiffEq 3.1
+StaticArrays 0.5.0
+Distances
+NearestNeighbors
 DiffEqBase 3.5
 ForwardDiff 0.5
-Requires 0.4.3
-StaticArrays 0.5.0
-StatsBase 0.8.2
-NearestNeighbors
-LsqFit 0.3.0
-Distances
 LinearAlgebra
