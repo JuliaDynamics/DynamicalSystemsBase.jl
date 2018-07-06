@@ -1,4 +1,5 @@
 using StaticArrays, ForwardDiff, DiffEqBase
+using DiffEqBase: DEIntegrator
 import DiffEqBase: init, step!, isinplace, reinit!, u_modified!
 import Base: show
 
@@ -30,7 +31,7 @@ function MinimalDiscreteProblem(eom::F, state,
         IIP || typeof(eom(state, p, 0)) <: Union{SVector, Number} || error(
         "Equations of motion must return an `SVector` for DynamicalSystems.jl")
     end
-    u0 = safe_state_type(Val{IIP}(), state)
+    u0 = safe_state_type(IIP, state)
     S = typeof(u0)
     D = length(u0)
     MinimalDiscreteProblem{IIP, S, D, F, P}(eom, u0, p, t0)
@@ -296,8 +297,8 @@ end
 function tangent_integrator(ds::DDS{IIP, S, D, F, P, JAC, JM}, Q0::AbstractMatrix;
     u0 = ds.prob.u0, t0 = inittime(ds)) where {IIP, S, D, F, P, JAC, JM}
 
-    Q = safe_matrix_type(Val{IIP}(), Q0)
-    s = safe_state_type(Val{IIP}(), u0)
+    Q = safe_matrix_type(IIP, Q0)
+    s = safe_state_type(IIP, u0)
     size(Q)[2] > dimension(ds) && throw(ArgumentError(
     "It is not possible to evolve more tangent vectors than the system's dimension!"
     ))
@@ -315,8 +316,8 @@ function tangent_integrator(ds::DDS{true, S, D, F, P, JAC, JM, true},
 
     R = D + length(Q0)
     k = size(Q0)[2]
-    Q = safe_matrix_type(Val{true}(), Q0)
-    u = safe_state_type(Val{true}(), u0)
+    Q = safe_matrix_type(IIP, Q0)
+    u = safe_state_type(IIP, u0)
     size(Q)[2] > dimension(ds) && throw(ArgumentError(
     "It is not possible to evolve more tangent vectors than the system's dimension!"
     ))
@@ -349,7 +350,7 @@ function trajectory(ds::DDS{IIP, S, D}, t, u = ds.prob.u0;
     tvec = ti:dt:t+ti
     L = length(tvec)
     T = eltype(get_state(ds))
-    data = Vector{SVector{D, T}}(L)
+    data = Vector{SVector{D, T}}(undef, L)
     data[1] = u
     for i in 2:L
         step!(integ, dt)
@@ -363,7 +364,7 @@ function trajectory(ds::DDS{false, S, 1}, t, u = ds.prob.u0; dt::Int = 1) where 
     tvec = ti:dt:t+ti
     L = length(tvec)
     integ = integrator(ds, u)
-    data = Vector{S}(L)
+    data = Vector{S}(undef, L)
     data[1] = u
     for i in 2:L
         step!(integ, dt)

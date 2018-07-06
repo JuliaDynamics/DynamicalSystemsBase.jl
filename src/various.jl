@@ -155,6 +155,6 @@ Always returns `SMatrix` for stability reasons.
 """
 function orthonormal(D::Int, k::Int)
     k > D && throw(ArgumentError("k must be ≤ D"))
-    q = qr(rand(D, D))[1][:, 1:k]
+    q = qr(rand(D, D)).Q[:, 1:k]
     return SMatrix{D, k, Float64}(q)
 end

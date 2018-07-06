@@ -1,5 +1,5 @@
-using OrdinaryDiffEq, ForwardDiff, StaticArrays
-import OrdinaryDiffEq: isinplace, step!
+using DiffEqBase, ForwardDiff, StaticArrays
+import DiffEqBase: isinplace, DEProblem, ODEProblem
 
 export dimension, get_state, DynamicalSystem, jacobian
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
@@ -82,8 +82,7 @@ You can *always* take advantage of the full capabilities of
 the `Solution` struct. Simply define
 ```julia
 using DifferentialEquations
-prob = continuousds.prob
-prob2 = remake(prob1; tspan=(0.0,2.0))
+prob2 = remake(ds.prob; tspan=(0.0,2.0))
 sol = solve(prob2, Tsit5())
 # do stuff with sol...
 ```
@@ -129,9 +128,7 @@ Return the dimension of the `thing`, in the sense of state-space dimensionality.
 """
 dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
 get_state(ds::DS) = ds.prob.u0
-#####################################################################################
-#                                    Auxilary                                       #
-#####################################################################################
+
 """
     set_parameter!(ds::DynamicalSystem, index, value)
     set_parameter!(ds::DynamicalSystem, values)
@@ -143,23 +140,25 @@ set_parameter!(prob, index, value) = (prob.p[index] = value)
 set_parameter!(prob, values) = (prob.p .= values)
 set_parameter!(ds::DS, args...) = set_parameter!(ds.prob, args...)
 
-dimension(prob::DEProblem) = length(prob.u0)
+dimension(prob) = length(prob.u0)
 hascallback(prob::ODEProblem) = prob.callback != nothing
-inittime(prob::DEProblem) = prob.tspan[1]
+inittime(prob) = prob.tspan[1]
 inittime(ds::DS) = inittime(ds.prob)
 
-safe_state_type(::Val{true}, u0) = u0
-safe_state_type(::Val{false}, u0) = SVector{length(u0)}(u0...)
-safe_state_type(::Val{false}, u0::SVector) = u0
-safe_state_type(::Val{false}, u0::Number) = u0
+#####################################################################################
+#                           State types enforcing                                   #
+#####################################################################################
+safe_state_type(iip, u0) = iip ? Vector(u0) : SVector{length(u0)}(u0...)
+safe_state_type(iip, u0::Number) = u0
 
-safe_matrix_type(::Val{true}, Q::Matrix) = Q
-safe_matrix_type(::Val{true}, Q::AbstractMatrix) = Matrix(Q)
-function safe_matrix_type(::Val{false}, Q::AbstractMatrix)
-    A, B = size(Q)
-    SMatrix{A, B}(Q)
+function safe_matrix_type(iip, Q::AbstractMatrix)
+    if iip
+        return Matrix(Q)
+    else
+        A, B = size(Q)
+        return SMatrix{A, B}(Q)
+    end
 end
-save_matrix_type(::Val{false}, Q::SMatrix) = Q
 safe_matrix_type(_, a::Number) = a
 
 #####################################################################################
@@ -187,7 +186,7 @@ end
 #                                    Jacobians                                        #
 #######################################################################################
 function create_jacobian(
-    f::F, ::Val{IIP}, s::S, p::P, t::T, x::Val{D}) where {F, IIP, S, P, T, D}
+    f::F, ::Val{IIP}, s::S, p::P, t::T, ::Val{D}) where {F, IIP, S, P, T, D}
     if IIP
         dum = deepcopy(s)
         cfg = ForwardDiff.JacobianConfig(
@@ -197,7 +196,7 @@ function create_jacobian(
         dum, u, cfg, Val{false}())
         return jac
     else
-        if x == Val{1}()
+        if D == 1
             return jac = (u, p, t) -> ForwardDiff.derivative((x) -> f(x, p, t), u)
         else
             # SVector methods do *not* use the config
