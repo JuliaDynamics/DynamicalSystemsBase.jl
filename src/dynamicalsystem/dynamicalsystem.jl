@@ -148,17 +148,18 @@ inittime(ds::DS) = inittime(ds.prob)
 #####################################################################################
 #                           State types enforcing                                   #
 #####################################################################################
-safe_state_type(iip, u0) = iip ? Vector(u0) : SVector{length(u0)}(u0...)
-safe_state_type(iip, u0::Number) = u0
+safe_state_type(::Val{true}, u0) = u0
+safe_state_type(::Val{false}, u0) = SVector{length(u0)}(u0...)
+safe_state_type(::Val{false}, u0::SVector) = u0
+safe_state_type(::Val{false}, u0::Number) = u0
 
-function safe_matrix_type(iip, Q::AbstractMatrix)
-    if iip
-        return Matrix(Q)
-    else
-        A, B = size(Q)
-        return SMatrix{A, B}(Q)
-    end
+safe_matrix_type(::Val{true}, Q::Matrix) = Q
+safe_matrix_type(::Val{true}, Q::AbstractMatrix) = Matrix(Q)
+function safe_matrix_type(::Val{false}, Q::AbstractMatrix)
+    A, B = size(Q)
+    SMatrix{A, B}(Q)
 end
+save_matrix_type(::Val{false}, Q::SMatrix) = Q
 safe_matrix_type(_, a::Number) = a
 
 #####################################################################################
