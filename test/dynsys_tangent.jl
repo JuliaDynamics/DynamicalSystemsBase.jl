@@ -1,5 +1,7 @@
 using DynamicalSystemsBase
-using Test, StaticArrays
+using StaticArrays, LinearAlgebra
+using Test
+
 using DynamicalSystemsBase: CDS, DDS, DS
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
 using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
@@ -28,7 +30,8 @@ function lyapunov_iip(ds::DS, k)
             step!(tode)
         end
         # println("K = $K")
-        Q, R = qr(get_deviations(tode))
+        QR = qr(get_deviations(tode))
+        Q, R = QR.Q, QR.R
         λ .+= log.(abs.(diag(R)))
 
         set_deviations!(tode, Q)
@@ -46,7 +49,8 @@ function lyapunov_oop(ds::DS, k)
             step!(tode)
         end
         # println("K = $K")
-        Q, R = qr(get_deviations(tode))
+        QR = qr(get_deviations(tode))
+        Q, R = QR.Q, QR.R
         λ .+= log.(abs.(diag(R)))
 
         set_deviations!(tode, Q)

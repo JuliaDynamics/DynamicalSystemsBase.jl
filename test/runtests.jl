@@ -2,8 +2,6 @@ using DynamicalSystemsBase
 
 ti = time()
 
-# Mathematics:
-include("math_tests.jl")
 # Systems:
 include("dynsys_types.jl")
 include("dynsys_tangent.jl")
