@@ -7,14 +7,14 @@
   place. The function now also always returns a `Dataset`.
 * In the `reconstruct` function, `D` now stands for the number of temporal neighbors
   which is **one less** than the dimensionality of the reconstructed space.
-
+* `jacobian` is now not exported. Use `ds.jacobian` instead.
 
 ## New Features
 * `reconstruct` creates internally a subtype of `AbstractEmbedding`. These objects
   can be used as functors to create the `i`-th reconstructed vector on demand.
 
 
-  
+
 # v0.10
 
 *some of the following changes are breaking*

@@ -1,7 +1,7 @@
 using DiffEqBase, ForwardDiff, StaticArrays
 import DiffEqBase: isinplace, DEProblem, ODEProblem
 
-export dimension, get_state, DynamicalSystem, jacobian
+export dimension, get_state, DynamicalSystem
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
 export set_parameter!, step!, inittime
 export trajectory
@@ -25,6 +25,7 @@ Contains a problem defining the system (field `prob`), the jacobian function
 ```julia
 DiscreteDynamicalSystem(eom, state, p [, jacobian [, J0]]; t0::Int = 0)
 ContinuousDynamicalSystem(eom, state, p [, jacobian [, J0]]; t0 = 0.0)
+ContinuousDynamicalSystem(odeprob [, jacobian [, J0]])
 ```
 with `eom` the equations of motion function.
 `p` is a parameter container, which we highly suggest to use a mutable object like
@@ -34,10 +35,11 @@ parameters. With these constructors you also do not need to
 provide some final time, since it is not used by **DynamicalSystems.jl** in any manner.
 
 `t0`, `J0` allow you to choose the initial time and provide
-an initialized Jacobian matrix.
+an initialized Jacobian matrix. Alternatively, you can also construct a continuous
+system by passing an `ODEProblem` from [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/).
+This allows you to use a system that has [Callbacks](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
-Continuous system solvers use [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/)
-and by default are integrated with a 9th order Verner solver `Vern9()` with tolerances
+Continuous system by default are integrated with a 9th order Verner solver `Vern9()` with tolerances
 `abstol = reltol = 1e-9`.
 
 ### Equations of motion
@@ -86,14 +88,13 @@ prob2 = remake(ds.prob; tspan=(0.0,2.0))
 sol = solve(prob2, Tsit5())
 # do stuff with sol...
 ```
-The line `remake...` is necessary because by default the `tspan` of all problems
+The line `remake...` is necessary because most of the time `tspan`
 ends at infinity. See the
 [remake documentation](http://docs.juliadiffeq.org/latest/basics/problem.html)
 for more info.
 
 ## Relevant Functions
-[`trajectory`](@ref), [`jacobian`](@ref), [`dimension`](@ref),
-[`set_parameter!`](@ref).
+[`trajectory`](@ref), [`dimension`](@ref), [`set_parameter!`](@ref).
 """
 abstract type DynamicalSystem{
         IIP,     # is in place , for dispatch purposes and clarity
