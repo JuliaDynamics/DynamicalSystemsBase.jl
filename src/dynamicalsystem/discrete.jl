@@ -241,11 +241,11 @@ function step!(integ::TDI{true})
     integ.f(integ.u, integ.dummy, integ.p, integ.t)
     integ.jacobian(integ.J, integ.u, integ.p, integ.t)
 
-    A_mul_B!(integ.W, integ.J, integ.dummyW)
+    mul!(integ.W, integ.J, integ.dummyW)
     integ.t += 1
     return
 end
-function step!(integ::TDI{true}, N)
+function step!(integ::TDI{true}, N::Real)
     for i in 1:N
         integ.dummy, integ.u = integ.u, integ.dummy
         integ.dummyW, integ.W = integ.W, integ.dummyW
@@ -253,7 +253,7 @@ function step!(integ::TDI{true}, N)
         integ.f(integ.u, integ.dummy, integ.p, integ.t)
         integ.jacobian(integ.J, integ.u, integ.p, integ.t)
 
-        A_mul_B!(integ.W, integ.J, integ.dummyW)
+        mul!(integ.W, integ.J, integ.dummyW)
         integ.t += 1
     end
     return
@@ -266,7 +266,7 @@ function step!(integ::TDI{false})
     integ.t += 1
     return
 end
-function step!(integ::TDI{false}, N)
+function step!(integ::TDI{false}, N::Real)
     for i in 1:N
         integ.u = integ.f(integ.u, integ.p, integ.t)
         J = integ.jacobian(integ.u, integ.p, integ.t)
