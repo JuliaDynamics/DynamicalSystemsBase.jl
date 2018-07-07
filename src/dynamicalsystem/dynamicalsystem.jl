@@ -425,6 +425,8 @@ function set_deviations! end
 Return an integrator object that can be used to evolve many `states` of
 a system in parallel at the *exact same times*, using `step!(integ [, Δt])`.
 
+`states` are expected as vectors of vectors.
+
 ## Keyword Arguments
 * `u0, t0` : Optional different initial state and time.
 * `diff_eq_kwargs` : see [`trajectory`](@ref).
