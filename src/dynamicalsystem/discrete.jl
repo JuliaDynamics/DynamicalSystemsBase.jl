@@ -164,18 +164,15 @@ set_deviations!(integ::MDI{Alg, S}, Q) where {Alg, S<:SMatrix} =
 #####################################################################################
 # IIP version
 function step!(integ::MDI{true})
-    # try vector swap
+    # vector swap
     integ.dummy, integ.u = integ.u, integ.dummy
-    # integ.dummy .= integ.u
     integ.f(integ.u, integ.dummy, integ.p, integ.t)
     integ.t += 1
     return
 end
-function step!(integ::MDI{true}, N::Int)
+function step!(integ::MDI{true}, N)
     for i in 1:N
-        # try vector swap instead of # integ.dummy .= integ.u
         integ.dummy, integ.u = integ.u, integ.dummy
-        # integ.dummy .= integ.u
         integ.f(integ.u, integ.dummy, integ.p, integ.t)
         integ.t += 1
     end
@@ -185,7 +182,7 @@ end
 # OOP version
 step!(integ::MDI{false}) =
 (integ.u = integ.f(integ.u, integ.p, integ.t); integ.t +=1; nothing)
-function step!(integ::MDI{false}, N::Int)
+function step!(integ::MDI{false}, N)
     for i in 1:N
         integ.u = integ.f(integ.u, integ.p, integ.t)
         integ.t += 1
@@ -238,7 +235,6 @@ end
 #                                 Tangent Stepping                                  #
 #####################################################################################
 function step!(integ::TDI{true})
-    # try vector swap
     integ.dummy, integ.u = integ.u, integ.dummy
     integ.dummyW, integ.W = integ.W, integ.dummyW
 
@@ -249,9 +245,8 @@ function step!(integ::TDI{true})
     integ.t += 1
     return
 end
-function step!(integ::TDI{true}, N::Int)
+function step!(integ::TDI{true}, N)
     for i in 1:N
-        # try vector swap
         integ.dummy, integ.u = integ.u, integ.dummy
         integ.dummyW, integ.W = integ.W, integ.dummyW
 
@@ -271,7 +266,7 @@ function step!(integ::TDI{false})
     integ.t += 1
     return
 end
-function step!(integ::TDI{false}, N::Int)
+function step!(integ::TDI{false}, N)
     for i in 1:N
         integ.u = integ.f(integ.u, integ.p, integ.t)
         J = integ.jacobian(integ.u, integ.p, integ.t)
