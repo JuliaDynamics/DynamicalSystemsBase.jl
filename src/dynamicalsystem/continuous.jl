@@ -87,6 +87,15 @@ function ContinuousDynamicalSystem(
     return ContinuousDynamicalSystem(eom, s, p, j, J0; t0 = t0, iad = true)
 end
 
+function ContinuousDynamicalSystem(prob::ODEProblem)
+    @assert typeof(u0) <: AbstractVector
+    eom = prob.f; s= prob.u0; D = length(s); t0 = prob.tspan[1]; p = prob.p;
+    IIP = isinplace(eom, 4)
+    j = create_jacobian(eom, Val{IIP}(), s, p, t0, Val{D}())
+    J0 = get_J(j, s, p, t0)
+    return ContinuousDynamicalSystem(prob, j, J0, true)
+end
+
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
