@@ -5,9 +5,9 @@ export ContinuousDynamicalSystem, CDS
 #####################################################################################
 #                                    Auxilary                                       #
 #####################################################################################
-const DEFAULT_DIFFEQ_KWARGS = Dict(
-    :abstol => 1e-9, :reltol => 1e-9, :maxiters => typemax(Int))
 const DEFAULT_SOLVER = Vern9()
+const DEFAULT_DIFFEQ_KWARGS = (alg = DEFAULT_SOLVER,
+abstol = 1e-9, reltol = 1e-9, maxiters = typemax(Int))
 const CDS_TSPAN = (0.0, Inf)
 
 function extract_solver(diff_eq_kwargs)

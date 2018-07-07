@@ -15,8 +15,7 @@ export set_state!, get_state, get_deviations, set_deviations!
     DynamicalSystem
 
 The central structure of **DynamicalSystems.jl**. All functions of the suite that
-handle systems "analytically" (in the sense that they can use known equations of
-motion) expect an instance of this type.
+can use known equations of motion expect an instance of this type.
 
 Contains a problem defining the system (field `prob`), the jacobian function
 (field `jacobian`) and the initialized Jacobian matrix (field `J`).
@@ -445,14 +444,12 @@ For discrete systems both `T` and `dt` must be integers.
 * `dt` :  Time step of value output during the solving
   of the continuous system. For discrete systems it must be an integer. Defaults
   to `0.01` for continuous and `1` for discrete.
-* `diff_eq_kwargs` : (only for continuous) A dictionary `Dict{Symbol, ANY}`
-  of keyword arguments
+* `diff_eq_kwargs` : (only for continuous) A `NamedTuple` of keyword arguments
   passed into the solvers of the [DifferentialEquations.jl](http://docs.juliadiffeq.org/latest/basics/common_solver_opts.html)
-  package, for example `Dict(:abstol => 1e-9)`. If you want to specify a solver,
-  do so by using the symbol `:solver`, e.g.:
-  `Dict(:solver => DP5(), :maxiters => 1e9)`. This requires you to have been first
+  package, for example `(abstol = 1e-9)`. If you want to specify a solver,
+  do so by using the name `alg`, e.g.:
+  `(alg = Tsit5(), maxiters = 1000)`. This requires you to have been first
   `using OrdinaryDiffEq` to access the solvers. Defaults to
-  `Dict(:solver => Vern9(), :abstol => 1e-9, :reltol => 1e-9)`, i.e. a 9th order
-  Verner algorithm.
+  `(alg = Vern9(), abstol = 1e-9, reltol = 1e-9, maxiters = typemax(Int))`.
 """
 function trajectory end
