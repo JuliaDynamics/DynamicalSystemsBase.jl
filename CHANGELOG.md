@@ -13,7 +13,8 @@
 * `reconstruct` creates internally a subtype of `AbstractEmbedding`. These objects
   can be used as functors to create the `i`-th reconstructed vector on demand.
 
-
+* `tangent_` and `parallel_integrator` can now accept callbacks for continuous
+  systems.
 
 # v0.10
 

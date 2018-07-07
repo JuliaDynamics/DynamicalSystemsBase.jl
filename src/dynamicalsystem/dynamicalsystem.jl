@@ -37,9 +37,13 @@ provide some final time, since it is not used by **DynamicalSystems.jl** in any 
 an initialized Jacobian matrix. Alternatively, you can also construct a continuous
 system by passing an `ODEProblem` from [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/).
 This allows you to use a system that has [Callbacks](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
-
 Continuous system by default are integrated with a 9th order Verner solver `Vern9()` with tolerances
 `abstol = reltol = 1e-9`.
+
+** WARNING ** : Callbacks from the `ODEProblem` *do not* propagate in the functions
+of **DynamicalSystems.jl**. If you want to use callbacks you have to
+invoke [`tangent_integrator`](@ref) or [`parallel_integrator`](@ref) with
+extra callbacks, as shown in the [Advanced Documentation](https://juliadynamics.github.io/DynamicalSystems.jl/latest/advanced/).
 
 ### Equations of motion
 The are two "versions" for `DynamicalSystem`, depending on whether the
@@ -367,20 +371,22 @@ For parallel integrator, you can choose which state to set (using `i`).
 set_state!(integ, u) = (integ.u = u)
 
 """
-    tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; u0, t0, diff_eq_kwargs)
+    tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; kwargs...)
 Return an integrator object that evolves in parallel both the system as well
 as deviation vectors living on the tangent space.
 
 `Q0` is a *matrix* whose columns are initial values for deviation vectors. If
 instead of a matrix `Q0` an integer `k` is given, then `k` random orthonormal
 vectors are choosen as initial conditions.
-You can also give as a keyword argument
-a different initial state or time `u0, t0`.
 
-The state of this integrator is a matrix with the first column the system state
-and all other columns being deviation vectors.
+## Keyword Arguments
+* `u0, t0` : Optional different initial state and time.
+* `diff_eq_kwargs` : see [`trajectory`](@ref).
+* `callback` : A callback (valid only for continuous systems) to be used
+  with [event handling of DifferentialEquations.jl](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
-See [`trajectory`](@ref) for `diff_eq_kwargs`.
+It is *heavily* advised to use the functions [`get_state`](@ref), [`get_deviations`](@ref),
+[`set_state!`](@ref), [`set_deviations!`](@ref) to manipulate the integrator.
 
 ## Description
 
@@ -419,13 +425,15 @@ function set_deviations! end
 Return an integrator object that can be used to evolve many `states` of
 a system in parallel at the *exact same times*, using `step!(integ [, Δt])`.
 
-The states of this integrator are a vector of vectors, each one being an actual
-state of the dynamical system.
-Only for the case of in-place continuous systems, the integrator propagates a matrix
-with each column being a state, because at the moment DifferentialEquations.jl does
-not support `Vector[Vector]` as state.
+## Keyword Arguments
+* `u0, t0` : Optional different initial state and time.
+* `diff_eq_kwargs` : see [`trajectory`](@ref).
+* `callback` : A callback (valid only for continuous systems) to be used
+  with [event handling of DifferentialEquations.jl](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
-See [`trajectory`](@ref) for `diff_eq_kwargs`.
+It is *heavily* advised to use the functions [`get_state`](@ref) and
+[`set_state!`](@ref) to manipulate the integrator. Provide `i` as a second
+argument to change the `i`-th state.
 """
 function parallel_integrator end
 

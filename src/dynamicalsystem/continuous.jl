@@ -126,7 +126,7 @@ function tangent_integrator(ds::CDS, k::Int; kwargs...)
 end
 function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
     u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    t0 = inittime(ds)) where {IIP}
+    t0 = inittime(ds), callback = nothing) where {IIP}
 
     Q = safe_matrix_type(Val{IIP}(), Q0)
     u = safe_state_type(Val{IIP}(), u0)
@@ -140,14 +140,14 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
     tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (t0, Inf), ds.prob.p)
 
     solver, newkw = extract_solver(diff_eq_kwargs)
-    return init(tanprob, solver; newkw..., save_everystep = false)
+    return init(tanprob, solver; newkw..., save_everystep = false, callback = callback)
 end
 
 # Auto-diffed in-place version
 function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     Q0::AbstractMatrix;
     u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    t0 = inittime(ds)) where {S, D, F, P, JAC, JM}
+    t0 = inittime(ds), callback = nothing) where {S, D, F, P, JAC, JM}
 
     Q = safe_matrix_type(Val{true}(), Q0)
     u = safe_state_type(Val{true}(), u0)
@@ -162,7 +162,7 @@ function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     tanprob = ODEProblem{true}(tangentf, hcat(u, Q), (t0, Inf), ds.prob.p)
 
     solver, newkw = extract_solver(diff_eq_kwargs)
-    return init(tanprob, solver; newkw..., save_everystep = false)
+    return init(tanprob, solver; newkw..., save_everystep = false, callback = callback)
 end
 
 
@@ -188,14 +188,15 @@ KenCarp4, Kvaerno5, KenCarp5, Rosenbrock23,
 Rosenbrock32, ROS3P, Rodas3, RosShamp4, Veldd4, Velds4, GRK4T,
 GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P]
 
-function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS)
+function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
+    callback = nothing)
     peom, st = create_parallel(ds, states)
     pprob = ODEProblem(peom, st, (inittime(ds), Inf), ds.prob.p)
     solver, newkw = extract_solver(diff_eq_kwargs)
     # if typeof(solver) ∈ STIFFSOLVERS
     #     error("Stiff solvers can't support a parallel integrator.")
     # end
-    return init(pprob, solver; newkw..., save_everystep = false)
+    return init(pprob, solver; newkw..., save_everystep = false, callback = callback)
 end
 
 #####################################################################################
