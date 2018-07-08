@@ -1,5 +1,5 @@
 using StaticArrays
-export reconstruct, DelayEmbedding, AbstractEmbedding
+export reconstruct, DelayEmbedding, AbstractEmbedding, MTDelayEmbedding
 
 #####################################################################################
 #                        Delay Embedding Reconstruction                             #

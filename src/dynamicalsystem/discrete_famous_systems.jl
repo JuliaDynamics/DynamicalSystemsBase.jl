@@ -40,7 +40,7 @@ function eom_towel_iip(dx, x, p, n)
         x1, x2, x3 = x[1], x[2], x[3]
         dx[1] = 3.8*x1*(1-x1) - 0.05*(x2+0.35)*(1-2*x3)
         dx[2] = 0.1*( (x2+0.35)*(1-2*x3) - 1 )*(1 - 1.9*x1)
-        dx[3] = 3.78*x3*(1-x3)+0.2*x2 )
+        dx[3] = 3.78*x3*(1-x3)+0.2*x2
     end
 end
 function jacob_towel_iip(J, x, p, n)
