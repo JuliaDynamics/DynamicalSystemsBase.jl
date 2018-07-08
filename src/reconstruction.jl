@@ -1,4 +1,5 @@
 using StaticArrays
+using Base: @_inline_meta
 export reconstruct, DelayEmbedding, AbstractEmbedding, MTDelayEmbedding
 
 #####################################################################################
@@ -24,32 +25,26 @@ temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 *Be very careful when choosing `n`, because `@inbounds` is used internally.*
 """
 struct DelayEmbedding{D} <: AbstractEmbedding
-    # Notice that the type-parameter D here is not the number of temporal neighbors
-    # but plus one. That is because you cannot declare something like
-    # ::SVector{D+1}. It is not allowed.
     delays::SVector{D, Int}
 end
 
-function DelayEmbedding(D, τ)
-    if typeof(τ) <: Integer
-        idxs = [k*τ for k in 0:D]
-        return DelayEmbedding{D+1}(SVector{D+1, Int}(idxs...))
-    elseif typeof(τ) <: AbstractArray{<:Integer}
-        D != length(τ) && throw(ArgumentError(
-        "Delay time vector length must equal the number of spatial neighbors."
-        ))
-        if !issorted(τ)
-            @warn "Delay times are not sorted. Sorting now."
-            τ = sort(τ)
-        end
-        return DelayEmbedding{D+1}(SVector{D+1, Int}(0, τ...))
-    end
+@inline DelayEmbedding(D, τ) = DelayEmbedding(Val{D}(), τ)
+@inline function DelayEmbedding(::Val{D}, τ::Int) where {D}
+    idxs = [k*τ for k in 1:D]
+    return DelayEmbedding{D}(SVector{D, Int}(idxs...))
+end
+@inline function DelayEmbedding(::Val{D}, τ::AbstractVector) where {D}
+    D != length(τ) && throw(ArgumentError(
+    "Delay time vector length must equal the number of spatial neighbors."
+    ))
+    return DelayEmbedding{D}(SVector{D, Int}(τ...))
 end
 
 @generated function (r::DelayEmbedding{D})(s::AbstractArray{T}, i) where {D, T}
     gens = [:(s[i + r.delays[$k]]) for k=1:D]
     quote
-        @inbounds return SVector{$D,T}($(gens...))
+        @_inline_meta
+        @inbounds return SVector{$D+1,T}(s[i], $(gens...))
     end
 end
 
@@ -107,8 +102,8 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 [3] : K. Judd & A. Mees, [Physica D **120**, pp 273 (1998)](https://www.sciencedirect.com/science/article/pii/S0167278997001188)
 """
 @inline function reconstruct(s::AbstractVector{T}, D, τ) where {T}
-    de = DelayEmbedding(D, τ)
-    L = length(s) - de.delays[end]
+    de::DelayEmbedding{D} = DelayEmbedding(Val{D}(), τ)
+    L = length(s) - maximum(de.delays)
     data = Vector{SVector{D+1, T}}(undef, L)
     @inbounds for i in 1:L
         data[i] = de(s, i)
@@ -134,12 +129,12 @@ temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 *Be very careful when choosing `n`, because `@inbounds` is used internally.*
 """
 struct MTDelayEmbedding{D, B, X} <: AbstractEmbedding
-    # Again, here D is the number of temporal neighbors *plus one*.
     delays::SMatrix{D, B, Int, X} # X = D*B = total dimension number
 end
 
-# notice that here D is the number of temporal neighbors WITHOUT +1 !
-function MTDelayEmbedding(D, τ, B)
+@inline MTDelayEmbedding(D, τ, B) = MTDelayEmbedding(Val{D}(), τ, Val{B}())
+@inline function MTDElayEmbedding(::Val{D}, τ::Int, ::Val{B}) where {D, B}
+
     X = (D+1)*B
     if typeof(τ) <: Integer
         idxs = SMatrix{D+1,B,Int,X}([k*τ for k in 0:D, j in 1:B])
