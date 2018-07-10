@@ -35,6 +35,9 @@ println("\nTesting reconstruct")
         @test R2[:, 1] == R0[1:end-4, 1]
         @test size(R2) == (N-maximum(τ2), 3)
 
+        @test_throws ArgumentError reconstruct(data2, 4, τ1)
+
+
     end
 
     @testset "multidim " begin
@@ -72,6 +75,7 @@ println("\nTesting reconstruct")
 
         # test error throws:
         taus = [0 0 0; 2 3 0; 4 6 0; 6 8 0]
+        @test_throws ArgumentError reconstruct(data2, 5, taus)
         @test_throws ArgumentError reconstruct(data2, 4, taus)
 
     end

@@ -133,44 +133,44 @@ struct MTDelayEmbedding{D, B, X} <: AbstractEmbedding
 end
 
 @inline MTDelayEmbedding(D, τ, B) = MTDelayEmbedding(Val{D}(), τ, Val{B}())
-@inline function MTDElayEmbedding(::Val{D}, τ::Int, ::Val{B}) where {D, B}
-
-    X = (D+1)*B
-    if typeof(τ) <: Integer
-        idxs = SMatrix{D+1,B,Int,X}([k*τ for k in 0:D, j in 1:B])
-        return MTDelayEmbedding{D+1, B, X}(idxs)
-    elseif typeof(τ) <: AbstractMatrix{<:Integer}
-        D != size(τ)[1] && throw(ArgumentError(
-        "`size(τ)[1]` must equal the number of spatial neighbors."
-        ))
-        return MTDelayEmbedding{D+1, B, X}(SMatrix{D+1, B, Int, X}(
-        vcat(zeros(Int, B)', τ)))
-    else
-    	throw(ArgumentError("Please make sure τ is a Matrix or an Integer."))
-    end
+@inline function MTDelayEmbedding(::Val{D}, τ::Int, ::Val{B}) where {D, B}
+    X = D*B
+    idxs = SMatrix{D,B,Int,X}([k*τ for k in 1:D, j in 1:B])
+    return MTDelayEmbedding{D, B, X}(idxs)
+end
+@inline function MTDelayEmbedding(
+    ::Val{D}, τ::AbstractMatrix{<:Integer}, ::Val{B}) where {D, B}
+    X = D*B
+    D != size(τ)[1] && throw(ArgumentError(
+    "`size(τ)[1]` must equal the number of spatial neighbors."
+    ))
+    B != size(τ)[2] && throw(ArgumentError(
+    "`size(τ)[2]` must equal the number of timeseries."
+    ))
+    return MTDelayEmbedding{D, B, X}(SMatrix{D, B, Int, X}(τ))
 end
 
 @generated function (r::MTDelayEmbedding{D, B, X})(
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     i) where {D, A, B, T, M, X}
-
+    gensprev = [:(s[i, $d]) for d=1:B]
     gens = [:(s[i + r.delays[$k, $d], $d]) for k=1:D for d=1:B]
-
     quote
-        @inbounds return SVector{$D*$B,T}($(gens...))
+        @_inline_meta
+        @inbounds return SVector{$(D+1)*$B,T}($(gensprev...), $(gens...))
     end
 end
 
-function reconstruct(
+@inline function reconstruct(
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     D, τ) where {A, B, T, M}
 
-    de = MTDelayEmbedding(D, τ, B)
+    de::MTDelayEmbedding{D, B, D*B} = MTDelayEmbedding(D, τ, B)
     L = size(s)[1] - maximum(de.delays)
     X = (D+1)*B
     data = Vector{SVector{X, T}}(undef, L)
     @inbounds for i in 1:L
         data[i] = de(s, i)
     end
-    return Dataset{B*(D+1), T}(data)
+    return Dataset{X, T}(data)
 end
