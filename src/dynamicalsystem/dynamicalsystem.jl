@@ -454,6 +454,7 @@ For discrete systems both `T` and `dt` must be integers.
 * `dt` :  Time step of value output during the solving
   of the continuous system. For discrete systems it must be an integer. Defaults
   to `0.01` for continuous and `1` for discrete.
+* `Ttr` : Transient time to evolve the initial state before starting saving states.
 * `diff_eq_kwargs` : (only for continuous) A `NamedTuple` of keyword arguments
   passed into the solvers of the [DifferentialEquations.jl](http://docs.juliadiffeq.org/latest/basics/common_solver_opts.html)
   package, for example `(abstol = 1e-9)`. If you want to specify a solver,

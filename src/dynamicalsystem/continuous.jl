@@ -203,10 +203,11 @@ end
 #                                 Trajectory                                        #
 #####################################################################################
 function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.prob.u0;
-    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, dt = 0.01)
+    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, dt = 0.01, Ttr = 0)
 
-    tvec = inittime(ds):dt:(T+inittime(ds))
-    tspan = (inittime(ds), inittime(ds) + T)
+    t0 = inittime(ds)
+    tvec = (t0+Ttr):dt:(T+t0+Ttr)
+    tspan = (t0, t0 + Ttr + T)
     integ = integrator(ds, u; tspan = tspan,
     diff_eq_kwargs = diff_eq_kwargs, saveat = tvec)
     solve!(integ)
