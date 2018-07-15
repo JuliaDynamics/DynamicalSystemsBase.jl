@@ -1,4 +1,4 @@
-using DiffEqBase, ForwardDiff, StaticArrays
+using LinearAlgebra, DiffEqBase, ForwardDiff, StaticArrays
 import DiffEqBase: isinplace, DEProblem, ODEProblem
 
 export dimension, get_state, DynamicalSystem
@@ -261,7 +261,7 @@ function create_tangent(f::F, jacobian::JAC, J::JM,
         uv = @view u[:, 1]
         f(view(du, :, 1), uv, p, t)
         jacobian(J, uv, p, t)
-        A_mul_B!((@view du[:, 2:(k+1)]), J, (@view u[:, 2:(k+1)]))
+        mul!((@view du[:, 2:(k+1)]), J, (@view u[:, 2:(k+1)]))
         nothing
     end
     return tangentf
@@ -299,7 +299,7 @@ function create_tangent_iad(f::F, J::JM, u, p, t, ::Val{k}) where {F, JM, k}
             ForwardDiff.jacobian!(
                 J, (du, u) -> f(du, u, p, t), view(du, :, 1), uv, cfg, Val{false}()
             )
-            A_mul_B!((@view du[:, 2:k+1]), J, (@view u[:, 2:k+1]))
+            mul!((@view du[:, 2:k+1]), J, (@view u[:, 2:k+1]))
             nothing
         end
         return tangentf

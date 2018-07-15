@@ -1,7 +1,7 @@
 using OrdinaryDiffEq, StaticArrays
 using OrdinaryDiffEq: ODEIntegrator
 
-export ContinuousDynamicalSystem, CDS
+export ContinuousDynamicalSystem
 #####################################################################################
 #                                    Auxilary                                       #
 #####################################################################################

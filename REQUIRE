@@ -3,6 +3,7 @@ LinearAlgebra
 StaticArrays 0.5.0
 Distances
 NearestNeighbors
-DiffEqBase 3.5
+DiffEqBase 4.10
+OrdinaryDiffEq 4.0
 ForwardDiff 0.5
 LinearAlgebra
