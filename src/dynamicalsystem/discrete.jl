@@ -338,7 +338,7 @@ end
 #                                 Trajectory                                        #
 #####################################################################################
 function trajectory(ds::DDS{IIP, S, D}, t, u = ds.prob.u0;
-    dt::Int = 1; Ttr = 0) where {IIP, S, D}
+    dt::Int = 1, Ttr = 0) where {IIP, S, D}
     T = eltype(S)
     integ = integrator(ds, u)
     ti = inittime(ds)
@@ -355,8 +355,8 @@ function trajectory(ds::DDS{IIP, S, D}, t, u = ds.prob.u0;
     return Dataset(data)
 end
 
-function trajectory(ds::DDS{false, S, 1}, t, u = ds.prob.u0; dt::Int = 1
-    Ttr - 0) where {S}
+function trajectory(ds::DDS{false, S, 1}, t, u = ds.prob.u0;
+	dt::Int = 1, Ttr = 0) where {S}
     ti = inittime(ds)
     tvec = ti:dt:t+ti
     L = length(tvec)
