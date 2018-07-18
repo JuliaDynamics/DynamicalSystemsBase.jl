@@ -43,10 +43,12 @@ inittime(prob::MDP) = prob.t0
 dimension(::MinimalDiscreteProblem{IIP, S, D}) where {IIP, S, D} = D
 get_state(prob::MDP) = prob.u0
 stateeltype(::MDP{IIP, S}) where {IIP, S} = eltype(S)
+@inline _get_eom(prob::MDP) = prob.f
+
 
 """
     DiscreteDynamicalSystem(eom, state, p [, jacobian [, J]]; t0::Int = 0)
-A `DynamicalSystem` restricted to discrete systems (also called *maps*).
+A `DynamicalSystem` restricted to discrete-time systems (also called *maps*).
 """
 struct DiscreteDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <: DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
     prob::MDP{IIP, S, D, F, P}
@@ -197,6 +199,10 @@ step!(integ::MDI, N, stop_at_tdt) = step!(integ, N)
 #####################################################################################
 #                           TangentDiscreteIntegrator                               #
 #####################################################################################
+
+# For discrete systems a special, super-performant version of tangent integrator
+# can exist. We make this here.
+
 mutable struct TangentDiscreteIntegrator{IIP, S, D, F, P, JAC, JM, WM} <: DEIntegrator
     f::F            # integrator eom
     u::S            # integrator state
@@ -317,7 +323,7 @@ function tangent_integrator(ds::DDS{true, S, D, F, P, JAC, JM, true},
     "It is not possible to evolve more tangent vectors than the system's dimension!"
     ))
 
-    tangentf = tangentf = create_tangent_iad(
+    tangentf = create_tangent_iad(
         ds.prob.f, ds.J, u, ds.prob.p, t0, Val{k}())
     tanprob = MDP(tangentf, hcat(u, Q), ds.prob.p, t0)
     TF = typeof(tangentf)

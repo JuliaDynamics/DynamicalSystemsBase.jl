@@ -3,39 +3,29 @@ using OrdinaryDiffEq: ODEIntegrator
 
 export ContinuousDynamicalSystem
 #####################################################################################
-#                                    Auxilary                                       #
+#                                    Defaults                                       #
 #####################################################################################
 const DEFAULT_SOLVER = Vern9()
 const DEFAULT_DIFFEQ_KWARGS = (alg = DEFAULT_SOLVER,
 abstol = 1e-9, reltol = 1e-9, maxiters = typemax(Int))
 const CDS_TSPAN = (0.0, Inf)
 
-function extract_solver(diff_eq_kwargs)
-    # Extract solver from kwargs
-    if haskey(diff_eq_kwargs, :solver)
-        newkw = deepcopy(diff_eq_kwargs)
-        solver = diff_eq_kwargs[:solver]
-        pop!(newkw, :solver)
-    else
-        solver = DEFAULT_SOLVER
-        newkw = diff_eq_kwargs
-    end
-    return solver, newkw
-end
-
 #####################################################################################
 #                           ContinuousDynamicalSystem                               #
 #####################################################################################
 """
     ContinuousDynamicalSystem(eom, state, p [, jacobian [, J]]; t0 = 0.0)
-    A `DynamicalSystem` restricted to continuous systems (also called *flows*).
+A `DynamicalSystem` restricted to continuous-time systems (also called *ODEs*).
 """
 struct ContinuousDynamicalSystem{
-    IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM} <: DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
-    prob::ODEProblem{S, tType, IIP, P, F, JPROT, C, MM, DiffEqBase.StandardODEProblem}
+        IIP, S, D, F, P, JAC, JM, IAD,
+        ODE<:ODEProblem} <: DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
+    prob::ODE
     jacobian::JAC
     J::JM
 end
+
+_get_eom_type(a::ODEProblem) = typeof(a.f.f)
 
 const CDS = ContinuousDynamicalSystem
 stateeltype(::CDS{IIP, S}) where {IIP, S} = eltype(S)
@@ -44,15 +34,26 @@ timetype(::ContinuousDynamicalSystem{
 IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM}) where
 {IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM} = tType
 
+# THIS IS THE MAIN CONSTRUCTOR. EVERYTHING FALLS HERE! #
 function ContinuousDynamicalSystem(
-    prob::ODEProblem{S, tType, IIP, P, F, JPROT, C, MM, DiffEqBase.StandardODEProblem},
-    j::JAC, j0::JM, IAD::Bool) where {S, tType, IIP, P, F, JPROT, C, MM, JAC, JM}
+    prob::ODEProblem{S, tType, IIP, P, OF, C, MM},
+    j::JAC, j0::JM, IAD::Bool) where {S, tType, IIP, P, OF, C, MM, JAC, JM, IAD}
+
+    @assert S <: AbstractVector
     D = length(prob.u0)
+    F = _get_eom_type(prob)
+
+    finalprob = ODEProblem(
+        ODEFunction(prob.f.f; jac = j), prob.u0, prob.tspan, prob.p,
+        prob.callback, prob.mass_matrix, prob.problem_type)
+
+    ODE = typeof(finalprob)
+
     return ContinuousDynamicalSystem{
-        IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM}(prob, j, j0)
+        IIP, S, D, F, P, JAC, JM, IAD, ODE}(prob, j, j0)
 end
 
-# With jacobian:
+# With jacobian. Main that falls back to the ABOVE one!
 function ContinuousDynamicalSystem(
     eom::F, s, p::P, j::JAC, J0::JM; t0 = 0.0, iad = false) where {F, P, JAC, JM}
 

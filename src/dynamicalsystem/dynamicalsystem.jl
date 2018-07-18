@@ -97,7 +97,7 @@ ends at infinity. See the
 for more info.
 
 ## Relevant Functions
-[`trajectory`](@ref), [`dimension`](@ref), [`set_parameter!`](@ref).
+[`trajectory`](@ref), [`set_parameter!`](@ref).
 """
 abstract type DynamicalSystem{
         IIP,     # is in place , for dispatch purposes and clarity
@@ -124,6 +124,9 @@ stateeltype(ds::DS{IIP, S}) where {IIP, S} = eltype(S)
 
 isautodiff(ds::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
 {IIP, S, D, F, P, JAC, JM, IAD} = IAD
+
+@inline _get_eom(ds::DS) = _get_eom(ds.prob)
+@inline _get_eom(prob::ODEProblem) = prob.f.f
 
 
 """
@@ -152,7 +155,7 @@ inittime(ds::DS) = inittime(ds.prob)
 #####################################################################################
 #                           State types enforcing                                   #
 #####################################################################################
-safe_state_type(::Val{true}, u0) = u0
+safe_state_type(::Val{true}, u0) = Vector(u0)
 safe_state_type(::Val{false}, u0) = SVector{length(u0)}(u0...)
 safe_state_type(::Val{false}, u0::SVector) = u0
 safe_state_type(::Val{false}, u0::Number) = u0
@@ -181,7 +184,7 @@ function Base.show(io::IO, ds::DS)
     text = summary(ds)
     print(io, text*"\n",
     rpad(" state: ", ps)*"$(get_state(ds))\n",
-    rpad(" e.o.m.: ", ps)*"$(ds.prob.f)\n",
+    rpad(" e.o.m.: ", ps)*"$(_get_eom(ds))\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
     rpad(" jacobian: ", ps)*"$(jacobianstring(ds))\n"
     )
@@ -217,17 +220,16 @@ end
 
 # Jacobian function application
 """
-    jacobian(ds::DynamicalSystem, u = ds.prob.u0)
-Return the jacobian of the system at `u` (at initial time).
+    jacobian(ds::DynamicalSystem, u = ds.prob.u0, t = inittime(ds.prob))
+Return the jacobian of the system at `u`, at `t`.
 """
-function jacobian(ds::DS{true}, u = ds.prob.u0)
-    D = dimension(ds)
-    J = similar(u, D, D)
-    ds.jacobian(J, u, ds.prob.p, inittime(ds.prob))
+function jacobian(ds::DS{true}, u = ds.prob.u0, t = inittime(ds.prob))
+    J = similar(ds.J)
+    ds.jacobian(J, u, ds.prob.p, t)
     return J
 end
-jacobian(ds::DS{false}, u = ds.prob.u0) =
-ds.jacobian(u, ds.prob.p, inittime(ds.prob))
+jacobian(ds::DS{false}, u = ds.prob.u0, t = inittime(ds.prob)) =
+ds.jacobian(u, ds.prob.p, t)
 
 function get_J(prob, jacob::JAC) where {JAC}
     D = length(prob.u0)
@@ -254,7 +256,7 @@ end
 #                                 Tanget Dynamics                                     #
 #######################################################################################
 # IIP Tangent Space dynamics
-function create_tangent(f::F, jacobian::JAC, J::JM,
+@inline function create_tangent(f::F, jacobian::JAC, J::JM,
     ::Val{true}, ::Val{k}) where {F, JAC, JM, k}
     J = deepcopy(J)
     tangentf = (du, u, p, t) -> begin
@@ -265,25 +267,6 @@ function create_tangent(f::F, jacobian::JAC, J::JM,
         nothing
     end
     return tangentf
-end
-# OOP Tangent Space dynamics
-function create_tangent(f::F, jacobian::JAC, J::JM,
-    ::Val{false}, ::Val{k}) where {F, JAC, JM, k}
-
-    ws_index = SVector{k, Int}(2:(k+1)...)
-    tangentf = TangentOOP(f, jacobian, ws_index)
-    return tangentf
-end
-struct TangentOOP{F, JAC, k}
-    f::F
-    jacobian::JAC
-    ws::SVector{k, Int}
-end
-@inline function (tan::TangentOOP)(u, p, t)
-    du = tan.f(u[:, 1], p, t)
-    J = tan.jacobian(u[:, 1], p, t)
-    dW = J*u[:, tan.ws]
-    return hcat(du, dW)
 end
 
 # for the case of autodiffed systems, a specialized version is created
@@ -305,6 +288,29 @@ function create_tangent_iad(f::F, J::JM, u, p, t, ::Val{k}) where {F, JM, k}
         return tangentf
     end
 end
+
+
+
+# OOP Tangent Space dynamics
+@inline function create_tangent(f::F, jacobian::JAC, J::JM,
+    ::Val{false}, ::Val{k}) where {F, JAC, JM, k}
+
+    ws_index = SVector{k, Int}(2:(k+1)...)
+    tangentf = TangentOOP(f, jacobian, ws_index)
+    return tangentf
+end
+struct TangentOOP{F, JAC, k}
+    f::F
+    jacobian::JAC
+    ws::SVector{k, Int}
+end
+@inline function (tan::TangentOOP)(u, p, t)
+    du = tan.f(u[:, 1], p, t)
+    J = tan.jacobian(u[:, 1], p, t)
+    dW = J*u[:, tan.ws]
+    return hcat(du, dW)
+end
+
 
 #######################################################################################
 #                                Parallel Dynamics                                    #
