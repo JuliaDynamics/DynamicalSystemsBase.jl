@@ -17,40 +17,40 @@ const CDS_TSPAN = (0.0, Inf)
     ContinuousDynamicalSystem(eom, state, p [, jacobian [, J]]; t0 = 0.0)
 A `DynamicalSystem` restricted to continuous-time systems (also called *ODEs*).
 """
-struct ContinuousDynamicalSystem{
-        IIP, S, D, F, P, JAC, JM, IAD,
-        ODE<:ODEProblem} <: DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
-    prob::ODE
+struct ContinuousDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
+                 DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
+    f::F
+    u0::S
+    p::P
+    t0::eltype(S)
     jacobian::JAC
     J::JM
 end
-
-_get_eom_type(a::ODEProblem) = typeof(a.f.f)
-
 const CDS = ContinuousDynamicalSystem
+systemtype(::CDS) = "continuous"
+
 stateeltype(::CDS{IIP, S}) where {IIP, S} = eltype(S)
 stateeltype(::ODEProblem{S}) where {S} = eltype(S)
-timetype(::ContinuousDynamicalSystem{
-IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM}) where
-{IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM} = tType
+timetype(ds::CDS) = eltype(stateeltype(ds))
 
 # THIS IS THE MAIN CONSTRUCTOR. EVERYTHING FALLS HERE! #
+# MOVE THIS IN MAIN PAGE AND EVAL, IT IS IDENTICAL FOR BOTH SYSTEMS!!!!
+# Simply do the separation of continuous time from discrete
 function ContinuousDynamicalSystem(
-    prob::ODEProblem{S, tType, IIP, P, OF, C, MM},
-    j::JAC, j0::JM, IAD::Bool) where {S, tType, IIP, P, OF, C, MM, JAC, JM, IAD}
+    eom::F, u0, p::P, j::JAC, j0 = nothing;
+    t0 = 0.0, IAD = false) where {F, S, P, JAC}
 
-    @assert S <: AbstractVector
-    D = length(prob.u0)
-    F = _get_eom_type(prob)
+    D = length(s)
+    IIP = isinplace(eom, 4)
 
-    finalprob = ODEProblem(
-        ODEFunction(prob.f.f; jac = j), prob.u0, prob.tspan, prob.p,
-        prob.callback, prob.mass_matrix, prob.problem_type)
+    J = j0 != nothing ? j0 : get_J(j, s, p, t0, IIP)
+    JM = typeof(J)
 
-    ODE = typeof(finalprob)
+    s = safe_state_type(::Val{IIP}, u0)
+    S = typeof(S)
 
     return ContinuousDynamicalSystem{
-        IIP, S, D, F, P, JAC, JM, IAD, ODE}(prob, j, j0)
+        IIP, S, D, F, P, JAC, JM, IAD}(eom, u0, p, t0, j, j0)
 end
 
 # With jacobian. Main that falls back to the ABOVE one!
@@ -100,6 +100,11 @@ end
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
+finalprob = ODEProblem(
+    ODEFunction(prob.f.f; jac = j), prob.u0, prob.tspan, prob.p,
+    prob.callback, prob.mass_matrix, prob.problem_type)
+
+
 stateeltype(::ODEIntegrator{Alg, S}) where {Alg, S} = eltype(S)
 stateeltype(::ODEIntegrator{Alg, S}) where {
     Alg, S<:Vector{<:AbstractArray{T}}} where {T} = T

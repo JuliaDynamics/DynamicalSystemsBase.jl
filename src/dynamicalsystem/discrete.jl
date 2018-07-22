@@ -1,9 +1,7 @@
 using StaticArrays, ForwardDiff, DiffEqBase
-using DiffEqBase: DEIntegrator
 import DiffEqBase: init, step!, isinplace, reinit!, u_modified!
 import Base: show
 
-export MinimalDiscreteProblem, MinimalDiscreteIntegrator
 export DiscreteDynamicalSystem, reinit!
 
 #####################################################################################
@@ -56,6 +54,7 @@ struct DiscreteDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <: DynamicalSystem
     J::JM
 end
 const DDS = DiscreteDynamicalSystem
+systemtype(::DDS) = "discrete"
 
 function DiscreteDynamicalSystem(
     eom::F, s, p::P, j::JAC, J0::JM; t0::Int = 0) where {F, P, JAC, JM}
