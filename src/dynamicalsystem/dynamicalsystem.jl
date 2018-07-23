@@ -29,7 +29,7 @@ a dictionary. Pass `nothing` in the place of `p` if your system does not have
 parameters.
 
 `t0`, `J0` allow you to choose the initial time and provide
-an initialized Jacobian matrix. See `DIFF_EQ_KWARGS` for the
+an initialized Jacobian matrix. See `CDS_KWARGS` for the
 default options used to evolve continuous systems (through `OrdinaryDiffEq`).
 
 ### Equations of motion
@@ -223,7 +223,7 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
             throw(ArgumentError(
             "The state of a dynamical system *must* be <: AbstractVector/Number!"))
         end
-        
+
         IIP = isinplace(eom, 4)
         s = safe_state_type(Val{IIP}(), u0)
         D = length(s)
@@ -375,7 +375,7 @@ function create_parallel(ds::DS{true}, states)
     L = length(st)
     paralleleom = (du, u, p, t) -> begin
         for i in 1:L
-            @inbounds ds.prob.f(du[i], u[i], p, t)
+            @inbounds ds.f(du[i], u[i], p, t)
         end
     end
     return paralleleom, st
@@ -388,7 +388,7 @@ function create_parallel(ds::DS{false}, states)
     # The following may be inneficient
     paralleleom = (du, u, p, t) -> begin
         for i in 1:L
-            @inbounds du[i] = ds.prob.f(u[i], p, t)
+            @inbounds du[i] = ds.f(u[i], p, t)
         end
     end
     return paralleleom, st
