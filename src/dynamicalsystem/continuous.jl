@@ -1,7 +1,7 @@
 using OrdinaryDiffEq, StaticArrays
 using OrdinaryDiffEq: ODEIntegrator
 
-export ContinuousDynamicalSystem
+export DIFF_EQ_KWARGS
 #####################################################################################
 #                                    Defaults                                       #
 #####################################################################################
@@ -13,25 +13,8 @@ const CDS_TSPAN = (0.0, Inf)
 #####################################################################################
 #                           ContinuousDynamicalSystem                               #
 #####################################################################################
-"""
-    ContinuousDynamicalSystem(eom, state, p [, jacobian [, J]]; t0 = 0.0)
-A `DynamicalSystem` restricted to continuous-time systems (also called *ODEs*).
-"""
-struct ContinuousDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
-                 DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
-    f::F
-    u0::S
-    p::P
-    t0::eltype(S)
-    jacobian::JAC
-    J::JM
-end
-const CDS = ContinuousDynamicalSystem
-systemtype(::CDS) = "continuous"
 
-stateeltype(::CDS{IIP, S}) where {IIP, S} = eltype(S)
-stateeltype(::ODEProblem{S}) where {S} = eltype(S)
-timetype(ds::CDS) = eltype(stateeltype(ds))
+
 
 # THIS IS THE MAIN CONSTRUCTOR. EVERYTHING FALLS HERE! #
 # MOVE THIS IN MAIN PAGE AND EVAL, IT IS IDENTICAL FOR BOTH SYSTEMS!!!!

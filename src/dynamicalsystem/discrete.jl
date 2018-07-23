@@ -44,17 +44,6 @@ stateeltype(::MDP{IIP, S}) where {IIP, S} = eltype(S)
 @inline _get_eom(prob::MDP) = prob.f
 
 
-"""
-    DiscreteDynamicalSystem(eom, state, p [, jacobian [, J]]; t0::Int = 0)
-A `DynamicalSystem` restricted to discrete-time systems (also called *maps*).
-"""
-struct DiscreteDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <: DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
-    prob::MDP{IIP, S, D, F, P}
-    jacobian::JAC
-    J::JM
-end
-const DDS = DiscreteDynamicalSystem
-systemtype(::DDS) = "discrete"
 
 function DiscreteDynamicalSystem(
     eom::F, s, p::P, j::JAC, J0::JM; t0::Int = 0) where {F, P, JAC, JM}
