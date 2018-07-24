@@ -9,7 +9,7 @@ using DiffEqBase
 
 println("\nTesting tangent dynamics...")
 
-
+let
 u0 = [0, 10.0, 0]
 p = [10, 28, 8/3]
 u0h = ones(2)
@@ -89,4 +89,5 @@ for i in 1:8
             @test 0.4 < λ[1] < 0.45
         end
     end
+end
 end

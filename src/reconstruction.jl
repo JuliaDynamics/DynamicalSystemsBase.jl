@@ -35,7 +35,7 @@ end
 end
 @inline function DelayEmbedding(::Val{D}, τ::AbstractVector) where {D}
     D != length(τ) && throw(ArgumentError(
-    "Delay time vector length must equal the number of spatial neighbors."
+    "Delay time vector length must equal the number of temporal neighbors."
     ))
     return DelayEmbedding{D}(SVector{D, Int}(τ...))
 end
@@ -77,8 +77,8 @@ see [3].
 To make a reconstruction out of a multiple timeseries (i.e. trajectory) the number
 of timeseries must be known by type, so `s` can be either:
 
-    * `s::AbstractDataset{B}`
-    * `s::SizedAray{A, B}`
+* `s::AbstractDataset{B}`
+* `s::SizedAray{A, B}`
 
 If the trajectory is for example ``(x, y)`` and `τ` is integer, then the ``n``-th
 entry of the embedded space is
@@ -148,6 +148,10 @@ end
     "`size(τ)[2]` must equal the number of timeseries."
     ))
     return MTDelayEmbedding{D, B, X}(SMatrix{D, B, Int, X}(τ))
+end
+function MTDelayEmbedding(
+    ::Val{D}, τ::AbstractVector{<:Integer}, ::Val{B}) where {D, B}
+    error("Does not work with vector τ, only matrix or integer!")
 end
 
 @generated function (r::MTDelayEmbedding{D, B, X})(

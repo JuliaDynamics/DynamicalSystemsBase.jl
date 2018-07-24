@@ -35,7 +35,7 @@ println("\nTesting reconstruct")
         @test R2[:, 1] == R0[1:end-4, 1]
         @test size(R2) == (N-maximum(τ2), 3)
 
-        @test_throws ArgumentError reconstruct(data2, 4, τ1)
+        @test_throws ArgumentError reconstruct(s, 4, τ1)
 
 
     end
