@@ -209,8 +209,8 @@ function tangent_integrator(ds::DDS{true, S, D, F, P, JAC, JM, true},
 
     R = D + length(Q0)
     k = size(Q0)[2]
-    Q = safe_matrix_type(Val{IIP}(), Q0)
-    u = safe_state_type(Val{IIP}(), u0)
+    Q = safe_matrix_type(Val{true}(), Q0)
+    u = safe_state_type(Val{true}(), u0)
     size(Q)[2] > dimension(ds) && throw(ArgumentError(
     "It is not possible to evolve more tangent vectors than the system's dimension!"
     ))
@@ -229,7 +229,7 @@ end
 function parallel_integrator(ds::DDS{IIP, S, D}, states) where {IIP, S, D}
     peom, st = create_parallel(ds, states)
     F = typeof(peom); X = typeof(st); P = typeof(ds.p)
-    return MDI{true, X, D, F, P}(peom, st, ds.t0, copy(st), ds.p, ds.t0)
+    return MDI{true, X, D, F, P}(peom, st, ds.t0, deepcopy(st), ds.p, ds.t0)
 end
 
 #####################################################################################

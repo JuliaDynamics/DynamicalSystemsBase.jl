@@ -7,9 +7,9 @@ println("\nTesting inference...")
 @testset "Inference" begin
     for ds in [Systems.towel(), Systems.henon_iip()]
         @test_nowarn @inferred integrator(ds)
-        f = ds.prob.f
+        f = ds.f
         s = get_state(ds)
-        p = ds.prob.p
+        p = ds.p
         t = 0
         D = dimension(ds)
         IIP = isinplace(ds)

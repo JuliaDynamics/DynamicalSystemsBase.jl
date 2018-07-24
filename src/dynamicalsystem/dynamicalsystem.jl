@@ -4,7 +4,7 @@ import DiffEqBase: isinplace
 export dimension, get_state, DynamicalSystem
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
 export set_parameter!, step!
-export trajectory
+export trajectory, jacobian
 export integrator, tangent_integrator, parallel_integrator
 export set_state!, get_state, get_deviations, set_deviations!
 
@@ -206,8 +206,9 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
         S = typeof(s)
         D = length(s)
 
-        IIP || typeof(eom(s, p, t0)) <: SVector || throw(ArgumentError(
-        "Equations of motion must return an `SVector` for out-of-place form!"))
+        IIP || typeof(eom(s, p, t0)) <: Union{SVector, Number} ||
+        throw(ArgumentError("Equations of motion must return an `SVector` "*
+        "or number for out-of-place form!"))
 
         J = j0 != nothing ? j0 : get_J(j, s, p, timetype($(ds), s)(t0), IIP)
         JM = typeof(J)
@@ -242,16 +243,16 @@ end
 Base.summary(ds::DS) =
 "$(dimension(ds))-dimensional "*systemtype(ds)*" dynamical system"
 
-jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(ds.jacobian)"
+jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(nameof(ds.jacobian))"
 
 function Base.show(io::IO, ds::DS)
     ps = 12
     text = summary(ds)
     print(io, text*"\n",
     rpad(" state: ", ps)*"$(get_state(ds))\n",
-    rpad(" e.o.m.: ", ps)*"$(ds.f)\n",
+    rpad(" e.o.m.: ", ps)*"$(nameof(ds.f))\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
-    rpad(" jacobian: ", ps)*"$(jacobianstring(ds))\n"
+    rpad(" jacobian: ", ps)*"$(jacobianstring(ds))"
     )
 end
 

@@ -1,4 +1,4 @@
-using StaticArrays, Requires, LinearAlgebra
+using StaticArrays, LinearAlgebra
 using Base.Iterators: flatten
 
 export Dataset, AbstractDataset, minima, maxima
@@ -195,13 +195,6 @@ function matstring(d::AbstractDataset{D, T}) where {D, T}
     s = join(split(s, '\n')[2:end], '\n')
     tos = summary(d)*"\n"*s
     return tos
-end
-
-@require Juno="e5e0dc1b-0480-54bc-9374-aad01c23163d" begin
-    function Juno.render(i::Juno.Inline, d::AbstractDataset)
-    tos = matstring(d)
-    Juno.render(i, Juno.Tree(Text(tos), []))
-    end
 end
 
 Base.show(io::IO, d::AbstractDataset) = println(io, matstring(d))

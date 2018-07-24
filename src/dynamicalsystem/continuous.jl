@@ -35,22 +35,21 @@ stateeltype(::ODEIntegrator{Alg, S}) where {
     Alg, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
 function integrator(ds::CDS{iip}, u0 = ds.u0;
-    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    tfinal = Inf, saveat = typeof(ds.t0)[]) where {iip}
+    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, tfinal = Inf,
+    kwargs...) where {iip}
 
     u = safe_state_type(Val{iip}(), u0)
     prob = ODEProblem{iip}(ds.f, u, (ds.t0, typeof(ds.t0)(tfinal)), ds.p)
 
-    saveat != [] && tspan[2] == Inf && error("Infinite solving!")
+    (haskey(kwargs, :saveat) && tfinal == Inf) && error("Infinite solving!")
 
     solver = _get_solver(diff_eq_kwargs)
     integ = __init(prob, solver; DEFAULT_DIFFEQ_KWARGS...,
-            diff_eq_kwargs..., saveat = saveat, save_everystep = false)
-
+            save_everystep = false, diff_eq_kwargs..., kwargs...)
     return integ
 end
 
-############################### Tangent ##############################################
+############################### Tangent #############################################
 function tangent_integrator(ds::CDS, k::Int = dimension(ds); kwargs...)
     return tangent_integrator(ds, orthonormal(dimension(ds), k); kwargs...)
 end
@@ -70,15 +69,15 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
     tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
     solver = _get_solver(diff_eq_kwargs)
-    return init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS...,
-           diff_eq_kwargs..., save_everystep = false, callback = callback)
+    return init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+           diff_eq_kwargs..., callback = callback)
 end
 
 # Auto-diffed in-place version
 function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     Q0::AbstractMatrix;
     u0 = ds.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    t0 = ds.u0, callback = nothing) where {S, D, F, P, JAC, JM}
+    t0 = ds.t0, callback = nothing) where {S, D, F, P, JAC, JM}
 
     Q = safe_matrix_type(Val{true}(), Q0)
     u = safe_state_type(Val{true}(), u0)
@@ -90,14 +89,14 @@ function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
 
     tangentf = create_tangent_iad(
         ds.f, ds.J, u, ds.p, t0, Val{k}())
-    tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
+    tanprob = ODEProblem{true}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
     solver = _get_solver(diff_eq_kwargs)
-    return init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS...,
-           diff_eq_kwargs..., save_everystep = false, callback = callback)
+    return init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+           diff_eq_kwargs..., callback = callback)
 end
 
-############################### Parallel ##############################################
+############################### Parallel ############################################
 # Vector-of-Vector does not work with DiffEq atm:
 # This is a workaround currently, until DiffEq allows Vector[Vector]
 function create_parallel(ds::CDS{true}, states)
@@ -126,20 +125,19 @@ function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KW
     # if typeof(solver) ∈ STIFFSOLVERS
     #     error("Stiff solvers can't support a parallel integrator.")
     # end
-    return init(pprob, solver; DEFAULT_DIFFEQ_KWARGS...,
-           diff_eq_kwargs..., save_everystep = false, callback = callback)
+    return init(pprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+           diff_eq_kwargs..., callback = callback)
 end
 
 #####################################################################################
 #                                 Trajectory                                        #
 #####################################################################################
-function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.prob.u0;
+function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, dt = 0.01, Ttr = 0)
 
-    t0 = inittime(ds)
+    t0 = ds.t0
     tvec = (t0+Ttr):dt:(T+t0+Ttr)
-    tspan = (t0, t0 + Ttr + T)
-    integ = integrator(ds, u; tspan = tspan,
+    integ = integrator(ds, u; tfinal = t0 + Ttr + T,
     diff_eq_kwargs = diff_eq_kwargs, saveat = tvec)
     solve!(integ)
     return Dataset(integ.sol.u)
@@ -149,11 +147,12 @@ end
 #                                    Get States                                     #
 #####################################################################################
 get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} = integ.u
-get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} = integ.u[:, 1]
+get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} =
+integ.u[:, 1]
 get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Vector{<:AbstractVector}} =
     integ.u[1]
-get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {Alg, S<:Vector{<:AbstractVector}} =
-    integ.u[k]
+get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {
+    Alg, S<:Vector{<:AbstractVector}} = integ.u[k]
 get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {Alg, S<:AbstractMatrix} =
     integ.u[:, k]
 
@@ -187,6 +186,6 @@ get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
 end
 
 set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:Matrix} =
-    (integ.u[:, 2:end] = Q; u_modified!(integ, true))
+    (integ.u[:, 2:end] .= Q; u_modified!(integ, true))
 set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:SMatrix} =
     (integ.u = hcat(integ.u[:,1], Q); u_modified!(integ, true))
