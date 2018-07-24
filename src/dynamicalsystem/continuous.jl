@@ -23,8 +23,8 @@ function ContinuousDynamicalSystem(prob::ODEProblem, args...)
 end
 
 function ODEProblem(ds::CDS{IIP}, tspan, args...) where {IIP}
-    return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian),
-           ds.u0, tspan, args...)
+    # when stable, do ODEFunction(ds.f; jac = ds.jacobian)
+    return ODEProblem{IIP}(ds.f, ds.u0, tspan, args...)
 end
 
 #####################################################################################
@@ -42,7 +42,7 @@ function integrator(ds::CDS{iip}, u0 = ds.u0;
 
     (haskey(diffeq, :saveat) && tfinal == Inf) && error("Infinite solving!")
 
-    solver = _get_solver(diff_eq_kwargs)
+    solver = _get_solver(diffeq)
     integ = __init(prob, solver; DEFAULT_DIFFEQ_KWARGS...,
                    save_everystep = false, diffeq...)
     return integ
@@ -89,7 +89,7 @@ function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     tangentf = create_tangent_iad(ds.f, ds.J, u, ds.p, t0, Val{k}())
     tanprob = ODEProblem{true}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
-    solver = _get_solver(diff_eq_kwargs)
+    solver = _get_solver(diffeq)
     return __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
                 diffeq...)
 end
@@ -118,7 +118,7 @@ GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P)
 function parallel_integrator(ds::CDS, states; diffeq...)
     peom, st = create_parallel(ds, states)
     pprob = ODEProblem(peom, st, (ds.t0, typeof(ds.t0)(Inf)), ds.p)
-    solver = _get_solver(diff_eq_kwargs)
+    solver = _get_solver(diffeq)
     # if typeof(solver) ∈ STIFFSOLVERS
     #     error("Stiff solvers can't support a parallel integrator.")
     # end
