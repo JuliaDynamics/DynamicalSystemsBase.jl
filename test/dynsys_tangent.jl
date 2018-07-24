@@ -34,7 +34,7 @@ function lyapunov_iip(ds::DS, k)
         Q, R = QR.Q, QR.R
         λ .+= log.(abs.(diag(R)))
 
-        set_deviations!(tode, Q)
+        set_deviations!(tode, Matrix(Q))
         u_modified!(tode, true)
     end
     λ = λ/tode.t # woooorks

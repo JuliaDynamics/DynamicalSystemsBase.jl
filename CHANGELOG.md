@@ -1,20 +1,18 @@
-# v1.0
+# master
 
 ## Breaking
-
 * Dropped support of Julia versions < 0.7
 * `Reconstruction` does not exist anymore. Instead, `reconstruct` is used in it's
   place. The function now also always returns a `Dataset`.
 * In the `reconstruct` function, `D` now stands for the number of temporal neighbors
   which is **one less** than the dimensionality of the reconstructed space.
-* `jacobian` is now not exported. Use `ds.jacobian` instead.
+
+* Re-worked the internals of `DynamicalSystem` (although the API remained the same): Now `DynamicalSystem` only stores what is absolutely necessary and creates directly integrators when need be. A "problem" is not stored anymore.
 
 ## New Features
-* `reconstruct` creates internally a subtype of `AbstractEmbedding`. These objects
-  can be used as functors to create the `i`-th reconstructed vector on demand.
+* `reconstruct` creates internally a subtype of `AbstractEmbedding`. These objects can be used as functors to create the `i`-th reconstructed vector on demand. This also improved
 
-* `tangent_` and `parallel_integrator` can now accept callbacks for continuous
-  systems.
+* `tangent_` and `parallel_integrator` can now accept callbacks for continuous systems. In general you could pass to the constructors any keyword acceptable by `init` of DiffEq.
 
 # v0.10
 

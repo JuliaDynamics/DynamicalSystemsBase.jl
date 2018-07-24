@@ -1,49 +1,36 @@
 using LinearAlgebra, DiffEqBase, ForwardDiff, StaticArrays
-import DiffEqBase: isinplace, DEProblem, ODEProblem
+import DiffEqBase: isinplace
 
 export dimension, get_state, DynamicalSystem
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
-export set_parameter!, step!, inittime
-export trajectory
+export set_parameter!, step!
+export trajectory, jacobian
 export integrator, tangent_integrator, parallel_integrator
 export set_state!, get_state, get_deviations, set_deviations!
 
-#######################################################################################
-#                                  DynamicalSystem                                    #
-#######################################################################################
+#####################################################################################
+#                                  DynamicalSystem                                  #
+#####################################################################################
 """
     DynamicalSystem
 
 The central structure of **DynamicalSystems.jl**. All functions of the suite that
 can use known equations of motion expect an instance of this type.
 
-Contains a problem defining the system (field `prob`), the jacobian function
-(field `jacobian`) and the initialized Jacobian matrix (field `J`).
-
 ## Constructing a `DynamicalSystem`
 ```julia
 DiscreteDynamicalSystem(eom, state, p [, jacobian [, J0]]; t0::Int = 0)
 ContinuousDynamicalSystem(eom, state, p [, jacobian [, J0]]; t0 = 0.0)
-ContinuousDynamicalSystem(odeprob [, jacobian [, J0]])
 ```
-with `eom` the equations of motion function.
+with `eom` the equations of motion function (see below).
 `p` is a parameter container, which we highly suggest to use a mutable object like
 `Array`, [`LMArray`](https://github.com/JuliaDiffEq/LabelledArrays.jl) or
 a dictionary. Pass `nothing` in the place of `p` if your system does not have
-parameters. With these constructors you also do not need to
-provide some final time, since it is not used by **DynamicalSystems.jl** in any manner.
+parameters.
 
 `t0`, `J0` allow you to choose the initial time and provide
-an initialized Jacobian matrix. Alternatively, you can also construct a continuous
-system by passing an `ODEProblem` from [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/).
-This allows you to use a system that has [Callbacks](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
-Continuous system by default are integrated with a 9th order Verner solver `Vern9()` with tolerances
-`abstol = reltol = 1e-9`.
-
-** WARNING ** : Callbacks from the `ODEProblem` *do not* propagate in the functions
-of **DynamicalSystems.jl**. If you want to use callbacks you have to
-invoke [`tangent_integrator`](@ref) or [`parallel_integrator`](@ref) with
-extra callbacks, as shown in the [Advanced Documentation](https://juliadynamics.github.io/DynamicalSystems.jl/latest/advanced/).
+an initialized Jacobian matrix. See `CDS_KWARGS` for the
+default options used to evolve continuous systems (through `OrdinaryDiffEq`).
 
 ### Equations of motion
 The are two "versions" for `DynamicalSystem`, depending on whether the
@@ -78,23 +65,21 @@ for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place ver
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
 
-### Getting a `Solution` struct
-The continuous constructor creates a standard
-[ODEProblem](http://docs.juliadiffeq.org/latest/types/ode_types.html) from
+### Interface to **DifferentialEquations.jl**
+Continuous systems are solved using
 [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/).
-
-You can *always* take advantage of the full capabilities of
-the `Solution` struct. Simply define
-```julia
-using DifferentialEquations
-prob2 = remake(ds.prob; tspan=(0.0,2.0))
-sol = solve(prob2, Tsit5())
-# do stuff with sol...
+The following two interfaces are provided:
 ```
-The line `remake...` is necessary because most of the time `tspan`
-ends at infinity. See the
-[remake documentation](http://docs.juliadiffeq.org/latest/basics/problem.html)
-for more info.
+ContinuousDynamicalSystem(prob::ODEProblem [, jacobian [, J0]])
+ODEProblem(continuous_dynamical_system, tspan, args...)
+```
+where in the second case `args` stands for the
+[standard extra arguments](http://docs.juliadiffeq.org/latest/types/ode_types.html#Constructors-1)
+of `ODEProblem`: `callback, mass_matrix`.
+
+If you want to use callbacks with [`tangent_integrator`](@ref) or
+[`parallel_integrator`](@ref), then invoke them with extra arguments
+as shown in the [Advanced Documentation](https://juliadynamics.github.io/DynamicalSystems.jl/latest/advanced/).
 
 ## Relevant Functions
 [`trajectory`](@ref), [`set_parameter!`](@ref).
@@ -110,23 +95,56 @@ abstract type DynamicalSystem{
         IAD}     # is auto-differentiated
     # one-liner: {IIP, S, D, F, P, JAC, JM, IAD}
     # Subtypes of DynamicalSystem have fields:
-    # 1. prob
-    # 2. jacobian (function)
-    # 3. J (matrix)  <- will allow Sparse implementation in the future
+    # 1. f
+    # 2. u0
+    # 3. p
+    # 4. t0
+    # 5. jacobian (function)
+    # 6. J (matrix)
 end
-
 const DS = DynamicalSystem
 
-# Type stability methods:
-isinplace(ds::DS{IIP}) where {IIP} = IIP
-statetype(ds::DS{IIP, S}) where {IIP, S} = S
-stateeltype(ds::DS{IIP, S}) where {IIP, S} = eltype(S)
+"""
+    ContinuousDynamicalSystem(eom, state, p [, jacobian [, J]]; t0 = 0.0)
+A `DynamicalSystem` restricted to continuous-time systems (also called *ODEs*).
+"""
+struct ContinuousDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
+                 DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
+    f::F
+    u0::S
+    p::P
+    t0::eltype(S)
+    jacobian::JAC
+    J::JM
+end
+const CDS = ContinuousDynamicalSystem
+systemtype(::CDS) = "continuous"
 
-isautodiff(ds::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
+"""
+    DiscreteDynamicalSystem(eom, state, p [, jacobian [, J]]; t0::Int = 0)
+A `DynamicalSystem` restricted to discrete-time systems (also called *maps*).
+"""
+struct DiscreteDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
+               DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
+    f::F
+    u0::S
+    p::P
+    t0::Int
+    jacobian::JAC
+    J::JM
+end
+const DDS = DiscreteDynamicalSystem
+systemtype(::DDS) = "discrete"
+
+
+@inline isinplace(::DS{IIP}) where {IIP} = IIP
+@inline statetype(::DS{IIP, S}) where {IIP, S} = S
+@inline stateeltype(::DS{IIP, S}) where {IIP, S} = eltype(S)
+@inline isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
 {IIP, S, D, F, P, JAC, JM, IAD} = IAD
 
-@inline _get_eom(ds::DS) = _get_eom(ds.prob)
-@inline _get_eom(prob::ODEProblem) = prob.f.f
+get_state(ds::DS) = ds.u0
+
 
 
 """
@@ -134,7 +152,6 @@ isautodiff(ds::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
 Return the dimension of the `thing`, in the sense of state-space dimensionality.
 """
 dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
-get_state(ds::DS) = ds.prob.u0
 
 """
     set_parameter!(ds::DynamicalSystem, index, value)
@@ -143,14 +160,9 @@ Change one or many parameters of the system
 by setting `p[index] = value` in the first case
 and `p .= values` in the second.
 """
-set_parameter!(prob, index, value) = (prob.p[index] = value)
-set_parameter!(prob, values) = (prob.p .= values)
-set_parameter!(ds::DS, args...) = set_parameter!(ds.prob, args...)
+set_parameter!(ds::DS, index, value) = (ds.p[index] = value)
+set_parameter!(ds::DS, values) = (ds.p .= values)
 
-dimension(prob) = length(prob.u0)
-hascallback(prob::ODEProblem) = prob.callback != nothing
-inittime(prob) = prob.tspan[1]
-inittime(ds::DS) = inittime(ds.prob)
 
 #####################################################################################
 #                           State types enforcing                                   #
@@ -170,30 +182,84 @@ save_matrix_type(::Val{false}, Q::SMatrix) = Q
 safe_matrix_type(_, a::Number) = a
 
 #####################################################################################
+#                                    Constructors                                   #
+#####################################################################################
+for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
+
+    if ds == :ContinuousDynamicalSystem
+        @eval timetype(::Type{$(ds)}, s) = eltype(s)
+    else
+        @eval timetype(::Type{$(ds)}, s) = Int
+    end
+
+    # Main Constructor (with Jacobian and j0)
+    @eval function $(ds)(
+        eom::F, u0, p::P, j::JAC, j0 = nothing;
+        t0 = 0.0, IAD = false, IIP = isinplace(eom, 4)) where {F, P, JAC}
+
+        if !(typeof(u0) <: Union{AbstractVector, Number})
+            throw(ArgumentError(
+            "The state of a dynamical system *must* be <: AbstractVector/Number!"))
+        end
+
+        s = safe_state_type(Val{IIP}(), u0)
+        S = typeof(s)
+        D = length(s)
+
+        IIP || typeof(eom(s, p, t0)) <: Union{SVector, Number} ||
+        throw(ArgumentError("Equations of motion must return an `SVector` "*
+        "or number for out-of-place form!"))
+
+        J = j0 != nothing ? j0 : get_J(j, s, p, timetype($(ds), s)(t0), IIP)
+        JM = typeof(J)
+
+        return $(ds){
+            IIP, S, D, F, P, JAC, JM, IAD}(eom, u0, p, t0, j, J)
+    end
+
+    # Without Jacobian
+    @eval function $(ds)(eom, u0, p; t0 = 0.0)
+
+        if !(typeof(u0) <: Union{AbstractVector, Number})
+            throw(ArgumentError(
+            "The state of a dynamical system *must* be <: AbstractVector/Number!"))
+        end
+
+        IIP = isinplace(eom, 4)
+        s = safe_state_type(Val{IIP}(), u0)
+        D = length(s)
+
+        t = timetype($(ds), s)(t0)
+        j = create_jacobian(eom, Val{IIP}(), s, p, t, Val{D}())
+        J = get_J(j, s, p, t, IIP)
+
+        return $(ds)(eom, s, p, j, J; t0 = t0, IAD = true, IIP = IIP)
+    end
+end
+
+#####################################################################################
 #                                Pretty-Printing                                    #
 #####################################################################################
-systemtype(::ODEProblem) = "continuous"
-systemtype(something) = "discrete"
 Base.summary(ds::DS) =
-"$(dimension(ds))-dimensional "*systemtype(ds.prob)*" dynamical system"
+"$(dimension(ds))-dimensional "*systemtype(ds)*" dynamical system"
 
-jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(ds.jacobian)"
+jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(nameof(ds.jacobian))"
 
 function Base.show(io::IO, ds::DS)
     ps = 12
     text = summary(ds)
     print(io, text*"\n",
     rpad(" state: ", ps)*"$(get_state(ds))\n",
-    rpad(" e.o.m.: ", ps)*"$(_get_eom(ds))\n",
+    rpad(" e.o.m.: ", ps)*"$(nameof(ds.f))\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
-    rpad(" jacobian: ", ps)*"$(jacobianstring(ds))\n"
+    rpad(" jacobian: ", ps)*"$(jacobianstring(ds))"
     )
 end
 
 #######################################################################################
 #                                    Jacobians                                        #
 #######################################################################################
-function create_jacobian(
+@inline function create_jacobian(
     f::F, ::Val{IIP}, s::S, p::P, t::T, ::Val{D}) where {F, IIP, S, P, T, D}
     if IIP
         dum = deepcopy(s)
@@ -216,41 +282,30 @@ function create_jacobian(
     end
 end
 
-# get_J function is defined at individual files
+@inline function get_J(jacob, u0, p, t0, iip) where {JAC}
+    D = length(u0)
+    if iip
+        J = similar(u0, (D,D))
+        jacob(J, u0, p, t0)
+    else
+        J = jacob(u0, p, t0)
+    end
+    return J
+end
 
-# Jacobian function application
+
 """
-    jacobian(ds::DynamicalSystem, u = ds.prob.u0, t = inittime(ds.prob))
+    jacobian(ds::DynamicalSystem, u = ds.u0, t = ds.t0)
 Return the jacobian of the system at `u`, at `t`.
 """
-function jacobian(ds::DS{true}, u = ds.prob.u0, t = inittime(ds.prob))
+function jacobian(ds::DS{true}, u = ds.u0, t = ds.t0)
     J = similar(ds.J)
-    ds.jacobian(J, u, ds.prob.p, t)
+    ds.jacobian(J, u, ds.p, t)
     return J
 end
-jacobian(ds::DS{false}, u = ds.prob.u0, t = inittime(ds.prob)) =
-ds.jacobian(u, ds.prob.p, t)
+jacobian(ds::DS{false}, u = ds.u0, t = ds.t0) =
+ds.jacobian(u, ds.p, t)
 
-function get_J(prob, jacob::JAC) where {JAC}
-    D = length(prob.u0)
-    if isinplace(prob)
-        J = similar(prob.u0, (D,D))
-        jacob(J, prob.u0, prob.p, inittime(prob))
-    else
-        J = jacob(prob.u0, prob.p, inittime(prob))
-    end
-    return J
-end
-function get_J(jacob::JAC, u, p, t) where {JAC}
-    D = length(u)
-    if isinplace(jacob, 4)
-        J = similar(u, (D,D))
-        jacob(J, u, p, t)
-    else
-        J = jacob(u, p, t)
-    end
-    return J
-end
 
 #######################################################################################
 #                                 Tanget Dynamics                                     #
@@ -321,7 +376,7 @@ function create_parallel(ds::DS{true}, states)
     L = length(st)
     paralleleom = (du, u, p, t) -> begin
         for i in 1:L
-            @inbounds ds.prob.f(du[i], u[i], p, t)
+            @inbounds ds.f(du[i], u[i], p, t)
         end
     end
     return paralleleom, st
@@ -334,7 +389,7 @@ function create_parallel(ds::DS{false}, states)
     # The following may be inneficient
     paralleleom = (du, u, p, t) -> begin
         for i in 1:L
-            @inbounds du[i] = ds.prob.f(u[i], p, t)
+            @inbounds du[i] = ds.f(u[i], p, t)
         end
     end
     return paralleleom, st

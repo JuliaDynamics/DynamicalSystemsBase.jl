@@ -1,100 +1,30 @@
 using OrdinaryDiffEq, StaticArrays
-using OrdinaryDiffEq: ODEIntegrator
+import OrdinaryDiffEq: ODEIntegrator, ODEProblem
+using DiffEqBase: __init, ODEFunction
 
-export ContinuousDynamicalSystem
+export CDS_KWARGS
 #####################################################################################
 #                                    Defaults                                       #
 #####################################################################################
 const DEFAULT_SOLVER = Vern9()
-const DEFAULT_DIFFEQ_KWARGS = (alg = DEFAULT_SOLVER,
-abstol = 1e-9, reltol = 1e-9, maxiters = typemax(Int))
-const CDS_TSPAN = (0.0, Inf)
+const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-9,
+reltol = 1e-9, maxiters = typemax(Int))
+
+const CDS_KWARGS = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
+
+_get_solver(a) = haskey(a, :alg) ? a[:alg] : DEFAULT_SOLVER
 
 #####################################################################################
-#                           ContinuousDynamicalSystem                               #
+#                               Interface to DiffEq                                 #
 #####################################################################################
-"""
-    ContinuousDynamicalSystem(eom, state, p [, jacobian [, J]]; t0 = 0.0)
-A `DynamicalSystem` restricted to continuous-time systems (also called *ODEs*).
-"""
-struct ContinuousDynamicalSystem{
-        IIP, S, D, F, P, JAC, JM, IAD,
-        ODE<:ODEProblem} <: DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
-    prob::ODE
-    jacobian::JAC
-    J::JM
+function ContinuousDynamicalSystem(prob::ODEProblem, args...)
+    return ContinuousDynamicalSystem(prob.f.f, prob.u0, prob.p, args...;
+           t0 = prob.tspan[1])
 end
 
-_get_eom_type(a::ODEProblem) = typeof(a.f.f)
-
-const CDS = ContinuousDynamicalSystem
-stateeltype(::CDS{IIP, S}) where {IIP, S} = eltype(S)
-stateeltype(::ODEProblem{S}) where {S} = eltype(S)
-timetype(::ContinuousDynamicalSystem{
-IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM}) where
-{IIP, S, D, F, P, JAC, JM, IAD, tType, JPROT, C, MM} = tType
-
-# THIS IS THE MAIN CONSTRUCTOR. EVERYTHING FALLS HERE! #
-function ContinuousDynamicalSystem(
-    prob::ODEProblem{S, tType, IIP, P, OF, C, MM},
-    j::JAC, j0::JM, IAD::Bool) where {S, tType, IIP, P, OF, C, MM, JAC, JM, IAD}
-
-    @assert S <: AbstractVector
-    D = length(prob.u0)
-    F = _get_eom_type(prob)
-
-    finalprob = ODEProblem(
-        ODEFunction(prob.f.f; jac = j), prob.u0, prob.tspan, prob.p,
-        prob.callback, prob.mass_matrix, prob.problem_type)
-
-    ODE = typeof(finalprob)
-
-    return ContinuousDynamicalSystem{
-        IIP, S, D, F, P, JAC, JM, IAD, ODE}(prob, j, j0)
-end
-
-# With jacobian. Main that falls back to the ABOVE one!
-function ContinuousDynamicalSystem(
-    eom::F, s, p::P, j::JAC, J0::JM; t0 = 0.0, iad = false) where {F, P, JAC, JM}
-
-    if !(typeof(s) <: Union{AbstractVector, Number})
-        throw(ArgumentError("
-        The state of a dynamical system *must* be <: AbstractVector/Number!"))
-    end
-
-    IIP = isinplace(eom, 4)
-    # Ensure that there are only 2 cases: OOP with SVector or IIP with Vector
-    # (requirement from ChaosTools)
-    IIP || typeof(eom(s, p, t0)) <: SVector || error(
-    "Equations of motion must return an `SVector` for out-of-place form!")
-    u0 = safe_state_type(Val{IIP}(), s)
-
-    prob = ODEProblem(eom, u0, (t0, oftype(t0, Inf)), p)
-    return ContinuousDynamicalSystem(prob, j, J0, iad)
-end
-function ContinuousDynamicalSystem(
-    eom::F, s, p::P, j::JAC; t0 = 0.0) where {F, P, JAC}
-    J0 = get_J(j, s, p, t0)
-    return ContinuousDynamicalSystem(eom, s, p, j, J0; t0 = t0)
-end
-
-# Without jacobian:
-function ContinuousDynamicalSystem(
-    eom::F, s, p::P; t0 = 0.0) where {F, P}
-    IIP = isinplace(eom, 4)
-    D = length(s)
-    j = create_jacobian(eom, Val{IIP}(), s, p, t0, Val{D}())
-    J0 = get_J(j, s, p, t0)
-    return ContinuousDynamicalSystem(eom, s, p, j, J0; t0 = t0, iad = true)
-end
-
-function ContinuousDynamicalSystem(prob::ODEProblem)
-    @assert typeof(u0) <: AbstractVector
-    eom = prob.f; s= prob.u0; D = length(s); t0 = prob.tspan[1]; p = prob.p;
-    IIP = isinplace(eom, 4)
-    j = create_jacobian(eom, Val{IIP}(), s, p, t0, Val{D}())
-    J0 = get_J(j, s, p, t0)
-    return ContinuousDynamicalSystem(prob, j, J0, true)
+function ODEProblem(ds::CDS{IIP}, tspan, args...) where {IIP}
+    return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian),
+           ds.u0, tspan, args...)
 end
 
 #####################################################################################
@@ -104,30 +34,28 @@ stateeltype(::ODEIntegrator{Alg, S}) where {Alg, S} = eltype(S)
 stateeltype(::ODEIntegrator{Alg, S}) where {
     Alg, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
-function integrator(ds::CDS{iip}, u0 = ds.prob.u0;
-    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    saveat = nothing, tspan = ds.prob.tspan) where {iip}
+function integrator(ds::CDS{iip}, u0 = ds.u0;
+    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, tfinal = Inf,
+    kwargs...) where {iip}
 
     u = safe_state_type(Val{iip}(), u0)
-    solver, newkw = extract_solver(diff_eq_kwargs)
-    prob = ODEProblem{iip}(ds.prob.f, u, tspan, ds.prob.p)
+    prob = ODEProblem{iip}(ds.f, u, (ds.t0, typeof(ds.t0)(tfinal)), ds.p)
 
-    saveat != nothing && tspan[2] == Inf && error("Infinite solving!")
+    (haskey(kwargs, :saveat) && tfinal == Inf) && error("Infinite solving!")
 
-    if saveat == nothing
-        integ = init(prob, solver; newkw..., save_everystep = false)
-    else
-        integ = init(prob, solver; newkw..., saveat = saveat, save_everystep = false)
-    end
+    solver = _get_solver(diff_eq_kwargs)
+    integ = __init(prob, solver; DEFAULT_DIFFEQ_KWARGS...,
+            save_everystep = false, diff_eq_kwargs..., kwargs...)
+    return integ
 end
 
-############################### Tangent ##############################################
-function tangent_integrator(ds::CDS, k::Int; kwargs...)
+############################### Tangent #############################################
+function tangent_integrator(ds::CDS, k::Int = dimension(ds); kwargs...)
     return tangent_integrator(ds, orthonormal(dimension(ds), k); kwargs...)
 end
 function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
-    u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    t0 = inittime(ds), callback = nothing) where {IIP}
+    u0 = ds.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
+    t0 = ds.t0, callback = nothing) where {IIP}
 
     Q = safe_matrix_type(Val{IIP}(), Q0)
     u = safe_state_type(Val{IIP}(), u0)
@@ -137,18 +65,19 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
     "It is not possible to evolve more tangent vectors than the system's dimension!"
     ))
 
-    tangentf = create_tangent(ds.prob.f, ds.jacobian, ds.J, Val{IIP}(), Val{k}())
-    tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (t0, Inf), ds.prob.p)
+    tangentf = create_tangent(ds.f, ds.jacobian, ds.J, Val{IIP}(), Val{k}())
+    tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
-    solver, newkw = extract_solver(diff_eq_kwargs)
-    return init(tanprob, solver; newkw..., save_everystep = false, callback = callback)
+    solver = _get_solver(diff_eq_kwargs)
+    return init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+           diff_eq_kwargs..., callback = callback)
 end
 
 # Auto-diffed in-place version
 function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     Q0::AbstractMatrix;
-    u0 = ds.prob.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    t0 = inittime(ds), callback = nothing) where {S, D, F, P, JAC, JM}
+    u0 = ds.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
+    t0 = ds.t0, callback = nothing) where {S, D, F, P, JAC, JM}
 
     Q = safe_matrix_type(Val{true}(), Q0)
     u = safe_state_type(Val{true}(), u0)
@@ -159,16 +88,15 @@ function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     ))
 
     tangentf = create_tangent_iad(
-        ds.prob.f, ds.J, u, ds.prob.p, t0, Val{k}())
-    tanprob = ODEProblem{true}(tangentf, hcat(u, Q), (t0, Inf), ds.prob.p)
+        ds.f, ds.J, u, ds.p, t0, Val{k}())
+    tanprob = ODEProblem{true}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
-    solver, newkw = extract_solver(diff_eq_kwargs)
-    return init(tanprob, solver; newkw..., save_everystep = false, callback = callback)
+    solver = _get_solver(diff_eq_kwargs)
+    return init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+           diff_eq_kwargs..., callback = callback)
 end
 
-
-
-############################### Parallel ##############################################
+############################### Parallel ############################################
 # Vector-of-Vector does not work with DiffEq atm:
 # This is a workaround currently, until DiffEq allows Vector[Vector]
 function create_parallel(ds::CDS{true}, states)
@@ -176,7 +104,7 @@ function create_parallel(ds::CDS{true}, states)
     L = size(st)[2]
     paralleleom = (du, u, p, t) -> begin
         for i in 1:L
-            ds.prob.f(view(du, :, i), view(u, :, i), p, t)
+            ds.f(view(du, :, i), view(u, :, i), p, t)
         end
     end
     return paralleleom, st
@@ -192,24 +120,24 @@ GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P]
 function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
     callback = nothing)
     peom, st = create_parallel(ds, states)
-    pprob = ODEProblem(peom, st, (inittime(ds), Inf), ds.prob.p)
-    solver, newkw = extract_solver(diff_eq_kwargs)
+    pprob = ODEProblem(peom, st, (ds.t0, typeof(ds.t0)(Inf)), ds.p)
+    solver = _get_solver(diff_eq_kwargs)
     # if typeof(solver) ∈ STIFFSOLVERS
     #     error("Stiff solvers can't support a parallel integrator.")
     # end
-    return init(pprob, solver; newkw..., save_everystep = false, callback = callback)
+    return init(pprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+           diff_eq_kwargs..., callback = callback)
 end
 
 #####################################################################################
 #                                 Trajectory                                        #
 #####################################################################################
-function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.prob.u0;
+function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, dt = 0.01, Ttr = 0)
 
-    t0 = inittime(ds)
+    t0 = ds.t0
     tvec = (t0+Ttr):dt:(T+t0+Ttr)
-    tspan = (t0, t0 + Ttr + T)
-    integ = integrator(ds, u; tspan = tspan,
+    integ = integrator(ds, u; tfinal = t0 + Ttr + T,
     diff_eq_kwargs = diff_eq_kwargs, saveat = tvec)
     solve!(integ)
     return Dataset(integ.sol.u)
@@ -219,11 +147,12 @@ end
 #                                    Get States                                     #
 #####################################################################################
 get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} = integ.u
-get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} = integ.u[:, 1]
+get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} =
+integ.u[:, 1]
 get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Vector{<:AbstractVector}} =
     integ.u[1]
-get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {Alg, S<:Vector{<:AbstractVector}} =
-    integ.u[k]
+get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {
+    Alg, S<:Vector{<:AbstractVector}} = integ.u[k]
 get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {Alg, S<:AbstractMatrix} =
     integ.u[:, k]
 
@@ -257,6 +186,6 @@ get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
 end
 
 set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:Matrix} =
-    (integ.u[:, 2:end] = Q; u_modified!(integ, true))
+    (integ.u[:, 2:end] .= Q; u_modified!(integ, true))
 set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:SMatrix} =
     (integ.u = hcat(integ.u[:,1], Q); u_modified!(integ, true))
