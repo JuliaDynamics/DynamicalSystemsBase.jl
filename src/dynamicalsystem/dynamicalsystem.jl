@@ -399,13 +399,14 @@ end
 #                                     Docstrings                                      #
 #######################################################################################
 """
-    integrator(ds::DynamicalSystem [, u0]; diff_eq_kwargs) -> integ
+    integrator(ds::DynamicalSystem [, u0]; diffeq...) -> integ
 Return an integrator object that can be used to evolve a system interactively
 using `step!(integ [, Δt])`. Optionally specify an initial state `u0`.
 
 The state of this integrator is a vector.
 
-See [`trajectory`](@ref) for `diff_eq_kwargs`.
+* `diffeq...` are keyword arguments propagated into `init` of DifferentialEquations.jl.
+  See [`trajectory`](@ref) for examples. Only valid for continuous systems.
 """
 function integrator end
 
@@ -428,8 +429,10 @@ Set the state of the integrator to `u`, in the sense of the state of the
 dynamical system. Works for any integrator (normal, tangent, parallel).
 
 For parallel integrator, you can choose which state to set (using `i`).
+
+Automatically does `u_modified!(integ, true)`.
 """
-set_state!(integ, u) = (integ.u = u)
+set_state!(integ, u) = (integ.u = u; u_modified!(integ, true))
 
 """
     tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; kwargs...)
@@ -441,10 +444,10 @@ instead of a matrix `Q0` an integer `k` is given, then `k` random orthonormal
 vectors are choosen as initial conditions.
 
 ## Keyword Arguments
-* `u0, t0` : Optional different initial state and time.
-* `diff_eq_kwargs` : see [`trajectory`](@ref).
-* `callback` : A callback (valid only for continuous systems) to be used
-  with [event handling of DifferentialEquations.jl](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
+* `u0` : Optional different initial state.
+* `diffeq...` : Keyword arguments propagated into `init` of DifferentialEquations.jl.
+  See [`trajectory`](@ref) for examples. Only valid for continuous systems.
+  These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
 It is *heavily* advised to use the functions [`get_state`](@ref), [`get_deviations`](@ref),
 [`set_state!`](@ref), [`set_deviations!`](@ref) to manipulate the integrator.
@@ -490,9 +493,9 @@ a system in parallel at the *exact same times*, using `step!(integ [, Δt])`.
 
 ## Keyword Arguments
 * `u0, t0` : Optional different initial state and time.
-* `diff_eq_kwargs` : see [`trajectory`](@ref).
-* `callback` : A callback (valid only for continuous systems) to be used
-  with [event handling of DifferentialEquations.jl](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
+* `diffeq...` : Keyword arguments propagated into `init` of DifferentialEquations.jl.
+  See [`trajectory`](@ref) for examples. Only valid for continuous systems.
+  These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
 It is *heavily* advised to use the functions [`get_state`](@ref) and
 [`set_state!`](@ref) to manipulate the integrator. Provide `i` as a second
@@ -516,12 +519,14 @@ For discrete systems both `T` and `dt` must be integers.
   of the continuous system. For discrete systems it must be an integer. Defaults
   to `0.01` for continuous and `1` for discrete.
 * `Ttr` : Transient time to evolve the initial state before starting saving states.
-* `diff_eq_kwargs` : (only for continuous) A `NamedTuple` of keyword arguments
-  passed into the solvers of the [DifferentialEquations.jl](http://docs.juliadiffeq.org/latest/basics/common_solver_opts.html)
-  package, for example `(abstol = 1e-9)`. If you want to specify a solver,
-  do so by using the name `alg`, e.g.:
-  `(alg = Tsit5(), maxiters = 1000)`. This requires you to have been first
-  `using OrdinaryDiffEq` to access the solvers. Defaults to
-  `(alg = Vern9(), abstol = 1e-9, reltol = 1e-9, maxiters = typemax(Int))`.
+* `diffeq...` : Keyword arguments propagated into `init` of DifferentialEquations.jl.
+  For example `abstol = 1e-9`.  Only valid for continuous systems.
+  If you want to specify a solver, do so by using the name `alg`, e.g.:
+  `alg = Tsit5(), maxiters = 1000`. This requires you to have been first
+  `using OrdinaryDiffEq` to access the solvers. See
+  `DynamicalSystemsBase.CDS_KWARGS` for default values.
+  These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
+  Using a `SavingCallback` with `trajectory` will lead to unexpected behavior!
+
 """
 function trajectory end

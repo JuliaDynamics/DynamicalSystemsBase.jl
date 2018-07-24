@@ -35,17 +35,16 @@ stateeltype(::ODEIntegrator{Alg, S}) where {
     Alg, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
 function integrator(ds::CDS{iip}, u0 = ds.u0;
-    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, tfinal = Inf,
-    kwargs...) where {iip}
+    tfinal = Inf, diffeq...) where {iip}
 
     u = safe_state_type(Val{iip}(), u0)
     prob = ODEProblem{iip}(ds.f, u, (ds.t0, typeof(ds.t0)(tfinal)), ds.p)
 
-    (haskey(kwargs, :saveat) && tfinal == Inf) && error("Infinite solving!")
+    (haskey(diffeq, :saveat) && tfinal == Inf) && error("Infinite solving!")
 
     solver = _get_solver(diff_eq_kwargs)
     integ = __init(prob, solver; DEFAULT_DIFFEQ_KWARGS...,
-            save_everystep = false, diff_eq_kwargs..., kwargs...)
+                   save_everystep = false, diffeq...)
     return integ
 end
 
@@ -54,9 +53,9 @@ function tangent_integrator(ds::CDS, k::Int = dimension(ds); kwargs...)
     return tangent_integrator(ds, orthonormal(dimension(ds), k); kwargs...)
 end
 function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
-    u0 = ds.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    t0 = ds.t0, callback = nothing) where {IIP}
+    u0 = ds.u0, diffeq...) where {IIP}
 
+    t0 = ds.t0
     Q = safe_matrix_type(Val{IIP}(), Q0)
     u = safe_state_type(Val{IIP}(), u0)
 
@@ -68,17 +67,17 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
     tangentf = create_tangent(ds.f, ds.jacobian, ds.J, Val{IIP}(), Val{k}())
     tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
-    solver = _get_solver(diff_eq_kwargs)
-    return init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
-           diff_eq_kwargs..., callback = callback)
+    solver = _get_solver(diffeq)
+    return  __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS...,
+                   save_everystep = false, diffeq...)
 end
 
 # Auto-diffed in-place version
 function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     Q0::AbstractMatrix;
-    u0 = ds.u0, diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    t0 = ds.t0, callback = nothing) where {S, D, F, P, JAC, JM}
+    u0 = ds.u0, diffeq...) where {S, D, F, P, JAC, JM}
 
+    t0 = ds.t0
     Q = safe_matrix_type(Val{true}(), Q0)
     u = safe_state_type(Val{true}(), u0)
 
@@ -87,13 +86,12 @@ function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     "It is not possible to evolve more tangent vectors than the system's dimension!"
     ))
 
-    tangentf = create_tangent_iad(
-        ds.f, ds.J, u, ds.p, t0, Val{k}())
+    tangentf = create_tangent_iad(ds.f, ds.J, u, ds.p, t0, Val{k}())
     tanprob = ODEProblem{true}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
     solver = _get_solver(diff_eq_kwargs)
-    return init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
-           diff_eq_kwargs..., callback = callback)
+    return __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+                diffeq...)
 end
 
 ############################### Parallel ############################################
@@ -110,35 +108,33 @@ function create_parallel(ds::CDS{true}, states)
     return paralleleom, st
 end
 
-const STIFFSOLVERS = [ImplicitEuler, ImplicitMidpoint, Trapezoid, TRBDF2,
+const STIFFSOLVERS = (ImplicitEuler, ImplicitMidpoint, Trapezoid, TRBDF2,
 GenericImplicitEuler,
 GenericTrapezoid, SDIRK2, Kvaerno3, KenCarp3, Cash4, Hairer4, Hairer42, Kvaerno4,
 KenCarp4, Kvaerno5, KenCarp5, Rosenbrock23,
 Rosenbrock32, ROS3P, Rodas3, RosShamp4, Veldd4, Velds4, GRK4T,
-GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P]
+GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P)
 
-function parallel_integrator(ds::CDS, states; diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS,
-    callback = nothing)
+function parallel_integrator(ds::CDS, states; diffeq...)
     peom, st = create_parallel(ds, states)
     pprob = ODEProblem(peom, st, (ds.t0, typeof(ds.t0)(Inf)), ds.p)
     solver = _get_solver(diff_eq_kwargs)
     # if typeof(solver) ∈ STIFFSOLVERS
     #     error("Stiff solvers can't support a parallel integrator.")
     # end
-    return init(pprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
-           diff_eq_kwargs..., callback = callback)
+    return __init(pprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+                  diffeq...)
 end
 
 #####################################################################################
 #                                 Trajectory                                        #
 #####################################################################################
 function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
-    diff_eq_kwargs = DEFAULT_DIFFEQ_KWARGS, dt = 0.01, Ttr = 0)
+    dt = 0.01, Ttr = 0.0, diffeq...)
 
     t0 = ds.t0
     tvec = (t0+Ttr):dt:(T+t0+Ttr)
-    integ = integrator(ds, u; tfinal = t0 + Ttr + T,
-    diff_eq_kwargs = diff_eq_kwargs, saveat = tvec)
+    integ = integrator(ds, u; tfinal = t0 + Ttr + T, diffeq..., saveat = tvec)
     solve!(integ)
     return Dataset(integ.sol.u)
 end
@@ -160,16 +156,18 @@ function set_state!(
     integ::ODEIntegrator{Alg, S}, u::AbstractVector, k::Int = 1
     ) where {Alg, S<:Vector{<:AbstractVector}}
     integ.u[k] = u
+    u_modified!(integ, true)
 end
 function set_state!(
     integ::ODEIntegrator{Alg, S}, u::AbstractVector) where {Alg, S<:Matrix}
     integ.u[:, 1] .= u
+    u_modified!(integ, true)
 end
 function set_state!(
     integ::ODEIntegrator{Alg, S}, u::AbstractVector
     ) where {Alg, S<:SMatrix{D, K}} where {D, K}
     integ.u = hcat(SVector{D}(u), integ.u[:, SVector{K-1}(2:K...)])
-    return
+    u_modified!(integ, true)
 end
 
 get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =

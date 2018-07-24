@@ -188,7 +188,7 @@ function tangent_integrator(ds::DDS, k::Int = dimension(ds); kwargs...)
 end
 
 function tangent_integrator(ds::DDS{IIP, S, D, F, P, JAC, JM}, Q0::AbstractMatrix;
-    u0 = ds.u0, t0 = ds.t0) where {IIP, S, D, F, P, JAC, JM}
+    u0 = ds.u0) where {IIP, S, D, F, P, JAC, JM}
 
     Q = safe_matrix_type(Val{IIP}(), Q0)
     s = safe_state_type(Val{IIP}(), u0)
@@ -205,8 +205,9 @@ end
 # Auto-diffed in-place version
 function tangent_integrator(ds::DDS{true, S, D, F, P, JAC, JM, true},
     Q0::AbstractMatrix;
-    u0 = ds.u0, t0 = ds.t0) where {S, D, F, P, JAC, JM}
+    u0 = ds.u0) where {S, D, F, P, JAC, JM}
 
+    to = ds.t0
     R = D + length(Q0)
     k = size(Q0)[2]
     Q = safe_matrix_type(Val{true}(), Q0)
