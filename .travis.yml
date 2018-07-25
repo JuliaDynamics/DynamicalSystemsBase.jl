@@ -1,15 +1,14 @@
-## Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
 os:
   - linux
 #  - osx
+# branches:
+#   except:
+#     - 0.7
 julia:
-#  - 0.6
-   - nightly
+  # - 0.7
+  - nightly
 notifications:
   email:
     on_success: never
     on_failure: always
-script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'using UUIDs; import Pkg; p = "Project.toml"; uuid = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"; write(p, replace(read(p, String), uuid => uuid4()));  Pkg.up(); Pkg.test(; coverage=true)'
