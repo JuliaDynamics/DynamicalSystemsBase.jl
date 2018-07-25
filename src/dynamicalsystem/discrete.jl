@@ -20,7 +20,7 @@ isinplace(::MDI{IIP}) where {IIP} = IIP
 stateeltype(::MDI{IIP, S}) where {IIP, S} = eltype(S)
 stateeltype(::MDI{IIP, S}) where {IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
-function reinit!(integ::MDI, u = integ.u; t0 = integ.t0, Q0 = nothing)
+function reinit!(integ::MDI, u = integ.u, Q0 = nothing, t0 = integ.t0)
     integ.u = u
     integ.dummy = u
     integ.t = t0
@@ -118,8 +118,7 @@ u_modified!(t::TDI, a) = nothing
 get_deviations(t::TDI) = t.W
 set_deviations!(t::TDI, Q) = (t.W = Q)
 
-function reinit!(integ::TDI, u = integ.u;
-    t0 = integ.t0, Q0 = nothing)
+function reinit!(integ::TDI, u = integ.u, Q0 = nothing, t0 = integ.t0)
     set_state!(integ, u)
     if Q0 != nothing
         set_deviations!(integ, Q0)
@@ -207,7 +206,7 @@ function tangent_integrator(ds::DDS{true, S, D, F, P, JAC, JM, true},
     Q0::AbstractMatrix;
     u0 = ds.u0) where {S, D, F, P, JAC, JM}
 
-    to = ds.t0
+    t0 = ds.t0
     R = D + length(Q0)
     k = size(Q0)[2]
     Q = safe_matrix_type(Val{true}(), Q0)

@@ -3,5 +3,5 @@ StaticArrays 0.8
 Distances 0.7
 NearestNeighbors 0.4
 DiffEqBase 4.10
-OrdinaryDiffEq 4.4
+OrdinaryDiffEq 4.5
 ForwardDiff 0.8
