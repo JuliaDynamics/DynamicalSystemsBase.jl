@@ -14,6 +14,9 @@ This also lead to re-working of how keyword arguments are handled. I am
 very happy to say that these changes reduced *tremendously* the source code!
 
 ## New Features
+* Exported a 3-argument `reinit!(integ, u0::AbstractVector, Q0::AbstractMatrix)` that takes `Q0` as the third argument
+  and reinits safely any integrator.
+
 * `reconstruct` creates internally a subtype of `AbstractEmbedding`. These objects can be used as functors to create the `i`-th reconstructed vector on demand. This also improved
 
 * `tangent_` and `parallel_integrator` can now accept callbacks for continuous systems. In general you could pass to the constructors any keyword acceptable by `init` of DiffEq.

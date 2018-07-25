@@ -187,3 +187,11 @@ set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:Matrix} =
     (integ.u[:, 2:end] .= Q; u_modified!(integ, true))
 set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:SMatrix} =
     (integ.u = hcat(integ.u[:,1], Q); u_modified!(integ, true))
+
+function DiffEqBase.reinit!(integ::ODEIntegrator, u0::AbstractVector,
+    Q0::AbstractMatrix)
+
+    set_state!(integ, u0)
+    set_deviations!(integ, Q0)
+    reinit!(integ, integ.u)
+end
