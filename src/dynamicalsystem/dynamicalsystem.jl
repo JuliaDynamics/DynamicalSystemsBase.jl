@@ -243,14 +243,16 @@ end
 Base.summary(ds::DS) =
 "$(dimension(ds))-dimensional "*systemtype(ds)*" dynamical system"
 
-jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(nameof(ds.jacobian))"
+jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(eomstring(ds.jacobian))"
+eomstring(f::Function) = nameof(f)
+eomstring(f) = nameof(typeof(f))
 
 function Base.show(io::IO, ds::DS)
     ps = 12
     text = summary(ds)
     print(io, text*"\n",
     rpad(" state: ", ps)*"$(get_state(ds))\n",
-    rpad(" e.o.m.: ", ps)*"$(nameof(ds.f))\n",
+    rpad(" e.o.m.: ", ps)*"$(eomstring(ds.f))\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
     rpad(" jacobian: ", ps)*"$(jacobianstring(ds))"
     )

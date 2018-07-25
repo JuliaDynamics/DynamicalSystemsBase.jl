@@ -19,5 +19,6 @@ include("dynamicalsystem/famous_systems.jl")
 include("deprecations.jl")
 
 export Systems, reinit!
+export SVector, SMatrix, @SVector, @SMatrix
 
 end
