@@ -1,5 +1,5 @@
 using LinearAlgebra, DiffEqBase, ForwardDiff, StaticArrays
-import DiffEqBase: isinplace
+import DiffEqBase: isinplace, reinit!
 
 export dimension, get_state, DynamicalSystem
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
