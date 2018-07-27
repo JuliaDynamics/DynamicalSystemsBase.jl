@@ -5,30 +5,41 @@ using DynamicalSystemsBase: create_jacobian, create_tangent, stateeltype, isinpl
 println("\nTesting inference...")
 
 @testset "Inference" begin
-    for ds in [Systems.towel(), Systems.henon_iip()]
+    ds = [Systems.towel(), Systems.henon_iip()]
+    @testset "IIP = $IIP" for IIP in [false, true]
+        ds = IIP ? ds[2] : ds[1]
         @test_nowarn @inferred integrator(ds)
+
         f = ds.f
         s = get_state(ds)
         p = ds.p
         t = 0
         D = dimension(ds)
-        IIP = isinplace(ds)
-        @test_nowarn @inferred create_jacobian(f, Val{IIP}(), s, p, t, Val{D}())
-        @test_nowarn @inferred create_tangent(f, ds.jacobian, ds.J, Val{IIP}(), Val{2}())
-        @test_nowarn @inferred jacobian(ds)
+
+        @testset "Create Jac" begin
+            # @test_nowarn @inferred create_jacobian(f, Val{IIP}(), s, p, t, Val{D}())
+            @test_nowarn @inferred create_tangent(f, ds.jacobian, ds.J, Val{IIP}(), Val{2}())
+            @test_nowarn @inferred jacobian(ds)
+        end
+
 
         # Integrator state inference:
-        @test_nowarn @inferred stateeltype(ds)
-        integ = integrator(ds)
-        @test_nowarn @inferred stateeltype(integ)
-        @test stateeltype(integ) == Float64
+        @testset "Integrator" begin
+            @test_nowarn @inferred stateeltype(ds)
+            integ = integrator(ds)
+            @test_nowarn @inferred stateeltype(integ)
+            @test stateeltype(integ) == Float64
+        end
 
-        integ = tangent_integrator(ds, 2)
-        @test_nowarn @inferred stateeltype(integ)
-        @test stateeltype(integ) == Float64
-
-        integ = parallel_integrator(ds, [get_state(ds)])
-        @test_nowarn @inferred stateeltype(integ)
-        @test stateeltype(integ) == Float64
+        @testset "Tangent" begin
+            integ = tangent_integrator(ds, 2)
+            @test_nowarn @inferred stateeltype(integ)
+            @test stateeltype(integ) == Float64
+        end
+        @testset "Parallel" begin
+            integ = parallel_integrator(ds, [get_state(ds)])
+            @test_nowarn @inferred stateeltype(integ)
+            @test stateeltype(integ) == Float64
+        end
     end
 end
