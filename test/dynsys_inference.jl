@@ -5,9 +5,9 @@ using DynamicalSystemsBase: create_jacobian, create_tangent, stateeltype, isinpl
 println("\nTesting inference...")
 
 @testset "Inference" begin
-    ds = [Systems.towel(), Systems.henon_iip()]
+    dss = [Systems.towel(), Systems.henon_iip()]
     @testset "IIP = $IIP" for IIP in [false, true]
-        ds = IIP ? ds[2] : ds[1]
+        ds = IIP ? dss[2] : dss[1]
         @test_nowarn @inferred integrator(ds)
 
         f = ds.f
