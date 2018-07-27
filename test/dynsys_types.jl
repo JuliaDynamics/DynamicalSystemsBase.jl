@@ -1,11 +1,11 @@
 using DynamicalSystemsBase
-using Base.Test, StaticArrays
+using Test, StaticArrays, LinearAlgebra
 using DynamicalSystemsBase: CDS, DDS
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
 using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
 
 println("\nTesting dynamical systems...")
-
+let
 u0 = [0, 10.0, 0]
 p = [10, 28, 8/3]
 u0h = ones(2)
@@ -95,4 +95,5 @@ for i in 1:8
             @test get_state(pinteg, 1) ≈ integ(tt)
         end
     end
+end
 end

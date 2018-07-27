@@ -2,8 +2,6 @@ using DynamicalSystemsBase
 
 ti = time()
 
-# Mathematics:
-include("math_tests.jl")
 # Systems:
 include("dynsys_types.jl")
 include("dynsys_tangent.jl")
@@ -18,4 +16,4 @@ include("reconstruction_tests.jl")
 
 ti = time() - ti
 println("\nTest took total time of:")
-println(round(ti, 3), " seconds or ", round(ti/60, 3), " minutes")
+println(round(ti, digits=3), " seconds or ", round(ti/60, digits=3), " minutes")

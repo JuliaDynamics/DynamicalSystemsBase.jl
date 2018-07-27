@@ -1,5 +1,5 @@
 using DynamicalSystemsBase
-using Base.Test, StaticArrays
+using Test, StaticArrays
 
 println("\nTesting neighborhoods...")
 
@@ -13,7 +13,7 @@ println("\nTesting neighborhoods...")
     @testset "neighborhood" begin
 
         point1 = data[100]
-        point2 = point1 + 0.000001rand(SVector{3})
+        point2 = point1 + 0.000001one(SVector{3})
 
         kn1 = [1724, 100, 6765]
 

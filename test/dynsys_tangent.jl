@@ -1,5 +1,7 @@
 using DynamicalSystemsBase
-using Base.Test, StaticArrays
+using StaticArrays, LinearAlgebra
+using Test
+
 using DynamicalSystemsBase: CDS, DDS, DS
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
 using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
@@ -7,7 +9,7 @@ using DiffEqBase
 
 println("\nTesting tangent dynamics...")
 
-
+let
 u0 = [0, 10.0, 0]
 p = [10, 28, 8/3]
 u0h = ones(2)
@@ -28,10 +30,11 @@ function lyapunov_iip(ds::DS, k)
             step!(tode)
         end
         # println("K = $K")
-        Q, R = qr(get_deviations(tode))
+        QR = qr(get_deviations(tode))
+        Q, R = QR.Q, QR.R
         λ .+= log.(abs.(diag(R)))
 
-        set_deviations!(tode, Q)
+        set_deviations!(tode, Matrix(Q))
         u_modified!(tode, true)
     end
     λ = λ/tode.t # woooorks
@@ -46,7 +49,8 @@ function lyapunov_oop(ds::DS, k)
             step!(tode)
         end
         # println("K = $K")
-        Q, R = qr(get_deviations(tode))
+        QR = qr(get_deviations(tode))
+        Q, R = QR.Q, QR.R
         λ .+= log.(abs.(diag(R)))
 
         set_deviations!(tode, Q)
@@ -85,4 +89,5 @@ for i in 1:8
             @test 0.4 < λ[1] < 0.45
         end
     end
+end
 end
