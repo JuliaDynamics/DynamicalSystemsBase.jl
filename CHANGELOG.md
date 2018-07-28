@@ -1,6 +1,6 @@
 Changelog of `DynamicalSystemsBase`.
 
-# master
+# 0.11.0
 
 ## Breaking
 * Dropped support of Julia versions < 0.7
