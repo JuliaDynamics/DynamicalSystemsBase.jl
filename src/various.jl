@@ -1,7 +1,7 @@
 #####################################################################################
 #                                Pairwse Distance                                   #
 #####################################################################################
-using NearestNeighbors, StaticArrays
+using NearestNeighbors, StaticArrays, LinearAlgebra
 export min_pairwise_distance, orthonormal
 
 # min_pairwise_distance contributed by Kristoffer Carlsson
@@ -75,8 +75,9 @@ an `D`-dimensional orthonormal vector.
 
 Always returns `SMatrix` for stability reasons.
 """
-function orthonormal(D::Int, k::Int)
+function orthonormal end
+
+@inline function orthonormal(D::Int, k::Int)
     k > D && throw(ArgumentError("k must be ≤ D"))
-    q = qr(rand(D, D)).Q[:, 1:k]
-    return SMatrix{D, k, Float64}(q)
+    q = qr(rand(SMatrix{D, k})).Q
 end

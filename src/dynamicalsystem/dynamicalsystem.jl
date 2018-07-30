@@ -159,9 +159,11 @@ dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
 Change one or many parameters of the system
 by setting `p[index] = value` in the first case
 and `p .= values` in the second.
+
+The same function also works for any integrator.
 """
-set_parameter!(ds::DS, index, value) = (ds.p[index] = value)
-set_parameter!(ds::DS, values) = (ds.p .= values)
+set_parameter!(ds, index, value) = (ds.p[index] = value)
+set_parameter!(ds, values) = (ds.p .= values)
 
 
 #####################################################################################
@@ -353,18 +355,19 @@ end
     ::Val{false}, ::Val{k}) where {F, JAC, JM, k}
 
     ws_index = SVector{k, Int}(2:(k+1)...)
-    tangentf = TangentOOP(f, jacobian, ws_index)
+    tangentf = TangentOOP{F, JAC, k}(f, jacobian, ws_index)
     return tangentf
 end
-struct TangentOOP{F, JAC, k}
+struct TangentOOP{F, JAC, k} <: Function
     f::F
     jacobian::JAC
     ws::SVector{k, Int}
 end
-@inline function (tan::TangentOOP)(u, p, t)
-    du = tan.f(u[:, 1], p, t)
-    J = tan.jacobian(u[:, 1], p, t)
-    dW = J*u[:, tan.ws]
+function (tan::TangentOOP)(u, p, t)
+    s = u[:, 1]
+    @inbounds du = tan.f(s, p, t)
+    @inbounds J = tan.jacobian(s, p, t)
+    @inbounds dW = J*u[:, tan.ws]
     return hcat(du, dW)
 end
 

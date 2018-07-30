@@ -1,5 +1,9 @@
 Changelog of `DynamicalSystemsBase`.
 
+# master
+## New Features
+* `orthonormal` is 100x more performant. 
+
 # 0.11.0
 
 ## Breaking
