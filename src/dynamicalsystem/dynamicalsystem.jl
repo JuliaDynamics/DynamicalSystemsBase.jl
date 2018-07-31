@@ -250,13 +250,14 @@ eomstring(f::Function) = nameof(f)
 eomstring(f) = nameof(typeof(f))
 
 function Base.show(io::IO, ds::DS)
-    ps = 12
+    ps = 14
     text = summary(ds)
     print(io, text*"\n",
     rpad(" state: ", ps)*"$(get_state(ds))\n",
     rpad(" e.o.m.: ", ps)*"$(eomstring(ds.f))\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
-    rpad(" jacobian: ", ps)*"$(jacobianstring(ds))"
+    rpad(" jacobian: ", ps)*"$(jacobianstring(ds))\n",
+    rpad(" parameters: ", ps)*"$(ds.p)"
     )
 end
 
