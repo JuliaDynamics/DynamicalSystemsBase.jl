@@ -249,6 +249,10 @@ jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(eomstring(ds.jacobi
 eomstring(f::Function) = nameof(f)
 eomstring(f) = nameof(typeof(f))
 
+paramname(p::AbstractArray) = string(p)
+paramname(p::Nothing) = string(p)
+paramname(p) = nameof(typeof(p))
+
 function Base.show(io::IO, ds::DS)
     ps = 14
     text = summary(ds)
@@ -257,7 +261,7 @@ function Base.show(io::IO, ds::DS)
     rpad(" e.o.m.: ", ps)*"$(eomstring(ds.f))\n",
     rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
     rpad(" jacobian: ", ps)*"$(jacobianstring(ds))\n",
-    rpad(" parameters: ", ps)*"$(ds.p)"
+    rpad(" parameters: ", ps)*"$(paramname(ds.p))"
     )
 end
 
