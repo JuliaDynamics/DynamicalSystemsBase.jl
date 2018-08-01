@@ -1,5 +1,3 @@
-__precompile__()
-
 """
 Definitions of core system and data types used
 in in the ecosystem of DynamicalSystems.jl
