@@ -106,7 +106,6 @@ and `v1, v2` be `<: AbstractVector{Int}` (`v1, v2` could also be ranges).
 * `data[v1, v2]` returns a `Dataset` with the appropriate entries (first indices
   being "time"/point index, while second being dynamic variables)
 * `data[i, j]` value of the `j`th variable, at the `i`th timepoint
-```
 
 Use `Matrix(dataset)` or `Dataset(matrix)` to convert. It is assumed
 that each *column* of the `matrix` is one dynamic variable.

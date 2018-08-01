@@ -65,7 +65,7 @@ for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place ver
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
 
-### Interface to **DifferentialEquations.jl**
+### Interface to DifferentialEquations.jl
 Continuous systems are solved using
 [**DifferentialEquations.jl**](http://docs.juliadiffeq.org/latest/).
 The following two interfaces are provided:
