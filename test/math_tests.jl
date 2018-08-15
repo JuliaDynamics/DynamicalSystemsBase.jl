@@ -1,6 +1,4 @@
-if current_module() != DynamicalSystemsBase
-  using DynamicalSystemsBase
-end
+using DynamicalSystemsBase
 using Test, StaticArrays
 println("Testing custom QR-decomposition...")
 
