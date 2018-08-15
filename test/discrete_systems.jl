@@ -1,6 +1,7 @@
 using DynamicalSystemsBase
 using Test, StaticArrays
 using DynamicalSystemsBase: DDS, DS
+using LinearAlgebra
 
 println("\nTesting discrete system evolution...")
 
@@ -57,4 +58,26 @@ end
     @test u0 != data[end]
 
     @test jacobian(ds) != jacobian(ds, rand(2M))
+end
+
+using SparseArrays
+@testset "Sparse Matrix Jacobian" begin
+
+ds = Systems.coupledstandardmaps(10)
+J = ds.J
+
+sJ = sparse(J)
+
+sparseds = DiscreteDynamicalSystem(ds.f, ds.u0, ds.p, ds.jacobian, sJ)
+
+j = jacobian(sparseds)
+@test typeof(j) <: SparseMatrixCSC
+
+tinteg = tangent_integrator(sparseds, 4)
+
+prev = deepcopy(get_deviations(tinteg))
+step!(tinteg)
+
+curr = deepcopy(get_deviations(tinteg))
+@test prev != curr
 end

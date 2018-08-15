@@ -132,6 +132,8 @@ The first `M` entries of the state are the angles, the last `M` are the momenta.
 
 [1] : H. Kantz & P. Grassberger, J. Phys. A **21**, pp 127–133 (1988)
 """
+function coupledstandardmaps end
+using SparseArrays
 function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
     ks = ones(M), Γ = 1.0)
 
@@ -148,9 +150,10 @@ function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
         J[i, i+M] = 1
         J[i+M, i+M] = 1
     end
+    sparseJ = sparse(J)
     p = (ks, Γ)
-    csm(J, u0, p, 0)
-    return DDS(csm, u0, p, csm, J)
+    csm(sparseJ, u0, p, 0)
+    return DDS(csm, u0, p, csm, sparseJ)
 end
 struct CoupledStandardMaps{N}
     idxs::SVector{N, Int}
@@ -188,7 +191,7 @@ function (f::CoupledStandardMaps{M})(
         J[i, f.idxsm1[i]] = J[i+M, f.idxsm1[i]]
         J[i, f.idxsp1[i]] = J[i+M, f.idxsp1[i]]
     end
-    return nothing
+    return J
 end
 
 
