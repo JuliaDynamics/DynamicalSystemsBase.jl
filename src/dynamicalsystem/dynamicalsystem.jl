@@ -250,7 +250,7 @@ eomstring(f::Function) = nameof(f)
 eomstring(f) = nameof(typeof(f))
 
 paramname(p::AbstractArray) = string(p)
-paramname(p::Nothing) = string(p)
+paramname(p::Nothing) = repr(p)
 paramname(p) = nameof(typeof(p))
 
 function Base.show(io::IO, ds::DS)
