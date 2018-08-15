@@ -273,9 +273,10 @@ end
 #                                Pretty-Printing                                    #
 #####################################################################################
 Base.summary(ds::MDI) =
-"Discrete integrator (e.o.m.: $(nameof(ds.f)))"
+"Discrete integrator (e.o.m.: $(eomstring(ds.f)))"
 Base.summary(ds::MDI{true, S}) where {S<:Vector{<:AbstractArray}} =
-"Discrete parallel integrator with $(length(ds.u)) states"
+"Discrete parallel integrator with $(length(ds.u)) states "*
+"(e.o.m.: $(eomstring(ds.f)))"
 
 function Base.show(io::IO, ds::MDI)
     ps = 3
@@ -300,7 +301,7 @@ end
 
 Base.summary(ds::TDI) =
 "Discrete tangent-space integrator
-(e.o.m.: $(nameof(ds.f)), jacobian: $(nameof(ds.jacobian)))"
+(e.o.m.: $(eomstring(ds.f)), jacobian: $(eomstring(ds.jacobian)))"
 
 function Base.show(io::IO, ds::TDI)
     ps = 3
