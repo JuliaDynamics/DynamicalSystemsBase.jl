@@ -1,8 +1,14 @@
 Changelog of `DynamicalSystemsBase`.
 
 # master
+
+# v0.12.0
 ## New Features
-* `orthonormal` is 100x more performant. 
+* `orthonormal` is 100x more performant.
+* Super duper cool new printing for `DynamicalSystem`.
+* Added tests etc. and now we are sure we can support Sparse matrix jacobians.
+* Testing of specialized integrators with DiffEqCallbacks.
+* Parameters are printed in the `DynamicalSystem`.
 
 # 0.11.0
 
