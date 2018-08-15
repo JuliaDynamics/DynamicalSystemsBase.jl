@@ -257,13 +257,16 @@ paramname(p) = nameof(typeof(p))
 function Base.show(io::IO, ds::DS)
     ps = 14
     text = summary(ds)
-    print(io, text*"\n",
-    rpad(" state: ", ps)*"$(get_state(ds))\n",
-    rpad(" e.o.m.: ", ps)*"$(eomstring(ds.f))\n",
-    rpad(" in-place? ", ps)*"$(isinplace(ds))\n",
-    rpad(" jacobian: ", ps)*"$(jacobianstring(ds))\n",
-    rpad(" parameters: ", ps)*"$(paramname(ds.p))"
-    )
+    u0 = get_state(ds)
+
+    ctx = IOContext(io, :limit => true, :compact => true, :displaysize => (10,50))
+
+    print(io, text*"\n")
+    println(ctx, rpad(" state: ", ps),      get_state(ds))
+    println(io,  rpad(" e.o.m.: ", ps),     eomstring(ds.f))
+    println(io,  rpad(" in-place? ", ps),   isinplace(ds))
+    println(io,  rpad(" jacobian: ", ps),   jacobianstring(ds)),
+    print(io,    rpad(" parameters: ", ps), paramname(ds.p))
 end
 
 #######################################################################################
