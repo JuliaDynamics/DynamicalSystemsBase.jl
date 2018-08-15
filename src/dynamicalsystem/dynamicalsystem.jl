@@ -495,14 +495,13 @@ Automatically does `u_modified!(tang_integ, true)`.
 function set_deviations! end
 
 """
-    parallel_integrator(ds::DynamicalSystem, states; diff_eq_kwargs)
+    parallel_integrator(ds::DynamicalSystem, states; kwargs...)
 Return an integrator object that can be used to evolve many `states` of
 a system in parallel at the *exact same times*, using `step!(integ [, Δt])`.
 
 `states` are expected as vectors of vectors.
 
 ## Keyword Arguments
-* `u0, t0` : Optional different initial state and time.
 * `diffeq...` : Keyword arguments propagated into `init` of DifferentialEquations.jl.
   See [`trajectory`](@ref) for examples. Only valid for continuous systems.
   These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
