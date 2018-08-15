@@ -254,15 +254,27 @@ paramname(p::AbstractArray) = string(p)
 paramname(p::Nothing) = repr(p)
 paramname(p) = nameof(typeof(p))
 
+# Credit to Sebastian Pfitzner
+function printlimited(io, x; Δx = 0, Δy = 0)
+    sz = displaysize(io)
+    io2 = IOBuffer(); ctx = IOContext(io2, :limit => true, :compact => true,
+    :displaysize => (sz[1]-Δy, sz[2]-Δx))
+    Base.print_array(ctx, x)
+    s = String(take!(io2))
+    s = replace(s[2:end], "  " => ", ")
+    Base.print(io, "["*s*"]")
+end
+
 function Base.show(io::IO, ds::DS)
     ps = 14
     text = summary(ds)
-    u0 = get_state(ds)
+    u0 = get_state(ds)'
 
     ctx = IOContext(io, :limit => true, :compact => true, :displaysize => (10,50))
 
-    print(io, text*"\n")
-    println(ctx, rpad(" state: ", ps),      get_state(ds))
+    println(io, text)
+    prefix = rpad(" state: ", ps)
+    print(io, prefix); printlimited(io, u0, Δx = length(prefix)); println()
     println(io,  rpad(" e.o.m.: ", ps),     eomstring(ds.f))
     println(io,  rpad(" in-place? ", ps),   isinplace(ds))
     println(io,  rpad(" jacobian: ", ps),   jacobianstring(ds)),
