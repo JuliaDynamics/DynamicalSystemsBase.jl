@@ -274,7 +274,7 @@ function Base.show(io::IO, ds::DS)
 
     println(io, text)
     prefix = rpad(" state: ", ps)
-    print(io, prefix); printlimited(io, u0, Δx = length(prefix)); println()
+    print(io, prefix); printlimited(io, u0, Δx = length(prefix)); print(io, "\n")
     println(io,  rpad(" e.o.m.: ", ps),     eomstring(ds.f))
     println(io,  rpad(" in-place? ", ps),   isinplace(ds))
     println(io,  rpad(" jacobian: ", ps),   jacobianstring(ds)),
