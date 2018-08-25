@@ -281,10 +281,10 @@ Base.summary(ds::MDI{true, S}) where {S<:Vector{<:AbstractArray}} =
 function Base.show(io::IO, ds::MDI)
     ps = 3
     text = summary(ds)
-    print(io, text*"\n",
-    rpad(" t: ", ps)*"$(ds.t)\n",
-    rpad(" u: ", ps)*"$(ds.u)\n"
-    )
+    println(io, text)
+    println(io, rpad(" t: ", ps)*"$(ds.t)")
+    prefix = rpad(" u: ", ps)
+    print(io, prefix); printlimited(io, get_state(ds)', Δx = length(prefix)); print(io, "\n")
 end
 function Base.show(io::IO, ds::MDI{true, S}) where {S<:Vector{<:AbstractArray}}
     ps = 3
@@ -300,16 +300,17 @@ function Base.show(io::IO, ds::MDI{true, S}) where {S<:Vector{<:AbstractArray}}
 end
 
 Base.summary(ds::TDI) =
-"Discrete tangent-space integrator
-(e.o.m.: $(eomstring(ds.f)), jacobian: $(eomstring(ds.jacobian)))"
+"Discrete tangent-space integrator "*
+"(e.o.m.: $(eomstring(ds.f)), jacobian: $(eomstring(ds.jacobian)))"
 
 function Base.show(io::IO, ds::TDI)
     ps = 3
     text = summary(ds)
-    print(io, text*"\n",
-    rpad(" t: ", ps)*"$(ds.t)\n",
-    rpad(" u: ", ps)*"$(get_state(ds))\n",
-    " deviation vectors:\n")
+    println(io, text)
+    println(io, rpad(" t: ", ps)*"$(ds.t)")
+    prefix = rpad(" u: ", ps)
+    print(io, prefix); printlimited(io, get_state(ds)', Δx = length(prefix)); print(io, "\n")
+    println(io, " deviation vectors:")
     s = sprint(io -> show(IOContext(io, :limit=>true),
     MIME"text/plain"(), get_deviations(ds)))
     s = join(split(s, '\n')[2:end], '\n')

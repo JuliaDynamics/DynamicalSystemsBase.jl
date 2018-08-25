@@ -65,6 +65,8 @@ for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place ver
 
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
+It is **heavily** advised to provide a Jacobian function, as it gives *multiple*
+orders of magnitude speedup.
 
 ### Interface to DifferentialEquations.jl
 Continuous systems are solved using
