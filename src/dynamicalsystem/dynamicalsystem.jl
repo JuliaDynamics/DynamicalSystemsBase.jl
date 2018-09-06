@@ -267,6 +267,8 @@ function printlimited(io, x; Δx = 0, Δy = 0)
     Base.print(io, "["*s*"]")
 end
 
+printlimited(io, x::Number; Δx = 0, Δy = 0) = print(io, x)
+
 function Base.show(io::IO, ds::DS)
     ps = 14
     text = summary(ds)
