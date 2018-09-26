@@ -1,7 +1,7 @@
 SUITE["Reconstructions"] = BenchmarkGroup()
 SR = SUITE["Reconstructions"]
 
-srand(1234)
+Random.seed!(1234)
 N = 10000; D = 3; B = 3
 
 data = Dataset(rand(N, B))
