@@ -349,3 +349,51 @@ function rikitake_eom(u, p, t)
     zdot = 1 - x*y
     return SVector{3}(xdot, ydot, zdot)
 end
+
+
+"""
+```julia
+nosehoover(u0 = [0, 0.1, 0])
+```
+```math
+\\begin{aligned}
+\\dot{x} &= y \\\\
+\\dot{y} &= yz - x \\\\
+\\dot{V} &= 1 - y^2
+\\end{aligned}
+```
+Three dimensional conservative continuous system, taken from the book
+"Elegant Chaos" by J. C. Sprott.
+"""
+nosehoover(u0 = [0, 0.1, 0]) = CDS(nosehoover_eom, u0, nothing)
+function nosehoover_eom(u, p, t)
+    x,y,z = u
+    xdot = y
+    ydot = y*z - x
+    zdot  = 1.0 - y*y
+    return SVector{3}(xdot, ydot, zdot)
+end
+
+"""
+```julia
+nosehoover(u0 = [0, 0.1, 0])
+```
+```math
+\\begin{aligned}
+\\dot{x} &= \\sin(y) \\\\
+\\dot{y} &= \\sin(z) \\\\
+\\dot{V} &= \\sin(x)
+\\end{aligned}
+```
+Three dimensional conservative continuous system, whose evolution in 3D space looks
+like a speudo-random walk, the orbit moving around like in a labyrinth.
+Taken from the book "Elegant Chaos" by J. C. Sprott.
+"""
+labyrinth(u0 = [1.0, 0, 0]) = CDS(labyrinth_eom, u0, nothing)
+function labyrinth_eom(u, p, t)
+    x,y,z = u
+    xdot = sin(y)
+    ydot = sin(z)
+    zdot = sin(x)
+    return SVector{3}(xdot, ydot, zdot)
+end
