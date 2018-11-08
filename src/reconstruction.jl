@@ -103,6 +103,9 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 """
 @inline function reconstruct(s::AbstractVector{T}, D, τ) where {T}
     de::DelayEmbedding{D} = DelayEmbedding(Val{D}(), τ)
+    return reconstruct(s, de)
+end
+@inline function reconstruct(s::AbstractVector{T}, de::DelayEmbedding{D}) where {T, D}
     L = length(s) - maximum(de.delays)
     data = Vector{SVector{D+1, T}}(undef, L)
     @inbounds for i in 1:L
@@ -170,6 +173,12 @@ end
     D, τ) where {A, B, T, M}
 
     de::MTDelayEmbedding{D, B, D*B} = MTDelayEmbedding(D, τ, B)
+    reconstruct(s, de)
+end
+@inline function reconstruct(
+    s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
+    de::MTDelayEmbedding{D, B, F}) where {A, B, T, M, D, F}
+
     L = size(s)[1] - maximum(de.delays)
     X = (D+1)*B
     data = Vector{SVector{X, T}}(undef, L)
