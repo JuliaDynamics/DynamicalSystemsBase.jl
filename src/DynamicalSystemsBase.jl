@@ -1,18 +1,15 @@
 """
-Definitions of core system and data types used
-in in the ecosystem of DynamicalSystems.jl
+Definition of `DynamicalSystem` as well as all integrators
+used in the ecosystem of DynamicalSystems.jl.
+
+Also contains predefined well-known systems.
 """
 module DynamicalSystemsBase
 
-include("dataset.jl")
-include("reconstruction.jl")
-include("various.jl")
-include("neighborhoods.jl")
-
-include("dynamicalsystem/dynamicalsystem.jl")
-include("dynamicalsystem/discrete.jl")
-include("dynamicalsystem/continuous.jl")
-include("dynamicalsystem/famous_systems.jl")
+include("dynamicalsystem.jl")
+include("discrete.jl")
+include("continuous.jl")
+include("famous_systems.jl")
 
 include("deprecations.jl")
 
