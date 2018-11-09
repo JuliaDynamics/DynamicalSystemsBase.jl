@@ -3,5 +3,5 @@ StaticArrays 0.8
 DiffEqBase 4.10
 OrdinaryDiffEq 4.8
 ForwardDiff 0.8
-DelayEmbedding 
+DelayEmbeddings
 Reexport 0.1
