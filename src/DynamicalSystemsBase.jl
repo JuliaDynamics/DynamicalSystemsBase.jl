@@ -6,6 +6,9 @@ Also contains predefined well-known systems.
 """
 module DynamicalSystemsBase
 
+using Reexport
+@reexport DelayEmbeddings
+
 include("dynamicalsystem.jl")
 include("discrete.jl")
 include("continuous.jl")
