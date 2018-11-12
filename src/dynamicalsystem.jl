@@ -389,7 +389,7 @@ struct TangentOOP{F, JAC, k} <: Function
     ws::SVector{k, Int}
 end
 function (tan::TangentOOP)(u, p, t)
-    s = u[:, 1]
+    @inbounds s = u[:, 1]
     @inbounds du = tan.f(s, p, t)
     @inbounds J = tan.jacobian(s, p, t)
     @inbounds dW = J*u[:, tan.ws]
