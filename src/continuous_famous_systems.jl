@@ -376,7 +376,7 @@ end
 
 """
 ```julia
-nosehoover(u0 = [0, 0.1, 0])
+labyrinth(u0 = [1.0, 0, 0])
 ```
 ```math
 \\begin{aligned}
