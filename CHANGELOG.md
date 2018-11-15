@@ -2,6 +2,14 @@ Changelog of `DynamicalSystemsBase`.
 
 # master
 
+# v1.1
+
+* All functionality related to `neighborhood`, `reconstruct` and `Dataset` has moved to a new package: [`DelayEmbeddings`](https://github.com/JuliaDynamics/DelayEmbeddings.jl). It is reexported by `DynamicalSystemsBase`, which is now (as the name suggests) the basis package for defining `DynamicalSystem`.
+
+# v1.0
+
+* First major release (long term stability).
+
 # v0.12.0
 ## New Features
 * `orthonormal` is 100x more performant.
