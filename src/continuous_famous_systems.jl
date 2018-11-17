@@ -27,14 +27,14 @@ function's documentation string.
 function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
     return CDS(loop, u0, [σ, ρ, β], loop_jac)
 end
-@inline @inbounds function loop(u, p, t)
+@inbounds function loop(u, p, t)
     σ = p[1]; ρ = p[2]; β = p[3]
     du1 = σ*(u[2]-u[1])
     du2 = u[1]*(ρ-u[3]) - u[2]
     du3 = u[1]*u[2] - β*u[3]
     return SVector{3}(du1, du2, du3)
 end
-@inline @inbounds function loop_jac(u, p, t)
+@inbounds function loop_jac(u, p, t)
     σ, ρ, β = p
     J = @SMatrix [-σ  σ  0;
     ρ - u[3]  (-1)  (-u[1]);
@@ -45,14 +45,14 @@ end
 function lorenz_iip(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
     return CDS(liip, u0, [σ, ρ, β], liip_jac)
 end
-@inline @inbounds function liip(du, u, p, t)
+@inbounds function liip(du, u, p, t)
     σ = p[1]; ρ = p[2]; β = p[3]
     du[1] = σ*(u[2]-u[1])
     du[2] = u[1]*(ρ-u[3]) - u[2]
     du[3] = u[1]*u[2] - β*u[3]
     return nothing
 end
-@inline @inbounds function liip_jac(J, u, p, t)
+@inbounds function liip_jac(J, u, p, t)
     σ, ρ, β = p
     J[1,1] = -σ; J[1, 2] = σ; J[1,3] = 0
     J[2,1] = ρ - u[3]; J[2,2] = -1; J[2,3] = -u[1]
@@ -87,14 +87,14 @@ function's documentation string.
 function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
     return CDS(roessler_eom, u0, [a, b, c], roessler_jacob)
 end
-@inline @inbounds function roessler_eom(u, p, t)
+@inbounds function roessler_eom(u, p, t)
     a, b, c = p
     du1 = -u[2]-u[3]
     du2 = u[1] + a*u[2]
     du3 = b + u[3]*(u[1] - c)
     return SVector{3, Float64}(du1, du2, du3)
 end
-@inline @inbounds function roessler_jacob(u, p, t)
+@inbounds function roessler_jacob(u, p, t)
     a, b, c = p
     return @SMatrix [0 (-1) (-1);
                      1 a 0;
@@ -168,10 +168,10 @@ function henonheiles(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
     o = zero(eltype(u0))
     J = zeros(eltype(u0), 4, 4)
 
-    # @inline Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
-    # @inline Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
-    # @inline Hhh(q1, q2, p1, p2) = Thh(p1, p2) + Vhh(q1, q2)
-    # @inline Hhh(u::AbstractVector) = Hhh(u...)
+    # Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
+    # Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
+    # Hhh(q1, q2, p1, p2) = Thh(p1, p2) + Vhh(q1, q2)
+    # Hhh(u::AbstractVector) = Hhh(u...)
     #
     # E = Hhh(u0)
     #

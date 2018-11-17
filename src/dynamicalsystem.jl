@@ -140,10 +140,10 @@ const DDS = DiscreteDynamicalSystem
 systemtype(::DDS) = "discrete"
 
 
-@inline isinplace(::DS{IIP}) where {IIP} = IIP
-@inline statetype(::DS{IIP, S}) where {IIP, S} = S
-@inline stateeltype(::DS{IIP, S}) where {IIP, S} = eltype(S)
-@inline isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
+isinplace(::DS{IIP}) where {IIP} = IIP
+statetype(::DS{IIP, S}) where {IIP, S} = S
+stateeltype(::DS{IIP, S}) where {IIP, S} = eltype(S)
+isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
 {IIP, S, D, F, P, JAC, JM, IAD} = IAD
 
 get_state(ds::DS) = ds.u0
@@ -288,7 +288,7 @@ end
 #######################################################################################
 #                                    Jacobians                                        #
 #######################################################################################
-@inline function create_jacobian(
+function create_jacobian(
     f::F, ::Val{IIP}, s::S, p::P, t::T, ::Val{D}) where {F, IIP, S, P, T, D}
     if IIP
         dum = deepcopy(s)
@@ -311,7 +311,7 @@ end
     end
 end
 
-@inline function get_J(jacob, u0, p, t0, iip) where {JAC}
+function get_J(jacob, u0, p, t0, iip) where {JAC}
     D = length(u0)
     if iip
         J = similar(u0, (D,D))
@@ -340,7 +340,7 @@ ds.jacobian(u, ds.p, t)
 #                                 Tanget Dynamics                                     #
 #######################################################################################
 # IIP Tangent Space dynamics
-@inline function create_tangent(f::F, jacobian::JAC, J::JM,
+function create_tangent(f::F, jacobian::JAC, J::JM,
     ::Val{true}, ::Val{k}) where {F, JAC, JM, k}
     J = deepcopy(J)
     tangentf = (du, u, p, t) -> begin
@@ -376,7 +376,7 @@ end
 
 
 # OOP Tangent Space dynamics
-@inline function create_tangent(f::F, jacobian::JAC, J::JM,
+function create_tangent(f::F, jacobian::JAC, J::JM,
     ::Val{false}, ::Val{k}) where {F, JAC, JM, k}
 
     ws_index = SVector{k, Int}(2:(k+1)...)
@@ -390,8 +390,8 @@ struct TangentOOP{F, JAC, k} <: Function
 end
 function (tan::TangentOOP)(u, p, t)
     @inbounds s = u[:, 1]
-    @inbounds du = tan.f(s, p, t)
-    @inbounds J = tan.jacobian(s, p, t)
+    du = tan.f(s, p, t)
+    J = tan.jacobian(s, p, t)
     @inbounds dW = J*u[:, tan.ws]
     return hcat(du, dW)
 end

@@ -23,13 +23,13 @@ Default values are the ones used in the original paper.
 function towel(u0=[0.085, -0.121, 0.075])
     return DDS(eom_towel, u0, nothing, jacob_towel)
 end# should result in lyapunovs: [0.432207,0.378834,-3.74638]
-@inline function eom_towel(x, p, n)
+function eom_towel(x, p, n)
     @inbounds x1, x2, x3 = x[1], x[2], x[3]
     SVector( 3.8*x1*(1-x1) - 0.05*(x2+0.35)*(1-2*x3),
     0.1*( (x2+0.35)*(1-2*x3) - 1 )*(1 - 1.9*x1),
     3.78*x3*(1-x3)+0.2*x2 )
 end
-@inline function jacob_towel(x, p, n)
+function jacob_towel(x, p, n)
     @SMatrix [3.8*(1 - 2x[1]) -0.05*(1-2x[3]) 0.1*(x[2] + 0.35);
     -0.19((x[2] + 0.35)*(1-2x[3]) - 1)  0.1*(1-2x[3])*(1-1.9x[1])  -0.2*(x[2] + 0.35)*(1-1.9x[1]);
     0.0  0.2  3.78(1-2x[3]) ]
@@ -96,7 +96,7 @@ Nuclear Physics, Novosibirsk (1969)
 function standardmap(u0=0.001rand(2); k = 0.971635)
     return DDS(standardmap_eom, u0, [k], standardmap_jacob)
 end
-@inline @inbounds function standardmap_eom(x, par, n)
+@inbounds function standardmap_eom(x, par, n)
     theta = x[1]; p = x[2]
     p += par[1]*sin(theta)
     theta += p
@@ -106,7 +106,7 @@ end
     while p < 0; p += twopi; end
     return SVector(theta, p)
 end
-@inline @inbounds standardmap_jacob(x, p, n) =
+@inbounds standardmap_jacob(x, p, n) =
 @SMatrix [1 + p[1]*cos(x[1])    1;
           p[1]*cos(x[1])        1]
 
@@ -221,8 +221,8 @@ function's documentation string.
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
     return DDS(hoop, u0, [a,b], hoop_jac)
 end # should give lyapunov exponents [0.4189, -1.6229]
-@inline hoop(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-@inline hoop_jac(x, p, n) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
+hoop(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+hoop_jac(x, p, n) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
 
 function henon_iip(u0=zeros(2); a = 1.4, b = 0.3)
     return DDS(hiip, u0, [a, b], hiip_jac)
@@ -265,5 +265,5 @@ function's documentation string.
 function logistic(x0=rand(); r = 4.0)
     return DDS(logistic_eom, x0, [r], logistic_jacob)
 end
-@inline logistic_eom(x, p, n) = p[1]*x*(1-x)
-@inline logistic_jacob(x, p, n) = p[1]*(1-2x)
+logistic_eom(x, p, n) = p[1]*x*(1-x)
+logistic_jacob(x, p, n) = p[1]*(1-2x)

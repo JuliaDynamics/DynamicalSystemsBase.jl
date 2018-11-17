@@ -30,7 +30,7 @@ function reinit!(integ::MDI, u = integ.u, Q0 = nothing)
     return
 end
 
-@inline function (integ::MinimalDiscreteIntegrator)(t::Real)
+function (integ::MinimalDiscreteIntegrator)(t::Real)
     if t == integ.t
         return integ.u
     else
