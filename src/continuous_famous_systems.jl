@@ -27,37 +27,45 @@ function's documentation string.
 function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
     return CDS(loop, u0, [σ, ρ, β], loop_jac)
 end
-@inbounds function loop(u, p, t)
-    σ = p[1]; ρ = p[2]; β = p[3]
-    du1 = σ*(u[2]-u[1])
-    du2 = u[1]*(ρ-u[3]) - u[2]
-    du3 = u[1]*u[2] - β*u[3]
-    return SVector{3}(du1, du2, du3)
+function loop(u, p, t)
+    @inbounds begin
+        σ = p[1]; ρ = p[2]; β = p[3]
+        du1 = σ*(u[2]-u[1])
+        du2 = u[1]*(ρ-u[3]) - u[2]
+        du3 = u[1]*u[2] - β*u[3]
+        return SVector{3}(du1, du2, du3)
+    end
 end
-@inbounds function loop_jac(u, p, t)
-    σ, ρ, β = p
-    J = @SMatrix [-σ  σ  0;
-    ρ - u[3]  (-1)  (-u[1]);
-    u[2]   u[1]  -β]
-    return J
+function loop_jac(u, p, t)
+    @inbounds begin
+        σ, ρ, β = p
+        J = @SMatrix [-σ  σ  0;
+        ρ - u[3]  (-1)  (-u[1]);
+        u[2]   u[1]  -β]
+        return J
+    end
 end
 
 function lorenz_iip(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
     return CDS(liip, u0, [σ, ρ, β], liip_jac)
 end
-@inbounds function liip(du, u, p, t)
-    σ = p[1]; ρ = p[2]; β = p[3]
-    du[1] = σ*(u[2]-u[1])
-    du[2] = u[1]*(ρ-u[3]) - u[2]
-    du[3] = u[1]*u[2] - β*u[3]
-    return nothing
+function liip(du, u, p, t)
+    @inbounds begin
+        σ = p[1]; ρ = p[2]; β = p[3]
+        du[1] = σ*(u[2]-u[1])
+        du[2] = u[1]*(ρ-u[3]) - u[2]
+        du[3] = u[1]*u[2] - β*u[3]
+        return nothing
+    end
 end
-@inbounds function liip_jac(J, u, p, t)
+function liip_jac(J, u, p, t)
+    @inbounds begin
     σ, ρ, β = p
     J[1,1] = -σ; J[1, 2] = σ; J[1,3] = 0
     J[2,1] = ρ - u[3]; J[2,2] = -1; J[2,3] = -u[1]
     J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -β
     return nothing
+    end
 end
 
 
@@ -87,18 +95,20 @@ function's documentation string.
 function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
     return CDS(roessler_eom, u0, [a, b, c], roessler_jacob)
 end
-@inbounds function roessler_eom(u, p, t)
+function roessler_eom(u, p, t)
+    @inbounds begin
     a, b, c = p
     du1 = -u[2]-u[3]
     du2 = u[1] + a*u[2]
     du3 = b + u[3]*(u[1] - c)
     return SVector{3, Float64}(du1, du2, du3)
+    end
 end
-@inbounds function roessler_jacob(u, p, t)
+function roessler_jacob(u, p, t)
     a, b, c = p
-    return @SMatrix [0 (-1) (-1);
-                     1 a 0;
-                     u[3] 0 (u[1]-c)]
+    return @SMatrix [0.0 (-1.0) (-1.0);
+                     1.0 a 0.0;
+                     u[3] 0.0 (u[1]-c)]
 end
 
 """
@@ -189,19 +199,23 @@ function henonheiles(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
     return CDS(hheom!, u0, nothing, hhjacob!, J)
 end
 function hheom!(du, u, p, t)
-    du[1] = u[3]
-    du[2] = u[4]
-    du[3] = -u[1] - 2u[1]*u[2]
-    du[4] = -u[2] - (u[1]^2 - u[2]^2)
-    return nothing
+    @inbounds begin
+        du[1] = u[3]
+        du[2] = u[4]
+        du[3] = -u[1] - 2u[1]*u[2]
+        du[4] = -u[2] - (u[1]^2 - u[2]^2)
+        return nothing
+    end
 end
 function hhjacob!(J, u, p, t)
-    o = 0; i = 1
+    @inbounds begin
+    o = 0.0; i = 1.0
     J[1,:] .= (o,    o,     i,    o)
     J[2,:] .= (o,    o,     o,    i)
     J[3,:] .= (-i - 2*u[2],   -2*u[1],   o,   o)
     J[4,:] .= (-2*u[1],  -1 + 2*u[2],  o,   o)
     return nothing
+    end
 end
 
 
