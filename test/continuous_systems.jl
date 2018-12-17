@@ -64,3 +64,9 @@ end
         @test xyz[i] == data[:, i]
     end
 end
+
+@testset "Quadrupole boson Hamiltonian" begin
+    ds = Systems.qbh()
+    tr = trajectory(ds, 20.0)
+    @test size(tr) == (2001, 4)
+  end
