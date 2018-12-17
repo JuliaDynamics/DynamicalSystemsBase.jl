@@ -231,13 +231,23 @@ end
 \\end{aligned}
 ```
 
-These equations of motion correspond to a Hamiltonian introduced [1] in nuclear
-physics to study the quadrupole vibrations of the nuclear surface. The Hamiltonian
-has a similar structure with the Henon-Heiles one, but it has an added fourth order term.
+These equations of motion correspond to a Hamiltonian used [1,2] in nuclear
+physics to study the quadrupole vibrations of the nuclear surface.
 
-[1]: V. Baran and A. A. Raduta, International Journal of Modern Physics E, **7**, pp 527--551 (1998)
+```math
+H(p_0, p_2, q_0, q_2) = \\frac{A}{2}\\left(p_0^2+p_2^2\\right)+\\frac{A}{2}\\left(q_0^2+q_2^2\\right)
+			 +\\frac{B}{\\sqrt{2}}q_0\\left(3q_2^2-q_0^2\\right) +\\frac{D}{4}\\left(q_0^2+q_2^2\\right)^2
+```
+
+The Hamiltonian has a similar structure with the Henon-Heiles one, but it has an added fourth order term
+and presents a nontrivial dependence of chaoticity with the increase of energy [3].
+The default initial condition is chaotic.
+
+[1]: Eisenberg, J.M., & Greiner, W., Nuclear theory 2 rev ed. Netherlands: North-Holland pp 80 (1975)
+[2]: Baran V. and Raduta A. A., International Journal of Modern Physics E, **7**, pp 527--551 (1998)
+[3]: Micluta-Campeanu S., Raportaru M.C., Nicolin A.I., Baran V., Rom. Rep. Phys. **70**, pp 105 (2018)
 """
-function qbh(u0=[];  A=1., B=0.55, D=0.4)
+function qbh(u0=[0., -2.5830294658973876, 1.3873470962626937, -4.743416490252585];  A=1., B=0.55, D=0.4)
     return CDS(qeom, u0, [A, B, D])
 end
 function qeom(z, p, t)
