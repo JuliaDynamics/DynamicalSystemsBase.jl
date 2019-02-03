@@ -38,8 +38,6 @@ function integrator(ds::CDS{iip}, u0 = ds.u0;
     u = safe_state_type(Val{iip}(), u0)
     prob = ODEProblem{iip}(ds.f, u, (ds.t0, typeof(ds.t0)(tfinal)), ds.p)
 
-    (haskey(diffeq, :saveat) && tfinal == Inf) && error("Infinite solving!")
-
     solver = _get_solver(diffeq)
     integ = __init(prob, solver; DEFAULT_DIFFEQ_KWARGS...,
                    save_everystep = false, diffeq...)
@@ -133,9 +131,20 @@ function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     # TODO: Make this use step and automatically find points thourgh interpolate
     t0 = ds.t0
     tvec = (t0+Ttr):dt:(T+t0+Ttr)
-    integ = integrator(ds, u; tfinal = t0 + Ttr + T, dt = dt, diffeq..., saveat = tvec)
-    solve!(integ)
-    return Dataset(integ.sol.u)
+    sol = Vector{SVector{dimension(ds), stateeltype(ds)}}(undef, length(tvec))
+    integ = integrator(ds, u; dt = dt, tfinal = tvec[end], diffeq...)
+    step!(integ, Ttr)
+    for (i, t) in enumerate(tvec)
+        while t > integ.t
+            step!(integ)
+        end
+        if integ.tprev ≤ t ≤ integ.t
+            sol[i] = integ(t)
+        else
+            error("should be integ.tprev ≤ t ≤ integ.t")
+        end
+    end
+    return Dataset(sol)
 end
 
 #####################################################################################
