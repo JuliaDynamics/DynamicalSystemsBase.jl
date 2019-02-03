@@ -1,6 +1,8 @@
 using DynamicalSystemsBase
-using StaticArrays, LinearAlgebra
+using OrdinaryDiffEq, SimpleDiffEq, StaticArrays, LinearAlgebra
 using Test
+
+algs = ;
 
 using DynamicalSystemsBase: CDS, DDS, DS
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac

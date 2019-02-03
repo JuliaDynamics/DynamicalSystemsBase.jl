@@ -1,6 +1,5 @@
-using OrdinaryDiffEq, StaticArrays
-import OrdinaryDiffEq: ODEIntegrator, ODEProblem
-using DiffEqBase: __init, ODEFunction
+using DiffEqBase, OrdinaryDiffEq, StaticArrays
+using DiffEqBase: __init, ODEFunction, AbstractODEIntegrator
 
 export CDS_KWARGS
 #####################################################################################
@@ -22,17 +21,16 @@ function ContinuousDynamicalSystem(prob::ODEProblem, args...)
            t0 = prob.tspan[1])
 end
 
-function ODEProblem(ds::CDS{IIP}, tspan, args...) where {IIP}
-    # when stable, do ODEFunction(ds.f; jac = ds.jacobian)
-    return ODEProblem{IIP}(ds.f, ds.u0, tspan, args...)
+function DiffEqBase.ODEProblem(ds::CDS{IIP}, tspan, args...) where {IIP}
+    return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian), ds.u0, tspan, args...)
 end
 
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
-stateeltype(::ODEIntegrator{Alg, S}) where {Alg, S} = eltype(S)
-stateeltype(::ODEIntegrator{Alg, S}) where {
-    Alg, S<:Vector{<:AbstractArray{T}}} where {T} = T
+stateeltype(::AbstractODEIntegrator{A, IIP, S}) where {A, IIP, S} = eltype(S)
+stateeltype(::AbstractODEIntegrator{A, IIP, S}) where {
+    A, IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
 function integrator(ds::CDS{iip}, u0 = ds.u0;
     tfinal = Inf, diffeq...) where {iip}
@@ -132,9 +130,10 @@ end
 function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     dt = 0.01, Ttr = 0.0, diffeq...)
 
+    # TODO: Make this use step and automatically find points thourgh interpolate
     t0 = ds.t0
     tvec = (t0+Ttr):dt:(T+t0+Ttr)
-    integ = integrator(ds, u; tfinal = t0 + Ttr + T, diffeq..., saveat = tvec)
+    integ = integrator(ds, u; tfinal = t0 + Ttr + T, dt = dt, diffeq..., saveat = tvec)
     solve!(integ)
     return Dataset(integ.sol.u)
 end
@@ -142,40 +141,42 @@ end
 #####################################################################################
 #                                    Get States                                     #
 #####################################################################################
-get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractVector} = integ.u
-get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:AbstractMatrix} =
-integ.u[:, 1]
-get_state(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Vector{<:AbstractVector}} =
+get_state(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:AbstractVector} =
+    integ.u
+get_state(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:AbstractMatrix} =
+    integ.u[:, 1]
+get_state(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:Vector{<:AbstractVector}} =
     integ.u[1]
-get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {
-    Alg, S<:Vector{<:AbstractVector}} = integ.u[k]
-get_state(integ::ODEIntegrator{Alg, S}, k::Int) where {Alg, S<:AbstractMatrix} =
+get_state(integ::AbstractODEIntegrator{Alg, IIP, S}, k::Int) where {Alg, IIP, S<:Vector{<:AbstractVector}} =
+    integ.u[k]
+get_state(integ::AbstractODEIntegrator{Alg, IIP, S}, k::Int) where {Alg, IIP, S<:AbstractMatrix} =
     integ.u[:, k]
 
 function set_state!(
-    integ::ODEIntegrator{Alg, S}, u::AbstractVector, k::Int = 1
-    ) where {Alg, S<:Vector{<:AbstractVector}}
+    integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector, k::Int = 1
+    ) where {Alg, IIP, S<:Vector{<:AbstractVector}}
     integ.u[k] = u
     u_modified!(integ, true)
 end
 function set_state!(
-    integ::ODEIntegrator{Alg, S}, u::AbstractVector) where {Alg, S<:Matrix}
+    integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector
+    ) where {Alg, IIP, S<:Matrix}
     integ.u[:, 1] .= u
     u_modified!(integ, true)
 end
 function set_state!(
-    integ::ODEIntegrator{Alg, S}, u::AbstractVector
-    ) where {Alg, S<:SMatrix{D, K}} where {D, K}
+    integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector
+    ) where {Alg, IIP, S<:SMatrix{D, K}} where {D, K}
     integ.u = hcat(SVector{D}(u), integ.u[:, SVector{K-1}(2:K...)])
     u_modified!(integ, true)
 end
 
-get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
+get_deviations(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:Matrix} =
     @view integ.u[:, 2:end]
 
 
 @generated function get_deviations(
-    integ::ODEIntegrator{Alg, S}) where {Alg, S<:SMatrix{D,K}} where {D,K}
+    integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:SMatrix{D,K}} where {D,K}
     gens = [:($k) for k=2:K]
     quote
         sind = SVector{$(K-1)}($(gens...))
@@ -183,12 +184,12 @@ get_deviations(integ::ODEIntegrator{Alg, S}) where {Alg, S<:Matrix} =
     end
 end
 
-set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:Matrix} =
+set_deviations!(integ::AbstractODEIntegrator{Alg, IIP, S}, Q) where {Alg, IIP, S<:Matrix} =
     (integ.u[:, 2:end] .= Q; u_modified!(integ, true))
-set_deviations!(integ::ODEIntegrator{Alg, S}, Q) where {Alg, S<:SMatrix} =
+set_deviations!(integ::AbstractODEIntegrator{Alg, IIP, S}, Q) where {Alg, IIP, S<:SMatrix} =
     (integ.u = hcat(integ.u[:,1], Q); u_modified!(integ, true))
 
-function DiffEqBase.reinit!(integ::ODEIntegrator, u0::AbstractVector,
+function DiffEqBase.reinit!(integ::AbstractODEIntegrator, u0::AbstractVector,
     Q0::AbstractMatrix; kwargs...)
 
     set_state!(integ, u0)
