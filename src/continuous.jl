@@ -12,7 +12,7 @@ reltol = 1e-6, maxiters = typemax(Int))
 
 const CDS_KWARGS = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
 
-_get_solver(a) = haskey(a, :alg) ? a[:alg] : DEFAULT_SOLVER
+_get_solver(a) = haskey(a, :alg) ? a.alg : DEFAULT_SOLVER
 
 #####################################################################################
 #                               Interface to DiffEq                                 #
