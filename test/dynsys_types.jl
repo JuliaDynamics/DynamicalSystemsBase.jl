@@ -59,7 +59,7 @@ for i in 1:8
                 step!(integ)
             end
 
-            @test get_state(tinteg) ≈ integ(tt) atol = 1e-4
+            @test get_state(tinteg) ≈ integ(tt) atol = 1e-2
         else
             @test get_state(tinteg) == get_state(integ)
         end
@@ -95,7 +95,7 @@ for i in 1:8
             while integ.t < tt
                 step!(integ)
             end
-            @test get_state(pinteg, 1) ≈ integ(tt) atol = 1e-4
+            @test get_state(pinteg, 1) ≈ integ(tt) atol = 1e-2
         end
     end
 end

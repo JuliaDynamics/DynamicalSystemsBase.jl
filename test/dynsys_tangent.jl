@@ -87,7 +87,7 @@ for i in 1:8
         end
 
         if i < 5
-            @test 0.8 < λ[1] < 0.9
+            @test 0.8 < λ[1] < 0.92
         else
             @test 0.4 < λ[1] < 0.45
         end

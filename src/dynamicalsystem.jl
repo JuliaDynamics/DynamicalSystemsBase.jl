@@ -288,7 +288,7 @@ end
 #                                    Jacobians                                        #
 #######################################################################################
 function create_jacobian(
-    f::F, ::Val{IIP}, s::S, p::P, t::T, ::Val{D}) where {F, IIP, S, P, T, D}
+    @nospecialize(f::F), ::Val{IIP}, s::S, p::P, t::T, ::Val{D}) where {F, IIP, S, P, T, D}
     if IIP
         dum = deepcopy(s)
         cfg = ForwardDiff.JacobianConfig(
@@ -340,7 +340,7 @@ ds.jacobian(u, ds.p, t)
 #######################################################################################
 
 # IIP Tangent Space dynamics
-function create_tangent(f::F, jacobian::JAC, J::JM,
+function create_tangent(@nospecialize(f::F), @nospecialize(jacobian::JAC), J::JM,
     ::Val{true}, ::Val{k}) where {F, JAC, JM, k}
     J = deepcopy(J)
     tangentf = (du, u, p, t) -> begin

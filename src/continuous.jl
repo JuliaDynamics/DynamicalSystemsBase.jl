@@ -1,13 +1,14 @@
-using DiffEqBase, OrdinaryDiffEq, StaticArrays
+using DiffEqBase, StaticArrays
 using DiffEqBase: __init, ODEFunction, AbstractODEIntegrator
 
 export CDS_KWARGS
 #####################################################################################
 #                                    Defaults                                       #
 #####################################################################################
-const DEFAULT_SOLVER = Vern9()
-const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-9,
-reltol = 1e-9, maxiters = typemax(Int))
+using SimpleDiffEq: SimpleATsit5
+const DEFAULT_SOLVER = SimpleATsit5()
+const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-6,
+reltol = 1e-6, maxiters = typemax(Int))
 
 const CDS_KWARGS = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
 
@@ -104,12 +105,12 @@ function create_parallel(ds::CDS{true}, states)
     return paralleleom, st
 end
 
-const STIFFSOLVERS = (ImplicitEuler, ImplicitMidpoint, Trapezoid, TRBDF2,
-GenericImplicitEuler,
-GenericTrapezoid, SDIRK2, Kvaerno3, KenCarp3, Cash4, Hairer4, Hairer42, Kvaerno4,
-KenCarp4, Kvaerno5, KenCarp5, Rosenbrock23,
-Rosenbrock32, ROS3P, Rodas3, RosShamp4, Veldd4, Velds4, GRK4T,
-GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P)
+# const STIFFSOLVERS = (ImplicitEuler, ImplicitMidpoint, Trapezoid, TRBDF2,
+# GenericImplicitEuler,
+# GenericTrapezoid, SDIRK2, Kvaerno3, KenCarp3, Cash4, Hairer4, Hairer42, Kvaerno4,
+# KenCarp4, Kvaerno5, KenCarp5, Rosenbrock23,
+# Rosenbrock32, ROS3P, Rodas3, RosShamp4, Veldd4, Velds4, GRK4T,
+# GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P)
 
 function parallel_integrator(ds::CDS, states; diffeq...)
     peom, st = create_parallel(ds, states)
