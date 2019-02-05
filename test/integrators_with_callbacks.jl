@@ -1,7 +1,7 @@
 using DiffEqCallbacks
 using DynamicalSystemsBase
 using OrdinaryDiffEq: Vern7, Tsit5
-using LinearAlgebra
+using LinearAlgebra, Statistics
 
 @testset "SavingCallback parallel" begin
 

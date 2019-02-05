@@ -1,11 +1,14 @@
 using DynamicalSystemsBase
-using Test, StaticArrays, LinearAlgebra
+using Test, StaticArrays, LinearAlgebra, OrdinaryDiffEq, SimpleDiffEq
 using DynamicalSystemsBase: CDS, DDS
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
 using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
 
 println("\nTesting dynamical systems...")
-let
+
+algs = (Vern9(), Tsit5(), SimpleATsit5())
+
+for alg in algs
 u0 = [0, 10.0, 0]
 p = [10, 28, 8/3]
 u0h = ones(2)
@@ -16,7 +19,7 @@ INITCOD = [u0, u0h]
 PARAMS = [p, ph]
 
 for i in 1:8
-    @testset "combination $i" begin
+    @testset "$alg combination $i" begin
         sysindx = i < 5 ? 1 : 2
         if i < 5
             if isodd(i)
@@ -39,12 +42,12 @@ for i in 1:8
         J = jacobian(ds)
         @test typeof(J) <: (iip ? Matrix : SMatrix)
 
-        tinteg = tangent_integrator(ds, orthonormal(dimension(ds), dimension(ds)))
+        tinteg = tangent_integrator(ds, orthonormal(dimension(ds), dimension(ds)); alg = alg)
         tuprev = deepcopy(get_state(tinteg))
         step!(tinteg)
         @test tuprev != get_state(tinteg)
 
-        integ = integrator(ds)
+        integ = integrator(ds; alg = alg)
         uprev = deepcopy(get_state(integ))
         step!(integ)
         @test uprev != get_state(integ)
@@ -56,14 +59,14 @@ for i in 1:8
                 step!(integ)
             end
 
-            @test get_state(tinteg) ≈ integ(tt)
+            @test get_state(tinteg) ≈ integ(tt) atol = 1e-4
         else
             @test get_state(tinteg) == get_state(integ)
         end
 
         # Currently the in-place version does not work from DiffEq's side:
         if i > 2
-            pinteg = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]])
+            pinteg = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]]; alg = alg)
             puprev = deepcopy(get_state(pinteg))
             step!(pinteg)
             @test get_state(pinteg, 1) == get_state(pinteg, 2) == get_state(pinteg)
@@ -83,7 +86,7 @@ for i in 1:8
                 @test get_state(pinteg) == get_state(integ)
             end
         else
-            pinteg = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]])
+            pinteg = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]]; alg = alg)
             puprev = deepcopy(get_state(pinteg))
             step!(pinteg)
             @test get_state(pinteg, 1) == get_state(pinteg, 2) == get_state(pinteg)
@@ -92,7 +95,7 @@ for i in 1:8
             while integ.t < tt
                 step!(integ)
             end
-            @test get_state(pinteg, 1) ≈ integ(tt)
+            @test get_state(pinteg, 1) ≈ integ(tt) atol = 1e-4
         end
     end
 end

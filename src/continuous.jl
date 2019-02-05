@@ -128,11 +128,10 @@ end
 function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     dt = 0.01, Ttr = 0.0, diffeq...)
 
-    # TODO: Make this use step and automatically find points thourgh interpolate
     t0 = ds.t0
     tvec = (t0+Ttr):dt:(T+t0+Ttr)
     sol = Vector{SVector{dimension(ds), stateeltype(ds)}}(undef, length(tvec))
-    integ = integrator(ds, u; dt = dt, tfinal = tvec[end], diffeq...)
+    integ = integrator(ds, u; dt = dt, tfinal = tvec[end]+2dt, diffeq...)
     step!(integ, Ttr)
     for (i, t) in enumerate(tvec)
         while t > integ.t

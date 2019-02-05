@@ -2,7 +2,7 @@ using DynamicalSystemsBase
 using OrdinaryDiffEq, SimpleDiffEq, StaticArrays, LinearAlgebra
 using Test
 
-algs = ;
+algs = (Vern9(), Tsit5(), SimpleATsit5())
 
 using DynamicalSystemsBase: CDS, DDS, DS
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
@@ -11,7 +11,8 @@ using DiffEqBase
 
 println("\nTesting tangent dynamics...")
 
-let
+for alg in algs
+
 u0 = [0, 10.0, 0]
 p = [10, 28, 8/3]
 u0h = ones(2)
@@ -25,7 +26,7 @@ PARAMS = [p, ph]
 # minimalistic lyapunov
 function lyapunov_iip(ds::DS, k)
     D = dimension(ds)
-    tode = tangent_integrator(ds, orthonormal(D,k))
+    tode = tangent_integrator(ds, orthonormal(D,k); alg = alg)
     λ = zeros(k)
     for t in 1:1000
         while tode.t < t
@@ -43,7 +44,7 @@ function lyapunov_iip(ds::DS, k)
 end
 function lyapunov_oop(ds::DS, k)
     D = dimension(ds)
-    tode = tangent_integrator(ds, orthonormal(D,k))
+    tode = tangent_integrator(ds, orthonormal(D,k); alg = alg)
     λ = zeros(k)
     ws_idx = SVector{k, Int}(collect(2:k+1))
     for t in 1:1000
@@ -62,7 +63,7 @@ function lyapunov_oop(ds::DS, k)
 end
 
 for i in 1:8
-    @testset "combination $i" begin
+    @testset "$alg combination $i" begin
         sysindx = i < 5 ? 1 : 2
         if i < 5
             if isodd(i)
