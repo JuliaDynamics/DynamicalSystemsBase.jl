@@ -1,5 +1,4 @@
 using LinearAlgebra, DiffEqBase, ForwardDiff, StaticArrays
-import DiffEqBase: isinplace, reinit!
 using SparseArrays
 
 export dimension, get_state, DynamicalSystem
@@ -140,7 +139,7 @@ const DDS = DiscreteDynamicalSystem
 systemtype(::DDS) = "discrete"
 
 
-isinplace(::DS{IIP}) where {IIP} = IIP
+DiffEqBase.isinplace(::DS{IIP}) where {IIP} = IIP
 statetype(::DS{IIP, S}) where {IIP, S} = S
 stateeltype(::DS{IIP, S}) where {IIP, S} = eltype(S)
 isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
@@ -289,7 +288,7 @@ end
 #                                    Jacobians                                        #
 #######################################################################################
 function create_jacobian(
-    f::F, ::Val{IIP}, s::S, p::P, t::T, ::Val{D}) where {F, IIP, S, P, T, D}
+    @nospecialize(f::F), ::Val{IIP}, s::S, p::P, t::T, ::Val{D}) where {F, IIP, S, P, T, D}
     if IIP
         dum = deepcopy(s)
         cfg = ForwardDiff.JacobianConfig(
@@ -339,8 +338,9 @@ ds.jacobian(u, ds.p, t)
 #######################################################################################
 #                                 Tanget Dynamics                                     #
 #######################################################################################
+
 # IIP Tangent Space dynamics
-function create_tangent(f::F, jacobian::JAC, J::JM,
+function create_tangent(@nospecialize(f::F), @nospecialize(jacobian::JAC), J::JM,
     ::Val{true}, ::Val{k}) where {F, JAC, JM, k}
     J = deepcopy(J)
     tangentf = (du, u, p, t) -> begin
@@ -352,7 +352,6 @@ function create_tangent(f::F, jacobian::JAC, J::JM,
     end
     return tangentf
 end
-
 # for the case of autodiffed systems, a specialized version is created
 # so that f! is not called twice in ForwardDiff
 function create_tangent_iad(f::F, J::JM, u, p, t, ::Val{k}) where {F, JM, k}
@@ -372,7 +371,6 @@ function create_tangent_iad(f::F, J::JM, u, p, t, ::Val{k}) where {F, JM, k}
         return tangentf
     end
 end
-
 
 
 # OOP Tangent Space dynamics

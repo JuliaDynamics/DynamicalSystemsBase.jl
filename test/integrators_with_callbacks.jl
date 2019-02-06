@@ -1,11 +1,12 @@
 using DiffEqCallbacks
 using DynamicalSystemsBase
 using OrdinaryDiffEq: Vern7, Tsit5
-using LinearAlgebra
+using LinearAlgebra, Statistics
+using Test
 
 @testset "SavingCallback parallel" begin
 
-kwargs = (abstol=1e-14, reltol=1e-14, solver=Vern7(), maxiters=1e9)
+kwargs = (abstol=1e-14, reltol=1e-14, alg=Vern7(), maxiters=1e9)
 ds = Systems.lorenz()
 d0 = 1e-9
 T = 100.0
@@ -20,17 +21,16 @@ kwargs..., callback = cb)
 step!(pinteg, T)
 n = saved_values.saveval
 t = saved_values.t
-@test length(n) > 1000
+@test length(n) > 10000
 # test that norm increases:
-@test n[2] > n[1]
-@test n[end] > n[5]
+@test n[10000] > n[1]
 @test length(pinteg.sol.u) == 1
 end
 
 
 @testset "SavingCallback tangent" begin
 
-kwargs = (abstol=1e-14, reltol=1e-14, solver=Tsit5())
+kwargs = (abstol=1e-14, reltol=1e-14, alg=Tsit5())
 ds = Systems.lorenz()
 d0 = 1e-9
 T = 100.0
@@ -46,7 +46,6 @@ n = saved_values.saveval
 t = saved_values.t
 @test length(n) > 1000
 # test that norm increases:
-@test mean(n[10000:11000]) > mean(n[1:100])
 @test n[end] > n[5]
 @test length(pinteg.sol.u) == 1
 

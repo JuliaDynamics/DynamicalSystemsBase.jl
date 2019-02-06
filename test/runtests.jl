@@ -8,6 +8,7 @@ include("dynsys_tangent.jl")
 include("dynsys_inference.jl")
 include("continuous_systems.jl")
 include("discrete_systems.jl")
+include("integrators_with_callbacks.jl")
 
 ti = time() - ti
 println("\nTest took total time of:")
