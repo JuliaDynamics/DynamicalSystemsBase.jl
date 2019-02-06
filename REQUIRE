@@ -4,4 +4,4 @@ DiffEqBase 5.0
 ForwardDiff 0.8
 DelayEmbeddings
 Reexport 0.1
-SimpleDiffEq 0.1
+SimpleDiffEq 0.2

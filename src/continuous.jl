@@ -7,8 +7,7 @@ export CDS_KWARGS
 #####################################################################################
 using SimpleDiffEq: SimpleATsit5
 const DEFAULT_SOLVER = SimpleATsit5()
-const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-6,
-reltol = 1e-6, maxiters = typemax(Int))
+const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-6, reltol = 1e-6)
 
 const CDS_KWARGS = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
 
