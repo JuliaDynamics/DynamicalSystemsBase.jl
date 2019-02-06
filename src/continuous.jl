@@ -8,8 +8,6 @@ export CDS_KWARGS
 using SimpleDiffEq: SimpleATsit5
 const DEFAULT_SOLVER = SimpleATsit5()
 const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-6, reltol = 1e-6)
-
-
 const CDS_KWARGS = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
 
 _get_solver(a) = haskey(a, :alg) ? a[:alg] : DEFAULT_SOLVER
@@ -132,7 +130,7 @@ function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     t0 = ds.t0
     tvec = (t0+Ttr):dt:(T+t0+Ttr)
     sol = Vector{SVector{dimension(ds), stateeltype(ds)}}(undef, length(tvec))
-    integ = integrator(ds, u; dt = dt, tfinal = tvec[end]+2dt, diffeq...)
+    integ = integrator(ds, u; dt = dt, diffeq...)
     step!(integ, Ttr)
     for (i, t) in enumerate(tvec)
         while t > integ.t
