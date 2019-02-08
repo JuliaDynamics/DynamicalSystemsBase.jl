@@ -101,7 +101,7 @@ function roessler_eom(u, p, t)
     du1 = -u[2]-u[3]
     du2 = u[1] + a*u[2]
     du3 = b + u[3]*(u[1] - c)
-    return SVector{3, Float64}(du1, du2, du3)
+    return SVector{3}(du1, du2, du3)
     end
 end
 function roessler_jacob(u, p, t)
