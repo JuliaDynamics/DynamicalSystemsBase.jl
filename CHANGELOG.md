@@ -1,6 +1,9 @@
 Changelog of `DynamicalSystemsBase`.
 
-# master
+# v1.2
+In version `1.2` we have moved to `DiffEqBase 5.0+`. In addition to that we have changed the default integrator to `SimpleATsit5` from module `SimpleDiffEq`. This is not a breaking change and you can use any of the previous integrators. **It must be stated though that numeric results you obtained using the default integrator will now be slightly different**.
+
+In addition, be sure that you have version `SimpleDiffEq 0.3.0` or greater (which is what `DynamicalSystemsBase 1.2.3` guarantees).
 
 # v1.1
 
