@@ -108,6 +108,7 @@ const DS = DynamicalSystem
 
 """
     ContinuousDynamicalSystem(eom, state, p [, jacobian [, J]]; t0 = 0.0)
+    ContinuousDynamicalSystem(prob::ODEProblem [, jacobian [, J0]])
 A `DynamicalSystem` restricted to continuous-time systems (also called *ODEs*).
 """
 struct ContinuousDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
