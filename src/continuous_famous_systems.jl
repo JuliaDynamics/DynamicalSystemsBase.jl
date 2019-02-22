@@ -458,3 +458,97 @@ function labyrinth_eom(u, p, t)
     zdot = sin(x)
     return SVector{3}(xdot, ydot, zdot)
 end
+
+
+"""
+    antidots(u; B = 1.0, d0 = 0.3, c = 0.2)
+An antidot "superlattice" is a Hamiltonian system that corresponds to a
+smoothened periodic Sinai billiard with disk diameter `d0` and smooth
+factor `c` [1].
+
+This version is the two dimensional
+classical form of the system, with quadratic equations of motion and
+a perpendicular magnetic field. Notice that the equations of motion
+are with respect to the velocity instead of momentum, i.e.:
+```math
+\\begin{aligned}
+\\dot{x} &= v_x \\\\
+\\dot{y} &= v_y \\\\
+\\dot{v_x} &= B*v_y - U_x \\\\
+\\dot{v_y} &= -B*v_x - U_X \\\\
+\\end{aligned}
+```
+with ``U`` the potential energy:
+```math
+U = \\left(\\tfrac{1}{c^4}\\right) \\left[\\tfrac{d_0}{2} + c - r_a\\right]^4
+```
+if ``r_a = \\sqrt{(x%1)^2 + (y%1)^2} < \\frac{d_0}{2} + c`` and 0
+otherwise. I.e. the potential is periodic with period 1 in both ``x, y`` and
+normalized such that for energy value of 1 it is a circle of diameter ``d0``.
+The magnetic field is also normalized such that for value `B=1` the cyclotron
+diameter is 1.
+
+Fo more details see [1].
+
+[1] : G. Datseris *et al*, [arXiv:1711.05833v3](https://arxiv.org/abs/1711.05833v3)
+"""
+function antidots(u0 = [0.5, 0.5, rand(2)...];
+    d0 = 0.5, c = 0.2, B = 1.0)
+    return CDS(antidot_eom, u0, [B, d0, c], antidot_jacob)
+end
+
+function antidot_eom(u, p, t)
+    B, d0, c = p
+    x, y, vx, vy = u
+    # Calculate quadrant of (x,y):
+    U = Uy = Ux = 0.0
+    xtilde = x - round(x);  ytilde = y - round(y)
+    ρ = sqrt(xtilde^2 + ytilde^2)
+    # Calculate derivatives and potential:
+    if ρ < 0.5*d0 + c
+        sharedfactor = -(4*(c + d0/2 - ρ)^(3))/(c^4*ρ)
+        Ux = sharedfactor*xtilde # derivatives
+        Uy = sharedfactor*ytilde
+    end
+    Br = 2*√(2)*B # magnetic field with prefactor
+    return SVector{4}(vx, vy, Br*vy - Ux, -vx*Br - Uy)
+end
+function antidot_jacob(u, p, t)
+    B, d0, c = p
+    x, y, vx, vy = u
+    xtilde = x - round(x);  ytilde = y - round(y)
+    ρ = sqrt(xtilde^2 + ytilde^2)
+    # Calculate derivatives and potential:
+    if ρ < 0.5*d0 + c
+        Uxx, Uyy, Uxy = antidot_secondderv(xtilde, ytilde, p)
+    else
+        Uxx, Uyy, Uxy = 0.0, 0.0, 0.0
+    end
+    Br = 2*√(2)*B # magnetic field with prefactor
+    return SMatrix{4, 4}(0.0, 0, -Uxx, -Uxy, 0, 0, -Uxy, -Uyy,
+                         1, 0, 0, -Br,        0, 1, Br, 0)
+end
+
+function antidot_potential(x::Real, y::Real, p)
+    B, d0, c = p
+    δ = 4
+    # Calculate quadrant of (x,y):
+    xtilde = x - round(x);  ytilde = y - round(y)
+    ρ = sqrt(xtilde^2 + ytilde^2)
+    # Check distance:
+    pot = ρ > 0.5*d0 + c ? 0.0 : (1/(c^δ))*(0.5*d0 + c - ρ)^δ
+end
+
+function antidot_secondderv(x, y, p)
+    B, d0, c = p
+    r = sqrt(x^2 + y^2)
+    Uxx = _Uxx(x, y, c, d0, r)
+    Uyy = _Uxx(y, x, c, d0, r)
+    Uxy =  (2c + d0 - 2r)^2 * (2c + d0 + 4r)*x*y / (2c^4*r^3)
+    return Uxx, Uyy, Uxy
+end
+
+function _Uxx(x, y, c, d0, r)
+    Uxx =  (2c + d0 - 2r)^2 * (-2c*y^2 - d0*y^2 + 2*r*(3x^2 + y^2)) /
+    (2 * (c^4) * r^3)
+end
