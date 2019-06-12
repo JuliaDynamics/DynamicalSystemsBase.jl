@@ -1,5 +1,9 @@
 Changelog of `DynamicalSystemsBase`.
 
+# v1.3
+* The specialized integrators (tangent & parallel) now implement an internal norm that only evaluates norm of the main state, instead of using the other parallel states or deviation vectors. (#86)
+* Bunch of bugfixes and performance improvements (see git history)
+
 # v1.2
 In version `1.2` we have moved to `DiffEqBase 5.0+`. In addition to that we have changed the default integrator to `SimpleATsit5` from module `SimpleDiffEq`. This is not a breaking change and you can use any of the previous integrators. **It must be stated though that numeric results you obtained using the default integrator will now be slightly different**.
 

@@ -63,9 +63,19 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
     tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
     solver = _get_solver(diffeq)
-    return  __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS...,
-                   save_everystep = false, diffeq...)
+    return __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., internalnorm = _tannorm,
+                  save_everystep = false, diffeq...)
 end
+
+function _tannorm(u::AbstractMatrix, t)
+    s = size(u)[1]
+    x = zero(eltype(u))
+    for i in 1:s
+        @inbounds x += u[i, 1]^2
+    end
+    return sqrt(x/length(x))
+end
+_tannorm(u::Real, t) = abs(u)
 
 # Auto-diffed in-place version
 function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
@@ -86,7 +96,7 @@ function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
 
     solver = _get_solver(diffeq)
     return __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
-                diffeq...)
+                  internalnorm = _tannorm, diffeq...)
 end
 
 ############################### Parallel ############################################
@@ -117,9 +127,17 @@ function parallel_integrator(ds::CDS, states; diffeq...)
     # if typeof(solver) ∈ STIFFSOLVERS
     #     error("Stiff solvers can't support a parallel integrator.")
     # end
-    return __init(pprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
-                  diffeq...)
+    if !(typeof(ds) <: CDS{true})
+        return __init(pprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+                      internalnorm = _parallelnorm, diffeq...)
+    else
+        return __init(pprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
+                      internalnorm = _tannorm, diffeq...)
+    end
 end
+
+_parallelnorm(u::AbstractVector, t) = @inbounds DiffEqBase.ODE_DEFAULT_NORM(u[1], t)
+_parallelnorm(u::Real, t) = abs(u)
 
 #####################################################################################
 #                                 Trajectory                                        #

@@ -66,7 +66,7 @@ for i in 1:8
 
         # Currently the in-place version does not work from DiffEq's side:
         if i > 2
-            pinteg = parallel_integrator(ds, [INITCOD[sysindx], INITCOD[sysindx]]; alg = alg)
+            pinteg = parallel_integrator(ds, [copy(INITCOD[sysindx]), copy(INITCOD[sysindx])]; alg = alg)
             puprev = deepcopy(get_state(pinteg))
             step!(pinteg)
             @test get_state(pinteg, 1) == get_state(pinteg, 2) == get_state(pinteg)
