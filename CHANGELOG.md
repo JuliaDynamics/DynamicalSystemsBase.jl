@@ -1,5 +1,7 @@
 Changelog of `DynamicalSystemsBase`.
 
+# v1.4
+* added Pomaeu-Manneville map into the famous systems.
 # v1.3
 * The specialized integrators (tangent & parallel) now implement an internal norm that only evaluates norm of the main state, instead of using the other parallel states or deviation vectors. (#86)
 * Bunch of bugfixes and performance improvements (see git history)
