@@ -267,3 +267,46 @@ function logistic(x0=rand(); r = 4.0)
 end
 logistic_eom(x, p, n) = p[1]*x*(1-x)
 logistic_jacob(x, p, n) = p[1]*(1-2x)
+
+"""
+    pomaeu_manneville(u0 = 0.2; z = 2.5)
+The Pomeau-Manneville map is a one dimensional discrete map which is
+characteristic for displaying intermittency [1]. Specifically, for
+z > 2 the average time between chaotic bursts diverges, while
+for z > 2.5, the map iterates are long range correlated [2].
+
+Notice that here we are providing the "symmetric" version:
+```math
+x_{n+1} = \\begin{cases}
+-4x_n + 3, & \\quad x_n \\in (0.5, 1] \\\\
+x_n(1 + |2x_n|^{z-1}), & \\quad |x_n| \\le 0.5 \\\\
+-4x_n - 3, & \\quad x_n \\in [-1, 0.5)
+\\end{cases}
+```
+
+[1] : Manneville & Pomeau, Comm. Math. Phys. **74** (1980)
+
+[2] : Meyer et al., New. J. Phys **20** (2019)
+"""
+function pomeau_manneville(u0 = 0.2, z = 2.5)
+    return DDS(pm_eom, u0, [z], pm_jac)
+end
+function pm_eom(x, p, n)
+    if x < -0.5
+        -4x - 3
+    elseif -0.5 ≤ x ≤ 0.5
+        @inbounds x*(1 + abs(2x)^(p[1]-1))
+    else
+        -4x + 3
+    end
+end
+function pm_jac(x, p, n)
+    if x < -0.5
+        -4.0
+    elseif -0.5 ≤ x ≤ 0.5
+        @inbounds z = p[1]
+        0.5(x^2 * 2^z * (z-1)*abs(x)^(z-3) + 2^z * abs(x)^(z-1) + 2)
+    else
+        -4.0
+    end
+end
