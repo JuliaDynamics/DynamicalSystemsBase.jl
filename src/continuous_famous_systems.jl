@@ -168,34 +168,15 @@ In that search, the authors encountered chaos, as the third integral existed
 for only but a few initial conditions.
 
 The default initial condition is a typical chaotic orbit.
+The function `Systems.henonheiles_ics(E, n)` generates a grid of
+`n×n` initial conditions, all having the same energy `E`.
 
 [1] : Hénon, M. & Heiles, C., The Astronomical Journal **69**, pp 73–79 (1964)
 """
 function henonheiles(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
-
-
     i = one(eltype(u0))
     o = zero(eltype(u0))
     J = zeros(eltype(u0), 4, 4)
-
-    # Vhh(q1, q2) = 1//2 * (q1^2 + q2^2 + 2q1^2 * q2 - 2//3 * q2^3)
-    # Thh(p1, p2) = 1//2 * (p1^2 + p2^2)
-    # Hhh(q1, q2, p1, p2) = Thh(p1, p2) + Vhh(q1, q2)
-    # Hhh(u::AbstractVector) = Hhh(u...)
-    #
-    # E = Hhh(u0)
-    #
-    # ghh! = (resid, u) -> begin
-    #     resid[1] = Hhh(u[1],u[2],u[3],u[4]) - E
-    #     resid[2:4] .= 0
-    # end
-
-    # if conserveE
-    #     cb = ManifoldProjection(ghh!, nlopts=Dict(:ftol=>1e-13), save = false)
-    #     prob = ODEProblem(hheom!, u0, (0., 100.0),  callback=cb)
-    # else
-        # prob = ODEProblem(hheom!, u0, (0., 100.0))
-    # end
     return CDS(hheom!, u0, nothing, hhjacob!, J)
 end
 function hheom!(du, u, p, t)
@@ -216,6 +197,25 @@ function hhjacob!(J, u, p, t)
     J[4,:] .= (-2*u[1],  -1 + 2*u[2],  o,   o)
     return nothing
     end
+end
+_hhenergy(x,y,px,py) = 0.5(px^2 + py^2) + _hhpotential(x,y)
+_hhpotential(x, y) = 0.5(x^2 + y^2) + (x^2*y - (y^3)/3)
+function henonheiles_ics(E, n=10)
+    ys = range(-0.4, stop = 1.0, length = n)
+    pys = range(-0.5, stop = 0.5, length = n)
+    ics = Vector{Vector{Float64}}()
+    for y in ys
+        V = _hhpotential(0.0, y)
+        V ≥ E && continue
+        for py in pys
+            Ky = 0.5*(py^2)
+            Ky + V ≥ E && continue
+            px = sqrt(2(E - V - Ky))
+            ic = [0.0, y, px, py]
+            push!(ics, [0.0, y, px, py])
+        end
+    end
+    return ics
 end
 
 

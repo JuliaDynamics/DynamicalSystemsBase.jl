@@ -1,5 +1,6 @@
 Changelog of `DynamicalSystemsBase`.
-
+# v1.5
+* Added function that provides initial conditions for henon-heiles system at given energy, `Systems.henonheiles_ics(E, n)`
 # v1.4
 * added Pomaeu-Manneville map into the famous systems.
 # v1.3
