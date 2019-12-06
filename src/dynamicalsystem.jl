@@ -64,8 +64,8 @@ for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place ver
 
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
-It is **heavily** advised to provide a Jacobian function, as it gives *multiple*
-orders of magnitude speedup.
+Even though `ForwardDiff` is very fast, depending on your exact system you might
+gain significant speed up by providing a hand-coded Jacobian and so we recommend it.
 
 ### Interface to DifferentialEquations.jl
 Continuous systems are solved using
@@ -337,7 +337,7 @@ ds.jacobian(u, ds.p, t)
 
 
 #######################################################################################
-#                                 Tanget Dynamics                                     #
+#                        Tangent Dynamics (aka linearized dynamics)                   #
 #######################################################################################
 
 # IIP Tangent Space dynamics
