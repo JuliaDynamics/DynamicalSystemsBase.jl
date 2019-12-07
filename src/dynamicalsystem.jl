@@ -65,7 +65,7 @@ for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place ver
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
 Even though `ForwardDiff` is very fast, depending on your exact system you might
-gain significant speed up by providing a hand-coded Jacobian and so we recommend it.
+gain significant speed-up by providing a hand-coded Jacobian and so we recommend it.
 
 ### Interface to DifferentialEquations.jl
 Continuous systems are solved using
@@ -76,8 +76,7 @@ ContinuousDynamicalSystem(prob::ODEProblem [, jacobian [, J0]])
 ODEProblem(continuous_dynamical_system, tspan, args...)
 ```
 where in the second case `args` stands for the
-[standard extra arguments](http://docs.juliadiffeq.org/latest/types/ode_types.html#Constructors-1)
-of `ODEProblem`: `callback, mass_matrix`.
+standard extra arguments of `ODEProblem`: `callback, mass_matrix`.
 
 If you want to use callbacks with [`tangent_integrator`](@ref) or
 [`parallel_integrator`](@ref), then invoke them with extra arguments
@@ -466,7 +465,7 @@ set_state!(integ, u) = (integ.u = u; u_modified!(integ, true))
 """
     tangent_integrator(ds::DynamicalSystem, Q0 | k::Int; kwargs...)
 Return an integrator object that evolves in parallel both the system as well
-as deviation vectors living on the tangent space.
+as deviation vectors living on the tangent space, also called linearized space.
 
 `Q0` is a *matrix* whose columns are initial values for deviation vectors. If
 instead of a matrix `Q0` an integer `k` is given, then `k` random orthonormal
