@@ -252,7 +252,7 @@ The logistic map is an one dimensional unimodal mapping due to May [1] and is us
 many as the archetypal example of how chaos can arise from very simple equations.
 
 Originally intentend to be a discretized model of polulation dynamics, it is now famous
-for its bifurcation diagram, an immensly complex graph that that was shown
+for its bifurcation diagram, an immensely complex graph that that was shown
 be universal by Feigenbaum [2].
 
 The parameter container has the parameters in the same order as stated in this
