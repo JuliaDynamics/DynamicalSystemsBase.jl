@@ -71,6 +71,66 @@ end
 
 """
 ```julia
+chua(u0 = [0.7, 0.0, 0.0]; a = 15.6, b = 25.58, m0 = -8/7, m1 = -5/7)
+```
+```math
+\\begin{aligned}
+\\dot{x} &= \\alpha (y - h(x))\\\\
+\\dot{y} &= x - y+z \\\\
+\\dot{z} &= \\beta y
+\\end{aligned}
+```
+where h(x) is defined by
+```math
+h(x) = m_1 x + \\frac 1 2 (m_0 - m_1)(|x + 1| - |x - 1|)
+```
+This is a 3D continuous system that exhibits chaos.
+
+Chua designed an electronic circuit with the expressed goal of exhibiting
+chaotic motion, and this system is obtained by rescaling the circuit units
+to simplify the form of the equation. [1]
+
+The parameters are a, b, m0 and m1. Setting a = 15.6, m0 = -8/7 and m1 = -5/7,
+and varying the parameter b from b = 25 to b = 51, one observes a classic
+period-doubling bifurcation route to chaos. [2]
+
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
+
+[1] : Chua, Leon O. "The genesis of Chua's circuit". Berkeley, CA, USA: Electronics Research Laboratory, College of Engineering, University of California, 1992.
+[2] : [Leon O. Chua (2007) "Chua circuit", Scholarpedia, 2(10):1488.](http://www.scholarpedia.org/article/Chua_circuit)
+
+"""
+function chua(u0 = [0.7, 0.0, 0.0]; a = 15.6, b = 25.58, m0 = -8/7, m1 = -5/7)
+    return CDS(chua_eom, u0, [a, b, m0, m1], chua_jacob)
+end
+function chua_eom(u, p, t)
+    @inbounds begin
+    a, b, m0, m1 = p
+    du1 = a * (u[2] - u[1] - chua_element(u[1], m0, m1))
+    du2 = u[1] - u[2] + u[3]
+    du3 = -b * u[2]
+    return SVector{3}(du1, du2, du3)
+    end
+end
+function chua_jacob(u, p, t)
+    a, b, m0, m1 = p
+    return @SMatrix[-a*(1 + chua_element_derivative(u[1], m0, m1)) a 0;
+                    1 -1 1;
+                    0 -b 0]
+end
+# Helper functions for Chua's circuit.
+function chua_element(x, m0, m1)
+    return m1 * x + 0.5 * (m0 - m1) * (abs(x + 1.0) - abs(x - 1.0))
+end
+function chua_element_derivative(x, m0, m1)
+    return m1 + 0.5 * (m0 - m1) * (-1 < x < 1 ? 2 : 0)
+end
+
+
+
+"""
+```julia
 roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
 ```
 ```math
