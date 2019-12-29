@@ -98,6 +98,7 @@ The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 
 [1] : Chua, Leon O. "The genesis of Chua's circuit". Berkeley, CA, USA: Electronics Research Laboratory, College of Engineering, University of California, 1992.
+
 [2] : [Leon O. Chua (2007) "Chua circuit", Scholarpedia, 2(10):1488.](http://www.scholarpedia.org/article/Chua_circuit)
 
 """
