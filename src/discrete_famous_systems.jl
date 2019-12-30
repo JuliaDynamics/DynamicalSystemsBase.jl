@@ -310,3 +310,24 @@ function pm_jac(x, p, n)
         -4.0
     end
 end
+
+"""
+```julia
+arnoldcat(u0 = rand(2))
+```
+```math
+f(x,y) = (2x+y,x+y) \\mod 1
+```
+Arnold's cat map. A chaotic map from the torus into itself, discovered by
+Vladimir Arnold in the 1960s. [1]
+
+[1] : Arnol'd, V. I., & Avez, A. (1968). Ergodic problems of classical mechanics.
+"""
+function arnoldcat(u0 = rand(2))
+    return DDS(arnoldcat_eom, u0, nothing, arnoldcat_jacob)
+end # Should give Lyapunov exponents [2.61803, 0.381966]
+function arnoldcat_eom(u, p, n)
+    x,y = u
+    return SVector{2}(2x + y, x + y)
+end
+arnoldcat_jacob(u, p, n) = @SMatrix [2 1; 1 1]

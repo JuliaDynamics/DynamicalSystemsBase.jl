@@ -434,7 +434,7 @@ function's documentation string.
 [1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
 """
 function gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
-    return CDS(gissinger_eom, u0, [μ, ν, Γ])
+    return CDS(gissinger_eom, u0, [μ, ν, Γ], gissinger_jacob)
 end
 function gissinger_eom(u, p, t)
     μ, ν, Γ = p
@@ -442,6 +442,12 @@ function gissinger_eom(u, p, t)
     du2 = -ν*u[2] + u[1]*u[3]
     du3 = Γ - u[3] + u[1]*u[2]
     return SVector{3}(du1, du2, du3)
+end
+function gissinger_jacob(u, p, t)
+    μ, ν, Γ = p
+    return @SMatrix [μ -u[3] -u[2];
+                     u[3] -ν u[1];
+                     u[2] u[1] -1]
 end
 
 """
@@ -461,7 +467,7 @@ by means of a double-disk dynamo system.
 [1] : T. Rikitake Math. Proc. Camb. Phil. Soc. **54**, pp 89–105, (1958)
 """
 function rikitake(u0 = [1, 0, 0.6]; μ = 1.0, α = 1.0)
-    return CDS(rikitake_eom, u0, [μ, α])
+    return CDS(rikitake_eom, u0, [μ, α], rikitake_jacob)
 end
 function rikitake_eom(u, p, t)
     μ, α = p
@@ -471,7 +477,16 @@ function rikitake_eom(u, p, t)
     zdot = 1 - x*y
     return SVector{3}(xdot, ydot, zdot)
 end
-
+function rikitake_jacob(u, p, t)
+    μ, α = p
+    x,y,z = u
+    xdot = -μ*x + y*z
+    ydot = -μ*y + x*(z - α)
+    zdot = 1 - x*y
+    return @SMatrix [-μ  z  y;
+                     z-α -μ x;
+                     -y  -x 0]
+end
 
 """
 ```julia
@@ -484,16 +499,30 @@ nosehoover(u0 = [0, 0.1, 0])
 \\dot{z} &= 1 - y^2
 \\end{aligned}
 ```
-Three dimensional conservative continuous system, taken from the book
-"Elegant Chaos" by J. C. Sprott.
+Three dimensional conservative continuous system, discovered in 1984 during
+investigations in thermodynamical chemistry by Nosé and Hoover, then
+rediscovered by Sprott during an exhaustive search as an extremely simple
+chaotic system. [1]
+
+See Chapter 4 of "Elegant Chaos" by J. C. Sprott. [2]
+
+[1] : Hoover, W. G. (1995). Remark on ‘‘Some simple chaotic flows’’. *Physical Review E*, *51*(1), 759.
+
+[2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
 """
-nosehoover(u0 = [0, 0.1, 0]) = CDS(nosehoover_eom, u0, nothing)
+nosehoover(u0 = [0, 0.1, 0]) = CDS(nosehoover_eom, u0, nothing, nosehoover_jacob)
 function nosehoover_eom(u, p, t)
     x,y,z = u
     xdot = y
     ydot = y*z - x
     zdot  = 1.0 - y*y
     return SVector{3}(xdot, ydot, zdot)
+end
+function nosehoover_jacob(u, p, t)
+    x,y,z = u
+    return @SMatrix [0 1 0;
+                     -1 z y;
+                     0 2y 0]
 end
 
 """
@@ -507,17 +536,29 @@ labyrinth(u0 = [1.0, 0, 0])
 \\dot{V} &= \\sin(x)
 \\end{aligned}
 ```
-Three dimensional conservative continuous system, whose evolution in 3D space looks
-like a speudo-random walk, the orbit moving around like in a labyrinth.
-Taken from the book "Elegant Chaos" by J. C. Sprott.
+Three dimensional conservative continuous system, whose evolution in 3D space
+looks like a speudo-random walk, the orbit moving around like in a labyrinth.
+
+First proposed by René Thomas (1999). [1] See discussion in Section 4.4.3 of
+"Elegant Chaos" by J. C. Sprott. [2]
+
+[1] : Thomas, R. (1999). Deterministic chaos seen in terms of feedback circuits: Analysis, synthesis," labyrinth chaos". *International Journal of Bifurcation and Chaos*, *9*(10), 1889-1905.
+
+[2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
 """
-labyrinth(u0 = [1.0, 0, 0]) = CDS(labyrinth_eom, u0, nothing)
+labyrinth(u0 = [1.0, 0, 0]) = CDS(labyrinth_eom, u0, nothing, labyrinth_jacob)
 function labyrinth_eom(u, p, t)
     x,y,z = u
     xdot = sin(y)
     ydot = sin(z)
     zdot = sin(x)
     return SVector{3}(xdot, ydot, zdot)
+end
+function labyrinth_jacob(u, p, t)
+    x,y,z = u
+    return @SMatrix [0 cos(y) 0;
+                     0 0 cos(z);
+                     cos(x) 0 0]
 end
 
 
@@ -612,4 +653,48 @@ end
 function _Uxx(x, y, c, d0, r)
     Uxx =  (2c + d0 - 2r)^2 * (-2c*y^2 - d0*y^2 + 2*r*(3x^2 + y^2)) /
     (2 * (c^4) * r^3)
+end
+
+"""
+```julia
+ueda(u0 = [3.0, 0]; k = 0.1, B = 12.0)
+```
+```math
+\\ddot{x} + k \\dot{x} + x^3 = B\\cos{t}
+```
+Nonautonomous Duffing-like forced oscillation system, discovered by Ueda in
+1961. It is one of the first chaotic systems to be discovered.
+
+The stroboscopic plot in the (x, ̇x) plane with period 2π creates a "broken-egg
+attractor" for k = 0.1 and B = 12. Figure 5 of [1] is reproduced by
+
+```julia
+using Plots
+ds = Systems.ueda()
+a = trajectory(ds, 2π*5e3, dt = 2π)
+scatter(a[:, 1], a[:, 2], markersize = 0.5, markercolor=:black, leg=false, title="Ueda attractor")
+```
+
+For more forced oscillation systems, see Chapter 2 of "Elegant Chaos" by
+J. C. Sprott. [2]
+
+[1] : [Ruelle, David, ‘Strange Attractors’, The Mathematical Intelligencer, 2.3 (1980), 126–37](https://doi.org/10/dkfd3n)
+
+[2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
+"""
+function ueda(u0 = [3.0, 0]; k = 0.1, B = 12.0)
+    return CDS(ueda_eom, u0, [k, B], ueda_jacob)
+end
+function ueda_eom(u, p, t)
+    x,y = u
+    k, B = p
+    xdot = y
+    ydot = B*cos(t) - k*y - x^3
+    return SVector{2}(xdot, ydot)
+end
+function ueda_jacob(u, p, t)
+    x,y = u
+    k, B = p
+    return @SMatrix [0      1;
+                     -3*x^2 -k]
 end
