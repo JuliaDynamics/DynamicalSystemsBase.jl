@@ -499,16 +499,30 @@ nosehoover(u0 = [0, 0.1, 0])
 \\dot{z} &= 1 - y^2
 \\end{aligned}
 ```
-Three dimensional conservative continuous system, taken from the book
-"Elegant Chaos" by J. C. Sprott.
+Three dimensional conservative continuous system, discovered in 1984 during
+investigations in thermodynamical chemistry by Nosé and Hoover, then
+rediscovered by Sprott during an exhaustive search as an extremely simple
+chaotic systems. [1]
+
+See Chapter 4 of "Elegant Chaos" by J. C. Sprott. [2]
+
+[1] : Hoover, W. G. (1995). Remark on ‘‘Some simple chaotic flows’’. *Physical Review E*, *51*(1), 759.
+
+[2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
 """
-nosehoover(u0 = [0, 0.1, 0]) = CDS(nosehoover_eom, u0, nothing)
+nosehoover(u0 = [0, 0.1, 0]) = CDS(nosehoover_eom, u0, nothing, nosehoover_jacob)
 function nosehoover_eom(u, p, t)
     x,y,z = u
     xdot = y
     ydot = y*z - x
     zdot  = 1.0 - y*y
     return SVector{3}(xdot, ydot, zdot)
+end
+function nosehoover_jacob(u, p, t)
+    x,y,z = u
+    return @SMatrix [0 1 0;
+                     -1 z y;
+                     0 2y 0]
 end
 
 """
