@@ -542,7 +542,7 @@ looks like a speudo-random walk, the orbit moving around like in a labyrinth.
 First proposed by René Thomas (1999). [1] See discussion in Section 4.4.3 of
 "Elegant Chaos" by J. C. Sprott. [2]
 
-[1] : Thomas, R. (1999). Deterministic chaos seen in terms of feedback circuits: Analysis, synthesis," labyrinth chaos". *International Journal of Bifurcation and Chaos*, *9*(10), 1889\-1905.
+[1] : Thomas, R. (1999). Deterministic chaos seen in terms of feedback circuits: Analysis, synthesis," labyrinth chaos". *International Journal of Bifurcation and Chaos*, *9*(10), 1889-1905.
 
 [2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
 """
