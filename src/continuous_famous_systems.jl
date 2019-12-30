@@ -536,17 +536,29 @@ labyrinth(u0 = [1.0, 0, 0])
 \\dot{V} &= \\sin(x)
 \\end{aligned}
 ```
-Three dimensional conservative continuous system, whose evolution in 3D space looks
-like a speudo-random walk, the orbit moving around like in a labyrinth.
-Taken from the book "Elegant Chaos" by J. C. Sprott.
+Three dimensional conservative continuous system, whose evolution in 3D space
+looks like a speudo-random walk, the orbit moving around like in a labyrinth.
+
+First proposed by René Thomas (1999). [1] See discussion in Section 4.4.3 of
+"Elegant Chaos" by J. C. Sprott. [2]
+
+[1] : Thomas, R. (1999). Deterministic chaos seen in terms of feedback circuits: Analysis, synthesis," labyrinth chaos". *International Journal of Bifurcation and Chaos*, *9*(10), 1889\-1905.
+
+[2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
 """
-labyrinth(u0 = [1.0, 0, 0]) = CDS(labyrinth_eom, u0, nothing)
+labyrinth(u0 = [1.0, 0, 0]) = CDS(labyrinth_eom, u0, nothing, labyrinth_jacob)
 function labyrinth_eom(u, p, t)
     x,y,z = u
     xdot = sin(y)
     ydot = sin(z)
     zdot = sin(x)
     return SVector{3}(xdot, ydot, zdot)
+end
+function labyrinth_jacob(u, p, t)
+    x,y,z = u
+    return @SMatrix [0 cos(y) 0;
+                     0 0 cos(z);
+                     cos(x) 0 0]
 end
 
 
