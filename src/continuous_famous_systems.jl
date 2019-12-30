@@ -654,3 +654,46 @@ function _Uxx(x, y, c, d0, r)
     Uxx =  (2c + d0 - 2r)^2 * (-2c*y^2 - d0*y^2 + 2*r*(3x^2 + y^2)) /
     (2 * (c^4) * r^3)
 end
+
+"""
+```julia
+ueda(u0 = [3.0, 0]; k = 0.1, B = 12.0)
+```
+```math
+\\ddot{x} + k \\dot{x} + x^3 = B\\cos{t}
+```
+Nonautonomous Duffing-like forced oscillation system, discovered by Ueda in
+1961. It is one of the first chaotic systems to be discovered.
+
+The stroboscopic plot in the (x, ̇x) plane with period 2π creates a "broken-egg
+attractor" for k = 0.1 and B = 12. Figure 5 of [1] is reproduced by
+
+```julia
+ds = Systems.ueda()
+a = trajectory(ds, 2π*5e3, dt = 2π)
+scatter(a[:, 1], a[:, 2], markersize = 0.5, markercolor=:black, leg=false, title="Ueda attractor")
+```
+
+For more forced oscillation systems, see Chapter 2 of "Elegant Chaos" by
+J. C. Sprott. [2]
+
+[1] : [Ruelle, David, ‘Strange Attractors’, The Mathematical Intelligencer, 2.3 (1980), 126–37](https://doi.org/10/dkfd3n)
+
+[2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
+"""
+function ueda(u0 = [3.0, 0]; k = 0.1, B = 12.0)
+    return CDS(ueda_eom, u0, [k, B], ueda_jacob)
+end
+function ueda_eom(u, p, t)
+    x,y = u
+    k, B = p
+    xdot = y
+    ydot = B*cos(t) - k*y - x^3
+    return SVector{2}(xdot, ydot)
+end
+function ueda_jacob(u, p, t)
+    x,y = u
+    k, B = p
+    return @SMatrix [0      1;
+                     -3*x^2 -k]
+end
