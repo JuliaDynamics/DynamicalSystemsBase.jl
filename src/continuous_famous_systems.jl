@@ -502,7 +502,7 @@ nosehoover(u0 = [0, 0.1, 0])
 Three dimensional conservative continuous system, discovered in 1984 during
 investigations in thermodynamical chemistry by Nosé and Hoover, then
 rediscovered by Sprott during an exhaustive search as an extremely simple
-chaotic systems. [1]
+chaotic system. [1]
 
 See Chapter 4 of "Elegant Chaos" by J. C. Sprott. [2]
 
@@ -669,6 +669,7 @@ The stroboscopic plot in the (x, ̇x) plane with period 2π creates a "broken-eg
 attractor" for k = 0.1 and B = 12. Figure 5 of [1] is reproduced by
 
 ```julia
+using Plots
 ds = Systems.ueda()
 a = trajectory(ds, 2π*5e3, dt = 2π)
 scatter(a[:, 1], a[:, 2], markersize = 0.5, markercolor=:black, leg=false, title="Ueda attractor")
