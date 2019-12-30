@@ -434,7 +434,7 @@ function's documentation string.
 [1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
 """
 function gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
-    return CDS(gissinger_eom, u0, [μ, ν, Γ])
+    return CDS(gissinger_eom, u0, [μ, ν, Γ], gissinger_jacob)
 end
 function gissinger_eom(u, p, t)
     μ, ν, Γ = p
@@ -442,6 +442,12 @@ function gissinger_eom(u, p, t)
     du2 = -ν*u[2] + u[1]*u[3]
     du3 = Γ - u[3] + u[1]*u[2]
     return SVector{3}(du1, du2, du3)
+end
+function gissinger_jacob(u, p, t)
+    μ, ν, Γ = p
+    return @SMatrix [μ -u[3] -u[2];
+                     u[3] -ν u[1];
+                     u[2] u[1] -1]
 end
 
 """
