@@ -60,7 +60,7 @@ equations of motion, hence the 2 constructors.
 The optional argument `jacobian` for the constructors
 is a *function* and (if given) must also be of the same form as the `eom`,
 `jacobian(x, p, n) -> SMatrix`
-for the out-of-place version and `jacobian!(xnew, x, p, n)` for the in-place version.
+for the out-of-place version and `jacobian!(Jnew, x, p, n)` for the in-place version.
 
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
