@@ -20,10 +20,10 @@ isinplace(::MDI{IIP}) where {IIP} = IIP
 stateeltype(::MDI{IIP, S}) where {IIP, S} = eltype(S)
 stateeltype(::MDI{IIP, S}) where {IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
-function reinit!(integ::MDI, u = integ.u, Q0 = nothing)
+function reinit!(integ::MDI, u = integ.u, Q0 = nothing; t0 = integ.t0)
     integ.u = u
     integ.dummy = u
-    integ.t = integ.t0
+    integ.t = t0
     if Q0 != nothing
         set_deviations!(integ, Q0)
     end
@@ -118,12 +118,12 @@ u_modified!(t::TDI, a) = nothing
 get_deviations(t::TDI) = t.W
 set_deviations!(t::TDI, Q) = (t.W = Q)
 
-function reinit!(integ::TDI, u = integ.u, Q0 = nothing)
+function reinit!(integ::TDI, u = integ.u, Q0 = nothing; t0 = integ.t0)
     set_state!(integ, u)
     if Q0 != nothing
         set_deviations!(integ, Q0)
     end
-    integ.t = integ.t0
+    integ.t = t0
     return
 end
 
