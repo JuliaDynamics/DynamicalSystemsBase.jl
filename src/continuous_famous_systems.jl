@@ -97,7 +97,7 @@ period-doubling bifurcation route to chaos. [2]
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 
-[1] : Chua, Leon O. "The genesis of Chua's circuit". Berkeley, CA, USA: Electronics Research Laboratory, College of Engineering, University of California, 1992.
+[1] : Chua, Leon O. "The genesis of Chua's circuit", 1992.
 
 [2] : [Leon O. Chua (2007) "Chua circuit", Scholarpedia, 2(10):1488.](http://www.scholarpedia.org/article/Chua_circuit)
 
@@ -542,7 +542,7 @@ looks like a speudo-random walk, the orbit moving around like in a labyrinth.
 First proposed by René Thomas (1999). [1] See discussion in Section 4.4.3 of
 "Elegant Chaos" by J. C. Sprott. [2]
 
-[1] : Thomas, R. (1999). Deterministic chaos seen in terms of feedback circuits: Analysis, synthesis," labyrinth chaos". *International Journal of Bifurcation and Chaos*, *9*(10), 1889-1905.
+[1] : Thomas, R. (1999). *International Journal of Bifurcation and Chaos*, *9*(10), 1889-1905.
 
 [2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
 """
@@ -672,7 +672,7 @@ attractor" for k = 0.1 and B = 12. Figure 5 of [1] is reproduced by
 using Plots
 ds = Systems.ueda()
 a = trajectory(ds, 2π*5e3, dt = 2π)
-scatter(a[:, 1], a[:, 2], markersize = 0.5, markercolor=:black, leg=false, title="Ueda attractor")
+scatter(a[:, 1], a[:, 2], markersize = 0.5, title="Ueda attractor")
 ```
 
 For more forced oscillation systems, see Chapter 2 of "Elegant Chaos" by
@@ -697,4 +697,46 @@ function ueda_jacob(u, p, t)
     k, B = p
     return @SMatrix [0      1;
                      -3*x^2 -k]
+end
+
+
+struct MagneticPendulum{T<:AbstractFloat}
+    magnets::Vector{SVector{2, T}}
+end
+
+function (m::MagneticPendulum)(u, p, t)
+    x, y, vx, vy = u
+    γ, d, α, ω = p
+    dx, dy = vx, vy
+    dvx, dvy = @. -ω^2*(x, y) - α*(vx, vy)
+    for ma in m.magnets
+        δx, δy = (x - ma[1]), (y - ma[2])
+        D = sqrt(δx^2 + δy^2 + d^2)
+        dvx -= γ*(x - ma[1])/D^3
+        dvy -= γ*(y - ma[2])/D^3
+    end
+    return SVector(dx, dy, dvx, dvy)
+end
+
+"""
+    magnetic_pendulum(u=[cos(θ),sin(θ),0,0]; γ=1, d=0.3, α=0.2, ω=0.5, N=3)
+
+Create a pangetic pendulum with `N` magnetics, equally distributed along the unit circle,
+with equations of motion
+```math
+\\begin{aligned}
+\\ddot{x} &= -\\omega ^2x - \\alpha \\dot{x} - \\sum_{i=1}^N \\frac{\\gamma (x - x_i)}{D_i^3} \\\\
+\\ddot{y} &= -\\omega ^2y - \\alpha \\dot{y} - \\sum_{i=1}^N \\frac{\\gamma (y - y_i)}{D_i^3} \\\\
+D_i &= \\sqrt{(x-x_i)^2  + (y-y_i)^2 + d^2}
+\\end{aligned}
+```
+where α is friction, ω is eigenfrequency, d is distance of pendulum from the magnet's plane
+and γ is the magnetic strength. A random initial condition is initialized by default
+somewhere along the unit circle with zero velocity.
+"""
+function magnetic_pendulum(u = [sincos(rand()*2π)..., 0, 0];
+    γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3)
+    m = MagneticPendulum([SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N])
+    p = [γ, d, α, ω]
+    ds = ContinuousDynamicalSystem(m, u, p)
 end
