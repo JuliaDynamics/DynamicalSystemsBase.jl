@@ -584,7 +584,7 @@ with ``U`` the potential energy:
 ```math
 U = \\left(\\tfrac{1}{c^4}\\right) \\left[\\tfrac{d_0}{2} + c - r_a\\right]^4
 ```
-if ``r_a = \\sqrt{(x%1)^2 + (y%1)^2} < \\frac{d_0}{2} + c`` and 0
+if ``r_a = \\sqrt{(x \\mod 1)^2 + (y \\mod 1)^2} < \\frac{d_0}{2} + c`` and 0
 otherwise. I.e. the potential is periodic with period 1 in both ``x, y`` and
 normalized such that for energy value of 1 it is a circle of diameter ``d0``.
 The magnetic field is also normalized such that for value `B=1` the cyclotron
@@ -592,7 +592,7 @@ diameter is 1.
 
 Fo more details see [1].
 
-[1] : G. Datseris *et al*, [arXiv:1711.05833v3](https://arxiv.org/abs/1711.05833v3)
+[1] : G. Datseris *et al*, [New Journal of Physics 2019](https://iopscience.iop.org/article/10.1088/1367-2630/ab19cc/meta)
 """
 function antidots(u0 = [0.5, 0.5, rand(2)...];
     d0 = 0.5, c = 0.2, B = 1.0)
