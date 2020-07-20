@@ -35,7 +35,7 @@ default options used to evolve continuous systems (through `OrdinaryDiffEq`).
 ### Equations of motion
 The are two "versions" for `DynamicalSystem`, depending on whether the
 equations of motion (`eom`) are in-place (iip) or out-of-place (oop).
-Here is how to define them:
+Here is how to define them (1-D systems are treated differently, see below):
 
 * **oop** : The `eom` **must** be in the form `eom(x, p, t) -> SVector`
   which means that given a state `x::SVector` and some parameter container
@@ -66,6 +66,11 @@ If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
 Even though `ForwardDiff` is very fast, depending on your exact system you might
 gain significant speed-up by providing a hand-coded Jacobian and so we recommend it.
+
+### Comment on 1-D
+One dimensional discrete systems expect the state always as a pure number, `0.8` instead
+of `SVector(0.8)`. For continuous systems, the state can be in-place/out-of-place as
+in higher dimensions, however the derivative function must be always explicitly given.
 
 ### Interface to DifferentialEquations.jl
 Continuous systems are solved using
@@ -222,6 +227,12 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
     end
 
     # Without Jacobian
+    if ds == :ContinuousDynamicalSystem
+        oneder = :(error("For 1D continuous systems, you need to explicitly give a derivative function."))
+    else
+        oneder = :(nothing)
+    end
+
     @eval function $(ds)(eom, u0, p; t0 = 0.0)
 
         if !(typeof(u0) <: Union{AbstractVector, Number})
@@ -232,6 +243,7 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
         IIP = isinplace(eom, 4)
         s = safe_state_type(Val{IIP}(), u0)
         D = length(s)
+        D == 1 && $(oneder)
 
         t = timetype($(ds), s)(t0)
         j = create_jacobian(eom, Val{IIP}(), s, p, t, Val{D}())

@@ -1,4 +1,6 @@
 Changelog of `DynamicalSystemsBase`.
+# v1.5.4
+* Critical bugfix/mentioning of how 1-D systems work.
 # v1.5
 * Added function that provides initial conditions for henon-heiles system at given energy, `Systems.henonheiles_ics(E, n)`
 * More famous systems and a lot more Jacobians to existing systems (#93)
