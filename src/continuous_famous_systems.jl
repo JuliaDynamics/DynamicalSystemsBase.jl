@@ -222,7 +222,7 @@ end
 \\end{aligned}
 ```
 
-The Hénon–Heiles system [1] was introduced as a simplification of the motion
+The Hénon–Heiles system [1] is a conservative dynamical system and was introduced as a simplification of the motion
 of a star around a galactic center. It was originally intended to study the
 existence of a "third integral of motion" (which would make this 4D system integrable).
 In that search, the authors encountered chaos, as the third integral existed
@@ -283,6 +283,7 @@ end
 """
     qbh([u0]; A=1.0, B=0.55, D=0.4)
 
+A conservative dynamical system with rule
 ```math
 \\begin{aligned}
 \\dot{q}_0 &= A p_0 \\\\
@@ -533,7 +534,7 @@ labyrinth(u0 = [1.0, 0, 0])
 \\begin{aligned}
 \\dot{x} &= \\sin(y) \\\\
 \\dot{y} &= \\sin(z) \\\\
-\\dot{V} &= \\sin(x)
+\\dot{z} &= \\sin(x)
 \\end{aligned}
 ```
 Three dimensional conservative continuous system, whose evolution in 3D space
@@ -589,8 +590,6 @@ otherwise. I.e. the potential is periodic with period 1 in both ``x, y`` and
 normalized such that for energy value of 1 it is a circle of diameter ``d0``.
 The magnetic field is also normalized such that for value `B=1` the cyclotron
 diameter is 1.
-
-Fo more details see [1].
 
 [1] : G. Datseris *et al*, [New Journal of Physics 2019](https://iopscience.iop.org/article/10.1088/1367-2630/ab19cc/meta)
 """
@@ -740,3 +739,21 @@ function magnetic_pendulum(u = [sincos(rand()*2π)..., 0, 0];
     p = [γ, d, α, ω]
     ds = ContinuousDynamicalSystem(m, u, p)
 end
+
+"""
+    fitzhugh_nagumo(u = 0.5ones(2); I = 1.0)
+Famous excitable system which emulates the firing of a neuron, with equations
+```math
+\\begin{aligned}
+\\dot{v} &= v - v^3/3 - w + I \\\\
+\\ddot{y} &= 0.08(v + 0.7 - 0.8w)
+\\end{aligned}
+```
+
+More details in the [Scholarpedia](http://www.scholarpedia.org/article/FitzHugh-Nagumo_model) entry.
+"""
+function fitzhugh_nagumo(u = 0.5ones(2); I = 1.0)
+    ds = ContinuousDynamicalSystem(fitzhugh_nagumo_eom, u, [I])
+end
+fitzhugh_nagumo_eom(u, p, t) =
+SVector(u[1] -  u[1]^3/3 - u[2] + p[1], 0.08(u[1] + 0.7 - 0.8u[2]))
