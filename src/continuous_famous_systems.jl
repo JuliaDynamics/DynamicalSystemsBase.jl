@@ -741,19 +741,19 @@ function magnetic_pendulum(u = [sincos(rand()*2π)..., 0, 0];
 end
 
 """
-    fitzhugh_nagumo(u = 0.5ones(2); I = 1.0)
+    fitzhugh_nagumo(u = 0.5ones(2); I = 1.0, ε = 0.08)
 Famous excitable system which emulates the firing of a neuron, with equations
 ```math
 \\begin{aligned}
 \\dot{v} &= v - v^3/3 - w + I \\\\
-\\ddot{y} &= 0.08(v + 0.7 - 0.8w)
+\\ddot{y} &= \\varepsilon(v + 0.7 - 0.8w)
 \\end{aligned}
 ```
 
 More details in the [Scholarpedia](http://www.scholarpedia.org/article/FitzHugh-Nagumo_model) entry.
 """
-function fitzhugh_nagumo(u = 0.5ones(2); I = 1.0)
-    ds = ContinuousDynamicalSystem(fitzhugh_nagumo_eom, u, [I])
+function fitzhugh_nagumo(u = 0.5ones(2); I = 1.0, ε = 0.08)
+    ds = ContinuousDynamicalSystem(fitzhugh_nagumo_eom, u, [I, ε])
 end
 fitzhugh_nagumo_eom(u, p, t) =
-SVector(u[1] -  u[1]^3/3 - u[2] + p[1], 0.08(u[1] + 0.7 - 0.8u[2]))
+@inbounds SVector(u[1] -  u[1]^3/3 - u[2] + p[1], p[2]*(u[1] + 0.7 - 0.8u[2]))
