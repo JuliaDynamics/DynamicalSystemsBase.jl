@@ -381,7 +381,7 @@ end
     ω, f, d, β = p
     dx1 = x[2]
     dx2 = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
-    return SVector{2, Float64}(dx1, dx2)
+    return SVector(dx1, dx2)
 end
 @inbounds function duffing_jacob(u, p, t)
     ω, f, d, β = p
