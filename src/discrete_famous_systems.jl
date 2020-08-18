@@ -127,6 +127,7 @@ introduced in [1] to study diffusion and chaos thresholds.
 The *total* dimension of the system
 is `2M`. The maps are coupled through `Γ`
 and the `i`-th map has a nonlinear parameter `ks[i]`.
+The first `M` parameters are the `ks`, the `M+1`th parameter is `Γ`.
 
 The first `M` entries of the state are the angles, the last `M` are the momenta.
 
@@ -151,7 +152,7 @@ function coupledstandardmaps(M::Int, u0 = 0.001rand(2M);
         J[i+M, i+M] = 1
     end
     sparseJ = sparse(J)
-    p = (ks, Γ)
+    p = vcat(ks, Γ)
     csm(sparseJ, u0, p, 0)
     return DDS(csm, u0, p, csm, sparseJ)
 end
@@ -161,7 +162,7 @@ struct CoupledStandardMaps{N}
     idxsp1::SVector{N, Int}
 end
 function (f::CoupledStandardMaps{N})(xnew::AbstractVector, x, p, n) where {N}
-    ks, Γ = p
+    ks = view(p, 1:N); Γ = p[end]
     @inbounds for i in f.idxs
 
         xnew[i+N] = mod2pi(
@@ -171,12 +172,12 @@ function (f::CoupledStandardMaps{N})(xnew::AbstractVector, x, p, n) where {N}
 
         xnew[i] = mod2pi(x[i] + xnew[i+N])
     end
-    return nothing
+    return xnew
 end
 function (f::CoupledStandardMaps{M})(
     J::AbstractMatrix, x, p, n) where {M}
 
-    ks, Γ = p
+    ks = view(p, 1:M); Γ = p[end]
     # x[i] ≡ θᵢ
     # x[[idxsp1[i]]] ≡ θᵢ+₁
     # x[[idxsm1[i]]] ≡ θᵢ-₁
@@ -328,6 +329,6 @@ function arnoldcat(u0 = rand(2))
 end # Should give Lyapunov exponents [2.61803, 0.381966]
 function arnoldcat_eom(u, p, n)
     x,y = u
-    return SVector{2}(2x + y, x + y)
+    return SVector{2}((2x + y) % 1.0, (x + y) % 1)
 end
 arnoldcat_jacob(u, p, n) = @SMatrix [2 1; 1 1]
