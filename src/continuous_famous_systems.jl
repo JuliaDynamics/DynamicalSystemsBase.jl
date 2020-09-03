@@ -746,7 +746,7 @@ Famous excitable system which emulates the firing of a neuron, with equations
 ```math
 \\begin{aligned}
 \\dot{v} &= v - v^3/3 - w + I \\\\
-\\ddot{y} &= \\varepsilon(v + 0.7 - 0.8w)
+\\ddot{w} &= \\varepsilon(v + 0.7 - 0.8w)
 \\end{aligned}
 ```
 
@@ -757,3 +757,26 @@ function fitzhugh_nagumo(u = 0.5ones(2); I = 1.0, ε = 0.08)
 end
 fitzhugh_nagumo_eom(u, p, t) =
 @inbounds SVector(u[1] -  u[1]^3/3 - u[2] + p[1], p[2]*(u[1] + 0.7 - 0.8u[2]))
+
+"""
+    more_chaos_example(u = rand(3))
+A three dimensional chaotic system introduced in [^Sprott2020] with rule
+```math
+\\begin{aligned}
+\\dot{x} &= y \\\\
+\\dot{y} &= -x - sign(z)y \\\\
+\\dot{z} &= y^2 - \\exp(-x^2)
+\\end{aligned}
+```
+It is noteworthy because its strange attractor is multifractal with fractal dimension ≈ 3.
+
+[^Sprott2020]: Sprott, J.C. 'Do We Need More Chaos Examples?', Chaos Theory and Applications 2(2),1-3, 2020
+"""
+more_chaos_example(u = rand(3)) = ContinuousDynamicalSystem(more_chaos_eom, u, nothing)
+function more_chaos_eom(u, p, t)
+    x, y, z = u
+    dx = y
+    dy = -x - sign(z)*y
+    dz = y^2 - exp(-x^2)
+    return SVector(dx, dy, dz)
+end
