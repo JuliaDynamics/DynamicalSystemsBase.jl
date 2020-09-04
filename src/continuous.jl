@@ -20,8 +20,13 @@ function ContinuousDynamicalSystem(prob::ODEProblem, args...)
            t0 = prob.tspan[1])
 end
 
-function DiffEqBase.ODEProblem(ds::CDS{IIP}, tspan, args...) where {IIP}
-    return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian), ds.u0, tspan, args...)
+"""
+    ODEProblem(ds::ContinuousDynamicalSystem, tspan; u0 = ds.u0, callback=CallbackSet())
+Transform a continuous dynamical system into an `ODEProblem`, optionally using a different
+initial state and/or a callback.
+"""
+function DiffEqBase.ODEProblem(ds::CDS{IIP}, tspan; u0 = ds.u0, callback=CallbackSet()) where {IIP}
+    return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian), ds.u0, tspan, ds.p, args...)
 end
 
 #####################################################################################
