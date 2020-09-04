@@ -26,7 +26,7 @@ Transform a continuous dynamical system into an `ODEProblem`, optionally using a
 initial state and/or a callback.
 """
 function DiffEqBase.ODEProblem(ds::CDS{IIP}, tspan; u0 = ds.u0, callback=CallbackSet()) where {IIP}
-    return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian), ds.u0, tspan, ds.p, args...)
+    return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian), u0, tspan, ds.p, args...)
 end
 
 #####################################################################################

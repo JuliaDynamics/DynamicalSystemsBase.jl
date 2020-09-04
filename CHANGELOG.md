@@ -1,4 +1,9 @@
 Changelog of `DynamicalSystemsBase`.
+# v1.6.0
+* Bugfix of `ODEProblem(ContinuousDynamicalSystem)` where the parameters of the system where not passed properly.
+* Move to Julia 1.5.
+* Allow `ODEProblem(cds)` to take a different state optionally
+
 # v1.5.4
 * Critical bugfix/mentioning of how 1-D systems work.
 # v1.5
