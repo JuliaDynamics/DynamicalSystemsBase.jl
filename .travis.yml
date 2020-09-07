@@ -2,13 +2,10 @@ language: julia
 os:
   - linux
   - windows
-#  - osx
-# branches:
-#   except:
-#     - 0.7
+  - osx
+
 julia:
-  - 1.0
-  - 1 # latest stable
+  - 1.5 # latest stable
   # - nightly
 matrix:
   allow_failures:
