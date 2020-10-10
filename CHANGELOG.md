@@ -1,4 +1,7 @@
 Changelog of `DynamicalSystemsBase`.
+# v1.6.1
+* Arbitrary keywords can be propagated into `trajectory` for discrete systems
+  (which are unused, this is simply for unifying syntax with continuous systems)
 # v1.6.0
 * Bugfix of `ODEProblem(ContinuousDynamicalSystem)` where the parameters of the system where not passed properly.
 * Move to Julia 1.5.

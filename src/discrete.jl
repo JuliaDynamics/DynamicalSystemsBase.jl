@@ -238,7 +238,7 @@ end
 #                                 Trajectory                                        #
 #####################################################################################
 function trajectory(ds::DDS{IIP, S, D}, t, u = ds.u0;
-    dt::Int = 1, Ttr = 0) where {IIP, S, D}
+    dt::Int = 1, Ttr = 0, kwargs...) where {IIP, S, D}
     T = eltype(S)
     integ = integrator(ds, u)
     ti = ds.t0
@@ -256,7 +256,7 @@ function trajectory(ds::DDS{IIP, S, D}, t, u = ds.u0;
 end
 
 function trajectory(ds::DDS{false, S, 1}, t, u = ds.u0;
-	dt::Int = 1, Ttr = 0) where {S}
+	dt::Int = 1, Ttr = 0, kwargs...) where {S}
     ti = ds.t0
     tvec = ti:dt:t+ti
     L = length(tvec)
