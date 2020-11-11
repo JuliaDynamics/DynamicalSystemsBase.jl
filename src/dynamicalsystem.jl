@@ -151,13 +151,6 @@ isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
 {IIP, S, D, F, P, JAC, JM, IAD} = IAD
 
 get_state(ds::DS) = ds.u0
-
-
-
-"""
-    dimension(thing) -> D
-Return the dimension of the `thing`, in the sense of state-space dimensionality.
-"""
 dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
 
 """

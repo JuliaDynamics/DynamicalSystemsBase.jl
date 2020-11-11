@@ -8,6 +8,7 @@ module DynamicalSystemsBase
 
 using Reexport
 @reexport using DelayEmbeddings
+import DelayEmbeddings: dimension
 
 include("dynamicalsystem.jl")
 include("discrete.jl")
