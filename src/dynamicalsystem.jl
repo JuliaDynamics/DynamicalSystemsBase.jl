@@ -151,7 +151,7 @@ isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
 {IIP, S, D, F, P, JAC, JM, IAD} = IAD
 
 get_state(ds::DS) = ds.u0
-dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
+DelayEmbeddings.dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
 
 """
     set_parameter!(ds::DynamicalSystem, index, value)
