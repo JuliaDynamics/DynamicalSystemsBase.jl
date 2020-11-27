@@ -5,4 +5,4 @@ Repository containing core system and data definitions used in the library
 
 | **Documentation**   |  **Travis**     |  Gitter |
 |:--------:|:-------------------:|:-----:|
-|[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://JuliaDynamics.github.io/DynamicalSystems.jl/dev) | [![Build Status](https://travis-ci.org/JuliaDynamics/DynamicalSystemsBase.jl.svg?branch=master)](https://travis-ci.org/JuliaDynamics/DynamicalSystemsBase.jl) | [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/JuliaDynamics/Lobby)
+|[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://JuliaDynamics.github.io/DynamicalSystems.jl/dev) | [![CI](https://github.com/juliadynamics/DynamicalSystemsBase.jl/workflows/CI/badge.svg)](https://github.com/JuliaDynamics/DynamicalSystemsBase.jl/actions) | [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/JuliaDynamics/Lobby)
