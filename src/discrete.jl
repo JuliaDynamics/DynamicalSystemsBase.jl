@@ -237,8 +237,11 @@ end
 #####################################################################################
 #                                 Trajectory                                        #
 #####################################################################################
-function trajectory(ds::DDS{IIP, S, D}, t, u = ds.u0;
-    dt::Int = 1, Ttr = 0, kwargs...) where {IIP, S, D}
+function trajectory(
+        ds::DDS{IIP, S, D}, t, u = ds.u0;
+        dt = 1, Ttr = 0, kwargs...
+    ) where {IIP, S, D}
+    dt = round(Int, dt)
     T = eltype(S)
     integ = integrator(ds, u)
     ti = ds.t0
@@ -255,8 +258,11 @@ function trajectory(ds::DDS{IIP, S, D}, t, u = ds.u0;
     return Dataset(data)
 end
 
-function trajectory(ds::DDS{false, S, 1}, t, u = ds.u0;
-	dt::Int = 1, Ttr = 0, kwargs...) where {S}
+function trajectory(
+        ds::DDS{false, S, 1}, t, u = ds.u0;
+    	dt = 1, Ttr = 0, kwargs...
+    ) where {S}
+    dt = round(Int, dt)
     ti = ds.t0
     tvec = ti:dt:t+ti
     L = length(tvec)
