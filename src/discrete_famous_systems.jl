@@ -314,6 +314,32 @@ end
 
 """
 ```julia
+manneville_simple(x0 = rand(); ε = 1.1)
+```
+```math
+x_{n+1} = [ (1+\\varepsilon)x + (1-\\varepsilon)x^2 ] \\mod 1
+```
+A simple 1D map due to Mannevile[^Manneville1980] that is useful in illustrating the concept
+and properties of intermittency.
+
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
+
+[^Manneville1980]: Manneville, P. (1980). Intermittency, self-similarity and 1/f spectrum in dissipative dynamical systems. [Journal de Physique, 41(11), 1235–1243](https://doi.org/10.1051/jphys:0198000410110123500)
+"""
+function manneville_simple(x0=rand(); ε = 0.1)
+    return DDS(manneville_f, x0, [ε], manneville_j)
+end
+
+function manneville_f(x, p, t)
+    e = p[1]
+    y = (1+e)*x + (1-e)*x*x
+    return y%1
+end
+manneville_j(x, p, n) = (1+p[1]) + (1-p[1])*2x
+
+"""
+```julia
 arnoldcat(u0 = rand(2))
 ```
 ```math
