@@ -317,7 +317,7 @@ end
 manneville_simple(x0 = rand(); ε = 1.1)
 ```
 ```math
-x_{n+1} = [ (1+\\varepsilon)x + (1-\\varepsilon)x^2 ] \\mod 1
+x_{n+1} = [ (1+\\varepsilon)x_n + (1-\\varepsilon)x_n^2 ] \\mod 1
 ```
 A simple 1D map due to Mannevile[^Manneville1980] that is useful in illustrating the concept
 and properties of intermittency.
