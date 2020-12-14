@@ -4,7 +4,7 @@ towel(u0 = [0.085, -0.121, 0.075])
 ```
 ```math
 \\begin{aligned}
-x_{n+1} &= a x_n (1-x_n) -0.05 (y_n +0.35) (1-2z_n) \\\\
+x_{n+1} &= 3.8 x_n (1-x_n) -0.05 (y_n +0.35) (1-2z_n) \\\\
 y_{n+1} &= 0.1 \\left( \\left( y_n +0.35 \\right)\\left( 1+2z_n\\right) -1 \\right)
 \\left( 1 -1.9 x_n \\right) \\\\
 z_{n+1} &= 3.78 z_n (1-z_n) + b y_n
