@@ -8,10 +8,10 @@ module DynamicalSystemsBase
 
 using DelayEmbeddings
 
-include("dynamicalsystem.jl")
-include("discrete.jl")
-include("continuous.jl")
-include("famous_systems.jl")
+include("core/dynamicalsystem.jl")
+include("core/discrete.jl")
+include("core/continuous.jl")
+include("predefined/famous_systems.jl")
 
 include("deprecations.jl")
 
