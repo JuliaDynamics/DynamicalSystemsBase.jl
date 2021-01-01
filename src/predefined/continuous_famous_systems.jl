@@ -132,7 +132,7 @@ end
 
 """
 ```julia
-roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
+roessler(u0=[1, -2, 0.1]; a = 0.2, b = 0.2, c = 5.7)
 ```
 ```math
 \\begin{aligned}
@@ -153,7 +153,7 @@ function's documentation string.
 
 [1] : O. E. Rössler, Phys. Lett. **57A**, pp 397 (1976)
 """
-function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
+function roessler(u0=[1, -2, 0.1]; a = 0.2, b = 0.2, c = 5.7)
     return CDS(roessler_eom, u0, [a, b, c], roessler_jacob)
 end
 function roessler_eom(u, p, t)
@@ -173,7 +173,7 @@ function roessler_jacob(u, p, t)
 end
 
 """
-    double_pendulum(u0 = [π/2, 0, 0, rand()];
+    double_pendulum(u0 = [π/2, 0, 0, 0.5];
                     G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
 Famous chaotic double pendulum system (also used for our logo!). Keywords
 are gravity (G), lengths of each rod and mass of each ball (all assumed SI units).
@@ -187,7 +187,7 @@ Jacobian is created automatically (thus methods that use the Jacobian will be sl
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
-function double_pendulum(u0=[π/2, 0, 0, rand()]; G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
+function double_pendulum(u0=[π/2, 0, 0, 0.5]; G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
     return CDS(doublependulum_eom, u0, [G, L1, L2, M1, M2])
 end
 @inbounds function doublependulum_eom(state, p, t)
@@ -339,7 +339,7 @@ end
 `N` is the chain length, `F` the forcing. Jacobian is created automatically.
 (parameter container only contains `F`)
 """
-function lorenz96(N::Int, u0 = rand(N); F=0.01)
+function lorenz96(N::Int, u0 = range(0; length = N, step = 0.1); F=0.01)
     @assert N ≥ 4 "`N` must be at least 4"
     lor96 = Lorenz96{N}() # create struct
     return CDS(lor96, u0, [F])
@@ -361,7 +361,7 @@ end
 
 
 """
-    duffing(u0 = [rand(), rand(), 0]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
+    duffing(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
 The (forced) duffing oscillator, that satisfies the equation
 ```math
 \\ddot{x} + d\\cdot\\dot{x} + β*x + x^3 = f\\cos(\\omega t)
@@ -371,11 +371,10 @@ with `f, ω` the forcing strength and frequency and `d` the dampening.
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
-function duffing(u0 = [rand(), rand()]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
-
+function duffing(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
     J = zeros(eltype(u0), 2, 2)
     J[1,2] = 1
-    return CDS(duffing_eom, u0, [ω, f, d, β], duffing_jacob)
+    return CDS(duffing_eom, u0, [ω, f, d, β], duffing_jacob, J)
 end
 @inbounds function duffing_eom(x, p, t)
     ω, f, d, β = p
@@ -417,7 +416,7 @@ end
 
 """
 ```julia
-gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
+gissinger(u0 = [3, 0.5, 1.5]; μ = 0.119, ν = 0.1, Γ = 0.9)
 ```
 ```math
 \\begin{aligned}
@@ -434,7 +433,7 @@ function's documentation string.
 
 [1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
 """
-function gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
+function gissinger(u0 = [3, 0.5, 1.5]; μ = 0.119, ν = 0.1, Γ = 0.9)
     return CDS(gissinger_eom, u0, [μ, ν, Γ], gissinger_jacob)
 end
 function gissinger_eom(u, p, t)
@@ -564,7 +563,7 @@ end
 
 
 """
-    antidots(u; B = 1.0, d0 = 0.3, c = 0.2)
+    antidots([u]; B = 1.0, d0 = 0.3, c = 0.2)
 An antidot "superlattice" is a Hamiltonian system that corresponds to a
 smoothened periodic Sinai billiard with disk diameter `d0` and smooth
 factor `c` [1].
@@ -593,7 +592,7 @@ diameter is 1.
 
 [1] : G. Datseris *et al*, [New Journal of Physics 2019](https://iopscience.iop.org/article/10.1088/1367-2630/ab19cc/meta)
 """
-function antidots(u0 = [0.5, 0.5, rand(2)...];
+function antidots(u0 = [0.5, 0.5, 0.25, 0.25];
     d0 = 0.5, c = 0.2, B = 1.0)
     return CDS(antidot_eom, u0, [B, d0, c], antidot_jacob)
 end
@@ -733,7 +732,7 @@ where α is friction, ω is eigenfrequency, d is distance of pendulum from the m
 and γ is the magnetic strength. A random initial condition is initialized by default
 somewhere along the unit circle with zero velocity.
 """
-function magnetic_pendulum(u = [sincos(rand()*2π)..., 0, 0];
+function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
     γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3)
     m = MagneticPendulum([SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N])
     p = [γ, d, α, ω]
@@ -775,7 +774,8 @@ It is noteworthy because its strange attractor is multifractal with fractal dime
 
 [^Sprott2020]: Sprott, J.C. 'Do We Need More Chaos Examples?', Chaos Theory and Applications 2(2),1-3, 2020
 """
-more_chaos_example(u = rand(3)) = ContinuousDynamicalSystem(more_chaos_eom, u, nothing)
+more_chaos_example(u = [0.0246, 0.79752, 0.3535866]) =
+ContinuousDynamicalSystem(more_chaos_eom, u, nothing)
 function more_chaos_eom(u, p, t)
     x, y, z = u
     dx = y
