@@ -103,9 +103,9 @@ function's documentation string.
 
 """
 function chua(u0 = [0.7, 0.0, 0.0]; a = 15.6, b = 25.58, m0 = -8/7, m1 = -5/7)
-    return CDS(chua_eom, u0, [a, b, m0, m1], chua_jacob)
+    return CDS(chua_rule, u0, [a, b, m0, m1], chua_jacob)
 end
-function chua_eom(u, p, t)
+function chua_rule(u, p, t)
     @inbounds begin
     a, b, m0, m1 = p
     du1 = a * (u[2] - u[1] - chua_element(u[1], m0, m1))
@@ -132,7 +132,7 @@ end
 
 """
 ```julia
-roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
+roessler(u0=[1, -2, 0.1]; a = 0.2, b = 0.2, c = 5.7)
 ```
 ```math
 \\begin{aligned}
@@ -153,10 +153,10 @@ function's documentation string.
 
 [1] : O. E. Rössler, Phys. Lett. **57A**, pp 397 (1976)
 """
-function roessler(u0=rand(3); a = 0.2, b = 0.2, c = 5.7)
-    return CDS(roessler_eom, u0, [a, b, c], roessler_jacob)
+function roessler(u0=[1, -2, 0.1]; a = 0.2, b = 0.2, c = 5.7)
+    return CDS(roessler_rule, u0, [a, b, c], roessler_jacob)
 end
-function roessler_eom(u, p, t)
+function roessler_rule(u, p, t)
     @inbounds begin
     a, b, c = p
     du1 = -u[2]-u[3]
@@ -173,7 +173,7 @@ function roessler_jacob(u, p, t)
 end
 
 """
-    double_pendulum(u0 = [π/2, 0, 0, rand()];
+    double_pendulum(u0 = [π/2, 0, 0, 0.5];
                     G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
 Famous chaotic double pendulum system (also used for our logo!). Keywords
 are gravity (G), lengths of each rod and mass of each ball (all assumed SI units).
@@ -187,10 +187,10 @@ Jacobian is created automatically (thus methods that use the Jacobian will be sl
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
-function double_pendulum(u0=[π/2, 0, 0, rand()]; G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
-    return CDS(doublependulum_eom, u0, [G, L1, L2, M1, M2])
+function double_pendulum(u0=[π/2, 0, 0, 0.5]; G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
+    return CDS(doublependulum_rule, u0, [G, L1, L2, M1, M2])
 end
-@inbounds function doublependulum_eom(state, p, t)
+@inbounds function doublependulum_rule(state, p, t)
     G, L1, L2, M1, M2 = p
 
     du1 = state[2]
@@ -238,9 +238,9 @@ function henonheiles(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
     i = one(eltype(u0))
     o = zero(eltype(u0))
     J = zeros(eltype(u0), 4, 4)
-    return CDS(hheom!, u0, nothing, hhjacob!, J)
+    return CDS(hhrule!, u0, nothing, hhjacob!, J)
 end
-function hheom!(du, u, p, t)
+function hhrule!(du, u, p, t)
     @inbounds begin
         du[1] = u[3]
         du[2] = u[4]
@@ -293,7 +293,7 @@ A conservative dynamical system with rule
 \\end{aligned}
 ```
 
-These equations of motion correspond to a Hamiltonian used in nuclear
+This dynamical rule corresponds to a Hamiltonian used in nuclear
 physics to study the quadrupole vibrations of the nuclear surface [1,2].
 
 ```math
@@ -312,9 +312,9 @@ The default initial condition is chaotic.
 [3]: Micluta-Campeanu S., Raportaru M.C., Nicolin A.I., Baran V., Rom. Rep. Phys. **70**, pp 105 (2018)
 """
 function qbh(u0=[0., -2.5830294658973876, 1.3873470962626937, -4.743416490252585];  A=1., B=0.55, D=0.4)
-    return CDS(qeom, u0, [A, B, D])
+    return CDS(qrule, u0, [A, B, D])
 end
-function qeom(z, p, t)
+function qrule(z, p, t)
     @inbounds begin
         A, B, D = p
         p₀, p₂ = z[1], z[2]
@@ -339,7 +339,7 @@ end
 `N` is the chain length, `F` the forcing. Jacobian is created automatically.
 (parameter container only contains `F`)
 """
-function lorenz96(N::Int, u0 = rand(N); F=0.01)
+function lorenz96(N::Int, u0 = range(0; length = N, step = 0.1); F=0.01)
     @assert N ≥ 4 "`N` must be at least 4"
     lor96 = Lorenz96{N}() # create struct
     return CDS(lor96, u0, [F])
@@ -361,7 +361,7 @@ end
 
 
 """
-    duffing(u0 = [rand(), rand(), 0]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
+    duffing(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
 The (forced) duffing oscillator, that satisfies the equation
 ```math
 \\ddot{x} + d\\cdot\\dot{x} + β*x + x^3 = f\\cos(\\omega t)
@@ -371,13 +371,12 @@ with `f, ω` the forcing strength and frequency and `d` the dampening.
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
-function duffing(u0 = [rand(), rand()]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
-
+function duffing(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
     J = zeros(eltype(u0), 2, 2)
     J[1,2] = 1
-    return CDS(duffing_eom, u0, [ω, f, d, β], duffing_jacob)
+    return CDS(duffing_rule, u0, [ω, f, d, β], duffing_jacob, J)
 end
-@inbounds function duffing_eom(x, p, t)
+@inbounds function duffing_rule(x, p, t)
     ω, f, d, β = p
     dx1 = x[2]
     dx2 = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
@@ -396,11 +395,11 @@ Shinriki oscillator with all other parameters (besides `R1`) set to constants.
 """
 function shinriki(u0 = [-2, 0, 0.2]; R1 = 22.0)
     # # Jacobian caller for Shinriki:
-    # shinriki_eom(::Type{Val{:jac}}, J, u, p, t) = (shi::Shinriki)(t, u, J)
-    return CDS(shinriki_eom, u0, [R1])
+    # shinriki_rule(::Type{Val{:jac}}, J, u, p, t) = (shi::Shinriki)(t, u, J)
+    return CDS(shinriki_rule, u0, [R1])
 end
 shinriki_voltage(V) = 2.295e-5*(exp(3.0038*V) - exp(-3.0038*V))
-function shinriki_eom(u, p, t)
+function shinriki_rule(u, p, t)
     R1 = p[1]
 
     du1 = (1/0.01)*(
@@ -417,7 +416,7 @@ end
 
 """
 ```julia
-gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
+gissinger(u0 = [3, 0.5, 1.5]; μ = 0.119, ν = 0.1, Γ = 0.9)
 ```
 ```math
 \\begin{aligned}
@@ -434,10 +433,10 @@ function's documentation string.
 
 [1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
 """
-function gissinger(u0 = 3rand(3); μ = 0.119, ν = 0.1, Γ = 0.9)
-    return CDS(gissinger_eom, u0, [μ, ν, Γ], gissinger_jacob)
+function gissinger(u0 = [3, 0.5, 1.5]; μ = 0.119, ν = 0.1, Γ = 0.9)
+    return CDS(gissinger_rule, u0, [μ, ν, Γ], gissinger_jacob)
 end
-function gissinger_eom(u, p, t)
+function gissinger_rule(u, p, t)
     μ, ν, Γ = p
     du1 = μ*u[1] - u[2]*u[3]
     du2 = -ν*u[2] + u[1]*u[3]
@@ -468,9 +467,9 @@ by means of a double-disk dynamo system.
 [1] : T. Rikitake Math. Proc. Camb. Phil. Soc. **54**, pp 89–105, (1958)
 """
 function rikitake(u0 = [1, 0, 0.6]; μ = 1.0, α = 1.0)
-    return CDS(rikitake_eom, u0, [μ, α], rikitake_jacob)
+    return CDS(rikitake_rule, u0, [μ, α], rikitake_jacob)
 end
-function rikitake_eom(u, p, t)
+function rikitake_rule(u, p, t)
     μ, α = p
     x,y,z = u
     xdot = -μ*x + y*z
@@ -511,8 +510,8 @@ See Chapter 4 of "Elegant Chaos" by J. C. Sprott. [2]
 
 [2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
 """
-nosehoover(u0 = [0, 0.1, 0]) = CDS(nosehoover_eom, u0, nothing, nosehoover_jacob)
-function nosehoover_eom(u, p, t)
+nosehoover(u0 = [0, 0.1, 0]) = CDS(nosehoover_rule, u0, nothing, nosehoover_jacob)
+function nosehoover_rule(u, p, t)
     x,y,z = u
     xdot = y
     ydot = y*z - x
@@ -547,8 +546,8 @@ First proposed by René Thomas (1999). [1] See discussion in Section 4.4.3 of
 
 [2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
 """
-labyrinth(u0 = [1.0, 0, 0]) = CDS(labyrinth_eom, u0, nothing, labyrinth_jacob)
-function labyrinth_eom(u, p, t)
+labyrinth(u0 = [1.0, 0, 0]) = CDS(labyrinth_rule, u0, nothing, labyrinth_jacob)
+function labyrinth_rule(u, p, t)
     x,y,z = u
     xdot = sin(y)
     ydot = sin(z)
@@ -564,15 +563,15 @@ end
 
 
 """
-    antidots(u; B = 1.0, d0 = 0.3, c = 0.2)
+    antidots([u]; B = 1.0, d0 = 0.3, c = 0.2)
 An antidot "superlattice" is a Hamiltonian system that corresponds to a
 smoothened periodic Sinai billiard with disk diameter `d0` and smooth
 factor `c` [1].
 
 This version is the two dimensional
-classical form of the system, with quadratic equations of motion and
-a perpendicular magnetic field. Notice that the equations of motion
-are with respect to the velocity instead of momentum, i.e.:
+classical form of the system, with quadratic dynamical rule and
+a perpendicular magnetic field. Notice that the dynamical rule
+is with respect to the velocity instead of momentum, i.e.:
 ```math
 \\begin{aligned}
 \\dot{x} &= v_x \\\\
@@ -593,12 +592,12 @@ diameter is 1.
 
 [1] : G. Datseris *et al*, [New Journal of Physics 2019](https://iopscience.iop.org/article/10.1088/1367-2630/ab19cc/meta)
 """
-function antidots(u0 = [0.5, 0.5, rand(2)...];
+function antidots(u0 = [0.5, 0.5, 0.25, 0.25];
     d0 = 0.5, c = 0.2, B = 1.0)
-    return CDS(antidot_eom, u0, [B, d0, c], antidot_jacob)
+    return CDS(antidot_rule, u0, [B, d0, c], antidot_jacob)
 end
 
-function antidot_eom(u, p, t)
+function antidot_rule(u, p, t)
     B, d0, c = p
     x, y, vx, vy = u
     # Calculate quadrant of (x,y):
@@ -682,9 +681,9 @@ J. C. Sprott. [2]
 [2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
 """
 function ueda(u0 = [3.0, 0]; k = 0.1, B = 12.0)
-    return CDS(ueda_eom, u0, [k, B], ueda_jacob)
+    return CDS(ueda_rule, u0, [k, B], ueda_jacob)
 end
-function ueda_eom(u, p, t)
+function ueda_rule(u, p, t)
     x,y = u
     k, B = p
     xdot = y
@@ -721,7 +720,7 @@ end
     magnetic_pendulum(u=[cos(θ),sin(θ),0,0]; γ=1, d=0.3, α=0.2, ω=0.5, N=3)
 
 Create a pangetic pendulum with `N` magnetics, equally distributed along the unit circle,
-with equations of motion
+with dynamical rule
 ```math
 \\begin{aligned}
 \\ddot{x} &= -\\omega ^2x - \\alpha \\dot{x} - \\sum_{i=1}^N \\frac{\\gamma (x - x_i)}{D_i^3} \\\\
@@ -733,7 +732,7 @@ where α is friction, ω is eigenfrequency, d is distance of pendulum from the m
 and γ is the magnetic strength. A random initial condition is initialized by default
 somewhere along the unit circle with zero velocity.
 """
-function magnetic_pendulum(u = [sincos(rand()*2π)..., 0, 0];
+function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
     γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3)
     m = MagneticPendulum([SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N])
     p = [γ, d, α, ω]
@@ -742,7 +741,7 @@ end
 
 """
     fitzhugh_nagumo(u = 0.5ones(2); a=3.0, b=0.2, ε=0.01, I=0.0)
-Famous excitable system which emulates the firing of a neuron, with equations
+Famous excitable system which emulates the firing of a neuron, with rule
 ```math
 \\begin{aligned}
 \\dot{v} &= av(v-b)(1-v) - w + I \\\\
@@ -753,9 +752,9 @@ Famous excitable system which emulates the firing of a neuron, with equations
 More details in the [Scholarpedia](http://www.scholarpedia.org/article/FitzHugh-Nagumo_model) entry.
 """
 function fitzhugh_nagumo(u = 0.5ones(2); a=3.0, b=0.2, ε=0.01, I=0.0)
-    ds = ContinuousDynamicalSystem(fitzhugh_nagumo_eom, u, [a, b, ε, I])
+    ds = ContinuousDynamicalSystem(fitzhugh_nagumo_rule, u, [a, b, ε, I])
 end
-function fitzhugh_nagumo_eom(x, p, t)
+function fitzhugh_nagumo_rule(x, p, t)
     u, w = x
     a, b, ε, I = p
     return SVector(a*u*(u-b)*(1. - u) - w + I, ε*(u - w))
@@ -775,8 +774,9 @@ It is noteworthy because its strange attractor is multifractal with fractal dime
 
 [^Sprott2020]: Sprott, J.C. 'Do We Need More Chaos Examples?', Chaos Theory and Applications 2(2),1-3, 2020
 """
-more_chaos_example(u = rand(3)) = ContinuousDynamicalSystem(more_chaos_eom, u, nothing)
-function more_chaos_eom(u, p, t)
+more_chaos_example(u = [0.0246, 0.79752, 0.3535866]) =
+ContinuousDynamicalSystem(more_chaos_rule, u, nothing)
+function more_chaos_rule(u, p, t)
     x, y, z = u
     dx = y
     dy = -x - sign(z)*y

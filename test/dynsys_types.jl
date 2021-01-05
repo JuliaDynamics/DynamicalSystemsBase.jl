@@ -1,6 +1,7 @@
 using DynamicalSystemsBase
 using Test, StaticArrays, LinearAlgebra, OrdinaryDiffEq, SimpleDiffEq
 using DynamicalSystemsBase: CDS, DDS
+using DynamicalSystemsBase: orthonormal
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
 using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
 
@@ -18,6 +19,7 @@ FUNCTIONS = [liip, liip_jac, loop, loop_jac, hiip, hiip_jac, hoop, hoop_jac]
 INITCOD = [u0, u0h]
 PARAMS = [p, ph]
 
+@testset "Dynamical system types" begin
 for i in 1:8
     @testset "$alg combination $i" begin
         sysindx = i < 5 ? 1 : 2
@@ -99,4 +101,6 @@ for i in 1:8
         end
     end
 end
+end
+
 end
