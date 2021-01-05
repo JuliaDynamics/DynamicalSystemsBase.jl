@@ -741,7 +741,7 @@ end
 
 """
     fitzhugh_nagumo(u = 0.5ones(2); a=3.0, b=0.2, ε=0.01, I=0.0)
-Famous excitable system which emulates the firing of a neuron, with equations
+Famous excitable system which emulates the firing of a neuron, with rule
 ```math
 \\begin{aligned}
 \\dot{v} &= av(v-b)(1-v) - w + I \\\\
