@@ -10,6 +10,7 @@ using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
 using DiffEqBase
 
 println("\nTesting tangent dynamics...")
+@testset "tangent space" begin
 
 for alg in algs
 
@@ -93,4 +94,6 @@ for i in 1:8
         end
     end
 end
+end
+
 end

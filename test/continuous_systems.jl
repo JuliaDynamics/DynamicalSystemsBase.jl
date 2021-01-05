@@ -1,5 +1,5 @@
 using DynamicalSystemsBase
-using DynamicalSystemsBase: CDS, DS
+using DynamicalSystemsBase: CDS, DS, columns
 using Test, StaticArrays, OrdinaryDiffEq
 
 println("\nTesting continuous system evolution...")
