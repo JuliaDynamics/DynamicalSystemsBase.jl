@@ -21,9 +21,9 @@ Default values are the ones used in the original paper.
 [1] : O. E. Rössler, Phys. Lett. **71A**, pp 155 (1979)
 """
 function towel(u0=[0.085, -0.121, 0.075])
-    return DDS(eom_towel, u0, nothing, jacob_towel)
+    return DDS(rule_towel, u0, nothing, jacob_towel)
 end# should result in lyapunovs: [0.432207,0.378834,-3.74638]
-function eom_towel(x, p, n)
+function rule_towel(x, p, n)
     @inbounds x1, x2, x3 = x[1], x[2], x[3]
     SVector( 3.8*x1*(1-x1) - 0.05*(x2+0.35)*(1-2*x3),
     0.1*( (x2+0.35)*(1-2*x3) - 1 )*(1 - 1.9*x1),
@@ -35,7 +35,7 @@ function jacob_towel(x, p, n)
     0.0  0.2  3.78(1-2x[3]) ]
 end
 
-function eom_towel_iip(dx, x, p, n)
+function rule_towel_iip(dx, x, p, n)
     @inbounds begin
         x1, x2, x3 = x[1], x[2], x[3]
         dx[1] = 3.8*x1*(1-x1) - 0.05*(x2+0.35)*(1-2*x3)
@@ -62,7 +62,7 @@ end
 
 """
 ```julia
-standardmap(u0=0.001rand(2); k = 0.971635)
+standardmap(u0=[0.001245, 0.00875]; k = 0.971635)
 ```
 ```math
 \\begin{aligned}
@@ -93,10 +93,10 @@ Nuclear Physics, Novosibirsk (1969)
 
 [2] : J. M. Greene, J. Math. Phys. **20**, pp 1183 (1979)
 """
-function standardmap(u0=0.001rand(2); k = 0.971635)
-    return DDS(standardmap_eom, u0, [k], standardmap_jacob)
+function standardmap(u0=[0.001245, 0.00875]; k = 0.971635)
+    return DDS(standardmap_rule, u0, [k], standardmap_jacob)
 end
-@inbounds function standardmap_eom(x, par, n)
+@inbounds function standardmap_rule(x, par, n)
     theta = x[1]; p = x[2]
     p += par[1]*sin(theta)
     theta += p
@@ -244,7 +244,7 @@ end
 
 """
 ```julia
-logistic(x0 = rand(); r = 4.0)
+logistic(x0 = 0.4; r = 4.0)
 ```
 ```math
 x_{n+1} = rx_n(1-x_n)
@@ -263,10 +263,10 @@ function's documentation string.
 
 [2] : M. J. Feigenbaum, J. Stat. Phys. **19**, pp 25 (1978)
 """
-function logistic(x0=rand(); r = 4.0)
-    return DDS(logistic_eom, x0, [r], logistic_jacob)
+function logistic(x0=0.4; r = 4.0)
+    return DDS(logistic_rule, x0, [r], logistic_jacob)
 end
-logistic_eom(x, p, n) = p[1]*x*(1-x)
+logistic_rule(x, p, n) = p[1]*x*(1-x)
 logistic_jacob(x, p, n) = p[1]*(1-2x)
 
 """
@@ -290,9 +290,9 @@ x_n(1 + |2x_n|^{z-1}), & \\quad |x_n| \\le 0.5 \\\\
 [2] : Meyer et al., New. J. Phys **20** (2019)
 """
 function pomeau_manneville(u0 = 0.2, z = 2.5)
-    return DDS(pm_eom, u0, [z], pm_jac)
+    return DDS(pm_rule, u0, [z], pm_jac)
 end
-function pm_eom(x, p, n)
+function pm_rule(x, p, n)
     if x < -0.5
         -4x - 3
     elseif -0.5 ≤ x ≤ 0.5
@@ -314,7 +314,7 @@ end
 
 """
 ```julia
-manneville_simple(x0 = rand(); ε = 1.1)
+manneville_simple(x0 = 0.4; ε = 1.1)
 ```
 ```math
 x_{n+1} = [ (1+\\varepsilon)x_n + (1-\\varepsilon)x_n^2 ] \\mod 1
@@ -327,7 +327,7 @@ function's documentation string.
 
 [^Manneville1980]: Manneville, P. (1980). Intermittency, self-similarity and 1/f spectrum in dissipative dynamical systems. [Journal de Physique, 41(11), 1235–1243](https://doi.org/10.1051/jphys:0198000410110123500)
 """
-function manneville_simple(x0=rand(); ε = 0.1)
+function manneville_simple(x0=0.4; ε = 0.1)
     return DDS(manneville_f, x0, [ε], manneville_j)
 end
 
@@ -340,7 +340,7 @@ manneville_j(x, p, n) = (1+p[1]) + (1-p[1])*2x
 
 """
 ```julia
-arnoldcat(u0 = rand(2))
+arnoldcat(u0 = [0.001245, 0.00875])
 ```
 ```math
 f(x,y) = (2x+y,x+y) \\mod 1
@@ -350,10 +350,10 @@ Vladimir Arnold in the 1960s. [1]
 
 [1] : Arnol'd, V. I., & Avez, A. (1968). Ergodic problems of classical mechanics.
 """
-function arnoldcat(u0 = rand(2))
-    return DDS(arnoldcat_eom, u0, nothing, arnoldcat_jacob)
+function arnoldcat(u0 = [0.001245, 0.00875])
+    return DDS(arnoldcat_rule, u0, nothing, arnoldcat_jacob)
 end # Should give Lyapunov exponents [2.61803, 0.381966]
-function arnoldcat_eom(u, p, n)
+function arnoldcat_rule(u, p, n)
     x,y = u
     return SVector{2}((2x + y) % 1.0, (x + y) % 1)
 end
