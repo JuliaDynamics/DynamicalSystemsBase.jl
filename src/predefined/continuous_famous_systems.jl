@@ -526,43 +526,6 @@ function nosehoover_jacob(u, p, t)
 end
 
 """
-```julia
-labyrinth(u0 = [1.0, 0, 0])
-```
-```math
-\\begin{aligned}
-\\dot{x} &= \\sin(y) \\\\
-\\dot{y} &= \\sin(z) \\\\
-\\dot{z} &= \\sin(x)
-\\end{aligned}
-```
-Three dimensional conservative continuous system, whose evolution in 3D space
-looks like a speudo-random walk, the orbit moving around like in a labyrinth.
-
-First proposed by René Thomas (1999). [1] See discussion in Section 4.4.3 of
-"Elegant Chaos" by J. C. Sprott. [2]
-
-[1] : Thomas, R. (1999). *International Journal of Bifurcation and Chaos*, *9*(10), 1889-1905.
-
-[2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
-"""
-labyrinth(u0 = [1.0, 0, 0]) = CDS(labyrinth_rule, u0, nothing, labyrinth_jacob)
-function labyrinth_rule(u, p, t)
-    x,y,z = u
-    xdot = sin(y)
-    ydot = sin(z)
-    zdot = sin(x)
-    return SVector{3}(xdot, ydot, zdot)
-end
-function labyrinth_jacob(u, p, t)
-    x,y,z = u
-    return @SMatrix [0 cos(y) 0;
-                     0 0 cos(z);
-                     cos(x) 0 0]
-end
-
-
-"""
     antidots([u]; B = 1.0, d0 = 0.3, c = 0.2)
 An antidot "superlattice" is a Hamiltonian system that corresponds to a
 smoothened periodic Sinai billiard with disk diameter `d0` and smooth
@@ -782,4 +745,43 @@ function more_chaos_rule(u, p, t)
     dy = -x - sign(z)*y
     dz = y^2 - exp(-x^2)
     return SVector(dx, dy, dz)
+end
+
+"""
+    thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2)
+```math
+\\begin{aligned}
+\\dot{x} &= \\sin(y) - bx\\\\
+\\dot{y} &= \\sin(z) - by\\\\
+\\dot{z} &= \\sin(x) - bz
+\\end{aligned}
+```
+Thomas' cyclically symmetric attractor is a 3D strange attractor originally proposed
+by René Thomas[^Thomas1999]. It has a simple form which is cyclically symmetric in the
+x,y, and z variables and can be viewed as the trajectory of a frictionally dampened
+particle moving in a 3D lattice of forces.
+For more see the [Wikipedia page](https://en.wikipedia.org/wiki/Thomas%27_cyclically_symmetric_attractor).
+
+Reduces to the labyrinth system for `b=0`, see
+See discussion in Section 4.4.3 of "Elegant Chaos" by J. C. Sprott.
+
+[^Thomas1999]: Thomas, R. (1999). *International Journal of Bifurcation and Chaos*, *9*(10), 1889-1905.
+"""
+thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CDS(thomas_rule, u0, [b], thomas_jacob)
+labyrinth(u0 = [1.0, 0, 0]) = CDS(thomas_rule, u0, [0.0], thomas_jacob)
+
+function thomas_rule(u, p, t)
+    x,y,z = u
+    b = p[1]
+    xdot = sin(y) - b*x
+    ydot = sin(z) - b*y
+    zdot = sin(x) - b*z
+    return SVector{3}(xdot, ydot, zdot)
+end
+function thomas_jacob(u, p, t)
+    x,y,z = u
+    b = p[1]
+    return @SMatrix [b cos(y) 0;
+                     0 b cos(z);
+                     cos(x) 0 b]
 end
