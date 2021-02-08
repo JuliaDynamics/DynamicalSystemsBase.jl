@@ -62,7 +62,7 @@ end
     data2 = trajectory(ds, 100; save_idxs = 1:2)
     @test size(data2) == (101, 2)
     data3 = trajectory(ds, 100; save_idxs = 2)
-    @test size(data2) == (101, 1)
+    @test size(data3) == (101, 1)
 end
 
 using SparseArrays
