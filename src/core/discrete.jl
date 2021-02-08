@@ -217,8 +217,7 @@ function tangent_integrator(ds::DDS{true, S, D, F, P, JAC, JM, true},
     "It is not possible to evolve more tangent vectors than the system's dimension!"
     ))
 
-    tangentf = create_tangent_iad(
-        ds.f, ds.J, u, ds.p, t0, Val{k}())
+    tangentf = create_tangent_iad(ds.f, ds.J, u, ds.p, t0, Val{k}())
 
     TF = typeof(tangentf)
 
@@ -239,8 +238,13 @@ end
 #####################################################################################
 function trajectory(
         ds::DDS{IIP, S, D}, t, u = ds.u0;
-        dt = 1, Ttr = 0, kwargs...
+        dt = 1, Ttr = 0, save_idxs = nothing, kwargs...
     ) where {IIP, S, D}
+    a = svector_access_asdf(save_idxs)
+    trajectory(ds, t, u, dt, Ttr, a)
+end
+
+function trajectory(ds::DDS{IIP, S, D}, t, u, dt, Ttr, a)  where {IIP, S, D}
     dt = round(Int, dt)
     T = eltype(S)
     integ = integrator(ds, u)
@@ -248,16 +252,23 @@ function trajectory(
     tvec = ti:dt:t+ti
     L = length(tvec)
     T = eltype(get_state(ds))
-    data = Vector{SVector{D, T}}(undef, L)
+    X = isnothing(a) ? D : length(a)
+    data = Vector{SVector{X, T}}(undef, L)
     Ttr != 0 && step!(integ, Ttr)
-    data[1] = integ.u
+    data[1] = obtain_access(integ.u, a)
     for i in 2:L
         step!(integ, dt)
-        data[i] = SVector{D, T}(integ.u)
+        data[i] = SVector{X, T}(obtain_access(integ.u, a))
     end
     return Dataset(data)
 end
 
+svector_access(::Nothing) = nothing
+svector_access(x::AbstractArray) = SVector{length(x), Int}(x...)
+obtain_access(u, ::Nothing) = u
+obtain_access(u, i::SVector) = u[i]
+
+# One-dimensional version → Vector
 function trajectory(
         ds::DDS{false, S, 1}, t, u = ds.u0;
     	dt = 1, Ttr = 0, kwargs...
