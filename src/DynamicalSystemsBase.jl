@@ -9,9 +9,12 @@ module DynamicalSystemsBase
 using DelayEmbeddings
 
 include("core/dynamicalsystem.jl")
+include("core/create_dynamics.jl")
+include("core/api_docstrings.jl")
 include("core/discrete.jl")
 include("core/continuous.jl")
-include("predefined/famous_systems.jl")
+
+include("predefined/famous_systems.jl") # includes both discrete and continuous
 
 include("deprecations.jl")
 
