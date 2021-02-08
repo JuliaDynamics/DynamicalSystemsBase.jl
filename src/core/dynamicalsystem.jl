@@ -54,9 +54,9 @@ hence the 2 constructors.
 
 ### Jacobian
 The optional argument `jacobian` for the constructors
-is a *function* and (if given) must also be of the same form as the `eom`,
+is a *function* and (if given) must also be of the same form as `f`,
 `jacobian(x, p, n) -> SMatrix`
-for the out-of-place version and `jacobian!(Jnew, x, p, n)` for the in-place version.
+for the out-of-place version and `jacobian!(J, x, p, n)` for the in-place version.
 
 The constructors also allow you to pass an initialized Jacobian matrix `J0`.
 This is useful for large oop systems where only a few components of the Jacobian change
@@ -113,7 +113,7 @@ end
 const DS = DynamicalSystem
 
 """
-    ContinuousDynamicalSystem(eom, state, p [, jacobian [, J]]; t0 = 0.0)
+    ContinuousDynamicalSystem(f, state, p [, jacobian [, J]]; t0 = 0.0)
     ContinuousDynamicalSystem(prob::ODEProblem [, jacobian [, J0]])
 A `DynamicalSystem` restricted to continuous-time systems (also called *ODEs*).
 """
@@ -130,7 +130,7 @@ const CDS = ContinuousDynamicalSystem
 systemtype(::CDS) = "continuous"
 
 """
-    DiscreteDynamicalSystem(eom, state, p [, jacobian [, J]]; t0::Int = 0)
+    DiscreteDynamicalSystem(f, state, p [, jacobian [, J]]; t0::Int = 0)
 A `DynamicalSystem` restricted to discrete-time systems (also called *maps*).
 """
 struct DiscreteDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
@@ -198,8 +198,8 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
 
     # Main Constructor (with Jacobian and j0)
     @eval function $(ds)(
-        eom::F, u0, p::P, j::JAC, j0 = nothing;
-        t0 = 0.0, IAD = false, IIP = isinplace(eom, 4)) where {F, P, JAC}
+        f::F, u0, p::P, j::JAC, j0 = nothing;
+        t0 = 0.0, IAD = false, IIP = isinplace(f, 4)) where {F, P, JAC}
 
         if !(typeof(u0) <: Union{AbstractVector, Number})
             throw(ArgumentError(
@@ -210,15 +210,15 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
         S = typeof(s)
         D = length(s)
 
-        IIP || typeof(eom(s, p, t0)) <: Union{SVector, Number} ||
-        throw(ArgumentError("Equations of motion must return an `SVector` "*
-        "or number for out-of-place form!"))
+        IIP || typeof(f(s, p, t0)) <: Union{SVector, Number} ||
+        throw(ArgumentError("Dynamic rule `f` must return an `SVector` "*
+        "or pure number for out-of-place form!"))
 
         J = j0 != nothing ? j0 : get_J(j, s, p, timetype($(ds), s)(t0), IIP)
         JM = typeof(J)
 
         return $(ds){
-            IIP, S, D, F, P, JAC, JM, IAD}(eom, u0, p, t0, j, J)
+            IIP, S, D, F, P, JAC, JM, IAD}(f, u0, p, t0, j, J)
     end
 
     # Without Jacobian
@@ -228,23 +228,22 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
         oneder = :(nothing)
     end
 
-    @eval function $(ds)(eom, u0, p; t0 = 0.0)
-
+    @eval function $(ds)(f, u0, p; t0 = 0.0)
         if !(typeof(u0) <: Union{AbstractVector, Number})
             throw(ArgumentError(
             "The state of a dynamical system *must* be <: AbstractVector/Number!"))
         end
 
-        IIP = isinplace(eom, 4)
+        IIP = isinplace(f, 4)
         s = safe_state_type(Val{IIP}(), u0)
         D = length(s)
         D == 1 && $(oneder)
 
         t = timetype($(ds), s)(t0)
-        j = create_jacobian(eom, Val{IIP}(), s, p, t, Val{D}())
+        j = create_jacobian(f, Val{IIP}(), s, p, t, Val{D}())
         J = get_J(j, s, p, t, IIP)
 
-        return $(ds)(eom, s, p, j, J; t0 = t0, IAD = true, IIP = IIP)
+        return $(ds)(f, s, p, j, J; t0 = t0, IAD = true, IIP = IIP)
     end
 end
 
@@ -338,5 +337,4 @@ function jacobian(ds::DS{true}, u = ds.u0, t = ds.t0)
     ds.jacobian(J, u, ds.p, t)
     return J
 end
-jacobian(ds::DS{false}, u = ds.u0, t = ds.t0) =
-ds.jacobian(u, ds.p, t)
+jacobian(ds::DS{false}, u = ds.u0, t = ds.t0) = ds.jacobian(u, ds.p, t)

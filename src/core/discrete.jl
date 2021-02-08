@@ -8,7 +8,7 @@ export reinit!
 #                            DiscreteIntegrator                                    #
 #####################################################################################
 mutable struct MinimalDiscreteIntegrator{IIP, S, D, F, P}
-    f::F      # integrator eom
+    f::F      # integrator f
     u::S      # integrator state
     t::Int    # integrator "time" (counter)
     dummy::S  # dummy, used only in the IIP version
@@ -96,7 +96,7 @@ step!(integ::MDI, N, stop_at_tdt) = step!(integ, N)
 # For discrete systems a special, super-performant version of tangent integrator
 # can exist. We make this here.
 mutable struct TangentDiscreteIntegrator{IIP, S, D, F, P, JAC, JM, WM}
-    f::F            # integrator eom
+    f::F            # integrator f
     u::S            # integrator state
     t::Int          # integrator "time" (counter)
     dummy::S        # dummy, used only in the IIP version
