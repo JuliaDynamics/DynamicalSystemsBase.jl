@@ -133,5 +133,6 @@ function trajectory end
 # Util functions for `trajectory`
 svector_access(::Nothing) = nothing
 svector_access(x::AbstractArray) = SVector{length(x), Int}(x...)
+svector_access(x::Int) = SVector{1, Int}(x)
 obtain_access(u, ::Nothing) = u
 obtain_access(u, i::SVector) = u[i]
