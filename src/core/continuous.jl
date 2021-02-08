@@ -148,22 +148,24 @@ _parallelnorm(u::Real, t) = abs(u)
 #                                 Trajectory                                        #
 #####################################################################################
 function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
-    dt = 0.01, Ttr = 0.0, diffeq...)
+    dt = 0.01, Ttr = 0.0, save_idxs = nothing, diffeq...)
 
+    a = svector_access(save_idxs)
+    integ = integrator(ds, u; dt = dt, diffeq...)
+    trajectory(ds, integ, T, u, dt, Ttr, a; diffeq...)
+end
+
+function trajectory(ds::CDS{IIP, S, D}, integ, T, u, dt, Ttr, a; diffeq...) where {IIP, S, D}
     t0 = ds.t0
     tvec = (t0+Ttr):dt:(T+t0+Ttr)
-    sol = Vector{SVector{dimension(ds), stateeltype(ds)}}(undef, length(tvec))
-    integ = integrator(ds, u; dt = dt, diffeq...)
+    X = isnothing(a) ? D : length(a)
+    sol = Vector{SVector{X, eltype(S)}}(undef, length(tvec))
     step!(integ, Ttr)
     for (i, t) in enumerate(tvec)
         while t > integ.t
             step!(integ)
         end
-        if integ.tprev ≤ t ≤ integ.t
-            sol[i] = integ(t)
-        else
-            error("should be integ.tprev ≤ t ≤ integ.t")
-        end
+        sol[i] = SVector{X, eltype(S)}(obtain_access(integ(t), a))
     end
     return Dataset(sol)
 end

@@ -240,7 +240,7 @@ function trajectory(
         ds::DDS{IIP, S, D}, t, u = ds.u0;
         dt = 1, Ttr = 0, save_idxs = nothing, kwargs...
     ) where {IIP, S, D}
-    a = svector_access_asdf(save_idxs)
+    a = svector_access(save_idxs)
     trajectory(ds, t, u, dt, Ttr, a)
 end
 
@@ -262,11 +262,6 @@ function trajectory(ds::DDS{IIP, S, D}, t, u, dt, Ttr, a)  where {IIP, S, D}
     end
     return Dataset(data)
 end
-
-svector_access(::Nothing) = nothing
-svector_access(x::AbstractArray) = SVector{length(x), Int}(x...)
-obtain_access(u, ::Nothing) = u
-obtain_access(u, i::SVector) = u[i]
 
 # One-dimensional version → Vector
 function trajectory(
