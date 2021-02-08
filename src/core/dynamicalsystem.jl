@@ -257,19 +257,21 @@ jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(eomstring(ds.jacobi
 eomstring(f::Function) = nameof(f)
 eomstring(f) = nameof(typeof(f))
 
-paramname(p::AbstractArray) = string(p)
-paramname(p::Nothing) = repr(p)
-paramname(p) = nameof(typeof(p))
-
 # Credit to Sebastian Pfitzner
 function printlimited(io, x; Δx = 0, Δy = 0)
     sz = displaysize(io)
     io2 = IOBuffer(); ctx = IOContext(io2, :limit => true, :compact => true,
     :displaysize => (sz[1]-Δy, sz[2]-Δx))
-    Base.print_array(ctx, x)
-    s = String(take!(io2))
-    s = replace(s[2:end], "  " => ", ")
-    Base.print(io, "["*s*"]")
+    if x isa AbstractArray
+        Base.print_array(ctx, x)
+        s = String(take!(io2))
+        s = replace(s[2:end], "  " => ", ")
+        Base.print(io, "["*s*"]")
+    else
+        Base.print(ctx, x)
+        s = String(take!(io2))
+        Base.print(io, s)
+    end
 end
 
 printlimited(io, x::Number; Δx = 0, Δy = 0) = print(io, x)
@@ -286,9 +288,15 @@ function Base.show(io::IO, ds::DS)
     print(io, prefix); printlimited(io, u0, Δx = length(prefix)); print(io, "\n")
     println(io,  rpad(" e.o.m.: ", ps),     eomstring(ds.f))
     println(io,  rpad(" in-place? ", ps),   isinplace(ds))
-    println(io,  rpad(" jacobian: ", ps),   jacobianstring(ds)),
-    print(io,    rpad(" parameters: ", ps), paramname(ds.p))
+    println(io,  rpad(" jacobian: ", ps),   jacobianstring(ds))
+    print(io,    rpad(" parameters: ", ps))
+    printlimited(io, printable(ds.p), Δx = length(prefix), Δy = 10); print(io, "\n")
 end
+
+printable(p::AbstractArray) = p'
+printable(p::Nothing) = "nothing"
+printable(p) = p
+
 
 #######################################################################################
 #                                    Jacobians                                        #
