@@ -1,4 +1,8 @@
 Changelog of `DynamicalSystemsBase`.
+# v1.8
+* `trajectory` now supports keyword `save_idxs`.
+# v1.7
+* New system: Thomas cyclically symmetric
 # v1.6.1
 * Arbitrary keywords can be propagated into `trajectory` for discrete systems
   (which are unused, this is simply for unifying syntax with continuous systems)
