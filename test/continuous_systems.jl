@@ -25,6 +25,8 @@ println("\nTesting continuous system evolution...")
     @test ts1[1, :] == SVector{3}(lo11.u0)
     # @test ts1[end, :] ≈ ts3[end,:]
 
+    data2 = trajectory(lo11, 100; save_idxs = 1:2)
+    @test size(data2)[2] == 2
 end
 
 @testset "Lorenz96" begin

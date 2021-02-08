@@ -58,6 +58,9 @@ end
     @test u0 != data[end]
 
     @test jacobian(ds) != jacobian(ds, rand(2M))
+
+    data2 = trajectory(ds, 100; save_idxs = 1:2)
+    @test size(data2) == (101, 2)
 end
 
 using SparseArrays
