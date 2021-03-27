@@ -290,7 +290,7 @@ function Base.show(io::IO, ds::DS)
     println(io,  rpad(" in-place? ", ps),   isinplace(ds))
     println(io,  rpad(" jacobian: ", ps),   jacobianstring(ds))
     print(io,    rpad(" parameters: ", ps))
-    printlimited(io, printable(ds.p), Δx = length(prefix), Δy = 10); print(io, "\n")
+    printlimited(io, printable(ds.p), Δx = length(prefix), Δy = 10)
 end
 
 printable(p::AbstractArray) = p'
