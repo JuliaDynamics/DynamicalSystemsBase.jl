@@ -363,7 +363,7 @@ arnoldcat_jacob(u, p, n) = @SMatrix [2 1; 1 1]
 
 """
 ```julia
-grebobgi_map(u0 = [0.2, 0.]; a = 1.32, b=0.9, J₀=0.3)
+grebogi_map(u0 = [0.2, 0.]; a = 1.32, b=0.9, J₀=0.3)
 ```
 ```math
 \\theta_{n+1}=\\theta_n +   a\\sin 2 \\theta_n -b \\sin 4 \\theta_n -x_n\\sin \\theta_n\\\\
