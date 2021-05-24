@@ -667,38 +667,37 @@ end
 
 function (m::MagneticPendulum)(u, p, t)
     x, y, vx, vy = u
-    γ, d, α, ω = p
+    γs, d, α, ω = p
     dx, dy = vx, vy
     dvx, dvy = @. -ω^2*(x, y) - α*(vx, vy)
-    for ma in m.magnets
+    for (i, ma) in enumerate(m.magnets)
         δx, δy = (x - ma[1]), (y - ma[2])
         D = sqrt(δx^2 + δy^2 + d^2)
-        dvx -= γ*(x - ma[1])/D^3
-        dvy -= γ*(y - ma[2])/D^3
+        dvx -= γs[i]*(x - ma[1])/D^3
+        dvy -= γs[i]*(y - ma[2])/D^3
     end
     return SVector(dx, dy, dvx, dvy)
 end
 
 """
-    magnetic_pendulum(u=[cos(θ),sin(θ),0,0]; γ=1, d=0.3, α=0.2, ω=0.5, N=3)
+    magnetic_pendulum(u=[0.7,0.7,0,0]; d=0.3, α=0.2, ω=0.5, N=3, γs=fill(1.0,N))
 
 Create a pangetic pendulum with `N` magnetics, equally distributed along the unit circle,
 with dynamical rule
 ```math
 \\begin{aligned}
-\\ddot{x} &= -\\omega ^2x - \\alpha \\dot{x} - \\sum_{i=1}^N \\frac{\\gamma (x - x_i)}{D_i^3} \\\\
-\\ddot{y} &= -\\omega ^2y - \\alpha \\dot{y} - \\sum_{i=1}^N \\frac{\\gamma (y - y_i)}{D_i^3} \\\\
+\\ddot{x} &= -\\omega ^2x - \\alpha \\dot{x} - \\sum_{i=1}^N \\frac{\\gamma_i (x - x_i)}{D_i^3} \\\\
+\\ddot{y} &= -\\omega ^2y - \\alpha \\dot{y} - \\sum_{i=1}^N \\frac{\\gamma_i (y - y_i)}{D_i^3} \\\\
 D_i &= \\sqrt{(x-x_i)^2  + (y-y_i)^2 + d^2}
 \\end{aligned}
 ```
 where α is friction, ω is eigenfrequency, d is distance of pendulum from the magnet's plane
-and γ is the magnetic strength. A random initial condition is initialized by default
-somewhere along the unit circle with zero velocity.
+and γ is the magnetic strength.
 """
 function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
-    γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3)
+    γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N))
     m = MagneticPendulum([SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N])
-    p = [γ, d, α, ω]
+    p = [γs, d, α, ω]
     ds = ContinuousDynamicalSystem(m, u, p)
 end
 
