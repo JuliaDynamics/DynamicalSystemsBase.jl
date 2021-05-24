@@ -1,4 +1,6 @@
 Changelog of `DynamicalSystemsBase`.
+# v1.8.3
+* Added `grebogi_map` dynamical system.
 # v1.8
 * `trajectory` now supports keyword `save_idxs`.
 # v1.7
