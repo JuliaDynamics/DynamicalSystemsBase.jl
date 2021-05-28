@@ -804,10 +804,11 @@ Here ``T, S`` are variables standing for dimensionless temperature and salinity
 differences between the boxes (polar and equitorial ocean basins) and ``\\eta_i``
 are parameters.
 
-More details in the [Scholarpedia](http://www.scholarpedia.org/article/FitzHugh-Nagumo_model) entry.
+[^Stommel1961]: Stommel, Thermohaline convection with two stable regimes offlow. Tellus, 13(2)
 """
 function stommel_thermohaline(u = [0.3, 0.2]; η1 = 3.0, η2 = 1, η3 = 0.3)
-    ds = ContinuousDynamicalSystem(stommel_thermohaline_rule, u, [η1, η2, η3])
+    ds = ContinuousDynamicalSystem(stommel_thermohaline_rule, u, [η1, η2, η3],
+    stommel_thermohaline_jacob)
 end
 function stommel_thermohaline_rule(x, p, t)
     T, S = x
@@ -820,6 +821,10 @@ function stommel_thermohaline_jacob(x, p, t)
     η1, η2, η3 = p
     q = abs(T-S)
     if T ≥ S
+        return @SMatrix [(-1 - 2T + S)  (T);
+                         (-S)  (-η3 - T + 2S)]
     else
+        return @SMatrix [(-1 + 2T - S)  (-T);
+                         (+S)  (-η3 + T - 2S)]
     end
 end
