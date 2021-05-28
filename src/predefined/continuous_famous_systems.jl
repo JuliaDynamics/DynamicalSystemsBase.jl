@@ -790,3 +790,36 @@ function thomas_jacob(u, p, t)
                      0 b cos(z);
                      cos(x) 0 b]
 end
+
+"""
+    stommel_thermohaline(u = [0.3, 0.2]; η1 = 3.0, η2 = 1, η3 = 0.3)
+Stommel's box model for Atlantic thermohaline circulation
+```math
+\\begin{aligned}
+ \\dot{T} &= \\eta_1 - T - |T-S|\\cdot T \\\\
+ \\dot{S} &= \\eta_2 - \\eta_3S - |T-S|\\cdot S
+\\end{aligned}
+```
+Here ``T, S`` are variables standing for dimensionless temperature and salinity
+differences between the boxes (polar and equitorial ocean basins) and ``\\eta_i``
+are parameters.
+
+More details in the [Scholarpedia](http://www.scholarpedia.org/article/FitzHugh-Nagumo_model) entry.
+"""
+function stommel_thermohaline(u = [0.3, 0.2]; η1 = 3.0, η2 = 1, η3 = 0.3)
+    ds = ContinuousDynamicalSystem(stommel_thermohaline_rule, u, [η1, η2, η3])
+end
+function stommel_thermohaline_rule(x, p, t)
+    T, S = x
+    η1, η2, η3 = p
+    q = abs(T-S)
+    return SVector(η1 - T -q*T, η2 - η3*S - q*S)
+end
+function stommel_thermohaline_jacob(x, p, t)
+    T, S = x
+    η1, η2, η3 = p
+    q = abs(T-S)
+    if T ≥ S
+    else
+    end
+end
