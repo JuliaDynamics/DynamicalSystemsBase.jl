@@ -6,7 +6,6 @@ using LinearAlgebra
 println("\nTesting discrete system evolution...")
 
 @testset "Logistic Map" begin
-
   d1 = Systems.logistic(0.1)
   d2 = DDS(d1.f, 0.1, d1.p)
   d3 = DDS(d1.f, big(0.1), d1.p, d1.jacobian)

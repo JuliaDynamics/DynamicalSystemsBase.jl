@@ -22,6 +22,7 @@ PARAMS = [p, ph]
 @testset "Dynamical system types" begin
 for i in 1:8
     @testset "$alg combination $i" begin
+        # Here we test the constructors with all possible cases of IIP/Autodiff
         sysindx = i < 5 ? 1 : 2
         if i < 5
             if isodd(i)
