@@ -116,6 +116,7 @@ const DS = DynamicalSystem
     ContinuousDynamicalSystem(f, state, p [, jacobian [, J]]; t0 = 0.0)
     ContinuousDynamicalSystem(prob::ODEProblem [, jacobian [, J0]])
 A `DynamicalSystem` restricted to continuous-time systems (also called *ODEs*).
+See the documentation of [`DynamicalSystem`](@ref) for more details.
 """
 struct ContinuousDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
                  DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
@@ -132,6 +133,7 @@ systemtype(::CDS) = "continuous"
 """
     DiscreteDynamicalSystem(f, state, p [, jacobian [, J]]; t0::Int = 0)
 A `DynamicalSystem` restricted to discrete-time systems (also called *maps*).
+See the documentation of [`DynamicalSystem`](@ref) for more details.
 """
 struct DiscreteDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
                DynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD}
@@ -305,11 +307,12 @@ function create_jacobian(
     @nospecialize(f::F), ::Val{IIP}, s::S, p::P, t::T, ::Val{D}) where {F, IIP, S, P, T, D}
     if IIP
         dum = deepcopy(s)
-        cfg = ForwardDiff.JacobianConfig(
-        (y, x) -> f(y, x, p, t), dum, s)
+        inplace_f_2args = (y, x) -> f(y, x, p, t)
+        cfg = ForwardDiff.JacobianConfig(inplace_f_2args, dum, s)
         jac = (J, u, p, t) ->
-        ForwardDiff.jacobian!(J, (y, x) -> f(y, x, p, t),
-        dum, u, cfg, Val{false}())
+        ForwardDiff.jacobian!(
+            J, inplace_f_2args, dum, u, cfg, Val{false}()
+        )
         return jac
     else
         if D == 1
@@ -324,7 +327,7 @@ function create_jacobian(
     end
 end
 
-function get_J(jacob, u0, p, t0, iip) where {JAC}
+function get_J(jacob, u0, p, t0, iip)
     D = length(u0)
     if iip
         J = similar(u0, (D,D))

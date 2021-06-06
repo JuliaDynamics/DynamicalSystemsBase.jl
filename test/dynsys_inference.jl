@@ -5,7 +5,7 @@ using DynamicalSystemsBase: create_jacobian, create_tangent, stateeltype, isinpl
 println("\nTesting inference...")
 
 @testset "Inference" begin
-    dss = [Systems.towel(), Systems.henon_iip()]
+    dss = (Systems.towel(), Systems.henon_iip())
     @testset "IIP = $IIP" for IIP in [false, true]
         ds = IIP ? dss[2] : dss[1]
         @test_nowarn @inferred integrator(ds)
@@ -22,7 +22,6 @@ println("\nTesting inference...")
             @test_nowarn @inferred jacobian(ds)
         end
 
-
         # Integrator state inference:
         @testset "Integrator" begin
             @test_nowarn @inferred stateeltype(ds)
@@ -30,7 +29,6 @@ println("\nTesting inference...")
             @test_nowarn @inferred stateeltype(integ)
             @test stateeltype(integ) == Float64
         end
-
         @testset "Tangent" begin
             integ = tangent_integrator(ds, 2)
             @test_nowarn @inferred stateeltype(integ)
