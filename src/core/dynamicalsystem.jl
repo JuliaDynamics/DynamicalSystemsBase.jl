@@ -191,7 +191,6 @@ safe_matrix_type(_, a::Number) = a
 #                                    Constructors                                   #
 #####################################################################################
 for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
-
     if ds == :ContinuousDynamicalSystem
         @eval timetype(::Type{$(ds)}, s) = eltype(s)
     else
@@ -200,32 +199,34 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
 
     # Main Constructor (with Jacobian and j0)
     @eval function $(ds)(
-        f::F, u0, p::P, j::JAC, j0 = nothing;
-        t0 = 0.0, IAD = false, IIP = isinplace(f, 4)) where {F, P, JAC}
+            f::F, u0, p::P, j::JAC, j0 = nothing;
+            t0 = 0.0, IAD = false, IIP = isinplace(f, 4)
+        ) where {F, P, JAC}
 
         if !(typeof(u0) <: Union{AbstractVector, Number})
             throw(ArgumentError(
-            "The state of a dynamical system *must* be <: AbstractVector/Number!"))
+                "The state of a dynamical system *must* be <: AbstractVector/Number!"
+            ))
+        end
+        if !(IIP || typeof(f(s, p, t0)) <: Union{SVector, Number})
+            throw(ArgumentError(
+                "Dynamic rule `f` must return an `SVector` "*
+                "or pure number for out-of-place form!"
+            ))
         end
 
         s = safe_state_type(Val{IIP}(), u0)
         S = typeof(s)
         D = length(s)
-
-        IIP || typeof(f(s, p, t0)) <: Union{SVector, Number} ||
-        throw(ArgumentError("Dynamic rule `f` must return an `SVector` "*
-        "or pure number for out-of-place form!"))
-
-        J = j0 != nothing ? j0 : get_J(j, s, p, timetype($(ds), s)(t0), IIP)
+        J = j0 !== nothing ? j0 : get_J(j, s, p, t0, IIP)
         JM = typeof(J)
-
-        return $(ds){
-            IIP, S, D, F, P, JAC, JM, IAD}(f, u0, p, t0, j, J)
+        return $(ds){IIP, S, D, F, P, JAC, JM, IAD}(f, u0, p, t0, j, J)
     end
 
-    # Without Jacobian
+    # Constructor without Jacobian (uses ForwardDiff then)
     if ds == :ContinuousDynamicalSystem
-        oneder = :(error("For 1D continuous systems, you need to explicitly give a derivative function."))
+        oneder = :(error("For 1D continuous systems, you need to explicitly "*
+            "give a derivative function."))
     else
         oneder = :(nothing)
     end
@@ -235,19 +236,63 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
             throw(ArgumentError(
             "The state of a dynamical system *must* be <: AbstractVector/Number!"))
         end
-
         IIP = isinplace(f, 4)
         s = safe_state_type(Val{IIP}(), u0)
         D = length(s)
         D == 1 && $(oneder)
-
         t = timetype($(ds), s)(t0)
         j = create_jacobian(f, Val{IIP}(), s, p, t, Val{D}())
         J = get_J(j, s, p, t, IIP)
-
         return $(ds)(f, s, p, j, J; t0 = t0, IAD = true, IIP = IIP)
     end
 end
+
+#######################################################################################
+#                                    Jacobians                                        #
+#######################################################################################
+function create_jacobian(
+        @nospecialize(f::F), ::Val{IIP}, s::S, p::P, t::T, ::Val{D}
+    ) where {F, IIP, S, P, T, D}
+    if IIP
+        dum = deepcopy(s)
+        inplace_f_2args = (y, x) -> f(y, x, p, t)
+        cfg = ForwardDiff.JacobianConfig(inplace_f_2args, dum, s)
+        jac! = (J, u, p, t) -> ForwardDiff.jacobian!(
+            J, inplace_f_2args, dum, u, cfg, Val{false}()
+        )
+        return jac!
+    else
+        if D == 1
+            return jac = (u, p, t) -> ForwardDiff.derivative((x) -> f(x, p, t), u)
+        else
+            # SVector methods do *not* use the config
+            return jac = (u, p, t) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
+        end
+    end
+end
+
+function get_J(jacob, u0, p, t0, iip)
+    D = length(u0)
+    if iip
+        J = similar(u0, (D,D))
+        jacob(J, u0, p, t0)
+    else
+        J = jacob(u0, p, t0)
+    end
+    return J
+end
+
+
+"""
+    jacobian(ds::DynamicalSystem, u = ds.u0, t = ds.t0)
+Return the jacobian of the system at `u`, at `t`.
+"""
+function jacobian(ds::DS{true}, u = ds.u0, t = ds.t0)
+    J = similar(ds.J)
+    ds.jacobian(J, u, ds.p, t)
+    return J
+end
+jacobian(ds::DS{false}, u = ds.u0, t = ds.t0) = ds.jacobian(u, ds.p, t)
 
 #####################################################################################
 #                                Pretty-Printing                                    #
@@ -299,53 +344,3 @@ printable(p::AbstractArray) = p'
 printable(p::Nothing) = "nothing"
 printable(p) = p
 
-
-#######################################################################################
-#                                    Jacobians                                        #
-#######################################################################################
-function create_jacobian(
-    @nospecialize(f::F), ::Val{IIP}, s::S, p::P, t::T, ::Val{D}) where {F, IIP, S, P, T, D}
-    if IIP
-        dum = deepcopy(s)
-        inplace_f_2args = (y, x) -> f(y, x, p, t)
-        cfg = ForwardDiff.JacobianConfig(inplace_f_2args, dum, s)
-        jac = (J, u, p, t) ->
-        ForwardDiff.jacobian!(
-            J, inplace_f_2args, dum, u, cfg, Val{false}()
-        )
-        return jac
-    else
-        if D == 1
-            return jac = (u, p, t) -> ForwardDiff.derivative((x) -> f(x, p, t), u)
-        else
-            # SVector methods do *not* use the config
-            # cfg = ForwardDiff.JacobianConfig(
-            #     (x) -> prob.f(x, prob.p, prob.tspan[1]), prob.u0)
-            return jac = (u, p, t) ->
-            ForwardDiff.jacobian((x) -> f(x, p, t), u #=, cfg=#)
-        end
-    end
-end
-
-function get_J(jacob, u0, p, t0, iip)
-    D = length(u0)
-    if iip
-        J = similar(u0, (D,D))
-        jacob(J, u0, p, t0)
-    else
-        J = jacob(u0, p, t0)
-    end
-    return J
-end
-
-
-"""
-    jacobian(ds::DynamicalSystem, u = ds.u0, t = ds.t0)
-Return the jacobian of the system at `u`, at `t`.
-"""
-function jacobian(ds::DS{true}, u = ds.u0, t = ds.t0)
-    J = similar(ds.J)
-    ds.jacobian(J, u, ds.p, t)
-    return J
-end
-jacobian(ds::DS{false}, u = ds.u0, t = ds.t0) = ds.jacobian(u, ds.p, t)
