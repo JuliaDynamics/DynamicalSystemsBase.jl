@@ -151,8 +151,7 @@ systemtype(::DDS) = "discrete"
 DiffEqBase.isinplace(::DS{IIP}) where {IIP} = IIP
 statetype(::DS{IIP, S}) where {IIP, S} = S
 stateeltype(::DS{IIP, S}) where {IIP, S} = eltype(S)
-isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where
-{IIP, S, D, F, P, JAC, JM, IAD} = IAD
+isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where {IIP, S, D, F, P, JAC, JM, IAD} = IAD
 
 get_state(ds::DS) = ds.u0
 DelayEmbeddings.dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
@@ -284,15 +283,15 @@ end
 
 
 """
-    jacobian(ds::DynamicalSystem, u = ds.u0, t = ds.t0)
-Return the jacobian of the system at `u`, at `t`.
+    jacobian(ds::DynamicalSystem, u = ds.u0, p = ds.p, t = ds.t0)
+Return the jacobian of the system, always as a new matrix.
 """
-function jacobian(ds::DS{true}, u = ds.u0, t = ds.t0)
+function jacobian(ds::DS{true}, u = ds.u0, p = ds.p, t = ds.t0)
     J = similar(ds.J)
-    ds.jacobian(J, u, ds.p, t)
+    ds.jacobian(J, u, p, t)
     return J
 end
-jacobian(ds::DS{false}, u = ds.u0, t = ds.t0) = ds.jacobian(u, ds.p, t)
+jacobian(ds::DS{false}, u = ds.u0, p = ds.p, t = ds.t0) = ds.jacobian(u, p, t)
 
 #####################################################################################
 #                                Pretty-Printing                                    #
