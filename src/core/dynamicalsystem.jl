@@ -202,6 +202,10 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
             t0 = 0.0, IAD = false, IIP = isinplace(f, 4)
         ) where {F, P, JAC}
 
+        s = safe_state_type(Val{IIP}(), u0)
+        S = typeof(s)
+        D = length(s)
+
         if !(typeof(u0) <: Union{AbstractVector, Number})
             throw(ArgumentError(
                 "The state of a dynamical system *must* be <: AbstractVector/Number!"
@@ -214,9 +218,6 @@ for ds in (:ContinuousDynamicalSystem, :DiscreteDynamicalSystem)
             ))
         end
 
-        s = safe_state_type(Val{IIP}(), u0)
-        S = typeof(s)
-        D = length(s)
         J = j0 !== nothing ? j0 : get_J(j, s, p, t0, IIP)
         JM = typeof(J)
         return $(ds){IIP, S, D, F, P, JAC, JM, IAD}(f, u0, p, t0, j, J)
