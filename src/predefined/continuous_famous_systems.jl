@@ -554,7 +554,7 @@ is with respect to the velocity instead of momentum, i.e.:
 \\dot{x} &= v_x \\\\
 \\dot{y} &= v_y \\\\
 \\dot{v_x} &= B v_y - U_x \\\\
-\\dot{v_y} &= -B v_x - U_X \\\\
+\\dot{v_y} &= -B v_x - U_x \\\\
 \\end{aligned}
 ```
 with ``U`` the potential energy:
