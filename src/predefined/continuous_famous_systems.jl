@@ -176,13 +176,26 @@ end
     double_pendulum(u0 = [π/2, 0, 0, 0.5];
                     G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
 Famous chaotic double pendulum system (also used for our logo!). Keywords
-are gravity (G), lengths of each rod and mass of each ball (all assumed SI units).
+are gravity (G), lengths of each rod (L₁ and L₂) and mass of each ball (M₁ and M₂).
+Everything is assumed in SI units.
 
-The variables order is [θ1, dθ1/dt, θ2, dθ2/dt].
+The variables order is ``[θ₁, ω₁, θ₂, ω₂]`` and they satisfy:
+
+```math
+\\begin{aligned}
+θ̇₁ &= ω₁ \\\\
+ω̇₁ &= (M₂ L₁ ω₁² \\sin φ \\cos φ + M₂ G \\sin θ₂ \\cos φ +
+       M₂ L₂ ω₂² \\sin φ - (M₁ + M₂) G \\sin θ₁) / Δ₁ \\\\
+θ̇₂ &= ω₂ \\\\
+ω̇₂ &= (-M₂ L₂ ω₂² \\sin φ \\cos φ + (M₁ + M₂) G \\sin θ₁ \\cos φ -
+         (M₁ + M₂) L₁ ω₁² \\sin φ - (M₁ + M₂) G \\sin Θ₂) / Δ₂
+\\end{aligned}
+```
+where ``φ = θ₂-θ₁``, ``Δ₁ = (M₁ + M₂) L₁ - M₂ L₁ \\cos² φ``, and ``Δ₂ = Δ₁ L₂/L₁``.
 
 Jacobian is created automatically (thus methods that use the Jacobian will be slower)!
 
-(please contribute the Jacobian and the e.o.m. in LaTeX :smile:)
+(please contribute the Jacobian in LaTeX :smile:)
 
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
@@ -368,7 +381,8 @@ The (forced) duffing oscillator, that satisfies the equation
 ```
 with `f, ω` the forcing strength and frequency and `d` the damping.
 
-The parameter container has the parameters in the same order as stated here.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
 """
 function duffing(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
     J = zeros(eltype(u0), 2, 2)
