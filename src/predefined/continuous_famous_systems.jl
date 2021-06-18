@@ -811,15 +811,14 @@ end
 Stommel's box model for Atlantic thermohaline circulation
 ```math
 \\begin{aligned}
- \\dot{T} &= \\eta_1 - T - |T-S|\\cdot T \\\\
- \\dot{S} &= \\eta_2 - \\eta_3S - |T-S|\\cdot S
+ \\dot{T} &= \\eta_1 - T - |T-S| T \\\\
+ \\dot{S} &= \\eta_2 - \\eta_3S - |T-S| S
 \\end{aligned}
 ```
-Here ``T, S`` are variables standing for dimensionless temperature and salinity
-differences between the boxes (polar and equitorial ocean basins) and ``\\eta_i``
-are parameters.
+Here ``T, S`` denote the dimensionless temperature and salinity differences respectively 
+between the boxes (polar and equatorial ocean basins) and ``\\eta_i`` are parameters.
 
-[^Stommel1961]: Stommel, Thermohaline convection with two stable regimes offlow. Tellus, 13(2)
+[^Stommel1961]: Stommel, Thermohaline convection with two stable regimes of flow. Tellus, 13(2)
 """
 function stommel_thermohaline(u = [0.3, 0.2]; η1 = 3.0, η2 = 1, η3 = 0.3)
     ds = ContinuousDynamicalSystem(stommel_thermohaline_rule, u, [η1, η2, η3],
