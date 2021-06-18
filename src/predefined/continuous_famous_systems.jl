@@ -841,7 +841,15 @@ Lorenz-84's low order atmospheric general circulation model
 ```
 
 This system has interesting multistability property in the phase space. For the default
-parameter set we have four coexisting attractors.
+parameter set we have four coexisting attractors that gives birth to interesting fractalized
+phase space:
+
+```
+ds = Systems.lorenz84(rand(3))
+xg, yg=range(-1.,2.,length=300)
+zg=range(-1.5,1.5,length=30)
+bsn,att = basins_of_attraction((xg, yg, zg), ds; dt=1.,  idxs=1:3, mx_chk_att=4)
+```
 
 [^Freire2008]: J. G. Freire *et al*,  Multistability, phase diagrams, and intransitivity
 in the Lorenz-84 low-order atmospheric circulation model, Chaos 18, 033121 (2008)
@@ -851,16 +859,16 @@ function lorenz84(u = [0.1, 0.1]; F=6.846, G=1.287, a=0.25, b=4.)
     lorenz84_rule_jacob)
 end
 @inline @inbounds function lorenz84_rule(u, p, t)
-    F,G,a,b = p
-	x,y,z = u
+    F, G, a, b = p
+	x, y, z = u
     dx = -y^2 -z^2 -a*x + a*F
-    dy = x*y - y - b*x*z +G
-	dz = b*x*y + x*z -z
+    dy = x*y - y - b*x*z + G
+	dz = b*x*y + x*z - z
     return SVector{3}(dx, dy, dz)
 end
 function lorenz84_rule_jacob(u, p, t)
-    F,G,a,b = p
-	x,y,z = u
+    F, G, a, b = p
+	x, y, z = u
     return @SMatrix [-a     2*y  -2*z;
                      y-b*z  x-1  -b*x;
                      b*y+z  b*x   x-1]
