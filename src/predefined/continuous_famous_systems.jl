@@ -75,12 +75,12 @@ chua(u0 = [0.7, 0.0, 0.0]; a = 15.6, b = 25.58, m0 = -8/7, m1 = -5/7)
 ```
 ```math
 \\begin{aligned}
-\\dot{x} &= \\alpha (y - h(x))\\\\
+\\dot{x} &= a [y - h(x)]\\\\
 \\dot{y} &= x - y+z \\\\
-\\dot{z} &= \\beta y
+\\dot{z} &= b y
 \\end{aligned}
 ```
-where h(x) is defined by
+where ``h(x)`` is defined by
 ```math
 h(x) = m_1 x + \\frac 1 2 (m_0 - m_1)(|x + 1| - |x - 1|)
 ```
@@ -90,9 +90,9 @@ Chua designed an electronic circuit with the expressed goal of exhibiting
 chaotic motion, and this system is obtained by rescaling the circuit units
 to simplify the form of the equation. [1]
 
-The parameters are a, b, m0 and m1. Setting a = 15.6, m0 = -8/7 and m1 = -5/7,
-and varying the parameter b from b = 25 to b = 51, one observes a classic
-period-doubling bifurcation route to chaos. [2]
+The parameters are ``a``, ``b``, ``m_0``, and ``m_1``. Setting ``a = 15.6``, ``m_0 = -8/7`` 
+and ``m_1 = -5/7``, and varying the parameter ``b`` from ``b = 25`` to ``b = 51``, one observes 
+a classic period-doubling bifurcation route to chaos. [2]
 
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
@@ -191,7 +191,7 @@ The variables order is ``[θ₁, ω₁, θ₂, ω₂]`` and they satisfy:
          (M₁ + M₂) L₁ ω₁² \\sin φ - (M₁ + M₂) G \\sin Θ₂] / (L₂ Δ)
 \\end{aligned}
 ```
-where ``φ = θ₂-θ₁``, ``Δ = (M₁ + M₂) - M₂ \\cos² φ``.
+where ``φ = θ₂-θ₁`` and ``Δ = (M₁ + M₂) - M₂ \\cos² φ``.
 
 Jacobian is created automatically (thus methods that use the Jacobian will be slower)!
 
