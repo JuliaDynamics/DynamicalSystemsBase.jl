@@ -364,12 +364,11 @@ end
     duffing(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
 The (forced) duffing oscillator, that satisfies the equation
 ```math
-\\ddot{x} + d\\cdot\\dot{x} + β*x + x^3 = f\\cos(\\omega t)
+\\ddot{x} + d \\dot{x} + β x + x^3 = f \\cos(\\omega t)
 ```
-with `f, ω` the forcing strength and frequency and `d` the dampening.
+with `f, ω` the forcing strength and frequency and `d` the damping.
 
-The parameter container has the parameters in the same order as stated in this
-function's documentation string.
+The parameter container has the parameters in the same order as stated here.
 """
 function duffing(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
     J = zeros(eltype(u0), 2, 2)
