@@ -184,14 +184,14 @@ The variables order is ``[θ₁, ω₁, θ₂, ω₂]`` and they satisfy:
 ```math
 \\begin{aligned}
 θ̇₁ &= ω₁ \\\\
-ω̇₁ &= (M₂ L₁ ω₁² \\sin φ \\cos φ + M₂ G \\sin θ₂ \\cos φ +
-       M₂ L₂ ω₂² \\sin φ - (M₁ + M₂) G \\sin θ₁) / Δ₁ \\\\
+ω̇₁ &= [M₂ L₁ ω₁² \\sin φ \\cos φ + M₂ G \\sin θ₂ \\cos φ +
+       M₂ L₂ ω₂² \\sin φ - (M₁ + M₂) G \\sin θ₁] / (L₁ Δ) \\\\
 θ̇₂ &= ω₂ \\\\
-ω̇₂ &= (-M₂ L₂ ω₂² \\sin φ \\cos φ + (M₁ + M₂) G \\sin θ₁ \\cos φ -
-         (M₁ + M₂) L₁ ω₁² \\sin φ - (M₁ + M₂) G \\sin Θ₂) / Δ₂
+ω̇₂ &= [-M₂ L₂ ω₂² \\sin φ \\cos φ + (M₁ + M₂) G \\sin θ₁ \\cos φ -
+         (M₁ + M₂) L₁ ω₁² \\sin φ - (M₁ + M₂) G \\sin Θ₂] / (L₂ Δ)
 \\end{aligned}
 ```
-where ``φ = θ₂-θ₁``, ``Δ₁ = (M₁ + M₂) L₁ - M₂ L₁ \\cos² φ``, and ``Δ₂ = Δ₁ L₂/L₁``.
+where ``φ = θ₂-θ₁``, ``Δ = (M₁ + M₂) - M₂ \\cos² φ``.
 
 Jacobian is created automatically (thus methods that use the Jacobian will be slower)!
 
@@ -207,20 +207,21 @@ end
     G, L1, L2, M1, M2 = p
 
     du1 = state[2]
-    del_ = state[3] - state[1]
-    den1 = (M1 + M2)*L1 - M2*L1*cos(del_)*cos(del_)
-    du2 = (M2*L1*state[2]*state[2]*sin(del_)*cos(del_) +
-               M2*G*sin(state[3])*cos(del_) +
-               M2*L2*state[4]*state[4]*sin(del_) -
-               (M1 + M2)*G*sin(state[1]))/den1
+
+    φ = state[3] - state[1]
+    Δ = (M1 + M2) - M2*cos(φ)*cos(φ)
+    
+    du2 = (M2*L1*state[2]*state[2]*sin(φ)*cos(φ) +
+               M2*G*sin(state[3])*cos(φ) +
+               M2*L2*state[4]*state[4]*sin(φ) -
+               (M1 + M2)*G*sin(state[1]))/(L1*Δ)
 
     du3 = state[4]
 
-    den2 = (L2/L1)*den1
-    du4 = (-M2*L2*state[4]*state[4]*sin(del_)*cos(del_) +
-               (M1 + M2)*G*sin(state[1])*cos(del_) -
-               (M1 + M2)*L1*state[2]*state[2]*sin(del_) -
-               (M1 + M2)*G*sin(state[3]))/den2
+    du4 = (-M2*L2*state[4]*state[4]*sin(φ)*cos(φ) +
+               (M1 + M2)*G*sin(state[1])*cos(φ) -
+               (M1 + M2)*L1*state[2]*state[2]*sin(φ) -
+               (M1 + M2)*G*sin(state[3]))/(L2*Δ)
     return SVector{4}(du1, du2, du3, du4)
 end
 
@@ -302,7 +303,7 @@ A conservative dynamical system with rule
 \\dot{q}_0 &= A p_0 \\\\
 \\dot{q}_2 &= A p_2 \\\\
 \\dot{p}_0 &= -A q_0 -3 \\frac{B}{\\sqrt{2}} (q_2^2 - q_1^2) - D q_1 (q_1^2 + q_2^2) \\\\
-\\dot{p}_2 &= -q_2 (A + 3\\sqrt{2} B q_1 + D (q_1^2 + q_2^2)) (x^2 - y^2)
+\\dot{p}_2 &= -q_2 [A + 3\\sqrt{2} B q_1 + D (q_1^2 + q_2^2)] (x^2 - y^2)
 \\end{aligned}
 ```
 
@@ -552,8 +553,8 @@ is with respect to the velocity instead of momentum, i.e.:
 \\begin{aligned}
 \\dot{x} &= v_x \\\\
 \\dot{y} &= v_y \\\\
-\\dot{v_x} &= B*v_y - U_x \\\\
-\\dot{v_y} &= -B*v_x - U_X \\\\
+\\dot{v_x} &= B v_y - U_x \\\\
+\\dot{v_y} &= -B v_x - U_X \\\\
 \\end{aligned}
 ```
 with ``U`` the potential energy:
@@ -747,7 +748,7 @@ A three dimensional chaotic system introduced in [^Sprott2020] with rule
 ```math
 \\begin{aligned}
 \\dot{x} &= y \\\\
-\\dot{y} &= -x - sign(z)y \\\\
+\\dot{y} &= -x - \\textrm{sign}(z)y \\\\
 \\dot{z} &= y^2 - \\exp(-x^2)
 \\end{aligned}
 ```
