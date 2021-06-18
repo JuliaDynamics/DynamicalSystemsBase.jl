@@ -175,8 +175,8 @@ end
 """
     double_pendulum(u0 = [π/2, 0, 0, 0.5];
                     G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
-Famous chaotic double pendulum system (also used for our logo!). Keywords
-are gravity (G), lengths of each rod (L₁ and L₂) and mass of each ball (M₁ and M₂).
+Famous chaotic double pendulum system (also used for our logo!). Keywords are gravity (`G`), 
+lengths of each rod (`L1` and `L2`) and mass of each ball (`M1` and `M2`).
 Everything is assumed in SI units.
 
 The variables order is ``[θ₁, ω₁, θ₂, ω₂]`` and they satisfy:
@@ -203,25 +203,26 @@ function's documentation string.
 function double_pendulum(u0=[π/2, 0, 0, 0.5]; G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
     return CDS(doublependulum_rule, u0, [G, L1, L2, M1, M2])
 end
-@inbounds function doublependulum_rule(state, p, t)
+@inbounds function doublependulum_rule(u, p, t)
     G, L1, L2, M1, M2 = p
 
-    du1 = state[2]
+    du1 = u[2]
 
-    φ = state[3] - state[1]
+    φ = u[3] - u[1]
     Δ = (M1 + M2) - M2*cos(φ)*cos(φ)
     
-    du2 = (M2*L1*state[2]*state[2]*sin(φ)*cos(φ) +
-               M2*G*sin(state[3])*cos(φ) +
-               M2*L2*state[4]*state[4]*sin(φ) -
-               (M1 + M2)*G*sin(state[1]))/(L1*Δ)
+    du2 = (M2*L1*u[2]*u[2]*sin(φ)*cos(φ) +
+               M2*G*sin(u[3])*cos(φ) +
+               M2*L2*u[4]*u[4]*sin(φ) -
+               (M1 + M2)*G*sin(u[1]))/(L1*Δ)
 
-    du3 = state[4]
+    du3 = u[4]
 
-    du4 = (-M2*L2*state[4]*state[4]*sin(φ)*cos(φ) +
-               (M1 + M2)*G*sin(state[1])*cos(φ) -
-               (M1 + M2)*L1*state[2]*state[2]*sin(φ) -
-               (M1 + M2)*G*sin(state[3]))/(L2*Δ)
+    du4 = (-M2*L2*u[4]*u[4]*sin(φ)*cos(φ) +
+               (M1 + M2)*G*sin(u[1])*cos(φ) -
+               (M1 + M2)*L1*u[2]*u[2]*sin(φ) -
+               (M1 + M2)*G*sin(u[3]))/(L2*Δ)
+    
     return SVector{4}(du1, du2, du3, du4)
 end
 
@@ -562,9 +563,9 @@ with ``U`` the potential energy:
 U = \\left(\\tfrac{1}{c^4}\\right) \\left[\\tfrac{d_0}{2} + c - r_a\\right]^4
 ```
 if ``r_a = \\sqrt{(x \\mod 1)^2 + (y \\mod 1)^2} < \\frac{d_0}{2} + c`` and 0
-otherwise. I.e. the potential is periodic with period 1 in both ``x, y`` and
-normalized such that for energy value of 1 it is a circle of diameter ``d0``.
-The magnetic field is also normalized such that for value `B=1` the cyclotron
+otherwise. That is, the potential is periodic with period 1 in both ``x, y`` and
+normalized such that for energy value of 1 it is a circle of diameter ``d_0``.
+The magnetic field is also normalized such that for value `B = 1` the cyclotron
 diameter is 1.
 
 [1] : G. Datseris *et al*, [New Journal of Physics 2019](https://iopscience.iop.org/article/10.1088/1367-2630/ab19cc/meta)
