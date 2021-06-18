@@ -727,7 +727,7 @@ Famous excitable system which emulates the firing of a neuron, with rule
 ```math
 \\begin{aligned}
 \\dot{v} &= av(v-b)(1-v) - w + I \\\\
-\\ddot{w} &= \\varepsilon(v - w)
+\\dot{w} &= \\varepsilon(v - w)
 \\end{aligned}
 ```
 
