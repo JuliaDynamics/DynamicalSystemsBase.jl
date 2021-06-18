@@ -846,7 +846,7 @@ parameter set we have four coexisting attractors.
 [^Freire2008]: J. G. Freire *et al*,  Multistability, phase diagrams, and intransitivity
 in the Lorenz-84 low-order atmospheric circulation model, Chaos 18, 033121 (2008)
 """
-function lorenz84(u = [0.1, 0.1]; F=6.846; G=1.287; a=0.25; b=4.)
+function lorenz84(u = [0.1, 0.1]; F=6.846, G=1.287, a=0.25, b=4.)
     ds = ContinuousDynamicalSystem(lorenz84_rule, u, [F, G, a, b],
     lorenz84_rule_jacob)
 end
@@ -858,7 +858,7 @@ end
 	dz = b*x*y + x*z -z
     return SVector{3}(dx, dy, dz)
 end
-function lorenz84_jacob(x, p, t)
+function lorenz84_rule_jacob(u, p, t)
     F,G,a,b = p
 	x,y,z = u
     return @SMatrix [-a     2*y  -2*z;
