@@ -5,7 +5,7 @@ towel(u0 = [0.085, -0.121, 0.075])
 ```math
 \\begin{aligned}
 x_{n+1} &= 3.8 x_n (1-x_n) -0.05 (y_n +0.35) (1-2z_n) \\\\
-y_{n+1} &= 0.1 \\left( \\left( y_n +0.35 \\right)\\left( 1+2z_n\\right) -1 \\right)
+y_{n+1} &= 0.1 \\left[ \\left( y_n +0.35 \\right)\\left( 1+2z_n\\right) -1 \\right]
 \\left( 1 -1.9 x_n \\right) \\\\
 z_{n+1} &= 3.78 z_n (1-z_n) + b y_n
 \\end{aligned}
@@ -366,8 +366,10 @@ arnoldcat_jacob(u, p, n) = @SMatrix [2 1; 1 1]
 grebogi_map(u0 = [0.2, 0.]; a = 1.32, b=0.9, J₀=0.3)
 ```
 ```math
-\\theta_{n+1}=\\theta_n +   a\\sin 2 \\theta_n -b \\sin 4 \\theta_n -x_n\\sin \\theta_n\\\\
-x_{n+1}= -J_0 \\cos \\theta_n
+\\begin{aligned}
+\\theta_{n+1} &= \\theta_n +   a\\sin 2 \\theta_n -b \\sin 4 \\theta_n -x_n\\sin \\theta_n\\\\
+x_{n+1} &= -J_0 \\cos \\theta_n
+\\end{aligned}
 ```
 
 This map has two fixed point at `(0,-J_0)` and `(π,J_0)` which are attracting for `|1+2a-4b|<1`. There is a chaotic transient dynamics
@@ -377,11 +379,11 @@ before the dynamical systems settles at a fixed point. This map illustrate the f
 
 ## Example
 ```julia
-ds=Systems.grebogi_map(rand(2))
-integ  = integrator(ds)
-θg=range(0,2π,length=300)
-xg=range(-0.5,0.5,length=300)
-bsn,att=basins_map2D(θg, xg, integ)
+ds = Systems.grebogi_map(rand(2))
+integ = integrator(ds)
+θg = range(0, 2π, length=300)
+xg = range(-0.5, 0.5, length=300)
+bsn, att = basins_map2D(θg, xg, integ)
 ```
 """
 function grebogi_map(u0 = [0.2, 0.]; a = 1.32, b=0.9, J₀=0.3)
