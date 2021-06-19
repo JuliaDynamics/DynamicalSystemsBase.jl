@@ -842,7 +842,7 @@ Lorenz-84's low order atmospheric general circulation model
 
 This system has interesting multistability property in the phase space. For the default
 parameter set we have four coexisting attractors that gives birth to interesting fractalized
-phase space:
+phase space. One can see this by doing:
 
 ```
 ds = Systems.lorenz84(rand(3))
