@@ -830,19 +830,19 @@ function stommel_thermohaline_jacob(x, p, t)
 end
 
 """
-    lorenz84(u = [0.1, 0.1, 0.1]; F=6.846; G=1.287; a=0.25; b=4.)
+    lorenz84(u = [0.1, 0.1, 0.1]; F=6.846, G=1.287, a=0.25, b=4.)
 Lorenz-84's low order atmospheric general circulation model
 ```math
 \\begin{aligned}
-\\dot x = − y^2 − z^2 − ax + aF, \\
-\\dot y = xy − y − bxz + G, \\
-\\dot z = bxy + xz − z. \\
+\\dot x = − y^2 − z^2 − ax + aF, \\\\
+\\dot y = xy − y − bxz + G, \\\\
+\\dot z = bxy + xz − z. \\\\
 \\end{aligned}
 ```
 
 This system has interesting multistability property in the phase space. For the default
 parameter set we have four coexisting attractors that gives birth to interesting fractalized
-phase space. One can see this by doing:
+phase space as shown in [^Freire2008]. One can see this by doing:
 
 ```
 ds = Systems.lorenz84(rand(3))
@@ -860,10 +860,10 @@ function lorenz84(u = [0.1, 0.1]; F=6.846, G=1.287, a=0.25, b=4.)
 end
 @inline @inbounds function lorenz84_rule(u, p, t)
     F, G, a, b = p
-	x, y, z = u
+    x, y, z = u
     dx = -y^2 -z^2 -a*x + a*F
     dy = x*y - y - b*x*z + G
-	dz = b*x*y + x*z - z
+    dz = b*x*y + x*z - z
     return SVector{3}(dx, dy, dz)
 end
 function lorenz84_rule_jacob(u, p, t)
