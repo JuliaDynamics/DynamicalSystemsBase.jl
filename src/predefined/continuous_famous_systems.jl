@@ -75,12 +75,12 @@ chua(u0 = [0.7, 0.0, 0.0]; a = 15.6, b = 25.58, m0 = -8/7, m1 = -5/7)
 ```
 ```math
 \\begin{aligned}
-\\dot{x} &= \\alpha (y - h(x))\\\\
+\\dot{x} &= a [y - h(x)]\\\\
 \\dot{y} &= x - y+z \\\\
-\\dot{z} &= \\beta y
+\\dot{z} &= b y
 \\end{aligned}
 ```
-where h(x) is defined by
+where ``h(x)`` is defined by
 ```math
 h(x) = m_1 x + \\frac 1 2 (m_0 - m_1)(|x + 1| - |x - 1|)
 ```
@@ -90,9 +90,9 @@ Chua designed an electronic circuit with the expressed goal of exhibiting
 chaotic motion, and this system is obtained by rescaling the circuit units
 to simplify the form of the equation. [1]
 
-The parameters are a, b, m0 and m1. Setting a = 15.6, m0 = -8/7 and m1 = -5/7,
-and varying the parameter b from b = 25 to b = 51, one observes a classic
-period-doubling bifurcation route to chaos. [2]
+The parameters are ``a``, ``b``, ``m_0``, and ``m_1``. Setting ``a = 15.6``, ``m_0 = -8/7`` 
+and ``m_1 = -5/7``, and varying the parameter ``b`` from ``b = 25`` to ``b = 51``, one observes 
+a classic period-doubling bifurcation route to chaos. [2]
 
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
@@ -175,14 +175,27 @@ end
 """
     double_pendulum(u0 = [π/2, 0, 0, 0.5];
                     G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
-Famous chaotic double pendulum system (also used for our logo!). Keywords
-are gravity (G), lengths of each rod and mass of each ball (all assumed SI units).
+Famous chaotic double pendulum system (also used for our logo!). Keywords are gravity (`G`), 
+lengths of each rod (`L1` and `L2`) and mass of each ball (`M1` and `M2`).
+Everything is assumed in SI units.
 
-The variables order is [θ1, dθ1/dt, θ2, dθ2/dt].
+The variables order is ``[θ₁, ω₁, θ₂, ω₂]`` and they satisfy:
+
+```math
+\\begin{aligned}
+θ̇₁ &= ω₁ \\\\
+ω̇₁ &= [M₂ L₁ ω₁² \\sin φ \\cos φ + M₂ G \\sin θ₂ \\cos φ +
+       M₂ L₂ ω₂² \\sin φ - (M₁ + M₂) G \\sin θ₁] / (L₁ Δ) \\\\
+θ̇₂ &= ω₂ \\\\
+ω̇₂ &= [-M₂ L₂ ω₂² \\sin φ \\cos φ + (M₁ + M₂) G \\sin θ₁ \\cos φ -
+         (M₁ + M₂) L₁ ω₁² \\sin φ - (M₁ + M₂) G \\sin Θ₂] / (L₂ Δ)
+\\end{aligned}
+```
+where ``φ = θ₂-θ₁`` and ``Δ = (M₁ + M₂) - M₂ \\cos² φ``.
 
 Jacobian is created automatically (thus methods that use the Jacobian will be slower)!
 
-(please contribute the Jacobian and the e.o.m. in LaTeX :smile:)
+(please contribute the Jacobian in LaTeX :smile:)
 
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
@@ -190,24 +203,26 @@ function's documentation string.
 function double_pendulum(u0=[π/2, 0, 0, 0.5]; G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
     return CDS(doublependulum_rule, u0, [G, L1, L2, M1, M2])
 end
-@inbounds function doublependulum_rule(state, p, t)
+@inbounds function doublependulum_rule(u, p, t)
     G, L1, L2, M1, M2 = p
 
-    du1 = state[2]
-    del_ = state[3] - state[1]
-    den1 = (M1 + M2)*L1 - M2*L1*cos(del_)*cos(del_)
-    du2 = (M2*L1*state[2]*state[2]*sin(del_)*cos(del_) +
-               M2*G*sin(state[3])*cos(del_) +
-               M2*L2*state[4]*state[4]*sin(del_) -
-               (M1 + M2)*G*sin(state[1]))/den1
+    du1 = u[2]
 
-    du3 = state[4]
+    φ = u[3] - u[1]
+    Δ = (M1 + M2) - M2*cos(φ)*cos(φ)
+    
+    du2 = (M2*L1*u[2]*u[2]*sin(φ)*cos(φ) +
+               M2*G*sin(u[3])*cos(φ) +
+               M2*L2*u[4]*u[4]*sin(φ) -
+               (M1 + M2)*G*sin(u[1]))/(L1*Δ)
 
-    den2 = (L2/L1)*den1
-    du4 = (-M2*L2*state[4]*state[4]*sin(del_)*cos(del_) +
-               (M1 + M2)*G*sin(state[1])*cos(del_) -
-               (M1 + M2)*L1*state[2]*state[2]*sin(del_) -
-               (M1 + M2)*G*sin(state[3]))/den2
+    du3 = u[4]
+
+    du4 = (-M2*L2*u[4]*u[4]*sin(φ)*cos(φ) +
+               (M1 + M2)*G*sin(u[1])*cos(φ) -
+               (M1 + M2)*L1*u[2]*u[2]*sin(φ) -
+               (M1 + M2)*G*sin(u[3]))/(L2*Δ)
+    
     return SVector{4}(du1, du2, du3, du4)
 end
 
@@ -289,7 +304,7 @@ A conservative dynamical system with rule
 \\dot{q}_0 &= A p_0 \\\\
 \\dot{q}_2 &= A p_2 \\\\
 \\dot{p}_0 &= -A q_0 -3 \\frac{B}{\\sqrt{2}} (q_2^2 - q_1^2) - D q_1 (q_1^2 + q_2^2) \\\\
-\\dot{p}_2 &= -q_2 (A + 3\\sqrt{2} B q_1 + D (q_1^2 + q_2^2)) (x^2 - y^2)
+\\dot{p}_2 &= -q_2 [A + 3\\sqrt{2} B q_1 + D (q_1^2 + q_2^2)] (x^2 - y^2)
 \\end{aligned}
 ```
 
@@ -364,9 +379,9 @@ end
     duffing(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
 The (forced) duffing oscillator, that satisfies the equation
 ```math
-\\ddot{x} + d\\cdot\\dot{x} + β*x + x^3 = f\\cos(\\omega t)
+\\ddot{x} + d \\dot{x} + β x + x^3 = f \\cos(\\omega t)
 ```
-with `f, ω` the forcing strength and frequency and `d` the dampening.
+with `f, ω` the forcing strength and frequency and `d` the damping.
 
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
@@ -539,8 +554,8 @@ is with respect to the velocity instead of momentum, i.e.:
 \\begin{aligned}
 \\dot{x} &= v_x \\\\
 \\dot{y} &= v_y \\\\
-\\dot{v_x} &= B*v_y - U_x \\\\
-\\dot{v_y} &= -B*v_x - U_X \\\\
+\\dot{v_x} &= B v_y - U_x \\\\
+\\dot{v_y} &= -B v_x - U_y \\\\
 \\end{aligned}
 ```
 with ``U`` the potential energy:
@@ -548,9 +563,9 @@ with ``U`` the potential energy:
 U = \\left(\\tfrac{1}{c^4}\\right) \\left[\\tfrac{d_0}{2} + c - r_a\\right]^4
 ```
 if ``r_a = \\sqrt{(x \\mod 1)^2 + (y \\mod 1)^2} < \\frac{d_0}{2} + c`` and 0
-otherwise. I.e. the potential is periodic with period 1 in both ``x, y`` and
-normalized such that for energy value of 1 it is a circle of diameter ``d0``.
-The magnetic field is also normalized such that for value `B=1` the cyclotron
+otherwise. That is, the potential is periodic with period 1 in both ``x, y`` and
+normalized such that for energy value of 1 it is a circle of diameter ``d_0``.
+The magnetic field is also normalized such that for value `B = 1` the cyclotron
 diameter is 1.
 
 [1] : G. Datseris *et al*, [New Journal of Physics 2019](https://iopscience.iop.org/article/10.1088/1367-2630/ab19cc/meta)
@@ -713,7 +728,7 @@ Famous excitable system which emulates the firing of a neuron, with rule
 ```math
 \\begin{aligned}
 \\dot{v} &= av(v-b)(1-v) - w + I \\\\
-\\ddot{w} &= \\varepsilon(v - w)
+\\dot{w} &= \\varepsilon(v - w)
 \\end{aligned}
 ```
 
@@ -734,7 +749,7 @@ A three dimensional chaotic system introduced in [^Sprott2020] with rule
 ```math
 \\begin{aligned}
 \\dot{x} &= y \\\\
-\\dot{y} &= -x - sign(z)y \\\\
+\\dot{y} &= -x - \\textrm{sign}(z)y \\\\
 \\dot{z} &= y^2 - \\exp(-x^2)
 \\end{aligned}
 ```
@@ -796,15 +811,14 @@ end
 Stommel's box model for Atlantic thermohaline circulation
 ```math
 \\begin{aligned}
- \\dot{T} &= \\eta_1 - T - |T-S|\\cdot T \\\\
- \\dot{S} &= \\eta_2 - \\eta_3S - |T-S|\\cdot S
+ \\dot{T} &= \\eta_1 - T - |T-S| T \\\\
+ \\dot{S} &= \\eta_2 - \\eta_3S - |T-S| S
 \\end{aligned}
 ```
-Here ``T, S`` are variables standing for dimensionless temperature and salinity
-differences between the boxes (polar and equitorial ocean basins) and ``\\eta_i``
-are parameters.
+Here ``T, S`` denote the dimensionless temperature and salinity differences respectively 
+between the boxes (polar and equatorial ocean basins) and ``\\eta_i`` are parameters.
 
-[^Stommel1961]: Stommel, Thermohaline convection with two stable regimes offlow. Tellus, 13(2)
+[^Stommel1961]: Stommel, Thermohaline convection with two stable regimes of flow. Tellus, 13(2)
 """
 function stommel_thermohaline(u = [0.3, 0.2]; η1 = 3.0, η2 = 1, η3 = 0.3)
     ds = ContinuousDynamicalSystem(stommel_thermohaline_rule, u, [η1, η2, η3],
@@ -827,4 +841,49 @@ function stommel_thermohaline_jacob(x, p, t)
         return @SMatrix [(-1 + 2T - S)  (-T);
                          (+S)  (-η3 + T - 2S)]
     end
+end
+
+"""
+    lorenz84(u = [0.1, 0.1, 0.1]; F=6.846, G=1.287, a=0.25, b=4.0)
+Lorenz-84's low order atmospheric general circulation model
+```math
+\\begin{aligned}
+\\dot x = − y^2 − z^2 − ax + aF, \\\\
+\\dot y = xy − y − bxz + G, \\\\
+\\dot z = bxy + xz − z. \\\\
+\\end{aligned}
+```
+
+This system has interesting multistability property in the phase space. For the default
+parameter set we have four coexisting attractors that gives birth to interesting fractalized
+phase space as shown in [^Freire2008]. One can see this by doing:
+
+```
+ds = Systems.lorenz84(rand(3))
+xg = yg = range(-1.0, 2.0; length=300)
+zg = range(-1.5, 1.5; length=30)
+bsn, att = basins_of_attraction((xg, yg, zg), ds; mx_chk_att=4)
+```
+
+[^Freire2008]: J. G. Freire *et al*,  Multistability, phase diagrams, and intransitivity
+in the Lorenz-84 low-order atmospheric circulation model, Chaos 18, 033121 (2008)
+"""
+function lorenz84(u = [0.1, 0.1, 0.1]; F=6.846, G=1.287, a=0.25, b=4.)
+    return ContinuousDynamicalSystem(lorenz84_rule, u, [F, G, a, b],
+    lorenz84_rule_jacob)
+end
+@inline @inbounds function lorenz84_rule(u, p, t)
+    F, G, a, b = p
+    x, y, z = u
+    dx = -y^2 -z^2 -a*x + a*F
+    dy = x*y - y - b*x*z + G
+    dz = b*x*y + x*z - z
+    return SVector{3}(dx, dy, dz)
+end
+function lorenz84_rule_jacob(u, p, t)
+    F, G, a, b = p
+	x, y, z = u
+    return @SMatrix [-a     2*y  -2*z;
+                     y-b*z  x-1  -b*x;
+                     b*y+z  b*x   x-1]
 end
