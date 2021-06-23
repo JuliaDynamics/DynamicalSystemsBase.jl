@@ -21,7 +21,7 @@ stateeltype(::MDI{IIP, S}) where {IIP, S} = eltype(S)
 stateeltype(::MDI{IIP, S}) where {IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
 function reinit!(integ::MDI, u = integ.u, Q0 = nothing; t0 = integ.t0)
-    integ.u = copy(u)
+    integ.u = u
     integ.dummy = copy(u)
     integ.t = t0
     if Q0 != nothing
