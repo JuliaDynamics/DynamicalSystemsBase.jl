@@ -90,8 +90,8 @@ Chua designed an electronic circuit with the expressed goal of exhibiting
 chaotic motion, and this system is obtained by rescaling the circuit units
 to simplify the form of the equation. [1]
 
-The parameters are ``a``, ``b``, ``m_0``, and ``m_1``. Setting ``a = 15.6``, ``m_0 = -8/7`` 
-and ``m_1 = -5/7``, and varying the parameter ``b`` from ``b = 25`` to ``b = 51``, one observes 
+The parameters are ``a``, ``b``, ``m_0``, and ``m_1``. Setting ``a = 15.6``, ``m_0 = -8/7``
+and ``m_1 = -5/7``, and varying the parameter ``b`` from ``b = 25`` to ``b = 51``, one observes
 a classic period-doubling bifurcation route to chaos. [2]
 
 The parameter container has the parameters in the same order as stated in this
@@ -175,7 +175,7 @@ end
 """
     double_pendulum(u0 = [π/2, 0, 0, 0.5];
                     G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
-Famous chaotic double pendulum system (also used for our logo!). Keywords are gravity (`G`), 
+Famous chaotic double pendulum system (also used for our logo!). Keywords are gravity (`G`),
 lengths of each rod (`L1` and `L2`) and mass of each ball (`M1` and `M2`).
 Everything is assumed in SI units.
 
@@ -210,7 +210,7 @@ end
 
     φ = u[3] - u[1]
     Δ = (M1 + M2) - M2*cos(φ)*cos(φ)
-    
+
     du2 = (M2*L1*u[2]*u[2]*sin(φ)*cos(φ) +
                M2*G*sin(u[3])*cos(φ) +
                M2*L2*u[4]*u[4]*sin(φ) -
@@ -222,7 +222,7 @@ end
                (M1 + M2)*G*sin(u[1])*cos(φ) -
                (M1 + M2)*L1*u[2]*u[2]*sin(φ) -
                (M1 + M2)*G*sin(u[3]))/(L2*Δ)
-    
+
     return SVector{4}(du1, du2, du3, du4)
 end
 
@@ -815,7 +815,7 @@ Stommel's box model for Atlantic thermohaline circulation
  \\dot{S} &= \\eta_2 - \\eta_3S - |T-S| S
 \\end{aligned}
 ```
-Here ``T, S`` denote the dimensionless temperature and salinity differences respectively 
+Here ``T, S`` denote the dimensionless temperature and salinity differences respectively
 between the boxes (polar and equatorial ocean basins) and ``\\eta_i`` are parameters.
 
 [^Stommel1961]: Stommel, Thermohaline convection with two stable regimes of flow. Tellus, 13(2)
@@ -886,4 +886,50 @@ function lorenz84_rule_jacob(u, p, t)
     return @SMatrix [-a     2*y  -2*z;
                      y-b*z  x-1  -b*x;
                      b*y+z  b*x   x-1]
+end
+
+
+
+"""
+    lorenzdl(u = [0.1, 0.1, 0.1]; R=4.7)
+Diffusionless Lorenz system: it is *probably* the simplest rotationnaly invariant
+chaotic flow.
+```math
+\\begin{aligned}
+\\dot x = y − x, \\\\
+\\dot y = -xz, \\\\
+\\dot z = xy - R. \\\\
+\\end{aligned}
+```
+
+For `R=4.7` this system has two coexisting Malasoma strange attractors that are
+linked together. The fractal boundary between the basins of attractor can be
+visualized with a Poincaré section at `z=0`:
+```
+ds = Systems.lorenzdl()
+xg = yg = range(-10.0, 10.0; length=300)
+pmap = poincaremap(ds, (3, 0.), Tmax=1e6; idxs = 1:2)
+bsn, att = basins_of_attraction((xg, yg), pmap)
+```
+
+[^Sprott2014]: J. C. Sprott,  Simplest Chaotic Flows with Involutional Symmetries, Int. Jour. Bifurcation and Chaos 24, 1450009 (2014)
+"""
+function lorenzdl(u = [0.1, 0.1, 0.1]; R=4.7)
+    return ContinuousDynamicalSystem(lorenzdl_rule, u, R,
+    lorenzdl_rule_jacob)
+end
+@inline @inbounds function lorenzdl_rule(u, p, t)
+    R = p
+    x, y, z = u
+    dx = y - x
+    dy = - x*z
+    dz = x*y - R
+    return SVector{3}(dx, dy, dz)
+end
+function lorenzdl_rule_jacob(u, p, t)
+    R = p
+	x, y, z = u
+    return @SMatrix [-1     1     0;
+                     -z     0    -x;
+                      y     x     0]
 end
