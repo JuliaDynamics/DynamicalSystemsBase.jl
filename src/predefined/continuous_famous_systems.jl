@@ -905,7 +905,7 @@ chaotic flow.
 For `R=4.7` this system has two coexisting Malasoma strange attractors that are
 linked together as shown in [^Sprott2014]. The fractal boundary between the basins of attractor can be
 visualized with a Poincaré section at `z=0`:
-```
+```julia
 ds = Systems.lorenzdl()
 xg = yg = range(-10.0, 10.0; length=300)
 pmap = poincaremap(ds, (3, 0.), Tmax=1e6; idxs = 1:2)
