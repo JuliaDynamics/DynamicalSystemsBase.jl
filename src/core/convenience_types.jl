@@ -1,8 +1,10 @@
 export DynamicalSystemIntegrator, DynSysInteg
-const DynSysInteg = DynamicalSystemIntegrator
 
+# how the hell do you write this...???
 const DynamicalSystemIntegrator{IIP, S} = Union{
     AbstractODEIntegrator{Alg, IIP, S},
     TangentDiscreteIntegrator{IIP, S},
     MinimalDiscreteIntegrator{IIP, S}
-} where {S}
+} where {Alg}
+
+const DynSysInteg = DynamicalSystemIntegrator
