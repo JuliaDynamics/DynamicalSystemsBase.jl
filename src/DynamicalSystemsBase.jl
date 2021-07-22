@@ -13,6 +13,7 @@ include("core/create_dynamics.jl")
 include("core/api_docstrings.jl")
 include("core/discrete.jl")
 include("core/continuous.jl")
+include("core/convenience_types.jl")
 
 include("predefined/famous_systems.jl") # includes both discrete and continuous
 

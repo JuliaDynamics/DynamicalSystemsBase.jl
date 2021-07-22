@@ -1,4 +1,9 @@
 Changelog of `DynamicalSystemsBase`.
+# v1.9.0
+* New exported name `DynamicalSystemIntegrator{IIP, S}` which can be used
+  for more intuitive multiple dispatch on is in-place (IIP) or state type `S`.
+* More performant version of `set_deviations!(integ, Q)` when `Q` is the result of 
+  a QR-decomposition.
 # v1.8.3
 * Added `grebogi_map` dynamical system.
 # v1.8

@@ -171,7 +171,7 @@ function trajectory(ds::CDS{IIP, S, D}, integ, T, u, dt, Ttr, a; diffeq...) wher
 end
 
 #####################################################################################
-#                                    Get States                                     #
+#                                    Get/Set States                                 #
 #####################################################################################
 get_state(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:AbstractVector} =
     integ.u
@@ -218,6 +218,17 @@ end
 
 set_deviations!(integ::AbstractODEIntegrator{Alg, IIP, S}, Q) where {Alg, IIP, S<:Matrix} =
     (integ.u[:, 2:end] .= Q; u_modified!(integ, true))
+function set_deviations!(
+        integ::AbstractODEIntegrator{Alg, IIP, S}, Q::LinearAlgebra.AbstractQ
+    ) where {Alg, IIP, S<:Matrix}
+    # This method exists because there is a more efficient way to copy columns of Q
+    # without transforming `Q` into a matrix, which allocates
+    # integ.u[:, 2:end] .= Matrix(Q) <- this is bad, it allocates!
+    copyto!(@view(integ.u[:, 2:end]), I)
+    lmul!(Q, @view(integ.u[:, 2:end]))
+    u_modified!(integ, true)
+end
+
 set_deviations!(integ::AbstractODEIntegrator{Alg, IIP, S}, Q) where {Alg, IIP, S<:SMatrix} =
     (integ.u = hcat(integ.u[:,1], Q); u_modified!(integ, true))
 

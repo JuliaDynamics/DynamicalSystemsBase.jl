@@ -24,7 +24,7 @@ function reinit!(integ::MDI, u = integ.u, Q0 = nothing; t0 = integ.t0)
     integ.u = u
     integ.dummy = copy(u)
     integ.t = t0
-    if Q0 != nothing
+    if Q0 !== nothing
         set_deviations!(integ, Q0)
     end
     return
@@ -116,11 +116,18 @@ u_modified!(t::TDI, a) = nothing
 # set_state is same as in standard, see dynamicalsystem.jl
 
 get_deviations(t::TDI) = t.W
-set_deviations!(t::TDI, Q) = (t.W = Q)
+set_deviations!(t::TDI, Q) = (t.W = Q) # works for both Matrix/SMatrix Q
+function set_deviations!(t::TDI, Q::LinearAlgebra.AbstractQ)
+    # This method exists because there is a more efficient way to copy columns of Q
+    # without transforming `Q` into a matrix
+    # integ.u[:, 2:end] .= Matrix(Q) <- this is bad, it allocates!
+    copyto!(t.W, I)
+    lmul!(Q, t.W)
+end
 
 function reinit!(integ::TDI, u = integ.u, Q0 = nothing; t0 = integ.t0)
     set_state!(integ, u)
-    if Q0 != nothing
+    if Q0 !== nothing
         set_deviations!(integ, Q0)
     end
     integ.t = t0
