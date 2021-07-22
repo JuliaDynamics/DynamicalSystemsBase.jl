@@ -1,4 +1,7 @@
 Changelog of `DynamicalSystemsBase`.
+# v1.8.11
+* More performant version of `set_deviations!(integ, Q)` when `Q` is the result of 
+  a QR-decomposition.
 # v1.8.3
 * Added `grebogi_map` dynamical system.
 # v1.8
