@@ -1,4 +1,10 @@
-Changelog of `DynamicalSystemsBase`.
+# v2.0.0
+* Keyword propagation to DifferentialEquations.jl does not happen anymore.
+  E.g.: `trajectory(ds, 100; reltol = 1e-9, alg = Tsit5())` is invalid.
+  Now keyword propagation to DiffEq happens always via the keyword
+  `diffeq`, whose value is a `NamedTuple/Dict` (the keyword-value pairs).
+  E.g.: `trajectory(ds, 100; diffeq = (reltol = 1e-9, alg = Tsit5())`.
+
 # v1.8.11
 * More performant version of `set_deviations!(integ, Q)` when `Q` is the result of 
   a QR-decomposition.
