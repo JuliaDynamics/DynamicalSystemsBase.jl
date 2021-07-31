@@ -66,7 +66,7 @@ function step!(integ::MDI{true})
     integ.t += 1
     return
 end
-function step!(integ::MDI{true}, N::Int)
+function step!(integ::MDI{true}, N)
     for i in 1:N
         integ.dummy, integ.u = integ.u, integ.dummy
         integ.f(integ.u, integ.dummy, integ.p, integ.t)
@@ -78,7 +78,7 @@ end
 # OOP version
 step!(integ::MDI{false}) =
 (integ.u = integ.f(integ.u, integ.p, integ.t); integ.t +=1; nothing)
-function step!(integ::MDI{false}, N::Int)
+function step!(integ::MDI{false}, N)
     for i in 1:N
         integ.u = integ.f(integ.u, integ.p, integ.t)
         integ.t += 1
