@@ -38,7 +38,7 @@ Here is how to define them (1D systems are treated differently, see below):
 
 * **oop** : `f` **must** be in the form `f(x, p, t) -> SVector`
   which means that given a state `x::SVector` and some parameter container
-  `p` it returns an [`SVector`](http://juliaarrays.github.io/StaticArrays.jl/stable/pages/api.html#SVector-1)
+  `p` it returns an `SVector`
   (from the [StaticArrays](https://github.com/JuliaArrays/StaticArrays.jl) module)
   containing the next state/rate-of-change.
 * **iip** : `f` **must** be in the form `f!(xnew, x, p, t)`
@@ -53,15 +53,22 @@ The constructor deduces automatically whether `f` is iip or oop. It is not
 possible however to deduce whether the system is continuous or discrete just from `f`,
 hence the 2 constructors.
 
+!!! note "Autonomous vs non-autonomous systems"
+    Whether the dynamical system is autonomous (`f` doesn't depend on time) or not, it is
+    still necessary to include `t` as an argument of `f`.
+    While for some methods of DynamicalSystems.jl time-dependence is okay, the theoretical 
+    foundation of many functions of the library only makes sense with autonomous systems.
+    If you use a non-autonomous system, it is your duty to know for which functions this is okay.
+
 ### Jacobian
 The optional argument `jacobian` for the constructors
 is a *function* and (if given) must also be of the same form as `f`,
 `jacobian(x, p, n) -> SMatrix`
 for the out-of-place version and `jacobian!(J, x, p, n)` for the in-place version.
 
-The constructors also allow you to pass an initialized Jacobian matrix `J0`.
-This is useful for large oop systems where only a few components of the Jacobian change
-during the time evolution.
+The constructors also allows you to pass an initialized Jacobian matrix `J0`.
+This is useful for large iip systems where only a few components of the Jacobian change
+during the time evolution. `J0` can have sparse structure for iip.
 
 If `jacobian` is not given, it is constructed automatically using
 the module [`ForwardDiff`](http://www.juliadiff.org/ForwardDiff.jl/stable/).
