@@ -1,4 +1,10 @@
-Changelog of `DynamicalSystemsBase`.
+# v2.0.0
+* The keyword `dt` of `trajectory` has been renamed to `Δt`. 
+  This keyword had conflicts with the options of DifferentialEquations.jl.
+  No warning can be thrown for this change, and users still using `dt` will
+  have it silently propagated as keyword to the diffeq solvers.
+
+
 # v1.8.11
 * More performant version of `set_deviations!(integ, Q)` when `Q` is the result of 
   a QR-decomposition.

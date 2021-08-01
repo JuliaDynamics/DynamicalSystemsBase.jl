@@ -345,7 +345,7 @@ arnoldcat(u0 = [0.001245, 0.00875])
 ```math
 f(x,y) = (2x+y,x+y) \\mod 1
 ```
-Arnold's cat map. A chaotic map from the torus into itself, discovered by
+Arnold's cat map. A chaotic map from the torus into itself, used by
 Vladimir Arnold in the 1960s. [1]
 
 [1] : Arnol'd, V. I., & Avez, A. (1968). Ergodic problems of classical mechanics.

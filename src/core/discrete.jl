@@ -66,7 +66,7 @@ function step!(integ::MDI{true})
     integ.t += 1
     return
 end
-function step!(integ::MDI{true}, N::Int)
+function step!(integ::MDI{true}, N)
     for i in 1:N
         integ.dummy, integ.u = integ.u, integ.dummy
         integ.f(integ.u, integ.dummy, integ.p, integ.t)
@@ -78,7 +78,7 @@ end
 # OOP version
 step!(integ::MDI{false}) =
 (integ.u = integ.f(integ.u, integ.p, integ.t); integ.t +=1; nothing)
-function step!(integ::MDI{false}, N::Int)
+function step!(integ::MDI{false}, N)
     for i in 1:N
         integ.u = integ.f(integ.u, integ.p, integ.t)
         integ.t += 1
@@ -245,18 +245,18 @@ end
 #####################################################################################
 function trajectory(
         ds::DDS{IIP, S, D}, t, u = ds.u0;
-        dt = 1, Ttr = 0, save_idxs = nothing, kwargs...
+        Δt = 1, Ttr = 0, save_idxs = nothing, kwargs...
     ) where {IIP, S, D}
     a = svector_access(save_idxs)
-    trajectory(ds, t, u, dt, Ttr, a)
+    trajectory(ds, t, u, Δt, Ttr, a)
 end
 
-function trajectory(ds::DDS{IIP, S, D}, t, u, dt, Ttr, a)  where {IIP, S, D}
-    dt = round(Int, dt)
+function trajectory(ds::DDS{IIP, S, D}, t, u, Δt, Ttr, a)  where {IIP, S, D}
+    Δt = round(Int, Δt)
     T = eltype(S)
     integ = integrator(ds, u)
     ti = ds.t0
-    tvec = ti:dt:t+ti
+    tvec = ti:Δt:t+ti
     L = length(tvec)
     T = eltype(get_state(ds))
     X = isnothing(a) ? D : length(a)
@@ -264,7 +264,7 @@ function trajectory(ds::DDS{IIP, S, D}, t, u, dt, Ttr, a)  where {IIP, S, D}
     Ttr != 0 && step!(integ, Ttr)
     data[1] = obtain_access(integ.u, a)
     for i in 2:L
-        step!(integ, dt)
+        step!(integ, Δt)
         data[i] = SVector{X, T}(obtain_access(integ.u, a))
     end
     return Dataset(data)
@@ -273,18 +273,18 @@ end
 # One-dimensional version → Vector
 function trajectory(
         ds::DDS{false, S, 1}, t, u = ds.u0;
-    	dt = 1, Ttr = 0, kwargs...
+    	Δt = 1, Ttr = 0, kwargs...
     ) where {S}
-    dt = round(Int, dt)
+    Δt = round(Int, Δt)
     ti = ds.t0
-    tvec = ti:dt:t+ti
+    tvec = ti:Δt:t+ti
     L = length(tvec)
     integ = integrator(ds, u)
     data = Vector{S}(undef, L)
     Ttr != 0 && step!(integ, Ttr)
     data[1] = integ.u
     for i in 2:L
-        step!(integ, dt)
+        step!(integ, Δt)
         data[i] = integ.u
     end
     return data
