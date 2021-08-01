@@ -27,6 +27,7 @@ function's documentation string.
 function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
     return CDS(loop, u0, [σ, ρ, β], loop_jac)
 end
+const lorenz63 = lorenz
 function loop(u, p, t)
     @inbounds begin
         σ = p[1]; ρ = p[2]; β = p[3]
