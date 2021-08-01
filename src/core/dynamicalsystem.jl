@@ -15,7 +15,8 @@ export set_state!, get_state, get_deviations, set_deviations!
     DynamicalSystem
 
 A central structure of **DynamicalSystems.jl**. All functions of the suite that
-can use known dynamic rule `f` (equations of motion) expect an instance of this type.
+can use known dynamic rule `f` (also called equations of motion or vector field)
+expect an instance of this type.
 
 ## Constructing a `DynamicalSystem`
 ```julia
