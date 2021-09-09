@@ -403,3 +403,28 @@ function grebogi_map_J(u, p, n)
     a,b,J₀ = p
     return @SMatrix [(1+2*a*cos(2*θ) - 4*b*cos(4*θ) -x*cos(θ)) J₀*sin(θ); -sin(θ) 0]
 end
+
+
+"""
+    coupled_logistic_maps(D = 4, u0 = 0.001rand(D); λ = 1.2, k = 0.08)
+
+A simple high-dimensional discrete dynamical system that couples `D` logistic maps with an 
+all-to-all nonlinear coupling. For the default parameters it displays co-existing
+attractors. The equations are:
+```math
+u_i' = \\lambda - u_i^2 + k \\sum_{j\\ne i} (u_j^2 - u_i^2)
+```
+Here the prime ``'`` denotes next state.
+"""
+function coupled_logistic_maps_f(du, u, p, n)
+    λ, k = p
+    D = length(z)
+    for i in 1:D
+        du[i] = λ - λ - u[i]^2
+        for j in 1:D
+            j == 1 && continue
+            du[i] +=  k*(u[j]^2 - u[i]^2)
+        end
+    end
+    return
+end
