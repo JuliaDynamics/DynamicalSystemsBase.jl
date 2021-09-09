@@ -422,7 +422,7 @@ end
 
 function nld_coupled_logistic_maps_f(du, u, p, n)
     λ, k = p
-    D = length(z)
+    D = length(u)
     for i in 1:D
         du[i] = λ - u[i]^2
         for j in 1:D
