@@ -417,10 +417,10 @@ u_i' = \\lambda - u_i^2 + k \\sum_{j\\ne i} (u_j^2 - u_i^2)
 Here the prime ``'`` denotes next state.
 """
 function nld_coupled_logistic_maps(D = 4, u0 = range(0, 1; length=D); λ = 1.2, k = 0.08)
-    return DDS(coupled_logistic_maps_f, u0, [λ, k])
+    return DDS(nld_coupled_logistic_maps_f, u0, [λ, k])
 end
 
-function nld_coupled_logistic_maps(du, u, p, n)
+function nld_coupled_logistic_maps_f(du, u, p, n)
     λ, k = p
     D = length(z)
     for i in 1:D
