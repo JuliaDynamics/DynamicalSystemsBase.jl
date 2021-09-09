@@ -406,28 +406,28 @@ end
 
 
 """
-    coupled_logistic_maps(D = 4, u0 = 0.001rand(D); λ = 1.2, k = 0.08)
+    nld_coupled_logistic_maps(D = 4, u0 = range(0, 1; length=D); λ = 1.2, k = 0.08)
 
-A simple high-dimensional discrete dynamical system that couples `D` logistic maps with an 
-all-to-all nonlinear coupling. For the default parameters it displays co-existing
-attractors. The equations are:
+A high-dimensional discrete dynamical system that couples `D` logistic maps with a
+strongly nonlinear all-to-all coupling. 
+For the default parameters it displays several co-existing attractors. The equations are:
 ```math
 u_i' = \\lambda - u_i^2 + k \\sum_{j\\ne i} (u_j^2 - u_i^2)
 ```
 Here the prime ``'`` denotes next state.
 """
-function coupled_logistic_maps(D = 4, u0 = 0.1rand(D); λ = 1.2, k = 0.08)
+function nld_coupled_logistic_maps(D = 4, u0 = range(0, 1; length=D); λ = 1.2, k = 0.08)
     return DDS(coupled_logistic_maps_f, u0, [λ, k])
 end
 
-function coupled_logistic_maps_f(du, u, p, n)
+function nld_coupled_logistic_maps(du, u, p, n)
     λ, k = p
     D = length(z)
     for i in 1:D
         du[i] = λ - u[i]^2
         for j in 1:D
             j == i && continue
-            du[i] +=  k*(u[j]^2 - u[i]^2)
+            du[i] += k*(u[j]^2 - u[i]^2)
         end
     end
     return
