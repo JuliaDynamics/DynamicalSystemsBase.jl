@@ -416,13 +416,17 @@ u_i' = \\lambda - u_i^2 + k \\sum_{j\\ne i} (u_j^2 - u_i^2)
 ```
 Here the prime ``'`` denotes next state.
 """
+function coupled_logistic_maps(D = 4, u0 = 0.1rand(D); λ = 1.2, k = 0.08)
+    return DDS(coupled_logistic_maps_f, u0, [λ, k])
+end
+
 function coupled_logistic_maps_f(du, u, p, n)
     λ, k = p
     D = length(z)
     for i in 1:D
-        du[i] = λ - λ - u[i]^2
+        du[i] = λ - u[i]^2
         for j in 1:D
-            j == 1 && continue
+            j == i && continue
             du[i] +=  k*(u[j]^2 - u[i]^2)
         end
     end
