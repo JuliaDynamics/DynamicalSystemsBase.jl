@@ -1,11 +1,11 @@
 using DiffEqBase, StaticArrays
 using DiffEqBase: __init, ODEFunction, AbstractODEIntegrator
 
-export CDS_KWARGS
+export CDS_KWARGS, SimpleATsit5, SimpleTsit5
 #####################################################################################
 #                                    Defaults                                       #
 #####################################################################################
-using SimpleDiffEq: SimpleATsit5
+using SimpleDiffEq: SimpleATsit5, SimpleTsit5
 const DEFAULT_SOLVER = SimpleATsit5()
 const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-6, reltol = 1e-6)
 const CDS_KWARGS = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
