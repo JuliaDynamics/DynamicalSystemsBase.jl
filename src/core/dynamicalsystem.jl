@@ -28,8 +28,9 @@ with `f` a Julia function (see below).
 container. Pass `nothing` as `p` if your system does not have parameters.
 
 `t0`, `J0` allow you to choose the initial time and provide
-an initialized Jacobian matrix. See `CDS_KWARGS` for the
-default options used to evolve continuous systems (through `OrdinaryDiffEq`).
+an initialized Jacobian matrix. Continuous systems are evolved via the solvers of 
+DifferentialEquations.jl, see `CDS_KWARGS` for the default options and the discussion
+in [`trajectory`](@ref).
 
 ## Dynamic rule `f`
 The are two "versions" for `DynamicalSystem`, depending on whether `f` is
