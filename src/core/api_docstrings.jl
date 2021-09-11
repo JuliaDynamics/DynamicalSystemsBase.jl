@@ -123,20 +123,20 @@ A `W×D` dataset is returned, with `W = length(t0:Δt:T)` with
 * `diffeq...` : Remaining keyword arguments are propagated to the solvers of 
   DifferentialEquations.jl, see below. Only valid for continuous systems.
 
-## DifferentialEquations.jl Arguments.
+## DifferentialEquations.jl keyword arguments
 Continuous dynamical systems are evolved via the solvers of DifferentialEquations.jl.
 Functions in DynamicalSystems.jl allow keyword propagation to these solvers.
 For example you could use `abstol = 1e-9`.
-If you want to specify a solver, do so by using the name `alg`, e.g.:
+If you want to specify a solver, do so by using the keyword `alg`, e.g.:
 `alg = Tsit5(), maxiters = 100000`. This requires you to have been first
 `using OrdinaryDiffEq` to access the solvers. See the
-`CDS_KWARGS` variable for default values we use.
+`CDS_KWARGS` variable for the default values we use.
 These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
 Keep in mind that the default solver is `SimpleATsit5`, which only supports
 adaptive time-stepping. Use `(alg = SimpleTsit5, dt = your_step_size)` as keywords
 for a non-adaptive time stepping solver, which is mandatory in some situations
-(such as e.g., calculating [`basins_of_attraction`](@ref) or a stroboscopic map).
+(such as e.g., calculating [`basins_of_attraction`](@ref) of a stroboscopic map).
 You can also choose any other solver except `SimpleATsit5`, such as `Tsit5`, as long
 as you turn off adaptive stepping, e.g.
 `(alg = Tsit5, adaptive = false, dt = your_step_size)`.

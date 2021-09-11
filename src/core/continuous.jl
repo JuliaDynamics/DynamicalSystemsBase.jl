@@ -191,6 +191,13 @@ function set_state!(
     u_modified!(integ, true)
 end
 function set_state!(
+    integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector, k::Int = 1
+    ) where {Alg, IIP, S<:AbstractMatrix}
+    integ.u[:, k] = u
+    u_modified!(integ, true)
+end
+
+function set_state!(
     integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector
     ) where {Alg, IIP, S<:Matrix}
     integ.u[:, 1] .= u
