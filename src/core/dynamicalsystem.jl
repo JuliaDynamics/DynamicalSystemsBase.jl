@@ -166,14 +166,24 @@ DelayEmbeddings.dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
 
 """
     set_parameter!(ds::DynamicalSystem, index, value)
+Change a parameter of the system given the index it has in the parameter container `p`
+and the `value` to set it to. This function works for both array/dictionary containers
+as well as composite types. In the latter case `index` needs to be a `Symbol`.
+
+
     set_parameter!(ds::DynamicalSystem, values)
-Change one or many parameters of the system
-by setting `p[index] = value` in the first case
-and `p .= values` in the second.
+In this case do `p .= values` (which only works for abstract array `p`).
 
 The same function also works for any integrator.
 """
-set_parameter!(ds, index, value) = (ds.p[index] = value)
+function set_parameter!(ds, index, value) 
+    if ds.p isa Union{AbstractArray, AbstractDict}
+        setindex!(ds.p, value, index)
+    else
+        setproperty!(ds.p, index, value)
+    end
+end
+
 set_parameter!(ds, values) = (ds.p .= values)
 
 
