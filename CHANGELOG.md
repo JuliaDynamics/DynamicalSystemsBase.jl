@@ -1,3 +1,7 @@
+# v2.1.0
+* Now `set_parameter!` can also work with parameter containers that are composite types.
+* Added some new pre-defined systems used in synchronization studies, like the Kuramoto model or coupled Roessler oscillators or nonlinearly coupled logistic maps.
+
 # v2.0.0
 * The keyword `dt` of `trajectory` has been renamed to `Δt`. 
   This keyword had conflicts with the options of DifferentialEquations.jl.
