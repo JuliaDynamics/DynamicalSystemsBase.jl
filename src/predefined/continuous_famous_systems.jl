@@ -933,3 +933,70 @@ function lorenzdl_rule_jacob(u, p, t)
                      -z     0    -x;
                       y     x     0]
 end
+
+"""
+    coupled_roessler(u0=[1, -2, 0, 0.11, 0.2, 0.1]; 
+    ω1 = 0.18, ω2 = 0.22, a = 0.2, b = 0.2, c = 5.7, k1 = 0.115, k2 = 0.0)
+
+Two coupled Rössler oscillators, used frequently in the study of chaotic synchronization.
+The parameter container has the parameters in the same order as stated in this
+function's documentation string.
+The equations are:
+```math
+\\begin{aligned}
+\\dot{x_1} &= -\\omega_1 y_1-z_1 \\\\
+\\dot{y_1} &= \\omega_1 x+ay_1 + k_1(y_2 - y_1) \\\\
+\\dot{z_1} &= b + z_1(x_1-c) \\\\
+\\dot{x_2} &= -\\omega_2 y_2-z_2 \\\\
+\\dot{y_2} &= \\omega_2 x+ay_2 + k_2(y_1 - y_2) \\\\
+\\dot{z_2} &= b + z_2(x_2-c) \\\\
+\\end{aligned}
+```
+"""
+function coupled_roessler(u0=[1, -2, 0, 0.11, 0.2, 0.1]; 
+    ω1 = 0.18, ω2 = 0.22, a = 0.2, b = 0.2, c = 5.7, k1 = 0.115, k2 = 0.0)
+    p = [ω1, ω2, a, b, c, k1, k2]
+    return ContinuousDynamicalSYstem(coupled_roessler_f, u0, p)
+end
+function coupled_roessler_f(u,p,t)
+    ω1, ω2, a, b, c, k1, k2 = p
+
+    du1 = -ω1*u[2] - u[3]
+    du2 = ω1*u[1] + a*u[2] + k1*(u[5]-u[2])
+    du3 = b + u[3]*(u[1]-c)
+    du4 = -ω2*u[5] - u[6]
+    du5 = ω2*u[4] + a*u[5] + k2*(u[2]-u[5]) 
+    du6 = b + u[6]*(u[4]-c)
+    return SVector(du1,du2,du3,du4,du5,du6)
+end
+
+
+"""
+    kuramoto(D = 20, u0 = range(0, 2π; length = D); 
+        K = 0.3, ω = range(-1, 1; length = D)
+    )
+The Kuramoto model[^Kuramoto1975] of `D` coupled oscillators with equation
+```@math
+\\dot{\\phi}_i = \\omega_i + \\frac{K}{D}\\sum_{j=1}^{D} \\sin(\\phi_j - \\phi_i)
+```
+
+[^Kuramoto1975]: Kuramoto, Yoshiki. International Symposium on Mathematical Problems in Theoretical Physics. 39. 
+"""
+function kuramoto(D = 25, u0 = range(0, 2π; length = D); 
+    K = 0.3, ω = range(-1, 1; length = D))
+    p = KuramotoParams(K, ω)
+    return ContinuousDynamicalSystem(kuramoto_f, u0, p)
+end
+function kuramoto_f(du, u, p, t)
+    ω = p.ω; K = p.K
+    D = length(u)
+    k = K/D
+    @inbounds for i in 1:D
+        du[i] = ω[i] + k*sum(sin(u[j] - u[i]) for j in 1:D)
+    end
+    return
+end
+mutable struct KuramotoParams{T<:Real, V<:AbstractVector{T}}
+    K::T
+    ω::V
+end
