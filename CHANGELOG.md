@@ -1,6 +1,7 @@
 # v2.1.0
 * Now `set_parameter!` can also work with parameter containers that are composite types.
 * Added some new pre-defined systems used in synchronization studies, like the Kuramoto model or coupled Roessler oscillators or nonlinearly coupled logistic maps.
+* The integrator `SimpleTsit5` is also exported. This integrator is non-adaptive, while the default integrator of the library `SimpleATsit5` is adaptive.
 
 # v2.0.0
 * The keyword `dt` of `trajectory` has been renamed to `Δt`. 
