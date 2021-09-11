@@ -956,7 +956,7 @@ The equations are:
 function coupled_roessler(u0=[1, -2, 0, 0.11, 0.2, 0.1]; 
     ω1 = 0.18, ω2 = 0.22, a = 0.2, b = 0.2, c = 5.7, k1 = 0.115, k2 = 0.0)
     p = [ω1, ω2, a, b, c, k1, k2]
-    return ContinuousDynamicalSYstem(coupled_roessler_f, u0, p)
+    return ContinuousDynamicalSystem(coupled_roessler_f, u0, p)
 end
 function coupled_roessler_f(u,p,t)
     ω1, ω2, a, b, c, k1, k2 = p
