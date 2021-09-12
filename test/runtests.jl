@@ -4,7 +4,7 @@ using Test
 ti = time()
 
 @testset "DynamicalSystemsBase tests" begin
-include("dynsys_types.jl")
+include("dynsys_integrators.jl")
 include("dynsys_tangent.jl")
 include("dynsys_inference.jl")
 include("continuous_systems.jl")
