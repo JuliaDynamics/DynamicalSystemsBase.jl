@@ -927,7 +927,6 @@ end
     return SVector{3}(dx, dy, dz)
 end
 function lorenzdl_rule_jacob(u, p, t)
-    R = p
     x, y, z = u
     return @SMatrix [-1     1     0;
                      -z     0    -x;
@@ -965,7 +964,7 @@ function coupled_roessler_f(u,p,t)
     du2 = ω1*u[1] + a*u[2] + k1*(u[5]-u[2])
     du3 = b + u[3]*(u[1]-c)
     du4 = -ω2*u[5] - u[6]
-    du5 = ω2*u[4] + a*u[5] + k2*(u[2]-u[5]) 
+    du5 = ω2*u[4] + a*u[5] + k2*(u[2]-u[5])
     du6 = b + u[6]*(u[4]-c)
     return SVector(du1,du2,du3,du4,du5,du6)
 end

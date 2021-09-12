@@ -1,3 +1,5 @@
+# v2.1.1
+* Fix `set_state!` not working for in-place parallel integrator
 # v2.1.0
 * Now `set_parameter!` can also work with parameter containers that are composite types.
 * Added some new pre-defined systems used in synchronization studies, like the Kuramoto model or coupled Roessler oscillators or nonlinearly coupled logistic maps.
