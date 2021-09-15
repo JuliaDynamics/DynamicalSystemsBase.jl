@@ -883,7 +883,7 @@ end
 function lorenz84_rule_jacob(u, p, t)
     F, G, a, b = p
 	x, y, z = u
-    return @SMatrix [-a     2*y  -2*z;
+    return @SMatrix [-a    -2*y  -2*z;
                      y-b*z  x-1  -b*x;
                      b*y+z  b*x   x-1]
 end

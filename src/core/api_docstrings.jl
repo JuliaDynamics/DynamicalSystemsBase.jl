@@ -134,12 +134,12 @@ If you want to specify a solver, do so by using the keyword `alg`, e.g.:
 These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
 Keep in mind that the default solver is `SimpleATsit5`, which only supports
-adaptive time-stepping. Use `(alg = SimpleTsit5, dt = your_step_size)` as keywords
+adaptive time-stepping. Use `(alg = SimpleTsit5(), dt = your_step_size)` as keywords
 for a non-adaptive time stepping solver, which is mandatory in some situations
 (such as e.g., calculating [`basins_of_attraction`](@ref) of a stroboscopic map).
 You can also choose any other solver except `SimpleATsit5`, such as `Tsit5`, as long
 as you turn off adaptive stepping, e.g.
-`(alg = Tsit5, adaptive = false, dt = your_step_size)`.
+`(alg = Tsit5(), adaptive = false, dt = your_step_size)`.
 """
 function trajectory end
 
