@@ -999,3 +999,43 @@ mutable struct KuramotoParams{T<:Real, V<:AbstractVector{T}}
     K::T
     ω::V
 end
+
+"""
+    sprott_dissipative_conservative(u0 = [1.0, 0, 0]; a = 2, b = 1, c = 1)
+An interesting system due to Sprott[^Sprott2014b] where some initial conditios
+such as `[1.0, 0, 0]` lead to quasi periodic motion on a 2-torus, while for 
+`[2.0, 0, 0]` motion happens on a (dissipative) chaotic attractor.
+
+The equations are:
+```math
+\\begin{aligned}
+\\dot{x} &= y + axy + xz \\\\
+\\dot{y} &= 1 - 2x^2 + byz \\\\
+\\dot{z_1} &= cx - x^2 - y^2
+\\end{aligned}
+```
+In the original paper there were no parameters, which are added here for exploration purposes.
+
+[^Sprott2014b]: J. C. Sprott. Physics Letters A, 378
+"""
+function sprott_dissipative_conservative(u0 = [1.0, 0, 0]; a = 2, b = 1, c = 1)
+    return CDS(
+        sprott_dissipative_conservative_f, u0, [a, b, c], sprott_dissipative_conservative_J
+    )
+end
+
+function sprott_dissipative_conservative_f(u, p, t)
+    a, b, c = p
+    x, y, z = u
+    dx = y + a*x*y + x*z
+    dy = 1 - 2*x^2 + b*y*z
+    dz = c*x - x^2 - y^2
+    return SVector(dx, dy, dz)
+end
+function sprott_dissipative_conservative_J(u, p, t)
+    a, b, c = p
+    x, y, z = u
+    return @SMatrix [a*y + z     1 + a*x     +x;
+                    -4x     b*z    b*y;
+                    (c - 2x)    (-2y)  0]
+end
