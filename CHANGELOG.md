@@ -1,3 +1,5 @@
+# v2.2
+* `get_state(parallel_integrator, k)` now returns a view in case the integrator is in-place.
 # v2.1.1
 * Fix `set_state!` not working for in-place parallel integrator
 # v2.1.0

@@ -175,15 +175,17 @@ end
 #####################################################################################
 get_state(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:AbstractVector} =
     integ.u
-get_state(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:AbstractMatrix} =
-    integ.u[:, 1]
-get_state(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:Vector{<:AbstractVector}} =
-    integ.u[1]
-get_state(integ::AbstractODEIntegrator{Alg, IIP, S}, k::Int) where {Alg, IIP, S<:Vector{<:AbstractVector}} =
+get_state(integ::AbstractODEIntegrator{Alg, IIP, S}, k::Int = 1) where {Alg, IIP, S<:Vector{<:AbstractVector}} =
     integ.u[k]
-get_state(integ::AbstractODEIntegrator{Alg, IIP, S}, k::Int) where {Alg, IIP, S<:AbstractMatrix} =
-    integ.u[:, k]
+get_state(integ::AbstractODEIntegrator{Alg, IIP, S}, k::Int = 1) where {Alg, IIP, S<:AbstractMatrix} =
+    view(integ.u, :, k)
 
+function set_state!(
+    integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector
+    ) where {Alg, IIP, S<:AbstractVector}
+    integ.u = u
+    u_modified!(integ, true)
+end
 function set_state!(
     integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector, k::Int = 1
     ) where {Alg, IIP, S<:Vector{<:AbstractVector}}
@@ -194,13 +196,6 @@ function set_state!(
     integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector, k::Int = 1
     ) where {Alg, IIP, S<:AbstractMatrix}
     integ.u[:, k] = u
-    u_modified!(integ, true)
-end
-
-function set_state!(
-    integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector
-    ) where {Alg, IIP, S<:Matrix}
-    integ.u[:, 1] .= u
     u_modified!(integ, true)
 end
 function set_state!(
