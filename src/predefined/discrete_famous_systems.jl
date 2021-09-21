@@ -432,3 +432,142 @@ function nld_coupled_logistic_maps_f(du, u, p, n)
     end
     return
 end
+
+"""
+```julia
+tentmap(u0 = 0.2; μ=2) -> ds
+```
+
+The tent map is a piecewise linear, one-dimensional map that exhibits chaotic behavior in the interval `[0,1]` [^Ott2002]. Its simplicity allows it to be geometrically interpreted as generated a streching and folding process, necessary for chaos. The equations describing it are:
+
+```math
+\\begin{aligned}
+x_{n+1} = \\begin{cases} \\mu x \\quad x_n < \\frac{1}{2} \\
+                         \\mu (1-x) \\quad \\frac{1}{2} \\leq x_n
+            \\end{cases}
+\\end{aligned}
+```
+The parameter `\\mu` should be kept in the interval `[0,2]`. At `\\mu=2`, the tent map can be brought to the logistic map with `r=4` by a change of coordinates.
+
+[^Ott2002] : E. Ott, "Chaos in Dynamical Systems" (2nd ed.) Cambridge: Cambridge University Press (2010).
+
+"""
+function tentmap(u0 = 0.25, μ = 2.0)
+    return DDS(tentmap_rule, u0, [μ], tentmap_jac)
+end
+function tentmap_rule(x, p, n)
+    μ = p[1]
+    if x < 0.5
+        μ*x
+    else 
+        μ*(1 - x)
+    end
+end
+function tentmap_jac(x, p, n)
+    μ = p[1]
+    if x < -0.5
+        μ
+    else 
+        -μ
+    end
+end
+
+"""
+```julia
+betatransformationmap(u0 = 0.25; β=2.0)-> ds
+```
+The beta transformation, also called the generalized Bernoulli map, also known as `\\beta x` map, is described by
+```math
+\\begin{aligned}
+x_{n+1} = \\beta x (\\mod 1).
+\\end{aligned}
+```
+The parameter `\\beta` controls the dynamics of the map. Its Lyapunov exponent can be analytically shown to be `\\lambda = \\ln(\\beta)` [^Ott2002].
+At `\\beta=2`, it becomes the dyadic transformation, also known as the bit shift map, the 2x mod 1 map, the Bernoulli map or the sawtooth map. The typical trajectory for this case is chaotic, though there are countably infinite periodic orbits [^Ott2002]. 
+"""
+
+function betatransformationmap(u0 = 0.25; β=2.0)
+    return DDS(betatransformation_rule, u0, [β], betatransformation_jac)
+end
+function betatransformation_rule(x, p, n)
+    @inbounds β = p[1]
+    if 0 ≤ x < 1/β
+        β*x
+    else 
+        β*x - 1 
+    end
+end
+function betatransformation_jac(x, p, n)
+    β = p[1]
+end
+
+
+"""
+```julia
+rulkovmap(u0=[1.0, 1.0]; α=4.1, β=0.001, σ=0.001) -> ds
+```
+```math
+\\begin{aligned}
+x_{n+1} &= \\frac{\\alpha}{1+x_n^2} + y_n  \\\\
+y_{n+1} &= y_n - \\sigma x_n - \\beta
+\\end{aligned}
+
+The Rulkov map is a two-dimensional phenomenological model of a neuron, capable of describing spikes and bursts. It was described by Rulkov [^Rulkov2002] and is used in studies of neural networks due to its computational advantages, being fast to run. 
+
+The parameters `\\sigma` and `\\beta` are generally kept at `0.001`, while `\\alpha` is chosen to give the desired dynamics. The dynamics can be quiescent for `\\alpha \\in (0,2)`, spiking for `\\alpha \\in (2, 2.58)`, triangular bursting for `\\alpha \\in (2.58, 4)`, and rectangular bursting for '\\alpha \\in (4, 4.62) [^Rulkov2001][^Cao2013]. The default parameters are taken from [^Rulkov2001] to lead to a rectangular bursting.
+
+[^Rulkov2002] : "Modeling of spiking-bursting neural behavior using two-dimensional map", Phys. Rev. E 65, 041922 (2002).
+[^Rulkov2001] : "Regularization of Synchronized Chaotic Bursts", Phys. Rev. Lett. 86, 183 (2001).
+[^Cao2013] : H. Cao and Y Wu, "Bursting types and stable domains of Rulkov neuron network with mean field coupling", International Journal of Bifurcation and Chaos,23:1330041 (2013).
+"""
+function rulkovmap(u0=[1.0, 1.0]; α=4.1, β=0.001, σ=0.001)
+    return DDS(rulkovmap_rule, u0, [α, β, σ], rulkovmap_jac)
+end
+@inbounds function rulkovmap_rule(x, p, n)
+    α, β, σ = p 
+    dx = α/(1+x[1]^2) + x[2] 
+    dy = x[2] - σ*x[1] -β
+    return SVector{2}(dx, dy)
+end
+@inbounds function rulkovmap_jac(x, p, n)
+    α, β, σ = p 
+    return @SMatrix [(-2*x[1]/(1+x[1]^2)^2) 1;
+                    -σ 1]
+end
+
+"""
+```julia
+ikedamap(u0=[1.0, 1.0]; a=1.0, b=1.0, c=0.4, d =6.0) -> ds
+```
+
+```math
+\\begin{aligned}
+t &= c - \\frac{6}{1 + x_n^2 + y_n^2} \\\\
+x_{n+1} &= 1 + \\mu(x_n \\cos(t) - y\\sin(t)) \\\\
+y_{n+1} &= \\mu(x\\sin(t) + y \\cos(t))
+\\end{aligned}
+
+The Ikeda map was proposed by Ikeda as a model to explain the propagation of light into a ring cavity [^Skiadas2008]. It generates a variety of nice-looking, interesting attractors. 
+The default parameters are chosen to give a unique chaotic attractor. A double attractor can be obtained with parameters `[a,b,c,d] = [6, 0.9, 3.1, 6]``, and a triple attractor can be obtained with `[a,b,c,d] = [6, 9, 2.22, 6]`` [^Skiadas2008].
+
+[^Skiadas2008] : "Chaotic Modelling and Simulation: Analysis of Chaotic Models, Attractors and Forms", CRC Press (2008).
+"""
+function ikedamap(u0=[1.0, 1.0]; a=1.0, b=1.0, c=0.4, d =6.0)
+    return DDS(ikedamap_rule, u0, [a,b,c,d], ikedamap_jac)
+end
+@inbounds function ikedamap_rule(u, p, n)
+    a,b,c,d  = p
+    t = c - d/(1 + u[1]^2 + u[2]^2)
+    dx = a + b*(u[1]*cos(t) - u[2]*sin(t))
+    dy = b*( u[1]*sin(t) + u[2]*cos(t) )
+    return SVector{2}(dx, dy)
+end
+@inbounds function ikedamap_jac(u, p, n)
+    #Checked the calculation of the jacobian with the calculations here https://www.math.arizona.edu/~ura-reports/001/huang.pojen/2000_Report.html. It has a wrong sign in the model definition, but the Jacobian fits.
+    a,b,c,d = p
+    x,y = u
+    t = c - d/(1 + x^2 + y^2)
+    aux = 2*d/(1+x^2+y^2)
+    return @SMatrix [(b*(cos(t)-x^2*sin(t)*aux -x*y*cos(t)*aux)) (b*(-sin(t) -x*y*sin(t)*aux -y^2*cos(t)*aux));
+                    (b*(sin(t) +x^2*cos(t)*aux) -x*y*sin(t)*aux) (b*(cos(t) -x*y*cos(t)*aux -y^2*sin(t)*aux))]
+end
