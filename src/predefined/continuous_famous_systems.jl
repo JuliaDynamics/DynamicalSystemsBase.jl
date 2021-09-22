@@ -934,7 +934,7 @@ function lorenzdl_rule_jacob(u, p, t)
 end
 
 """
-    coupled_roessler(u0=[1, -2, 0, 0.11, 0.2, 0.1]; 
+    coupled_roessler(u0=[1, -2, 0, 0.11, 0.2, 0.1];
     ω1 = 0.18, ω2 = 0.22, a = 0.2, b = 0.2, c = 5.7, k1 = 0.115, k2 = 0.0)
 
 Two coupled Rössler oscillators, used frequently in the study of chaotic synchronization.
@@ -952,7 +952,7 @@ The equations are:
 \\end{aligned}
 ```
 """
-function coupled_roessler(u0=[1, -2, 0, 0.11, 0.2, 0.1]; 
+function coupled_roessler(u0=[1, -2, 0, 0.11, 0.2, 0.1];
     ω1 = 0.18, ω2 = 0.22, a = 0.2, b = 0.2, c = 5.7, k1 = 0.115, k2 = 0.0)
     p = [ω1, ω2, a, b, c, k1, k2]
     return ContinuousDynamicalSystem(coupled_roessler_f, u0, p)
@@ -971,7 +971,7 @@ end
 
 
 """
-    kuramoto(D = 20, u0 = range(0, 2π; length = D); 
+    kuramoto(D = 20, u0 = range(0, 2π; length = D);
         K = 0.3, ω = range(-1, 1; length = D)
     )
 The Kuramoto model[^Kuramoto1975] of `D` coupled oscillators with equation
@@ -979,9 +979,9 @@ The Kuramoto model[^Kuramoto1975] of `D` coupled oscillators with equation
 \\dot{\\phi}_i = \\omega_i + \\frac{K}{D}\\sum_{j=1}^{D} \\sin(\\phi_j - \\phi_i)
 ```
 
-[^Kuramoto1975]: Kuramoto, Yoshiki. International Symposium on Mathematical Problems in Theoretical Physics. 39. 
+[^Kuramoto1975]: Kuramoto, Yoshiki. International Symposium on Mathematical Problems in Theoretical Physics. 39.
 """
-function kuramoto(D = 25, u0 = range(0, 2π; length = D); 
+function kuramoto(D = 25, u0 = range(0, 2π; length = D);
     K = 0.3, ω = range(-1, 1; length = D))
     p = KuramotoParams(K, ω)
     return ContinuousDynamicalSystem(kuramoto_f, u0, p)
@@ -1003,7 +1003,7 @@ end
 """
     sprott_dissipative_conservative(u0 = [1.0, 0, 0]; a = 2, b = 1, c = 1)
 An interesting system due to Sprott[^Sprott2014b] where some initial conditios
-such as `[1.0, 0, 0]` lead to quasi periodic motion on a 2-torus, while for 
+such as `[1.0, 0, 0]` lead to quasi periodic motion on a 2-torus, while for
 `[2.0, 0, 0]` motion happens on a (dissipative) chaotic attractor.
 
 The equations are:
@@ -1058,32 +1058,33 @@ C_m \\frac{dV_m}{dt} = -\\overline{g}_\\mathrm{K} n^4 (V_m - V_\\mathrm{K}) - \\
 \\beta_h(V_m) = \\frac{1}{1 + \\exp(-\\frac{V+35}{10})}
 \\end{aligned}
 ```
-The Nobel-winning four-dimensional dynamical system due to Hodgkin and Huxley [1], which describes the electrical spiking
-activity (action potentials) in neurons. A complete description of all parameters and variables is given in [1][2][3]. The equations and default parameters used here are taken from [2][3]. They differ slightly from the original paper [1], since they were changed to shift the resting potential to -65 mV, instead of the 0mV in the original paper. 
+The Nobel-winning four-dimensional dynamical system due to Hodgkin and Huxley [^HodgkinHuxley1952], which describes the electrical spiking
+activity (action potentials) in neurons. A complete description of all parameters and variables is given in [^HodgkinHuxley1952], [^Ermentrout2010], and [^Abbott2005]. The equations and default parameters used here are taken from [^Ermentrout2010][^Abbott2005]. They differ slightly from the original paper [^HodgkinHuxley1952], since they were changed to shift the resting potential to -65 mV, instead of the 0mV in the original paper.
 
 Varying the injected current I from `I = -5`  to  `I = 12` takes the neuron from quiescent to a single spike, and to a tonic (repetitive) spiking. This is due to a subcritical Hopf bifurcation, which occurs close to `I = 9.5`.
 
-[1] : A. L. Hodgkin, A.F. Huxley J. Physiol., pp. 500-544 (1952).
-[2] : G. Bard Ermentrout, and David H. Terman, "Mathematical Foundations of Neuroscience", Springer (2010).
-[3] : L. F. Abbott, and P. Dayan, "Theoretical Neuroscience: Computational and Mathematical Modeling of Neural Systems", MIT Press (2005).
-"""
+[^HodgkinHuxley1952] : A. L. Hodgkin, A.F. Huxley J. Physiol., pp. 500-544 (1952).
 
-#In Ermentrout's & Abbott's books
+[^Ermentrout2010] : G. Bard Ermentrout, and David H. Terman, "Mathematical Foundations of Neuroscience", Springer (2010).
+
+[^Abbott2005] : L. F. Abbott, and P. Dayan, "Theoretical Neuroscience: Computational and Mathematical Modeling of Neural Systems", MIT Press (2005).
+"""
 function hodgkinhuxley(u0=[-60.0, 0.0, 0.0, 0.0]; I = 12.0, Vna = 50.0, Vk = -77.0, Vl = -54.4, gna = 120.0,gk = 36.0, gl = 0.3)
+#In Ermentrout's & Abbott's books
     return CDS(hodgkinhuxley_rule, u0, [I, Vna, Vk, Vl, gna, gk, gl])
 end
 function hodgkinhuxley_rule(u, p, t)
     @inbounds begin
         I, Vna, Vk, Vl, gna, gk, gl = p
         V, n, m, h = u
-     
+
         αn = 0.01 * (V+55)/(1 -  exp(-(V+55)/10))
         αm = 0.1 * (V+40)/(1- exp(-(V+40)/10))
         αh = 0.07 * exp(-(V+65)/20.0 )
         βn = 0.125 * exp(-(V+65)/80.0)
         βm = 4.0 * exp(-(V+65)/18.0 )
         βh = 1.0/(1 + exp(-(V+35)/10))
-     
+
         du1 = (I -n^4*gk*(V-Vk) - m^3*h*gna*(V-Vna) - gl*(V-Vl))/1.0
         du2 = αn*(1-n) - βn*n
         du3 = αm*(1-m) - βm*m
@@ -1096,35 +1097,37 @@ end
 
 """
 ```julia
-forcedvanderpol(u0=[0.5, 0.0]; μ=1.5, F=1.2, T=10) -> ds
+vanderpol(u0=[0.5, 0.0]; μ=1.5, F=1.2, T=10) -> ds
 ```
 ```math
 \\begin{aligned}
 \\ddot{x} -\\mu (1-x^2) \\dot{x} + x = F \\cos(\\frac{2\\pi t}{T})
 \\end{aligned}
 ```
-The forced van der Pol oscillator is an oscillator with a nonlinear damping term driven by a sinusoidal forcing. It was proposed by Balthasar van der Pol, in his studies of nonlinear electrical circuits used in the first radios [^Kanamaru2007][^Strogatz2015]. 
-The unforced oscillator (`F = 0`) has stable oscillations in the form of a limit cycle with a slow buildup followed by a sudden discharge, which van der Pol called relaxation oscillations [^Strogatz2015][^vanderpol1926]. 
+The forced van der Pol oscillator is an oscillator with a nonlinear damping term driven by a sinusoidal forcing. It was proposed by Balthasar van der Pol, in his studies of nonlinear electrical circuits used in the first radios [^Kanamaru2007][^Strogatz2015].
+The unforced oscillator (`F = 0`) has stable oscillations in the form of a limit cycle with a slow buildup followed by a sudden discharge, which van der Pol called relaxation oscillations [^Strogatz2015][^vanderpol1926].
 The forced oscillator (`F > 0`) also has periodic behavior for some parameters, but can additionally have chaotic behavior.
 
 The van der Pol oscillator is a specific case of both the FitzHugh-Nagumo neural model [^Kanamaru2007]. The default damping parameter is taken from [^Strogatz2015] and the forcing parameters are taken from [^Kanamaru2007], which generate periodic oscillations. Setting `\\mu=8.53` generates chaotic oscillations.
 
 [^Kanamaru2007] : Takashi Kanamaru (2007) "Van der Pol oscillator", Scholarpedia, 2(1):2202.
+
 [^Strogatz2015] : Steven H. Strogatz (2015) "Nonlinear dynamics and chaos : with applications to physics, biology, chemistry, and engineering", Boulder, CO :Westview Press, a member of the Perseus Books Group.
+
 [^vanderpol1926] : B. Van der Pol (1926), "On relaxation-oscillations", The London, Edinburgh and Dublin Phil. Mag. & J. of Sci., 2(7), 978–992.
 """
-function forcedvanderpol(u0=[0.5, 0.0]; μ=1.5, F=1.2, T=10)
-    return CDS(forcedvanderpol_rule, u0, [μ, F, T], forcedvanderpol_jac)
+function vanderpol(u0=[0.5, 0.0]; μ=1.5, F=1.2, T=10)
+    return CDS(vanderpol_rule, u0, [μ, F, T], vanderpol_jac)
 end
-function forcedvanderpol_rule(u, p, t)
+function vanderpol_rule(u, p, t)
     @inbounds begin
         μ, F, T = p
-        du1 = u[2] 
+        du1 = u[2]
         du2 = μ*(1 - u[1]^2)*u[2] - u[1] + F*sin(2π*t/T)
         return SVector{2}(du1, du2)
     end
 end
-function forcedvanderpol_jac(u, p, t)
+function vanderpol_jac(u, p, t)
     @inbounds begin
         μ = p[1]
         J = @SMatrix [0 1;
@@ -1139,15 +1142,16 @@ lotkavolterra(u0=[10.0, 5.0]; α = 1.5, β = 1, δ=1, γ=3) -> ds
 ```
 ```math
 \\begin{aligned}
-\\dot{X} &= \\alpha x - \\beta xy, \\\\
-\\dot{Y} &= \\delta xy - \\gamma y 
+\\dot{x} &= \\alpha x - \\beta xy, \\\\
+\\dot{y} &= \\delta xy - \\gamma y
 \\end{aligned}
 ```
-The famous Lotka-Volterra model is a simple ecological model describing the interaction between a predator and a prey species (or also parasite and host species). It has been used independently in fields such as epidemics, ecology, and economics [^Hoppensteadt2006], and is not to be confused with the Competitive Lotka-Volterra model, which describes competitive interactions between species. 
+The famous Lotka-Volterra model is a simple ecological model describing the interaction between a predator and a prey species (or also parasite and host species). It has been used independently in fields such as epidemics, ecology, and economics [^Hoppensteadt2006], and is not to be confused with the Competitive Lotka-Volterra model, which describes competitive interactions between species.
 
-The `X` variable describes the number of prey, while `Y` describes the number of predator.  The default parameters are taken from [^Weisstein], which lead to typical periodic oscillations.
+The `x` variable describes the number of prey, while `y` describes the number of predator.  The default parameters are taken from [^Weisstein], which lead to typical periodic oscillations.
 
 [^Hoppensteadt2006] : Frank Hoppensteadt (2006) "Predator-prey model", Scholarpedia, 1(10):1563.
+
 [^Weisstein] : Weisstein, Eric W., "Lotka-Volterra Equations." From MathWorld--A Wolfram Web Resource. https://mathworld.wolfram.com/Lotka-VolterraEquations.html
 """
 function lotkavolterra(u0=[10.0, 5.0]; α = 1.5, β = 1, δ=1, γ=3)
@@ -1177,12 +1181,12 @@ hindmarshrose(u0=[-1.0, 0.0, 0.0]; a=1, b=3, c=1, d=5, r=0.001, s=4, xr=-8/5, I=
 ```math
 \\begin{aligned}
 \\dot{x} &= y - ax^3 + bx^2 +I - z, \\\\
-\\dot{y} &= c - dx^2 -y,
-\\dot{z} &= r(s(x-x_r) - z)
+\\dot{y} &= c - dx^2 -y, \\\\
+\\dot{z} &= r(s(x - x_r) - z)
 \\end{aligned}
 ```
 
-The Hindmarsh-Rose model reproduces the bursting behavior of a neuron's membrane potential, characterized by a fast sequence of spikes followed by a quiescent period. The `x` variable describes the membane potential, whose behavior can be controlled by the applied current `I`; the `y` variable describes the sodium and potassium ionic currents, and `z` describes an adaptation current [^HindmarshRose1984]. 
+The Hindmarsh-Rose model reproduces the bursting behavior of a neuron's membrane potential, characterized by a fast sequence of spikes followed by a quiescent period. The `x` variable describes the membane potential, whose behavior can be controlled by the applied current `I`; the `y` variable describes the sodium and potassium ionic currents, and `z` describes an adaptation current [^HindmarshRose1984].
 
 The default parameter values are taken from [^HindmarshRose1984], chosen to lead to periodic bursting.
 
@@ -1195,7 +1199,7 @@ function hindmarshrose_rule(u, p, t)
     @inbounds begin
         a,b,c,d,r,s, xr, I = p
         du1 = u[2] - a*u[1]^3 + b*u[1]^2 -u[3] + I
-        du2 = c - d*u[1]^2 - u[2] 
+        du2 = c - d*u[1]^2 - u[2]
         du3 = r*(s*(u[1] - xr) - u[3])
         return SVector{3}(du1, du2, du3)
     end
@@ -1215,13 +1219,12 @@ end
 ```julia
 stuartlandau_oscillator(u0=[1.0, 0.0]; μ=1.0, ω=1.0, b=1) -> ds
 ```
-The Stuart-Landau model describes a nonlinear oscillation near a Hopf bifurcation, and was proposed by Landau in 1944 to explain the transition to turbulence in a fluid [^Landau1944]. 
-
+The Stuart-Landau model describes a nonlinear oscillation near a Hopf bifurcation, and was proposed by Landau in 1944 to explain the transition to turbulence in a fluid [^Landau1944].
 It can be written in cartesian coordinates as [^Deco2017]
 ```math
 \\begin{aligned}
-\\dot{x} &= (\\mu -x^2 -y^2)x - \omega y - b(x^2+y^2)y \\\\
-\\dot{y} &= (\\mu -x^2 -y^2)y + \omega x + b(x^2+y^2)x \\\\
+\\dot{x} &= (\\mu -x^2 -y^2)x - \\omega y - b(x^2+y^2)y \\\\
+\\dot{y} &= (\\mu -x^2 -y^2)y + \\omega x + b(x^2+y^2)x
 \\end{aligned}
 ```
 
@@ -1232,20 +1235,17 @@ The dynamical analysis of the system is greatly facilitated by putting it in pol
 \\dot{\\theta} &= \\omega +br^2
 \\end{aligned}
 ```
-
 The parameter `\\mu` serves as the bifurcation parameter, `\\omega` is the frequency of infinitesimal oscillations, and `b` controls the dependence of the frequency on the amplitude.  Increasing `\\mu` from negative to positive generates the supercritical Hopf bifurcation, leading from a stable spiral at the origin to a stable limit cycle with radius `\\sqrt(\\mu)`.
 [^Landau1944] : L. D. Landau, "On the problem of turbulence, In Dokl. Akad. Nauk SSSR (Vol. 44, No. 8, pp. 339-349) (1944).
 [^Deco2017] : G. Deco et al "The dynamics of resting fluctuations in the brain: metastability and its dynamical cortical core",  Sci Rep 7, 3095 (2017).
 [^Strogatz2015] : Steven H. Strogatz "Nonlinear dynamics and chaos : with applications to physics, biology, chemistry, and engineering", Boulder, CO :Westview Press, a member of the Perseus Books Group (2015).
 """
-
 function stuartlandau_oscillator(u0=[1.0, 0.0]; μ=1.0, ω=1.0, b=1)
-    # return CDS(stuartlandau_rule, u0, [μ, ω, b], stuartlandau_jac)
-    return CDS(stuartlandau_rule, u0, [μ, ω, b])
+    return CDS(stuartlandau_rule, u0, [μ, ω, b], stuartlandau_jac)
 end
 function stuartlandau_rule(u, p, t)
     @inbounds begin
-        μ, ω, b = p 
+        μ, ω, b = p
         du1 = u[1]*(μ - u[1]^2 - u[2]^2) - ω*u[2] - b*(u[1]^2 + u[2]^2)*u[2]
         du2 = u[2]*(μ - u[1]^2 - u[2]^2) + ω*u[1] + b*(u[1]^2 + u[2]^2)*u[1]
         return SVector{2}(du1, du2)
@@ -1253,7 +1253,7 @@ function stuartlandau_rule(u, p, t)
 end
 function stuartlandau_jac(u, p, t)
     @inbounds begin
-        μ, ω, b = p 
+        μ, ω, b = p
         J = @SMatrix [(μ - 3*u[1]^2 -u[2]^2 -2*b*u[1]*u[2]) (-2*u[1]*u[2] -ω -b*u[1]^2 -3*b*u[2]^2);
             (-2*u[1]*u[2] +ω +b*u[2]^2 +3*b*u[1]^2) (μ -u[1]^2 -3*u[2]^2 +2*b*u[1]*u[2])]
         return J
