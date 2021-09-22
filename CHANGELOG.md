@@ -1,3 +1,5 @@
+# v2.3
+* Added several new famous systems.
 # v2.2
 * `get_state(parallel_integrator, k)` now returns a view in case the integrator is in-place.
 # v2.1.1
@@ -8,14 +10,14 @@
 * The integrator `SimpleTsit5` is also exported. This integrator is non-adaptive, while the default integrator of the library `SimpleATsit5` is adaptive.
 
 # v2.0.0
-* The keyword `dt` of `trajectory` has been renamed to `Δt`. 
+* The keyword `dt` of `trajectory` has been renamed to `Δt`.
   This keyword had conflicts with the options of DifferentialEquations.jl.
   No warning can be thrown for this change, and users still using `dt` will
   have it silently propagated as keyword to the diffeq solvers.
 
 
 # v1.8.11
-* More performant version of `set_deviations!(integ, Q)` when `Q` is the result of 
+* More performant version of `set_deviations!(integ, Q)` when `Q` is the result of
   a QR-decomposition.
 # v1.8.3
 * Added `grebogi_map` dynamical system.
