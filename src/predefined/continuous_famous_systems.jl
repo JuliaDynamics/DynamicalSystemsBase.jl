@@ -802,9 +802,9 @@ end
 function thomas_jacob(u, p, t)
     x,y,z = u
     b = p[1]
-    return @SMatrix [b cos(y) 0;
-                     0 b cos(z);
-                     cos(x) 0 b]
+    return @SMatrix [-b cos(y) 0;
+                     0 -b cos(z);
+                     cos(x) 0 -b]
 end
 
 """
