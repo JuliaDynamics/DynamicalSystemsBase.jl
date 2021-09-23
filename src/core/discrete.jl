@@ -44,6 +44,11 @@ get_state(a::MDI{IIP, S}, k) where {IIP, S<:Vector{<:AbstractVector}} = a.u[k]
 function set_state!(
     integ::MDI{Alg, S}, u::AbstractVector, k::Int = 1
     ) where {Alg, S<:Vector{<:AbstractVector}}
+    integ.u[k] .= u
+end
+function set_state!(
+    integ::MDI{Alg, S}, u::SVector, k::Int = 1
+    ) where {Alg, S<:Vector{<:SVector}}
     integ.u[k] = u
 end
 
