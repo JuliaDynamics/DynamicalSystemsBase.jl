@@ -112,14 +112,13 @@ Return a dataset that will contain the trajectory of the system,
 after evolving it for total time `T`, optionally starting from state `u`.
 See [`Dataset`](@ref) for info on how to use this object.
 
-A `W×D` dataset is returned, with `W = length(t0:Δt:T)` with
-`t0:Δt:T` representing the time vector (*not* returned) and `D` the system dimension.
+The time vector is `t = (t0+Ttr):Δt:(T+Ttr)` and is not returned.
 
 ## Keyword Arguments
 * `Δt` :  Time step of value output. For discrete systems it must be an integer.
   Defaults to `0.01` for continuous and `1` for discrete.
-* `Ttr` : Transient time to evolve the initial state before starting saving states.
-* `save_idxs`: Which variables to output in the dataset. By default all.
+* `Ttr=0` : Transient time to evolve the initial state before starting saving states.
+* `save_idxs::AbstractVector{Int}` : Which variables to output in the dataset (by default all).
 * `diffeq...` : Remaining keyword arguments are propagated to the solvers of 
   DifferentialEquations.jl, see below. Only valid for continuous systems.
 
