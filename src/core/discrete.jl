@@ -256,7 +256,7 @@ function trajectory(ds::DDS{IIP, S, D}, t, u, Δt, Ttr, a)  where {IIP, S, D}
     T = eltype(S)
     integ = integrator(ds, u)
     ti = ds.t0
-    tvec = ti:Δt:t+ti
+    tvec = (ti+Ttr):Δt:(t+ti+Ttr)
     L = length(tvec)
     T = eltype(get_state(ds))
     X = isnothing(a) ? D : length(a)
@@ -277,7 +277,7 @@ function trajectory(
     ) where {S}
     Δt = round(Int, Δt)
     ti = ds.t0
-    tvec = ti:Δt:t+ti
+    tvec = (ti+Ttr):Δt:(t+ti+Ttr)
     L = length(tvec)
     integ = integrator(ds, u)
     data = Vector{S}(undef, L)

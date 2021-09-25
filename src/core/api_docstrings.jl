@@ -112,7 +112,8 @@ Return a dataset that will contain the trajectory of the system,
 after evolving it for total time `T`, optionally starting from state `u`.
 See [`Dataset`](@ref) for info on how to use this object.
 
-The time vector is `t = (t0+Ttr):Δt:(T+Ttr)` and is not returned.
+The time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)` and is not returned
+(`t0` is the starting time of `ds` which is by default `0`).
 
 ## Keyword Arguments
 * `Δt` :  Time step of value output. For discrete systems it must be an integer.
