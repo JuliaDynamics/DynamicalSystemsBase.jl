@@ -989,9 +989,9 @@ end
 function kuramoto_f(du, u, p, t)
     ω = p.ω; K = p.K
     D = length(u)
-    k = K/D
+    z = mean(exp(im .* u))/D
     @inbounds for i in 1:D
-        du[i] = ω[i] + k*sum(sin(u[j] - u[i]) for j in 1:D)
+        du[i] = ω[i] + K*abs(z)*sin(angle(z) - u[i])
     end
     return
 end
