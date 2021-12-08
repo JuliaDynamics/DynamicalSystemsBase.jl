@@ -1,4 +1,4 @@
-using DynamicalSystemsBase, SimpleDiffEq, DiffEqBase
+using DynamicalSystemsBase, SimpleDiffEq, SciMLBase
 using Statistics, Test
 
 ds = Systems.lorenz()
@@ -8,7 +8,7 @@ ALG = SimpleATsit5()
 
 i1 = tangent_integrator(ds, 3; alg = ALG)
 i2 = tangent_integrator(ds, 3; alg = ALG,
-internalnorm = DiffEqBase.ODE_DEFAULT_NORM)
+internalnorm = SciMLBase.ODE_DEFAULT_NORM)
 
 step!(i1)
 step!(i2)
@@ -26,7 +26,7 @@ dt2 = mean(dts[2, :])
 # %%
 s = [get_state(ds), get_state(ds) .+ rand(3)]
 i1 = parallel_integrator(ds, deepcopy(s);
-alg = ALG, internalnorm = DiffEqBase.ODE_DEFAULT_NORM)
+alg = ALG, internalnorm = SciMLBase.ODE_DEFAULT_NORM)
 i2 = parallel_integrator(ds, deepcopy(s);
 alg = ALG)
 

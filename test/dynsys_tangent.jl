@@ -7,7 +7,7 @@ algs = (Vern9(), Tsit5(), SimpleATsit5())
 using DynamicalSystemsBase: CDS, DDS, DS
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
 using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
-using DiffEqBase
+using SciMLBase
 
 println("\nTesting tangent dynamics...")
 @testset "tangent space" begin

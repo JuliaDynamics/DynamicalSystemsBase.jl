@@ -1,4 +1,4 @@
-using LinearAlgebra, DiffEqBase, ForwardDiff, StaticArrays
+using LinearAlgebra, SciMLBase, ForwardDiff, StaticArrays
 using SparseArrays
 
 export dimension, get_state, DynamicalSystem
@@ -157,7 +157,7 @@ const DDS = DiscreteDynamicalSystem
 systemtype(::DDS) = "discrete"
 
 
-DiffEqBase.isinplace(::DS{IIP}) where {IIP} = IIP
+SciMLBase.isinplace(::DS{IIP}) where {IIP} = IIP
 statetype(::DS{IIP, S}) where {IIP, S} = S
 stateeltype(::DS{IIP, S}) where {IIP, S} = eltype(S)
 isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where {IIP, S, D, F, P, JAC, JM, IAD} = IAD

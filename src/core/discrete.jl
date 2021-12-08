@@ -1,5 +1,5 @@
-using StaticArrays, ForwardDiff, DiffEqBase
-import DiffEqBase: init, step!, isinplace, reinit!, u_modified!
+using StaticArrays, ForwardDiff, SciMLBase
+import SciMLBase: init, step!, isinplace, reinit!, u_modified!
 import Base: show
 
 export reinit!

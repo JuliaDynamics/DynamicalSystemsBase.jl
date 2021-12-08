@@ -1,5 +1,5 @@
-using DiffEqBase, StaticArrays
-using DiffEqBase: __init, ODEFunction, AbstractODEIntegrator
+using SciMLBase, StaticArrays
+using SciMLBase: __init, ODEFunction, AbstractODEIntegrator
 
 export CDS_KWARGS, SimpleATsit5, SimpleTsit5
 #####################################################################################
@@ -25,7 +25,7 @@ end
 Transform a continuous dynamical system into an `ODEProblem`, optionally using a different
 initial state and/or a callback.
 """
-function DiffEqBase.ODEProblem(ds::CDS{IIP}, tspan; u0 = ds.u0, callback=CallbackSet()) where {IIP}
+function SciMLBase.ODEProblem(ds::CDS{IIP}, tspan; u0 = ds.u0, callback=CallbackSet()) where {IIP}
     return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian), u0, tspan, ds.p, callback)
 end
 
@@ -141,7 +141,7 @@ function parallel_integrator(ds::CDS, states; diffeq...)
     end
 end
 
-_parallelnorm(u::AbstractVector, t) = @inbounds DiffEqBase.ODE_DEFAULT_NORM(u[1], t)
+_parallelnorm(u::AbstractVector, t) = @inbounds SciMLBase.ODE_DEFAULT_NORM(u[1], t)
 _parallelnorm(u::Real, t) = abs(u)
 
 #####################################################################################
@@ -234,7 +234,7 @@ end
 set_deviations!(integ::AbstractODEIntegrator{Alg, IIP, S}, Q) where {Alg, IIP, S<:SMatrix} =
     (integ.u = hcat(integ.u[:,1], Q); u_modified!(integ, true))
 
-function DiffEqBase.reinit!(integ::AbstractODEIntegrator, u0::AbstractVector,
+function SciMLBase.reinit!(integ::AbstractODEIntegrator, u0::AbstractVector,
     Q0::AbstractMatrix; kwargs...)
 
     set_state!(integ, u0)
