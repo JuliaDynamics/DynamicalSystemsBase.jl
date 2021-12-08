@@ -73,12 +73,11 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
 end
 
 function _tannorm(u::AbstractMatrix, t)
-    s = size(u)[1]
-    x = zero(eltype(u))
-    for i in 1:s
-        @inbounds x += u[i, 1]^2
+    @inbounds x = abs2(u[1,1])
+    for i in 2:size(u, 1)
+        @inbounds x += abs2(u[i, 1])
     end
-    return sqrt(x/length(x))
+    return sqrt(x)/size(u, 1)
 end
 _tannorm(u::Real, t) = abs(u)
 
@@ -141,10 +140,11 @@ function parallel_integrator(ds::CDS, states; diffeq...)
     end
 end
 
-@inline _parallelnorm(u::AbstractVector, t) = @inbounds _standardnorm(u[1], t)
-@inline _parallelnorm(u::Real, t) = abs(u)
-@inline _standardnorm(u::AbstractArray,t) = sqrt(sum(abs2, u))/length(u)
-@inline _standardnorm(u::Real,t) = abs(u)
+@inline _parallelnorm(u::AbstractVector, t = 0) = @inbounds _standardnorm(u[1], t)
+@inline _parallelnorm(u::Real, t = 0) = abs(u)
+@inline _standardnorm(u::AbstractArray{<:Number}, t = 0) = sqrt(sum(abs2, u))/length(u)
+@inline _standardnorm(u::Real, t = 0) = abs(u)
+@inline _standardnorm(u::AbstractArray, t = 0) = sum(_standardnorm, u)/length(u)
 
 #####################################################################################
 #                                 Trajectory                                        #
