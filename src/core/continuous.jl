@@ -141,8 +141,10 @@ function parallel_integrator(ds::CDS, states; diffeq...)
     end
 end
 
-_parallelnorm(u::AbstractVector, t) = @inbounds SciMLBase.ODE_DEFAULT_NORM(u[1], t)
-_parallelnorm(u::Real, t) = abs(u)
+@inline _parallelnorm(u::AbstractVector, t) = @inbounds _standardnorm(u[1], t)
+@inline _parallelnorm(u::Real, t) = abs(u)
+@inline _standardnorm(u::AbstractArray,t) = sqrt(sum(abs2, u))/length(u)
+@inline _standardnorm(u::Real,t) = abs(u)
 
 #####################################################################################
 #                                 Trajectory                                        #
