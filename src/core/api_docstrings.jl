@@ -122,18 +122,19 @@ The time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)` and is not returned
   Defaults to `0.01` for continuous and `1` for discrete.
 * `Ttr=0` : Transient time to evolve the initial state before starting saving states.
 * `save_idxs::AbstractVector{Int}` : Which variables to output in the dataset (by default all).
-* `diffeq...` : Remaining keyword arguments are propagated to the solvers of 
-  DifferentialEquations.jl, see below. Only valid for continuous systems.
+* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
+  `init` of DifferentialEquations.jl. Only valid for continuous systems, see below.
+
 
 ## DifferentialEquations.jl keyword arguments
 Continuous dynamical systems are evolved via the solvers of DifferentialEquations.jl.
-Functions in DynamicalSystems.jl allow keyword propagation to these solvers.
-For example you could use `abstol = 1e-9`.
+Functions in DynamicalSystems.jl allow providing options to these solvers via the 
+`diffeq` keyword. For example you could use `diffeq = (abstol = 1e-9, reltol = 1e-9)`.
 If you want to specify a solver, do so by using the keyword `alg`, e.g.:
-`alg = Tsit5(), maxiters = 100000`. This requires you to have been first
+`diffeq = (alg = Tsit5(), maxiters = 100000)`. This requires you to have been first
 `using OrdinaryDiffEq` to access the solvers. See the
 `CDS_KWARGS` variable for the default values we use.
-These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
+Notice that `diffeq` keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
 Keep in mind that the default solver is `SimpleATsit5`, which only supports
 adaptive time-stepping. Use `(alg = SimpleTsit5(), dt = your_step_size)` as keywords
