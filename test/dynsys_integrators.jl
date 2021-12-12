@@ -38,6 +38,8 @@ for i in 1:8
             end
         end
 
+        diffeq = (alg = alg,)
+
         isad = DynamicalSystemsBase.isautodiff(ds)
         iip = DynamicalSystemsBase.isinplace(ds)
         @test isodd(i) ? isad : !isad
@@ -50,7 +52,7 @@ for i in 1:8
         step!(tinteg)
         @test tuprev != get_state(tinteg)
 
-        integ = integrator(ds; alg = alg)
+        integ = integrator(ds; diffeq)
         uprev = deepcopy(get_state(integ))
         step!(integ)
         @test uprev != get_state(integ)

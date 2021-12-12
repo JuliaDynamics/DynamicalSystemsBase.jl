@@ -32,12 +32,24 @@ end
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
+
+DIFFEQ_DEP_WARN = """
+Direct propagation of keyword arguments to DifferentialEquations.jl is deprecated.
+From now on pass any DiffEq-related keywords as a `NamedTuple` using the
+explicit keyword `diffeq` instead.
+"""
+
 stateeltype(::AbstractODEIntegrator{A, IIP, S}) where {A, IIP, S} = eltype(S)
 stateeltype(::AbstractODEIntegrator{A, IIP, S}) where {
     A, IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
 function integrator(ds::CDS{iip}, u0 = ds.u0;
-    tfinal = Inf, diffeq...) where {iip}
+    tfinal = Inf, diffeq = NamedTuple(), kwargs...) where {iip}
+
+    if !isempty(kwargs)
+        @warn DIFFEQ_DEP_WARN
+        diffeq = NamedTuple(kwargs)
+    end
 
     u = safe_state_type(Val{iip}(), u0)
     prob = ODEProblem{iip}(ds.f, u, (ds.t0, typeof(ds.t0)(tfinal)), ds.p)

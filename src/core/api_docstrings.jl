@@ -2,13 +2,14 @@
 #                                     Docstrings                                      #
 #######################################################################################
 """
-    integrator(ds::DynamicalSystem [, u0]; diffeq...) -> integ
+    integrator(ds::DynamicalSystem [, u0]; diffeq) -> integ
 Return an integrator object that can be used to evolve a system interactively
 using `step!(integ [, Δt])`. Optionally specify an initial state `u0`.
 
 The state of this integrator is a vector.
 
-* `diffeq...` are keyword arguments propagated into `init` of DifferentialEquations.jl.
+* `diffeq` is a `NamedTuple` or `Dict` of keyword arguments propagated into
+  `init` of DifferentialEquations.jl.
   See [`trajectory`](@ref) for examples. Only valid for continuous systems.
 """
 function integrator end
