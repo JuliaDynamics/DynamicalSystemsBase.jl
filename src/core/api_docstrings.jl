@@ -8,7 +8,7 @@ using `step!(integ [, Δt])`. Optionally specify an initial state `u0`.
 
 The state of this integrator is a vector.
 
-* `diffeq` is a `NamedTuple` or `Dict` of keyword arguments propagated into
+* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
   `init` of DifferentialEquations.jl.
   See [`trajectory`](@ref) for examples. Only valid for continuous systems.
 """
@@ -47,14 +47,15 @@ as deviation vectors living on the tangent space, also called linearized space.
 instead of a matrix `Q0` an integer `k` is given, then `k` random orthonormal
 vectors are choosen as initial conditions.
 
-## Keyword Arguments
-* `u0` : Optional different initial state.
-* `diffeq...` : Keyword arguments propagated into `init` of DifferentialEquations.jl.
-  See [`trajectory`](@ref) for examples. Only valid for continuous systems.
-  These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
-
 It is *heavily* advised to use the functions [`get_state`](@ref), [`get_deviations`](@ref),
 [`set_state!`](@ref), [`set_deviations!`](@ref) to manipulate the integrator.
+
+## Keyword Arguments
+* `u0` : Optional different initial state.
+* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
+  `init` of DifferentialEquations.jl.
+  See [`trajectory`](@ref) for examples. Only valid for continuous systems.
+
 
 ## Description
 

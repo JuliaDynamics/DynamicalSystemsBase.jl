@@ -32,7 +32,6 @@ end
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
-
 DIFFEQ_DEP_WARN = """
 Direct propagation of keyword arguments to DifferentialEquations.jl is deprecated.
 From now on pass any DiffEq-related keywords as a `NamedTuple` using the
@@ -65,7 +64,12 @@ function tangent_integrator(ds::CDS, k::Int = dimension(ds); kwargs...)
     return tangent_integrator(ds, orthonormal(dimension(ds), k); kwargs...)
 end
 function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
-    u0 = ds.u0, diffeq...) where {IIP}
+    u0 = ds.u0, diffeq = NamedTuple(), kwargs...) where {IIP}
+
+    if !isempty(kwargs)
+        @warn DIFFEQ_DEP_WARN
+        diffeq = NamedTuple(kwargs)
+    end
 
     t0 = ds.t0
     Q = safe_matrix_type(Val{IIP}(), Q0)
@@ -96,7 +100,12 @@ _tannorm(u::Real, t) = abs(u)
 # Auto-diffed in-place version
 function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     Q0::AbstractMatrix;
-    u0 = ds.u0, diffeq...) where {S, D, F, P, JAC, JM}
+    u0 = ds.u0, diffeq = NamedTuple(), kwargs...) where {S, D, F, P, JAC, JM}
+
+    if !isempty(kwargs)
+        @warn DIFFEQ_DEP_WARN
+        diffeq = NamedTuple(kwargs)
+    end
 
     t0 = ds.t0
     Q = safe_matrix_type(Val{true}(), Q0)

@@ -47,7 +47,7 @@ for i in 1:8
         J = jacobian(ds)
         @test typeof(J) <: (iip ? Matrix : SMatrix)
 
-        tinteg = tangent_integrator(ds, orthonormal(dimension(ds), dimension(ds)); alg = alg)
+        tinteg = tangent_integrator(ds, orthonormal(dimension(ds), dimension(ds)); diffeq)
         tuprev = deepcopy(get_state(tinteg))
         step!(tinteg)
         @test tuprev != get_state(tinteg)
