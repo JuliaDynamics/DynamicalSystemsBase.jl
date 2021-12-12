@@ -22,12 +22,12 @@ ph = [1.4, 0.3]
 FUNCTIONS = [liip, liip_jac, loop, loop_jac, hiip, hiip_jac, hoop, hoop_jac]
 INITCOD = [u0, u0h]
 PARAMS = [p, ph]
-
+diffeq = (alg = alg,)
 
 # minimalistic lyapunov
 function lyapunov_iip(ds::DS, k)
     D = dimension(ds)
-    tode = tangent_integrator(ds, orthonormal(D,k); alg = alg)
+    tode = tangent_integrator(ds, orthonormal(D,k); diffeq)
     λ = zeros(k)
     for t in 1:1000
         while tode.t < t
@@ -45,7 +45,7 @@ function lyapunov_iip(ds::DS, k)
 end
 function lyapunov_oop(ds::DS, k)
     D = dimension(ds)
-    tode = tangent_integrator(ds, orthonormal(D,k); alg = alg)
+    tode = tangent_integrator(ds, orthonormal(D,k); diffeq)
     λ = zeros(k)
     ws_idx = SVector{k, Int}(collect(2:k+1))
     for t in 1:1000

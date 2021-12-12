@@ -32,12 +32,6 @@ end
 #####################################################################################
 #                                 Integrators                                       #
 #####################################################################################
-DIFFEQ_DEP_WARN = """
-Direct propagation of keyword arguments to DifferentialEquations.jl is deprecated.
-From now on pass any DiffEq-related keywords as a `NamedTuple` using the
-explicit keyword `diffeq` instead.
-"""
-
 stateeltype(::AbstractODEIntegrator{A, IIP, S}) where {A, IIP, S} = eltype(S)
 stateeltype(::AbstractODEIntegrator{A, IIP, S}) where {
     A, IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
@@ -184,16 +178,11 @@ function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     end
 
     a = svector_access(save_idxs)
-    integ = integrator(ds, u; diffeq...)
-    trajectory(ds, integ, T, u, Δt, Ttr, a; diffeq...)
+    integ = integrator(ds, u; diffeq)
+    trajectory(ds, integ, T, u, Δt, Ttr, a; diffeq)
 end
 
-function trajectory(ds::CDS{IIP, S, D}, integ, T, u, Δt, Ttr, a; diffeq = NamedTuple(), kwargs...) where {IIP, S, D}
-    
-    if !isempty(kwargs)
-        @warn DIFFEQ_DEP_WARN
-        diffeq = NamedTuple(kwargs)
-    end
+function trajectory(ds::CDS{IIP, S, D}, integ, T, u, Δt, Ttr, a; diffeq = NamedTuple()) where {IIP, S, D}
     # TODO: I think this can be made more performant by making an `ODEProblem`.
     t0 = ds.t0
     tvec = (t0+Ttr):Δt:(T+t0+Ttr)

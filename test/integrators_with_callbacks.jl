@@ -4,6 +4,8 @@ using OrdinaryDiffEq: Vern7, Tsit5
 using LinearAlgebra, Statistics
 using Test
 
+println("\nTesting callbacks...")
+
 @testset "SavingCallback parallel" begin
 
 kwargs = (abstol=1e-14, reltol=1e-14, alg=Vern7(), maxiters=1e9)
@@ -30,7 +32,6 @@ end
 
 @testset "SavingCallback tangent" begin
 
-kwargs = (abstol=1e-14, reltol=1e-14, alg=Tsit5())
 ds = Systems.lorenz()
 d0 = 1e-9
 T = 100.0
@@ -39,8 +40,10 @@ save_func(u, t, integrator) = LinearAlgebra.norm(get_deviations(integrator)[1, :
 saved_values = SavedValues(eltype(ds.t0), eltype(ds.u0[1]))
 cb = SavingCallback(save_func, saved_values)
 
+kwargs = (abstol=1e-14, reltol=1e-14, alg=Tsit5(), callback = cb)
+  
 u0 = get_state(ds)
-pinteg = tangent_integrator(ds; kwargs..., callback = cb)
+pinteg = tangent_integrator(ds; diffeq = kwargs)
 step!(pinteg, T)
 n = saved_values.saveval
 t = saved_values.t

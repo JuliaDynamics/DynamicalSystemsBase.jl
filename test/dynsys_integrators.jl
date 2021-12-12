@@ -5,7 +5,7 @@ using DynamicalSystemsBase: orthonormal
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
 using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
 
-println("\nTesting dynamical systems...")
+println("\nTesting integrators...")
 
 algs = (Vern9(), Tsit5(), SimpleATsit5())
 

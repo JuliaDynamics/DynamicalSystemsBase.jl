@@ -1,13 +1,15 @@
-using DynamicalSystemsBase, SimpleDiffEq
+using DynamicalSystemsBase
 using Statistics, Test
 
 ds = Systems.lorenz()
 ALG = SimpleATsit5()
 
-# %%
+println("\nTesting internal norms...")
 
-i1 = tangent_integrator(ds, 3; alg = ALG)
-i2 = tangent_integrator(ds, 3; alg = ALG, internalnorm = DynamicalSystemsBase._standardnorm)
+
+# %%
+i1 = tangent_integrator(ds, 3; diffeq = (alg = ALG,))
+i2 = tangent_integrator(ds, 3; diffeq = (alg = ALG, internalnorm = DynamicalSystemsBase._standardnorm))
 
 step!(i1)
 step!(i2)
@@ -25,8 +27,8 @@ dt2 = mean(dts[2, :])
 # %%
 s = [get_state(ds), get_state(ds) .+ rand(3)]
 i1 = parallel_integrator(ds, deepcopy(s);
-alg = ALG, internalnorm = DynamicalSystemsBase._standardnorm)
-i2 = parallel_integrator(ds, deepcopy(s); alg = ALG)
+diffeq = (alg = ALG, internalnorm = DynamicalSystemsBase._standardnorm))
+i2 = parallel_integrator(ds, deepcopy(s); diffeq = (alg = ALG,))
 
 step!(i1)
 step!(i2)

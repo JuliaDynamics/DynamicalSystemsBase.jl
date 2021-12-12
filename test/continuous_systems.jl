@@ -1,5 +1,5 @@
 using DynamicalSystemsBase
-using Test, StaticArrays
+using Test
 
 println("\nTesting continuous system evolution...")
 
@@ -11,7 +11,7 @@ println("\nTesting continuous system evolution...")
     @test ts1[1, :] == SVector{3}(lo11.u0)
     @test !any(x -> abs(x) > 1e3, ts1[end])
 
-    ts1 = trajectory(lo11, 1.0; Δt=0.1, diffeq = (abstol=>1e-8, reltol=>1e-8))
+    ts1 = trajectory(lo11, 1.0; Δt=0.1, diffeq = (abstol=1e-8, reltol=1e-8))
     @test size(ts1) == (11, 3)
     @test ts1[1, :] == SVector{3}(lo11.u0)
 
@@ -26,7 +26,7 @@ end
     @test size(ts1) == (201, 5)
     @test ts1[1, :] == SVector{5}(u)
 
-    ts1 = trajectory(lo11, 2.0; Δt=0.1, diffeq = (abstol=>1e-8, reltol=>1e-8))
+    ts1 = trajectory(lo11, 2.0; Δt=0.1, diffeq = (abstol=1e-8, reltol=1e-8))
     @test size(ts1) == (21, 5)
     @test ts1[1, :] == SVector{5}(u)
     @test !any(x -> abs(x) > 1e3, ts1[end])
