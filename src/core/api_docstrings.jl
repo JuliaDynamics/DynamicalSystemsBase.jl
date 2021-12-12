@@ -97,9 +97,9 @@ a system in parallel at the *exact same times*, using `step!(integ [, Δt])`.
 `states` are expected as vectors of vectors.
 
 ## Keyword Arguments
-* `diffeq...` : Keyword arguments propagated into `init` of DifferentialEquations.jl.
+* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
+  `init` of DifferentialEquations.jl.
   See [`trajectory`](@ref) for examples. Only valid for continuous systems.
-  These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
 It is *heavily* advised to use the functions [`get_state`](@ref) and
 [`set_state!`](@ref) to manipulate the integrator. Provide `i` as a second

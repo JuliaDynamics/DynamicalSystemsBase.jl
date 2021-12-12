@@ -69,7 +69,7 @@ for i in 1:8
         end
 
         # Test parallel integrators
-        pinteg = parallel_integrator(ds, [copy(INITCOD[sysindx]), copy(INITCOD[sysindx])]; alg = alg)
+        pinteg = parallel_integrator(ds, [copy(INITCOD[sysindx]), copy(INITCOD[sysindx])]; diffeq)
         puprev = deepcopy(get_state(pinteg))
         step!(pinteg)
         @test get_state(pinteg, 1) == get_state(pinteg, 2) == get_state(pinteg)
