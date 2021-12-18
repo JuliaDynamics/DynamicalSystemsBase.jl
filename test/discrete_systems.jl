@@ -1,14 +1,13 @@
 using DynamicalSystemsBase
-using Test, StaticArrays
-using DynamicalSystemsBase: DDS, DS
+using Test
 using LinearAlgebra
 
 println("\nTesting discrete system evolution...")
 
 @testset "Logistic Map" begin
   d1 = Systems.logistic(0.1)
-  d2 = DDS(d1.f, 0.1, d1.p)
-  d3 = DDS(d1.f, big(0.1), d1.p, d1.jacobian)
+  d2 = DiscreteDynamicalSystem(d1.f, 0.1, d1.p)
+  d3 = DiscreteDynamicalSystem(d1.f, big(0.1), d1.p, d1.jacobian)
 
   @testset "trajectory" begin
     ts1 = trajectory(d1, 100)
@@ -29,8 +28,8 @@ end
 @testset "Henon map" begin
 
   d1 = Systems.henon()
-  d2 = DDS(d1.f, get_state(d1), d1.p)
-  d3 = DDS(d1.f, big.(get_state(d1)), d1.p, d1.jacobian)
+  d2 = DiscreteDynamicalSystem(d1.f, get_state(d1), d1.p)
+  d3 = DiscreteDynamicalSystem(d1.f, big.(get_state(d1)), d1.p, d1.jacobian)
 
   @testset "trajectory" begin
     ts1 = trajectory(d1, 100)

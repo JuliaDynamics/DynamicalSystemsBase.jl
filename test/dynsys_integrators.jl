@@ -5,7 +5,7 @@ using DynamicalSystemsBase: orthonormal
 using DynamicalSystemsBase.Systems: hoop, hoop_jac, hiip, hiip_jac
 using DynamicalSystemsBase.Systems: loop, loop_jac, liip, liip_jac
 
-println("\nTesting dynamical systems...")
+println("\nTesting integrators...")
 
 algs = (Vern9(), Tsit5(), SimpleATsit5())
 
@@ -38,6 +38,8 @@ for i in 1:8
             end
         end
 
+        diffeq = (alg = alg,)
+
         isad = DynamicalSystemsBase.isautodiff(ds)
         iip = DynamicalSystemsBase.isinplace(ds)
         @test isodd(i) ? isad : !isad
@@ -45,12 +47,12 @@ for i in 1:8
         J = jacobian(ds)
         @test typeof(J) <: (iip ? Matrix : SMatrix)
 
-        tinteg = tangent_integrator(ds, orthonormal(dimension(ds), dimension(ds)); alg = alg)
+        tinteg = tangent_integrator(ds, orthonormal(dimension(ds), dimension(ds)); diffeq)
         tuprev = deepcopy(get_state(tinteg))
         step!(tinteg)
         @test tuprev != get_state(tinteg)
 
-        integ = integrator(ds; alg = alg)
+        integ = integrator(ds; diffeq)
         uprev = deepcopy(get_state(integ))
         step!(integ)
         @test uprev != get_state(integ)
@@ -67,7 +69,7 @@ for i in 1:8
         end
 
         # Test parallel integrators
-        pinteg = parallel_integrator(ds, [copy(INITCOD[sysindx]), copy(INITCOD[sysindx])]; alg = alg)
+        pinteg = parallel_integrator(ds, [copy(INITCOD[sysindx]), copy(INITCOD[sysindx])]; diffeq)
         puprev = deepcopy(get_state(pinteg))
         step!(pinteg)
         @test get_state(pinteg, 1) == get_state(pinteg, 2) == get_state(pinteg)

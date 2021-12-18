@@ -37,7 +37,12 @@ stateeltype(::AbstractODEIntegrator{A, IIP, S}) where {
     A, IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
 
 function integrator(ds::CDS{iip}, u0 = ds.u0;
-    tfinal = Inf, diffeq...) where {iip}
+    tfinal = Inf, diffeq = NamedTuple(), kwargs...) where {iip}
+
+    if !isempty(kwargs)
+        @warn DIFFEQ_DEP_WARN
+        diffeq = NamedTuple(kwargs)
+    end
 
     u = safe_state_type(Val{iip}(), u0)
     prob = ODEProblem{iip}(ds.f, u, (ds.t0, typeof(ds.t0)(tfinal)), ds.p)
@@ -53,7 +58,12 @@ function tangent_integrator(ds::CDS, k::Int = dimension(ds); kwargs...)
     return tangent_integrator(ds, orthonormal(dimension(ds), k); kwargs...)
 end
 function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
-    u0 = ds.u0, diffeq...) where {IIP}
+    u0 = ds.u0, diffeq = NamedTuple(), kwargs...) where {IIP}
+
+    if !isempty(kwargs)
+        @warn DIFFEQ_DEP_WARN
+        diffeq = NamedTuple(kwargs)
+    end
 
     t0 = ds.t0
     Q = safe_matrix_type(Val{IIP}(), Q0)
@@ -84,7 +94,12 @@ _tannorm(u::Real, t) = abs(u)
 # Auto-diffed in-place version
 function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     Q0::AbstractMatrix;
-    u0 = ds.u0, diffeq...) where {S, D, F, P, JAC, JM}
+    u0 = ds.u0, diffeq = NamedTuple(), kwargs...) where {S, D, F, P, JAC, JM}
+
+    if !isempty(kwargs)
+        @warn DIFFEQ_DEP_WARN
+        diffeq = NamedTuple(kwargs)
+    end
 
     t0 = ds.t0
     Q = safe_matrix_type(Val{true}(), Q0)
@@ -124,7 +139,12 @@ end
 # Rosenbrock32, ROS3P, Rodas3, RosShamp4, Veldd4, Velds4, GRK4T,
 # GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P)
 
-function parallel_integrator(ds::CDS, states; diffeq...)
+function parallel_integrator(ds::CDS, states; diffeq = NamedTuple, kwargs...)
+    if !isempty(kwargs)
+        @warn DIFFEQ_DEP_WARN
+        diffeq = NamedTuple(kwargs)
+    end
+
     peom, st = create_parallel(ds, states)
     pprob = ODEProblem(peom, st, (ds.t0, typeof(ds.t0)(Inf)), ds.p)
     solver = _get_solver(diffeq)
@@ -150,14 +170,20 @@ end
 #                                 Trajectory                                        #
 #####################################################################################
 function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
-    Δt = 0.01, Ttr = 0.0, save_idxs = nothing, diffeq...)
+    Δt = 0.01, Ttr = 0.0, save_idxs = nothing, diffeq = NamedTuple(), kwargs...)
+
+    if !isempty(kwargs)
+        @warn DIFFEQ_DEP_WARN
+        diffeq = NamedTuple(kwargs)
+    end
 
     a = svector_access(save_idxs)
-    integ = integrator(ds, u; diffeq...)
-    trajectory(ds, integ, T, u, Δt, Ttr, a; diffeq...)
+    integ = integrator(ds, u; diffeq)
+    trajectory(ds, integ, T, u, Δt, Ttr, a; diffeq)
 end
 
-function trajectory(ds::CDS{IIP, S, D}, integ, T, u, Δt, Ttr, a; diffeq...) where {IIP, S, D}
+function trajectory(ds::CDS{IIP, S, D}, integ, T, u, Δt, Ttr, a; diffeq = NamedTuple()) where {IIP, S, D}
+    # TODO: I think this can be made more performant by making an `ODEProblem`.
     t0 = ds.t0
     tvec = (t0+Ttr):Δt:(T+t0+Ttr)
     X = isnothing(a) ? D : length(a)

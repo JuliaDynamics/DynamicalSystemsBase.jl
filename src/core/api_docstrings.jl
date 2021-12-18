@@ -2,13 +2,14 @@
 #                                     Docstrings                                      #
 #######################################################################################
 """
-    integrator(ds::DynamicalSystem [, u0]; diffeq...) -> integ
+    integrator(ds::DynamicalSystem [, u0]; diffeq) -> integ
 Return an integrator object that can be used to evolve a system interactively
 using `step!(integ [, Δt])`. Optionally specify an initial state `u0`.
 
 The state of this integrator is a vector.
 
-* `diffeq...` are keyword arguments propagated into `init` of DifferentialEquations.jl.
+* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
+  `init` of DifferentialEquations.jl.
   See [`trajectory`](@ref) for examples. Only valid for continuous systems.
 """
 function integrator end
@@ -46,14 +47,15 @@ as deviation vectors living on the tangent space, also called linearized space.
 instead of a matrix `Q0` an integer `k` is given, then `k` random orthonormal
 vectors are choosen as initial conditions.
 
-## Keyword Arguments
-* `u0` : Optional different initial state.
-* `diffeq...` : Keyword arguments propagated into `init` of DifferentialEquations.jl.
-  See [`trajectory`](@ref) for examples. Only valid for continuous systems.
-  These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
-
 It is *heavily* advised to use the functions [`get_state`](@ref), [`get_deviations`](@ref),
 [`set_state!`](@ref), [`set_deviations!`](@ref) to manipulate the integrator.
+
+## Keyword Arguments
+* `u0` : Optional different initial state.
+* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
+  `init` of DifferentialEquations.jl.
+  See [`trajectory`](@ref) for examples. Only valid for continuous systems.
+
 
 ## Description
 
@@ -95,9 +97,9 @@ a system in parallel at the *exact same times*, using `step!(integ [, Δt])`.
 `states` are expected as vectors of vectors.
 
 ## Keyword Arguments
-* `diffeq...` : Keyword arguments propagated into `init` of DifferentialEquations.jl.
+* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
+  `init` of DifferentialEquations.jl.
   See [`trajectory`](@ref) for examples. Only valid for continuous systems.
-  These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
 It is *heavily* advised to use the functions [`get_state`](@ref) and
 [`set_state!`](@ref) to manipulate the integrator. Provide `i` as a second
@@ -120,18 +122,19 @@ The time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)` and is not returned
   Defaults to `0.01` for continuous and `1` for discrete.
 * `Ttr=0` : Transient time to evolve the initial state before starting saving states.
 * `save_idxs::AbstractVector{Int}` : Which variables to output in the dataset (by default all).
-* `diffeq...` : Remaining keyword arguments are propagated to the solvers of 
-  DifferentialEquations.jl, see below. Only valid for continuous systems.
+* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
+  `init` of DifferentialEquations.jl. Only valid for continuous systems, see below.
+
 
 ## DifferentialEquations.jl keyword arguments
 Continuous dynamical systems are evolved via the solvers of DifferentialEquations.jl.
-Functions in DynamicalSystems.jl allow keyword propagation to these solvers.
-For example you could use `abstol = 1e-9`.
+Functions in DynamicalSystems.jl allow providing options to these solvers via the 
+`diffeq` keyword. For example you could use `diffeq = (abstol = 1e-9, reltol = 1e-9)`.
 If you want to specify a solver, do so by using the keyword `alg`, e.g.:
-`alg = Tsit5(), maxiters = 100000`. This requires you to have been first
+`diffeq = (alg = Tsit5(), maxiters = 100000)`. This requires you to have been first
 `using OrdinaryDiffEq` to access the solvers. See the
 `CDS_KWARGS` variable for the default values we use.
-These keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
+Notice that `diffeq` keywords can also include `callback` for [event handling](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
 Keep in mind that the default solver is `SimpleATsit5`, which only supports
 adaptive time-stepping. Use `(alg = SimpleTsit5(), dt = your_step_size)` as keywords
