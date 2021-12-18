@@ -18,8 +18,11 @@ saved_values = SavedValues(eltype(ds.t0), eltype(ds.u0[1]))
 cb = SavingCallback(save_func, saved_values)
 
 u0 = get_state(ds)
-pinteg = parallel_integrator(ds, [u0, u0 + rand(SVector{3})*d0];
-diffeq, callback = cb)
+
+pinteg = parallel_integrator(
+    ds, [u0, u0 + rand(SVector{3})*d0];
+    diffeq = (diffeq..., callback = cb)
+)
 step!(pinteg, T)
 n = saved_values.saveval
 t = saved_values.t
