@@ -975,7 +975,7 @@ end
         K = 0.3, ω = range(-1, 1; length = D)
     )
 The Kuramoto model[^Kuramoto1975] of `D` coupled oscillators with equation
-```@math
+```math
 \\dot{\\phi}_i = \\omega_i + \\frac{K}{D}\\sum_{j=1}^{D} \\sin(\\phi_j - \\phi_i)
 ```
 
