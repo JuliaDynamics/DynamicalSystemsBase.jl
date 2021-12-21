@@ -1273,10 +1273,10 @@ The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
 function forced_pendulum(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2)
-    return CDS(duffing_rule, u0, [ω, f, d])
+    return CDS(forced_pendulum_rule, u0, [ω, f, d])
 end
 @inbounds function forced_pendulum_rule(u, p, t)
-    d = p[1]; F = p[2]; ω = p[3]
+    ω = p[1]; F = p[2]; d = p[3]
     du1 = u[2]
     du2 = -d*u[2] - sin(u[1])+ F*cos(ω*t)
     return SVector{2}(du1, du2)
