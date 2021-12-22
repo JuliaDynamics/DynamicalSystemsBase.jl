@@ -1281,3 +1281,37 @@ end
     du2 = -d*u[2] - sin(u[1])+ F*cos(ω*t)
     return SVector{2}(du1, du2)
 end
+
+"""
+```julia
+riddled_basins(u0=[0.5, 0.6, 0, 0]; γ=0.05, x̄ = 1.9, f₀=2.3, ω =3.5, x₀=1, y₀=0) → ds
+```
+```math
+\\begin{aligned}
+\\dot{x} &= v_x, \\quad \\dot{y} = v_z \\\\
+\\dot{v}_x &= -\\gamma v_x - ( -4x(1-x^2) +y^2) + f_0 \\sin(\\omega t)x_0 \\\\
+\\dot{v}_y &= -\\gamma v_y - (2y(x+\\bar{x})) + f_0 \\sin(\\omega t)y_0
+\\end{aligned}
+```
+This 5 dimensional (time-forced) dynamical system was used by Ott et al [^OttRiddled2014]
+to analyze *riddled basins of attraction*. This means nearby any point of a basin of attraction
+of an attractor A there is a point of the basin of attraction of another attractor B.
+
+[^OttRiddled2014]: Ott. et al., [The transition to chaotic attractors with riddled basins](http://yorke.umd.edu/Yorke_papers_most_cited_and_post2000/1994_04_Ott_Alexander_Kan_Sommerer_PhysicaD_riddled%20basins.pdf)
+"""
+function riddled_basins(u0=[0.5, 0.6, 0, 0]; 
+        γ=0.05, x̄ = 1.9, f₀=2.3, ω =3.5, x₀=1.0, y₀=0.0
+    )
+    return CDS(riddled_basins_rule, u0, [γ, x̄, f₀, ω, x₀, y₀])
+end
+function riddled_basins_rule(u, p, t)
+    @inbounds begin
+        γ, x̄, f₀, ω, x₀, y₀ = p
+        x, y, dx, dy = u
+        du1 = dx
+        du2 = dy
+        du3 = -γ*dx -(-4*x*(1-x^2) + y^2) +  f₀*sin(ω*t)*x₀
+        du4 = -γ*dy -(2*y*(x+x̄)) +  f₀*sin(ω*t)*y₀
+        return SVector{4}(du1, du2, du3, du4)
+    end
+end
