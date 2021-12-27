@@ -984,14 +984,17 @@ The Kuramoto model[^Kuramoto1975] of `D` coupled oscillators with equation
 function kuramoto(D = 25, u0 = range(0, 2π; length = D);
     K = 0.3, ω = range(-1, 1; length = D))
     p = KuramotoParams(K, ω)
-    return ContinuousDynamicalSystem(kuramoto_f, u0, p)
+    @warn "The kuramoto implementation does NOT have a Jacobian function!"
+    return ContinuousDynamicalSystem(kuramoto_f, u0, p, (J,z0, p, n) -> nothing)
 end
+using Statistics: mean
 function kuramoto_f(du, u, p, t)
     ω = p.ω; K = p.K
     D = length(u)
-    z = mean(exp(im .* u))/D
+    z = mean(exp.(im .* u))/D
+    θ = angle(z)
     @inbounds for i in 1:D
-        du[i] = ω[i] + K*abs(z)*sin(angle(z) - u[i])
+        du[i] = ω[i] + K*abs(z)*sin(θ - u[i])
     end
     return
 end
