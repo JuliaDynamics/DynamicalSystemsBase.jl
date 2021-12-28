@@ -991,7 +991,7 @@ using Statistics: mean
 function kuramoto_f(du, u, p, t)
     ω = p.ω; K = p.K
     D = length(u)
-    z = mean(exp.(im .* u))/D
+    z = mean(exp.(im .* u))
     θ = angle(z)
     @inbounds for i in 1:D
         du[i] = ω[i] + K*abs(z)*sin(θ - u[i])
