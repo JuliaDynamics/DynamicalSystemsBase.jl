@@ -569,3 +569,27 @@ end
     return @SMatrix [(b*(cos(t)-x^2*sin(t)*aux -x*y*cos(t)*aux)) (b*(-sin(t) -x*y*sin(t)*aux -y^2*cos(t)*aux));
                     (b*(sin(t) +x^2*cos(t)*aux) -x*y*sin(t)*aux) (b*(cos(t) -x*y*cos(t)*aux -y^2*sin(t)*aux))]
 end
+
+
+"""
+```julia
+ulam(N = 100, u0 = cos.(1:N); ε = 0.6)
+```
+A discrete system of `N` unidirectionally coupled maps on a circle,
+with equations
+```math
+x^{(m)}_{n+1} = f(\\varepsilon x_n^{(m-1)} + (1-\\varepsilon)x_n^{(m)});\\quad f(x) = 2 - x^2
+```
+"""
+function ulam(N = 100, u0 = cos.(1:N); ε = 0.6)
+    return DiscreteDynamicalSystem(ulam_rule, u0, [ε])
+end
+
+ulam_rule_f(x) = 2 - x^2;
+function ulam_rule(dx, x, p, t)
+    ε = p[1];
+    N = length(x)
+    for i in 1:N
+        dx[i] = ulam_rule_f(ε*x[mod1(i-1, N)] + (1-ε)*x[i])
+    end
+end
