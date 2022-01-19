@@ -177,23 +177,23 @@ function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
         diffeq = NamedTuple(kwargs)
     end
 
-    a = svector_access(save_idxs)
+    sv_acc = svector_access(save_idxs)
     integ = integrator(ds, u; diffeq)
-    trajectory(ds, integ, T, u, Δt, Ttr, a; diffeq)
+    trajectory(ds, integ, T, Δt, Ttr, sv_acc)
 end
 
-function trajectory(ds::CDS{IIP, S, D}, integ, T, u, Δt, Ttr, a; diffeq = NamedTuple()) where {IIP, S, D}
-    # TODO: I think this can be made more performant by making an `ODEProblem`.
+function trajectory(ds::CDS{IIP, S, D}, integ, T, Δt, Ttr, sv_acc) where {IIP, S, D}
+    # TODO: maybe this can be made more performant by making an `ODEProblem`?
     t0 = ds.t0
     tvec = (t0+Ttr):Δt:(T+t0+Ttr)
-    X = isnothing(a) ? D : length(a)
+    X = isnothing(sv_acc) ? D : length(sv_acc)
     sol = Vector{SVector{X, eltype(S)}}(undef, length(tvec))
     step!(integ, Ttr)
     for (i, t) in enumerate(tvec)
         while t > integ.t
             step!(integ)
         end
-        sol[i] = SVector{X, eltype(S)}(obtain_access(integ(t), a))
+        sol[i] = SVector{X, eltype(S)}(obtain_access(integ(t), sv_acc))
     end
     return Dataset(sol)
 end
