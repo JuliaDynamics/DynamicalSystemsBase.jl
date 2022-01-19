@@ -182,7 +182,7 @@ function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     trajectory(ds, integ, T, Δt, Ttr, sv_acc)
 end
 
-function trajectory(ds::CDS{IIP, S, D}, integ, T, Δt, Ttr, sv_acc) where {IIP, S, D}
+function trajectory(ds::CDS{IIP, S, D}, integ, T, Δt, Ttr, sv_acc=nothing) where {IIP, S, D}
     # TODO: maybe this can be made more performant by making an `ODEProblem`?
     t0 = ds.t0
     tvec = (t0+Ttr):Δt:(T+t0+Ttr)
