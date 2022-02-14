@@ -81,7 +81,7 @@ state `u` by using `reinit!(psys, u)` and then calling `step!` as normally.
 
 ## Keyword Arguments
 * `u0`: initial state
-* `idxs = 1:length(D)`: This vector selects the variables of the system that will define the
+* `idxs = 1:length(Dp)`: This vector selects the variables of the system that will define the
   subspace the dynamics will be projected into.
 * `complete_state = zeros(D-Dp)`: This argument allows setting the _remaining_ variables
   of the dynamical system state on each initial condition `u`, with `Dp` the dimension
