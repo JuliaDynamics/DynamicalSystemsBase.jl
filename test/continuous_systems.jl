@@ -31,3 +31,28 @@ end
     @test ts1[1, :] == SVector{5}(u)
     @test !any(x -> abs(x) > 1e3, ts1[end])
 end
+
+println("\nTesting integrator wrappers...")
+
+@testset "Duffing strob map" begin
+    F = 0.27; ω = 0.1;  # smooth boundary
+    ds = Systems.duffing(zeros(2), ω = ω, f = F, d = 0.15, β = -1)
+    smap = stroboscopicmap(ds, 2*pi/ω; diffeq = (;reltol = 1e-8, alg = Vern9()))
+    reinit!(smap,[1., 1.])
+    for j in 1:100
+      step!(smap)
+    end
+    u = get_state(smap)
+    @test sum(u - [1.11, 0]) < 0.01
+end
+
+@testset "Duffing strob map" begin
+    ds = Systems.lorenz([0.0, 10.0, 1.0]; σ = 10.0, ρ = 28.0, β = 10)
+    psys = projectedsystem(ds, 1.; idxs = 1:2, complete_state=[0.0], diffeq = (;reltol = 1e-8, alg = Vern9()))
+    reinit!(psys,[1., 1.])
+    for j in 1:5
+      step!(psys)
+    end
+    u = get_state(psys)
+    @test sum(u - [16.43, 16.43]) < 0.01
+end
