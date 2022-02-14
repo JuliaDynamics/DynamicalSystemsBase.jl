@@ -43,7 +43,7 @@ println("\nTesting integrator wrappers...")
       step!(smap)
     end
     u = get_state(smap)
-    @test sum(u - [1.11, 0]) < 0.01
+    @test abs(sum(u - [1.11, 0])) < 0.01
 end
 
 @testset "Duffing strob map" begin
@@ -54,5 +54,5 @@ end
       step!(psys)
     end
     u = get_state(psys)
-    @test sum(u - [16.43, 16.43]) < 0.01
+    @test abs(sum(u - [16.43, 16.43])) < 0.01
 end
