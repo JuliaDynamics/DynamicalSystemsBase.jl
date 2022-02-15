@@ -46,7 +46,8 @@ println("\nTesting integrator wrappers...")
     @test abs(sum(u - [1.11, 0])) < 0.01
 end
 
-@testset "Duffing strob map" begin
+@testset "Lorenz projected sys" begin
+    # Set β to 10, we have a stable fixed point
     ds = Systems.lorenz([0.0, 10.0, 1.0]; σ = 10.0, ρ = 28.0, β = 10)
     psys = projectedsystem(ds, 1.; idxs = 1:2, complete_state=[0.0], diffeq = (;reltol = 1e-8, alg = Vern9()))
     reinit!(psys,[1., 1.])
