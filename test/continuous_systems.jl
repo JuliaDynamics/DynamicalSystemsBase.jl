@@ -49,11 +49,22 @@ end
 @testset "Lorenz projected sys" begin
     # Set β to 10, we have a stable fixed point
     ds = Systems.lorenz([0.0, 10.0, 1.0]; σ = 10.0, ρ = 28.0, β = 10)
-    psys = projectedsystem(ds, 1.; idxs = 1:2, complete_state=[0.0])
+    psys = projectedintegrator(ds; idxs = 1:2, complete_state=[0.0])
     reinit!(psys,[1., 1.])
     for j in 1:5
-      step!(psys)
+      step!(psys, 1.)
     end
     u = get_state(psys)
     @test abs(sum(u - [16.43, 16.43])) < 0.01
+
+    # Test projection function
+    pfun(u) = u[2] + 1.
+    psys = projectedintegrator(ds; idxs = 1:2, complete_state=pfun)
+    reinit!(psys,[1., 1.])
+    for j in 1:5
+      step!(psys, 1.)
+    end
+    u = get_state(psys)
+
+
 end

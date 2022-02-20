@@ -1,4 +1,4 @@
-export stroboscopicmap, projectedsystem
+export stroboscopicmap, projectedintegrator
 
 
 """
@@ -27,13 +27,8 @@ u = get_state(smap)
 ```
 """
 function stroboscopicmap(ds::CDS{IIP, S, D}, T = nothing; u0 = get_state(ds),
-	diffeq = NamedTuple(), kwargs...
+	diffeq = NamedTuple()
 	) where {IIP, S, D}
-
-    if !isempty(kwargs)
-        @warn DIFFEQ_DEP_WARN
-        diffeq = NamedTuple(kwargs)
-    end
 
 	if isnothing(T)
 		@warn "T must be defined, taking T=1 as default"
@@ -51,6 +46,10 @@ end
 
 function DynamicalSystemsBase.step!(smap::StroboscopicMap)
 	step!(smap.integ, smap.T, true)
+	return smap.integ.u
+end
+function DynamicalSystemsBase.step!(smap::StroboscopicMap, n)
+	step!(smap.integ, n*smap.T, true)
 	return smap.integ.u
 end
 function DynamicalSystemsBase.reinit!(smap::StroboscopicMap, u0)
@@ -82,11 +81,12 @@ state `u` by using `reinit!(psys, u)` and then calling `step!` as normally.
 ## Keyword Arguments
 * `u0`: initial state
 * `idxs = 1:length(Dp)`: This vector selects the variables of the system that will define the
-  subspace the dynamics will be projected into.
+  subspace the dynamics will be projected into, with `Dp` the dimension
+  of the projected subspace
 * `complete_state = zeros(D-Dp)`: This argument allows setting the _remaining_ variables
-  of the dynamical system state on each initial condition `u`, with `Dp` the dimension
-  of the projected subspace. It can be either a vector of length `D-Dp`, or a function `f(y)` that
-  returns a vector of length `D-Dp` given the _projected_ initial condition on the grid `y`.
+  of the dynamical system state on each initial condition `u`. It can be either a vector
+  of length `D-Dp`, or a function `f(y)` that returns a vector of length `D-Dp` given
+  the _projected_ initial condition on the grid `y`.
 * `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
   `init` of DifferentialEquations.jl.
 
@@ -100,57 +100,46 @@ step!(psys)
 u = get_state(psys)
 ```
 """
-function projectedsystem(ds::CDS{IIP, S, D}, Δt = nothing;  u0 = get_state(ds),
+function projectedintegrator(ds::CDS{IIP, S, D};  u0 = get_state(ds),
 	idxs = 1:length(get_state(ds)), complete_state = zeros(eltype(get_state(ds)), 0),
-	diffeq = NamedTuple(), kwargs...
+	diffeq = NamedTuple()
 	) where {IIP, S, D}
-
-    if !isempty(kwargs)
-        @warn DIFFEQ_DEP_WARN
-        diffeq = NamedTuple(kwargs)
-    end
-
-	if isnothing(Δt)
-		@warn "Δt must be defined, taking Δt=0.01 as default"
-		Δt = 0.01
-	end
 
 	Ds = length(get_state(ds))
     if complete_state isa AbstractVector && (length(complete_state) ≠ Ds-length(idxs))
-        error("Vector `complete_state` must have length D-Dg!")
+        error("Vector `complete_state` must have length D-Dp!")
     end
 
 	idxs = SVector(idxs...)
-	complete_and_reinit! = CompleteAndReinit(complete_state, idxs, length(get_state(ds)))
+	complete_and_reinit! = ProjectedSystem(complete_state, idxs, length(get_state(ds)))
     get_projected_state = (ds) -> view(get_state(ds), idxs)
 	integ = integrator(ds, u0; diffeq)
 
-	return ProjectedSystem(integ, Δt, complete_and_reinit!, get_projected_state)
+	return ProjectedIntegratror(integ, complete_and_reinit!, get_projected_state)
 end
 
-mutable struct ProjectedSystem{I, T, F, G}
+mutable struct ProjectedIntegratror{I, F, G}
 	integ::I
-	Δt::T
 	complete_and_reinit!::F
 	get_projected_state::G
 end
 
-function DynamicalSystemsBase.step!(psys::ProjectedSystem)
-	step!(psys.integ, psys.Δt)
+function DynamicalSystemsBase.step!(psys::ProjectedIntegratror, Δt)
+	step!(psys.integ, Δt)
 	return psys.get_projected_state(psys.integ)
 end
-function DynamicalSystemsBase.reinit!(psys::ProjectedSystem, u0)
+function DynamicalSystemsBase.reinit!(psys::ProjectedIntegratror, u0)
 	psys.complete_and_reinit!(psys.integ, u0)
 	return
 end
-function DynamicalSystemsBase.get_state(psys::ProjectedSystem)
+function DynamicalSystemsBase.get_state(psys::ProjectedIntegratror)
 	return psys.get_projected_state(psys.integ)
 end
 
-function Base.show(io::IO, psys::ProjectedSystem)
+function Base.show(io::IO, psys::ProjectedIntegratror)
     println(io, "Iterator of the Projected System")
     println(io,  rpad(" rule f: ", 14),     DynamicalSystemsBase.eomstring(psys.integ.f.f))
-    #println(io,  rpad(" Period: ", 14),     psys.T)
+    println(io,  rpad(" Complete state: ", 14),     psys.complete_and_reinit!.complete_state)
 end
 
 
@@ -159,34 +148,34 @@ end
 
 # Utilities for re-initializing initial conditions on the grid
 """
-    CompleteAndReinit(complete_state, idxs, D)
+    ProjectedSystem(complete_state, idxs, D)
 Helper struct that completes a state and reinitializes the integrator once called
 as a function with arguments `f(integ, y)` with `integ` the initialized dynamical
 system integrator and `y` the projected initial condition on the grid.
 """
-struct CompleteAndReinit{C, Y, R}
+struct ProjectedSystem{C, Y, R}
     complete_state::C
     u::Vector{Float64} # dummy variable for a state in full state space
     idxs::SVector{Y, Int}
     remidxs::R
 end
-function CompleteAndReinit(complete_state, idxs, D::Int)
+function ProjectedSystem(complete_state, idxs, D::Int)
     remidxs = setdiff(1:D, idxs)
     remidxs = isempty(remidxs) ? nothing : SVector(remidxs...)
     u = zeros(D)
     if complete_state isa AbstractVector
         @assert eltype(complete_state) <: Number
     end
-    return CompleteAndReinit(complete_state, u, idxs, remidxs)
+    return ProjectedSystem(complete_state, u, idxs, remidxs)
 end
-function (c::CompleteAndReinit{<: AbstractVector})(integ, y)
+function (c::ProjectedSystem{<: AbstractVector})(integ, y)
     c.u[c.idxs] .= y
     if !isnothing(c.remidxs)
         c.u[c.remidxs] .= c.complete_state
     end
     reinit!(integ, c.u)
 end
-function (c::CompleteAndReinit)(integ, y) # case where `complete_state` is a function
+function (c::ProjectedSystem)(integ, y) # case where `complete_state` is a function
     c.u[c.idxs] .= y
     if !isnothing(c.remidxs)
         c.u[c.remidxs] .= c.complete_state(y)
