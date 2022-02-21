@@ -102,7 +102,7 @@ u = get_state(psys)
 """
 function projectedintegrator(ds::CDS{IIP, S, D};  u0 = get_state(ds),
 	idxs = 1:length(get_state(ds)), complete_state = zeros(eltype(get_state(ds)), 0),
-	diffeq = NamedTuple()
+	projection = nothing, diffeq = NamedTuple()
 	) where {IIP, S, D}
 
 	Ds = length(get_state(ds))
@@ -112,7 +112,11 @@ function projectedintegrator(ds::CDS{IIP, S, D};  u0 = get_state(ds),
 
 	idxs = SVector(idxs...)
 	complete_and_reinit! = ProjectedSystem(complete_state, idxs, length(get_state(ds)))
-    get_projected_state = (ds) -> view(get_state(ds), idxs)
+	if isnothing(projection)
+    	get_projected_state = (ds) -> view(get_state(ds), idxs)
+	elseif projection isa Function
+		get_projected_state = (ds) -> projection(get_state(ds))
+	end
 	integ = integrator(ds, u0; diffeq)
 
 	return ProjectedIntegratror(integ, complete_and_reinit!, get_projected_state)
@@ -131,6 +135,9 @@ end
 function DynamicalSystemsBase.reinit!(psys::ProjectedIntegratror, u0)
 	psys.complete_and_reinit!(psys.integ, u0)
 	return
+end
+function DynamicalSystemsBase.get_state(psys::ProjectedIntegratror)
+	return psys.get_projected_state(psys.integ)
 end
 function DynamicalSystemsBase.get_state(psys::ProjectedIntegratror)
 	return psys.get_projected_state(psys.integ)

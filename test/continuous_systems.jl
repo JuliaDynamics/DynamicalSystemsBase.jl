@@ -1,4 +1,5 @@
 using DynamicalSystemsBase
+using LinearAlgebra:norm
 using Test
 
 println("\nTesting continuous system evolution...")
@@ -57,14 +58,22 @@ end
     u = get_state(psys)
     @test abs(sum(u - [16.43, 16.43])) < 0.01
 
-    # Test projection function
+    # Test complete state function
     pfun(u) = u[2] + 1.
-    psys = projectedintegrator(ds; idxs = 1:2, complete_state=pfun)
+    psys = projectedintegrator(ds; idxs = 1:2, complete_state = pfun)
     reinit!(psys,[1., 1.])
     for j in 1:5
       step!(psys, 1.)
     end
     u = get_state(psys)
 
-
+    # Test projection function on a sphere of unit radius.
+    pfun(u) = u/norm(u)
+    psys = projectedintegrator(ds; idxs = 1:2, complete_state = [0.], projection = pfun)
+    reinit!(psys,[1., 1.])
+    for j in 1:5
+      step!(psys, 1.)
+    end
+    u = get_state(psys)
+    @test abs(sum(u - [0.461, 0.461])) < 0.01
 end
