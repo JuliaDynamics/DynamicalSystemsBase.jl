@@ -37,7 +37,7 @@ function step!(smap::StroboscopicMap)
 	step!(smap.integ, smap.T, true)
 	return smap.integ.u
 end
-function step!(smap::StroboscopicMap, n)
+function step!(smap::StroboscopicMap, n::Int)
 	step!(smap.integ, n*smap.T, true)
 	return smap.integ.u
 end
