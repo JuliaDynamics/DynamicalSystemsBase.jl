@@ -20,6 +20,7 @@ Return the state of `ds`.
 
     get_state(integ [, i::Int = 1])
 Return the state of the integrator, in the sense of the state of the dynamical system.
+This function works for any integrator of the library.
 
 If the integrator is a [`parallel_integrator`](@ref), passing `i` will return
 the `i`-th state. The function also correctly returns the true state of the system
