@@ -1,38 +1,38 @@
 export projectedintegrator
-
+#####################################################################################
+# Projected API
+#####################################################################################
 """
-	projectedsystem(ds::ContinuousDynamicalSystem, Δt; kwargs...)  → psys
+    projected_integrator(ds::DynamicalSystem, projection, complete_state; kwargs...) → integ
 
-Returns an integrator that produces iterations of the dynamical system `ds` on a
-projected subspace.
+Return an integrator that produces iterations of the dynamical system `ds` on a
+projected subspace. See [Integrator API](@ref) for handling integrators.
 
-You can progress the map one step on the section by calling `step!(psys)`,
-which also returns the next state. You can also set the integrator to start from a new
-state `u` by using `reinit!(psys, u)` and then calling `step!` as normally.
+The `projection` defines the projected space. If `projection isa AbstractVector{Int}`,
+then the projected space is simply the variable indices that `projection` contains.
+Otherwise, `projection` can be an arbitrary function that given the state of the
+original system, return the state of the projected system.
+
+`complete_state` is a function that when given as input the state of the projected system
+it produces the state for the original system. This is necessary as the actual integration
+happens in the full space, and the projected space is only what is returned with e.g.,
+[`get_state`](@ref).
 
 ## Keyword Arguments
 * `u0`: initial state
-* `idxs = 1:length(Dp)`: This vector selects the variables of the system that will define the
-  subspace the dynamics will be projected into, with `Dp` the dimension
-  of the projected subspace
-* `complete_state = zeros(D-Dp)`: This argument allows setting the _remaining_ variables
-  of the dynamical system state on each initial condition `u`. It can be either a vector
-  of length `D-Dp`, or a function `f(y)` that returns a vector of length `D-Dp` given
-  the _projected_ initial condition on the grid `y`.
 * `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
   `init` of DifferentialEquations.jl.
 
-
-## Example
+## Examples
 ```julia
-ds = Systems.lorenz_iip()
+ds = Systems.lorenz()
 psys = projectedsystem(ds, 0.1; idxs = 1:2, complete_state=[0.0], diffeq = (;reltol = 1e-8))
 reinit!(psys,[1., 1.])
 step!(psys)
 u = get_state(psys)
 ```
 """
-function projectedintegrator(ds::CDS{IIP, S, D};  u0 = get_state(ds),
+function projected_integrator(ds::CDS{IIP, S, D};  u0 = get_state(ds),
 	idxs = 1:length(get_state(ds)), complete_state = zeros(eltype(get_state(ds)), 0),
 	projection = nothing, diffeq = NamedTuple()
 	) where {IIP, S, D}
@@ -54,15 +54,16 @@ function projectedintegrator(ds::CDS{IIP, S, D};  u0 = get_state(ds),
 	return ProjectedIntegratror(integ, complete_and_reinit!, get_projected_state)
 end
 
-mutable struct ProjectedIntegratror{I, F, G}
+struct ProjectedIntegratror{I, F, G, Dp}
 	integ::I
 	complete_and_reinit!::F
 	get_projected_state::G
 end
 
-function DynamicalSystemsBase.step!(psys::ProjectedIntegratror, Δt)
-	step!(psys.integ, Δt)
-	return psys.get_projected_state(psys.integ)
+get_state(psys::ProjectedIntegratror) = psys.get_projected_state(psys.integ)
+function DynamicalSystemsBase.step!(psys::ProjectedIntegratror, args...)
+	step!(psys.integ, args...)
+	return
 end
 function DynamicalSystemsBase.reinit!(psys::ProjectedIntegratror, u0)
 	psys.complete_and_reinit!(psys.integ, u0)
@@ -83,9 +84,9 @@ end
 
 
 
-
-
-# Utilities for re-initializing initial conditions on the grid
+#####################################################################################
+# Complete and Reinit code
+#####################################################################################
 """
     ProjectedSystem(complete_state, idxs, D)
 Helper struct that completes a state and reinitializes the integrator once called

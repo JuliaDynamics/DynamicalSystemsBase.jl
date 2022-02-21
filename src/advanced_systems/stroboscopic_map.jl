@@ -4,13 +4,7 @@ export stroboscopicmap
 	stroboscopicmap(ds::ContinuousDynamicalSystem, T; kwargs...)  → smap
 
 Return a map (integrator) that produces iterations over a period `T` of the `ds`,
-known as a stroboscopic map.
-
-You can progress the map one step by calling `step!(smap)`, or for
-`n` times by calling `step!(smap, n)`. This also returns the next state,
-or you can use [`get_state`](@ref) otherwise.
-You can also set the integrator to start from a new
-state `u` by using `reinit!(smap, u)`.
+known as a stroboscopic map. See [Integrator API](@ref) for handling integrators.
 
 See also [`poincaremap`](@ref).
 
