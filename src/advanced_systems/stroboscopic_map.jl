@@ -22,37 +22,30 @@ reinit!(smap, [1.0, 1.0])
 u = step!(smap)
 ```
 """
-function stroboscopicmap(ds::CDS{IIP, S, D}, T = nothing; u0 = get_state(ds),
-	diffeq = NamedTuple()
-	) where {IIP, S, D}
-
-	if isnothing(T)
-		@warn "T must be defined, taking T=1 as default"
-		T =1
-	end
-
+function stroboscopicmap(ds::CDS, T; u0 = get_state(ds),	diffeq = NamedTuple())
 	integ = integrator(ds, u0; diffeq)
 	return StroboscopicMap(integ, T)
 end
 
-mutable struct StroboscopicMap{I, F}
+struct StroboscopicMap{I, F}
 	integ::I
 	T::F
 end
 
-function DynamicalSystemsBase.step!(smap::StroboscopicMap)
+integrator(p::StroboscopicMap) = p
+function step!(smap::StroboscopicMap)
 	step!(smap.integ, smap.T, true)
 	return smap.integ.u
 end
-function DynamicalSystemsBase.step!(smap::StroboscopicMap, n)
+function step!(smap::StroboscopicMap, n)
 	step!(smap.integ, n*smap.T, true)
 	return smap.integ.u
 end
-function DynamicalSystemsBase.reinit!(smap::StroboscopicMap, u0)
+function reinit!(smap::StroboscopicMap, u0)
 	reinit!(smap.integ, u0)
 	return
 end
-function DynamicalSystemsBase.get_state(smap::StroboscopicMap)
+function get_state(smap::StroboscopicMap)
 	return smap.integ.u
 end
 
