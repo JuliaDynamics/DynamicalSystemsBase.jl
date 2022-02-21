@@ -66,6 +66,7 @@ end
       step!(psys, 1.)
     end
     u = get_state(psys)
+    @test abs(sum(u - [16.43, 16.43])) < 0.01
 
     # Test projection function on a sphere of unit radius.
     pfun(u) = u/norm(u)
@@ -75,5 +76,5 @@ end
       step!(psys, 1.)
     end
     u = get_state(psys)
-    @test abs(sum(u - [0.461, 0.461])) < 0.01
+    @test abs(sum(u[1:2] - [0.461, 0.461])) < 0.01
 end
