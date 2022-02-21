@@ -1,3 +1,6 @@
+# v2.4
+* Added new type of integrator: `stroboscopicmap`.
+* Added new type of integrator: `projected_integrator`.
 # v2.3
 * Added several new famous systems.
 # v2.2
