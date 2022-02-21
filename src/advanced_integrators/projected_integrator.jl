@@ -1,4 +1,4 @@
-export projectedintegrator
+export projected_integrator 
 #####################################################################################
 # Projected API
 #####################################################################################
@@ -54,14 +54,15 @@ function projected_integrator(ds::DynamicalSystem, projection, complete_state;
 	)
     if projection isa AbstractVector{Int}
         @assert all(1 .≤ projection .≤ dimension(ds))
+        projection = SVector(projection...)
         y = u0[projection]
     else
         @assert projection(u0) isa AbstractVector
         y = projection(u0)
     end
-    if complete_state isa AbstractVector{Int}
+    if complete_state isa AbstractVector
         @assert projection isa AbstractVector{Int}
-        @assert length(complete_state) + length(projetion) == dimension(ds)
+        @assert length(complete_state) + length(projection) == dimension(ds)
         remidxs = setdiff(1:dimension(ds), projection)
         @assert !isempty(remidxs)
     else
@@ -84,7 +85,8 @@ end
 integrator(p::ProjectedIntegrator) = p
 get_state(pinteg::ProjectedIntegrator{<:Function}) = 
     pinteg.projection(get_state(pinteg.integ))
-get_state(pinteg::ProjectedIntegrator{<:SVector}) = get_state(pinteg.integ)[projection]
+get_state(pinteg::ProjectedIntegrator{<:SVector}) = 
+    get_state(pinteg.integ)[pinteg.projection]
 
 function SciMLBase.step!(pinteg::ProjectedIntegrator, args...)
 	step!(pinteg.integ, args...)

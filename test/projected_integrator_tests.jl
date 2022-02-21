@@ -1,11 +1,12 @@
+using DynamicalSystemsBase, Test
 using LinearAlgebra: norm
-
 @testset "Projected integrator" begin
 
 @testset "Lorenz" begin
     # Set β to 10, we have a stable fixed point
     ds = Systems.lorenz([0.0, 10.0, 1.0]; σ = 10.0, ρ = 28.0, β = 10)
     psys = projected_integrator(ds, 1:2, [0.0])
+    @test get_state(psys) == get_state(ds)[1:2]
 
     reinit!(psys, [1.0, 1.0])
     for j in 1:5
@@ -16,8 +17,8 @@ using LinearAlgebra: norm
     @test abs(sum(y - [16.43, 16.43])) < 0.01
 
     # Test complete state function
-    pfun(y) = [y[1], y[2], y[2] + 1]
-    psys = projectedintegrator(ds, 1:2, complete_state)
+    complete = (y) -> [y[1], y[2], y[2] + 1]
+    psys = projected_integrator(ds, 1:2, complete)
     reinit!(psys, [2.0, 1.0])
     y = get_state(psys)
     @test y[1] == 2
@@ -31,8 +32,8 @@ using LinearAlgebra: norm
 
     # Test projection function on a sphere of unit radius
     projection(u) = u/norm(u)
-    complete_state = y -> 10y
-    psys = projectedintegrator(ds, projection, complete_state)
+    complete = y -> 10y
+    psys = projected_integrator(ds, projection, complete)
     @test norm(get_state(psys)) == 1
     reinit!(psys, ones(3))
     @test psys.integ.u[1] == 10
