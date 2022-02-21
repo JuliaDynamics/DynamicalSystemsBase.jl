@@ -11,6 +11,7 @@ include("continuous_systems.jl")
 include("discrete_systems.jl")
 include("integrators_with_callbacks.jl")
 include("norm_tests.jl")
+include("projected_integrator_tests.jl")
 end
 
 ti = time() - ti

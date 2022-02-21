@@ -81,6 +81,7 @@ struct ProjectedIntegrator{P, C, R, I}
 	integ::I
 end
 
+integrator(p::ProjectedIntegrator) = p
 get_state(pinteg::ProjectedIntegrator{<:Function}) = 
     pinteg.projection(get_state(pinteg.integ))
 get_state(pinteg::ProjectedIntegrator{<:SVector}) = get_state(pinteg.integ)[projection]

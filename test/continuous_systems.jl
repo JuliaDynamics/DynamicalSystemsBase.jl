@@ -33,9 +33,9 @@ end
     @test !any(x -> abs(x) > 1e3, ts1[end])
 end
 
-println("\nTesting integrator wrappers...")
+println("\nTesting stroboscopic map...")
 
-@testset "Duffing strob map" begin
+@testset "Duffing stroboscopic map" begin
     F = 0.27; ω = 0.1;  # smooth boundary
     ds = Systems.duffing(zeros(2), ω = ω, f = F, d = 0.15, β = -1)
     smap = stroboscopicmap(ds, 2*pi/ω)
@@ -45,36 +45,4 @@ println("\nTesting integrator wrappers...")
     end
     u = get_state(smap)
     @test abs(sum(u - [1.11, 0])) < 0.01
-end
-
-@testset "Lorenz projected sys" begin
-    # Set β to 10, we have a stable fixed point
-    ds = Systems.lorenz([0.0, 10.0, 1.0]; σ = 10.0, ρ = 28.0, β = 10)
-    psys = projectedintegrator(ds; idxs = 1:2, complete_state=[0.0])
-    reinit!(psys,[1., 1.])
-    for j in 1:5
-      step!(psys, 1.)
-    end
-    u = get_state(psys)
-    @test abs(sum(u - [16.43, 16.43])) < 0.01
-
-    # Test complete state function
-    pfun(u) = u[2] + 1.
-    psys = projectedintegrator(ds; idxs = 1:2, complete_state = pfun)
-    reinit!(psys,[1., 1.])
-    for j in 1:5
-      step!(psys, 1.)
-    end
-    u = get_state(psys)
-    @test abs(sum(u - [16.43, 16.43])) < 0.01
-
-    # Test projection function on a sphere of unit radius.
-    pfun(u) = u/norm(u)
-    psys = projectedintegrator(ds; idxs = 1:2, complete_state = [0.], projection = pfun)
-    reinit!(psys,[1., 1.])
-    for j in 1:5
-      step!(psys, 1.)
-    end
-    u = get_state(psys)
-    @test abs(sum(u[1:2] - [0.461, 0.461])) < 0.01
 end
