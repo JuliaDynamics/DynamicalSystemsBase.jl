@@ -6,21 +6,25 @@ export projectedintegrator
     projected_integrator(ds::DynamicalSystem, projection, complete_state; kwargs...) → integ
 
 Return an integrator that produces iterations of the dynamical system `ds` on a
-projected lower-dimensional subspace. See [Integrator API](@ref) for handling integrators.
+projected state space. See [Integrator API](@ref) for handling integrators.
 
 The `projection` defines the projected space. If `projection isa AbstractVector{Int}`,
 then the projected space is simply the variable indices that `projection` contains.
 Otherwise, `projection` can be an arbitrary function that given the state of the
-original system, returns the state in the projected space.
+original system, returns the state in the projected space. In this case the projected
+space can be equal, or even higher-dimensional than the original.
 
 `complete_state` produces the state for the original system from the projected state.
 `complete_state` can always be a function that given the projected state returns the full
 state. However, if `projection isa AbstractVector{Int}`, then `complete_state` can
 also be a vector that contains the values of the _remaining_ variables of the system,
-i.e., those _not_ contained in the projected space.
+i.e., those _not_ contained in the projected space. Obviously in this case
+the projected space needs to be lower-dimensional than the original.
 
 Notice that it does not have to hold that the projection is invertible,
-`complete_state` is only used during [`reinit!`](@ref).
+`complete_state` is only used during [`reinit!`](@ref). The internal integrator operates
+in the full state space of course, as there we know the dynamic rule and we can solve it.
+The projection always happens as a last step, e.g., during [`get_state`](@ref).
 
 ## Keyword Arguments
 * `u0`: initial state
@@ -48,12 +52,20 @@ pinteg = # same as in above example...
 function projected_integrator(ds::DynamicalSystem, projection, complete_state;
         u0 = get_state(ds), diffeq = NamedTuple()
 	)
-    if complete_state isa AbstractVector
+    if projection isa AbstractVector{Int}
+        @assert all(1 .≤ projection .≤ dimension(ds))
+        y = u0[projection]
+    else
+        @assert projection(u0) isa AbstractVector
+        y = projection(u0)
+    end
+    if complete_state isa AbstractVector{Int}
         @assert projection isa AbstractVector{Int}
         @assert length(complete_state) + length(projetion) == dimension(ds)
         remidxs = setdiff(1:dimension(ds), projection)
         @assert !isempty(remidxs)
     else
+        @assert length(complete_state(y)) == dimension(ds)
         remidxs = nothing
     end
     integ = integrator(ds, u0; diffeq)
