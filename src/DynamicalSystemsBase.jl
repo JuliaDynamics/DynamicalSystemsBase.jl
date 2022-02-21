@@ -19,8 +19,8 @@ include("core/api_docstrings.jl")
 include("core/discrete.jl")
 include("core/continuous.jl")
 
-include("advanced_systems/projected_system.jl")
-include("advanced_systems/stroboscopic_map.jl")
+include("advanced_integrators/projected_integrator.jl")
+include("advanced_integrators/stroboscopic_map.jl")
 
 include("predefined/famous_systems.jl") # includes both discrete and continuous
 
