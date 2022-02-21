@@ -6,17 +6,21 @@ export projectedintegrator
     projected_integrator(ds::DynamicalSystem, projection, complete_state; kwargs...) → integ
 
 Return an integrator that produces iterations of the dynamical system `ds` on a
-projected subspace. See [Integrator API](@ref) for handling integrators.
+projected lower-dimensional subspace. See [Integrator API](@ref) for handling integrators.
 
 The `projection` defines the projected space. If `projection isa AbstractVector{Int}`,
 then the projected space is simply the variable indices that `projection` contains.
 Otherwise, `projection` can be an arbitrary function that given the state of the
-original system, return the state of the projected system.
+original system, returns the state in the projected space.
 
-`complete_state` is a function that when given as input the state of the projected system
-it produces the state for the original system. This is necessary as the actual integration
-happens in the full space, and the projected space is only what is returned with e.g.,
-[`get_state`](@ref).
+`complete_state` produces the state for the original system from the projected state.
+`complete_state` can always be a function that given the projected state returns the full
+state. However, if `projection isa AbstractVector{Int}`, then `complete_state` can
+also be a vector that contains the values of the _remaining_ variables of the system,
+i.e., those _not_ contained in the projected space.
+
+Notice that it does not have to hold that the projection is invertible,
+`complete_state` is only used during [`reinit!`](@ref).
 
 ## Keyword Arguments
 * `u0`: initial state
@@ -24,101 +28,70 @@ happens in the full space, and the projected space is only what is returned with
   `init` of DifferentialEquations.jl.
 
 ## Examples
+Case 1: project 5-dimensional system to its last two dimensions.
 ```julia
-ds = Systems.lorenz()
-psys = projectedsystem(ds, 0.1; idxs = 1:2, complete_state=[0.0], diffeq = (;reltol = 1e-8))
-reinit!(psys,[1., 1.])
-step!(psys)
-u = get_state(psys)
+ds = Systems.lorenz96(5)
+projection = [4, 5]
+complete_state = [0.0, 0.0, 0.0] # completed state just in the plane of last two dimensions
+pinteg = projected_integrator(ds, projection, complete_state)
+reinit!(pinteg, [0.2, 0.4])
+step!(pinteg)
+get_state(pinteg)
 ```
+Case 2: custom projection 
+```julia
+ds = Systems.lorenz96(5)
+projection(u) = [sum(u), sqrt(u[1]^2 + u[2]^2)]
+complete_state(y) = repeat(y[1]/5, 5)
+pinteg = # same as in above example...
 """
-function projected_integrator(ds::CDS{IIP, S, D};  u0 = get_state(ds),
-	idxs = 1:length(get_state(ds)), complete_state = zeros(eltype(get_state(ds)), 0),
-	projection = nothing, diffeq = NamedTuple()
-	) where {IIP, S, D}
-
-	Ds = length(get_state(ds))
-    if complete_state isa AbstractVector && (length(complete_state) ≠ Ds-length(idxs))
-        error("Vector `complete_state` must have length D-Dp!")
+function projected_integrator(ds::DynamicalSystem, projection, complete_state;
+        u0 = get_state(ds), diffeq = NamedTuple()
+	)
+    if complete_state isa AbstractVector
+        @assert projection isa AbstractVector{Int}
+        @assert length(complete_state) + length(projetion) == dimension(ds)
+        remidxs = setdiff(1:dimension(ds), projection)
+        @assert !isempty(remidxs)
+    else
+        remidxs = nothing
     end
-
-	idxs = SVector(idxs...)
-	complete_and_reinit! = ProjectedSystem(complete_state, idxs, length(get_state(ds)))
-	if isnothing(projection)
-    	get_projected_state = (ds) -> view(get_state(ds), idxs)
-	elseif projection isa Function
-		get_projected_state = (ds) -> projection(get_state(ds))
-	end
-	integ = integrator(ds, u0; diffeq)
-
-	return ProjectedIntegratror(integ, complete_and_reinit!, get_projected_state)
+    integ = integrator(ds, u0; diffeq)
+    u = zeros(dimension(ds))
+	return ProjectedIntegrator(projection, complete_state, u, remidxs, integ)
 end
 
-struct ProjectedIntegratror{I, F, G, Dp}
-	integ::I
-	complete_and_reinit!::F
-	get_projected_state::G
-end
-
-get_state(psys::ProjectedIntegratror) = psys.get_projected_state(psys.integ)
-function DynamicalSystemsBase.step!(psys::ProjectedIntegratror, args...)
-	step!(psys.integ, args...)
-	return
-end
-function DynamicalSystemsBase.reinit!(psys::ProjectedIntegratror, u0)
-	psys.complete_and_reinit!(psys.integ, u0)
-	return
-end
-function DynamicalSystemsBase.get_state(psys::ProjectedIntegratror)
-	return psys.get_projected_state(psys.integ)
-end
-function DynamicalSystemsBase.get_state(psys::ProjectedIntegratror)
-	return psys.get_projected_state(psys.integ)
-end
-
-function Base.show(io::IO, psys::ProjectedIntegratror)
-    println(io, "Iterator of the Projected System")
-    println(io,  rpad(" rule f: ", 14),     DynamicalSystemsBase.eomstring(psys.integ.f.f))
-    println(io,  rpad(" Complete state: ", 14),     psys.complete_and_reinit!.complete_state)
-end
-
-
-
-#####################################################################################
-# Complete and Reinit code
-#####################################################################################
-"""
-    ProjectedSystem(complete_state, idxs, D)
-Helper struct that completes a state and reinitializes the integrator once called
-as a function with arguments `f(integ, y)` with `integ` the initialized dynamical
-system integrator and `y` the projected initial condition on the grid.
-"""
-struct ProjectedSystem{C, Y, R}
+struct ProjectedIntegrator{P, C, R, I}
+    projection::P
     complete_state::C
     u::Vector{Float64} # dummy variable for a state in full state space
-    idxs::SVector{Y, Int}
     remidxs::R
+	integ::I
 end
-function ProjectedSystem(complete_state, idxs, D::Int)
-    remidxs = setdiff(1:D, idxs)
-    remidxs = isempty(remidxs) ? nothing : SVector(remidxs...)
-    u = zeros(D)
-    if complete_state isa AbstractVector
-        @assert eltype(complete_state) <: Number
-    end
-    return ProjectedSystem(complete_state, u, idxs, remidxs)
+
+get_state(pinteg::ProjectedIntegrator{<:Function}) = 
+    pinteg.projection(get_state(pinteg.integ))
+get_state(pinteg::ProjectedIntegrator{<:SVector}) = get_state(pinteg.integ)[projection]
+
+function SciMLBase.step!(pinteg::ProjectedIntegrator, args...)
+	step!(pinteg.integ, args...)
+	return
 end
-function (c::ProjectedSystem{<: AbstractVector})(integ, y)
-    c.u[c.idxs] .= y
-    if !isnothing(c.remidxs)
-        c.u[c.remidxs] .= c.complete_state
-    end
-    reinit!(integ, c.u)
+
+function Base.show(io::IO, pinteg::ProjectedIntegrator)
+    println(io, "Integrator of a projected system")
+    println(io,  rpad(" rule f: ", 14), DynamicalSystemsBase.eomstring(pinteg.integ.f.f))
+    println(io,  rpad(" projection: ", 14), pinteg.projection)
+    println(io,  rpad(" complete state: ", 14), pinteg.complete_state)
 end
-function (c::ProjectedSystem)(integ, y) # case where `complete_state` is a function
-    c.u[c.idxs] .= y
-    if !isnothing(c.remidxs)
-        c.u[c.remidxs] .= c.complete_state(y)
-    end
-    reinit!(integ, c.u)
+
+function SciMLBase.reinit!(pinteg::ProjectedIntegrator{P, <:AbstractVector}, y) where {P}
+    u = pinteg.u
+    u[pinteg.projection] .= y
+    u[pinteg.remidxs] .= pinteg.complete_state
+    reinit!(pinteg.integ, u)
+end
+
+function SciMLBase.reinit!(pinteg::ProjectedIntegrator{P, <:Function}, y) where {P}
+    reinit!(pinteg.integ, pinteg.complete_state(y))
 end

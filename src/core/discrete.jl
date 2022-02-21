@@ -1,8 +1,4 @@
 using StaticArrays, ForwardDiff, SciMLBase
-import SciMLBase: init, step!, isinplace, reinit!, u_modified!
-import Base: show
-
-export reinit!
 
 #####################################################################################
 #                            DiscreteIntegrator                                    #
