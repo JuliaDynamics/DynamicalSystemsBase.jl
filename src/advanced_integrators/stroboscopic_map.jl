@@ -20,6 +20,7 @@ ds = Systems.duffing(zeros(2); ω, f, d = 0.15, β = -1)
 smap = stroboscopicmap(ds, 2π/ω; diffeq = (;reltol = 1e-8))
 reinit!(smap, [1.0, 1.0])
 u = step!(smap)
+u = step!(smap, 4) # step 4 iterations forward
 ```
 """
 function stroboscopicmap(ds::CDS, T; u0 = get_state(ds),	diffeq = NamedTuple())

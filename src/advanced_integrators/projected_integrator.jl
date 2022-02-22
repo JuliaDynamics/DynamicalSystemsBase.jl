@@ -1,4 +1,4 @@
-export projected_integrator 
+export projected_integrator
 #####################################################################################
 # Projected API
 #####################################################################################
@@ -21,9 +21,9 @@ also be a vector that contains the values of the _remaining_ variables of the sy
 i.e., those _not_ contained in the projected space. Obviously in this case
 the projected space needs to be lower-dimensional than the original.
 
-Notice that it does not have to hold that the projection is invertible,
-`complete_state` is only used during [`reinit!`](@ref). The internal integrator operates
-in the full state space of course, as there we know the dynamic rule and we can solve it.
+Notice that it does not require an invertible projection,
+`complete_state` is only used during [`reinit!`](@ref). Of course the internal
+integrator operates in the full state space, where the dynamic rule has been defined.
 The projection always happens as a last step, e.g., during [`get_state`](@ref).
 
 ## Keyword Arguments
@@ -42,7 +42,7 @@ reinit!(pinteg, [0.2, 0.4])
 step!(pinteg)
 get_state(pinteg)
 ```
-Case 2: custom projection 
+Case 2: custom projection
 ```julia
 ds = Systems.lorenz96(5)
 projection(u) = [sum(u), sqrt(u[1]^2 + u[2]^2)]
@@ -83,9 +83,9 @@ struct ProjectedIntegrator{P, C, R, I}
 end
 
 integrator(p::ProjectedIntegrator) = p
-get_state(pinteg::ProjectedIntegrator{<:Function}) = 
+get_state(pinteg::ProjectedIntegrator{<:Function}) =
     pinteg.projection(get_state(pinteg.integ))
-get_state(pinteg::ProjectedIntegrator{<:SVector}) = 
+get_state(pinteg::ProjectedIntegrator{<:SVector}) =
     get_state(pinteg.integ)[pinteg.projection]
 
 function SciMLBase.step!(pinteg::ProjectedIntegrator, args...)
