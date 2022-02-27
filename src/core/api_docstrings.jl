@@ -129,7 +129,7 @@ The time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)` and is not returned
 
 ## DifferentialEquations.jl keyword arguments
 Continuous dynamical systems are evolved via the solvers of DifferentialEquations.jl.
-Functions in DynamicalSystems.jl allow providing options to these solvers via the 
+Functions in DynamicalSystems.jl allow providing options to these solvers via the
 `diffeq` keyword. For example you could use `diffeq = (abstol = 1e-9, reltol = 1e-9)`.
 If you want to specify a solver, do so by using the keyword `alg`, e.g.:
 `diffeq = (alg = Tsit5(), maxiters = 100000)`. This requires you to have been first
@@ -156,13 +156,29 @@ the integrator type. Specifically:
 * `integrator, stroboscopicmap, poincaremap`: it needs to be a vector of size the same
   as the dimension of the dynamical system that produced the integrator.
 * `projected_integrator`: it needs to be a vector of same size as the projected space.
-* `parallel_integrator`: it needs to be a vector of vectors of size the same as the 
+* `parallel_integrator`: it needs to be a vector of vectors of size the same as the
   dimension of the dynamical system that produced the integrator.
 * `tangent_integrator`: there the special signature `reinit!(integ, state, Q0::AbstractMatrix)`
-  should be used, with `Q0` containing the deviation vectors. Alternatively, use 
+  should be used, with `Q0` containing the deviation vectors. Alternatively, use
   [`set_deviations!`](@ref) if you only want to change the deviation vectors.
 """
 function SciMLBase.reinit!(ds::DynamicalSystem) end
+
+
+"""
+    step!(discrete_integ [, dt::Int])
+Progress the discrete-time integrator for 1 or `dt` steps.
+
+    step!(continuous_integ, [, dt [, stop_at_tdt]])
+Progress the continuous-time integrator for one step.
+
+Alternative, if a `dt` is given, then `step!` the integrator until
+there is a temporal difference `≥ dt` (so, step _at least_ for `dt` time).
+
+When `true` is passed to the optional third argument,
+the integrator advances for exactly `dt` time.
+"""
+function SciMLBase.step!(ds::DynamicalSystem) end
 
 # Util functions for `trajectory`
 svector_access(::Nothing) = nothing
