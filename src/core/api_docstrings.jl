@@ -20,6 +20,7 @@ Return the state of `ds`.
 
     get_state(integ [, i::Int = 1])
 Return the state of the integrator, in the sense of the state of the dynamical system.
+This function works for any integrator of the library.
 
 If the integrator is a [`parallel_integrator`](@ref), passing `i` will return
 the `i`-th state. The function also correctly returns the true state of the system
@@ -145,6 +146,23 @@ as you turn off adaptive stepping, e.g.
 `(alg = Tsit5(), adaptive = false, dt = your_step_size)`.
 """
 function trajectory end
+
+
+"""
+    reinit!(integ [, state])
+Re-initialize the integrator to the new given `state`. The `state` type should match
+the integrator type. Specifically:
+
+* `integrator, stroboscopicmap, poincaremap`: it needs to be a vector of size the same
+  as the dimension of the dynamical system that produced the integrator.
+* `projected_integrator`: it needs to be a vector of same size as the projected space.
+* `parallel_integrator`: it needs to be a vector of vectors of size the same as the 
+  dimension of the dynamical system that produced the integrator.
+* `tangent_integrator`: there the special signature `reinit!(integ, state, Q0::AbstractMatrix)`
+  should be used, with `Q0` containing the deviation vectors. Alternatively, use 
+  [`set_deviations!`](@ref) if you only want to change the deviation vectors.
+"""
+function SciMLBase.reinit!(ds::DynamicalSystem) end
 
 # Util functions for `trajectory`
 svector_access(::Nothing) = nothing

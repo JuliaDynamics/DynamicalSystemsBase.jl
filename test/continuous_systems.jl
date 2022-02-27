@@ -1,4 +1,5 @@
 using DynamicalSystemsBase
+using LinearAlgebra:norm
 using Test
 
 println("\nTesting continuous system evolution...")
@@ -30,4 +31,18 @@ end
     @test size(ts1) == (21, 5)
     @test ts1[1, :] == SVector{5}(u)
     @test !any(x -> abs(x) > 1e3, ts1[end])
+end
+
+println("\nTesting stroboscopic map...")
+
+@testset "Duffing stroboscopic map" begin
+    F = 0.27; ω = 0.1;  # smooth boundary
+    ds = Systems.duffing(zeros(2), ω = ω, f = F, d = 0.15, β = -1)
+    smap = stroboscopicmap(ds, 2*pi/ω)
+    reinit!(smap,[1., 1.])
+    for j in 1:100
+      step!(smap)
+    end
+    u = get_state(smap)
+    @test abs(sum(u - [1.11, 0])) < 0.01
 end
