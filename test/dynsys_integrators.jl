@@ -46,6 +46,7 @@ for i in 1:8
         @test mod(i-1, 4) < 2 ? iip : !iip
         J = jacobian(ds)
         @test typeof(J) <: (iip ? Matrix : SMatrix)
+        @test i < 5 ? !isdiscretetime(ds) : isdiscretetime(ds)
 
         tinteg = tangent_integrator(ds, orthonormal(dimension(ds), dimension(ds)); diffeq)
         tuprev = deepcopy(get_state(tinteg))
@@ -74,7 +75,7 @@ for i in 1:8
         step!(pinteg)
         @test get_state(pinteg, 1) == get_state(pinteg, 2) == get_state(pinteg)
         @test puprev != get_state(pinteg)
-        if i ∈ (1,2) 
+        if i ∈ (1,2)
             # Interpolation does not work for Vector{SVector} so it is tested for matrix
             tt = pinteg.t
             while integ.t < tt

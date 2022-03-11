@@ -1,3 +1,5 @@
+# v2.5
+* Added new boolean function `isdiscretetime` that works for all systems/integrators.
 # v2.4
 * Added new type of integrator: `stroboscopicmap`.
 * Added new type of integrator: `projected_integrator`.
