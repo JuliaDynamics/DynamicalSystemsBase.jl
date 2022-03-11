@@ -32,6 +32,7 @@ struct StroboscopicMap{I, F}
 	integ::I
 	T::F
 end
+isdiscretetime(::StroboscopicMap) = true
 
 integrator(p::StroboscopicMap) = p
 function step!(smap::StroboscopicMap)

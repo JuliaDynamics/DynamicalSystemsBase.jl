@@ -81,6 +81,8 @@ struct ProjectedIntegrator{P, C, R, I}
     remidxs::R
 	integ::I
 end
+isdiscretetime(p::ProjectedIntegrator) = isdiscretetime(p.integ)
+
 
 integrator(p::ProjectedIntegrator) = p
 get_state(pinteg::ProjectedIntegrator{<:Function}) =
