@@ -38,7 +38,7 @@ printable(p::AbstractVector) = p'
 printable(p::Nothing) = "nothing"
 printable(p) = p
 
-get_rule_for_print(a::SciMLBase.DEIntegrator) = eomstring(a.f.f)
+get_rule_for_print(a::SciMLBase.AbstractODEIntegrator) = eomstring(a.f.f)
 get_rule_for_print(a::MinimalDiscreteIntegrator) = eomstring(a.f)
 get_rule_for_print(a::DynamicalSystem) = eomstring(a.f)
 get_rule_for_print(a) = get_rule_for_print(a.integ)
