@@ -1,12 +1,4 @@
-using LinearAlgebra, SciMLBase, ForwardDiff, StaticArrays
-using SparseArrays
-
-export dimension, get_state, DynamicalSystem
-export ContinuousDynamicalSystem, DiscreteDynamicalSystem
-export set_parameter!, step!
-export trajectory, jacobian
-export integrator, tangent_integrator, parallel_integrator
-export set_state!, get_state, get_deviations, set_deviations!
+using LinearAlgebra, ForwardDiff, StaticArrays, SparseArrays
 
 #####################################################################################
 #                                  DynamicalSystem                                  #
@@ -28,7 +20,7 @@ with `f` a Julia function (see below).
 container. Pass `nothing` as `p` if your system does not have parameters.
 
 `t0`, `J0` allow you to choose the initial time and provide
-an initialized Jacobian matrix. Continuous systems are evolved via the solvers of 
+an initialized Jacobian matrix. Continuous systems are evolved via the solvers of
 DifferentialEquations.jl, see `CDS_KWARGS` for the default options and the discussion
 in [`trajectory`](@ref).
 
@@ -57,7 +49,7 @@ hence the 2 constructors.
 !!! note "Autonomous vs non-autonomous systems"
     Whether the dynamical system is autonomous (`f` doesn't depend on time) or not, it is
     still necessary to include `t` as an argument of `f`.
-    While for some methods of DynamicalSystems.jl time-dependence is okay, the theoretical 
+    While for some methods of DynamicalSystems.jl time-dependence is okay, the theoretical
     foundation of many functions of the library only makes sense with autonomous systems.
     If you use a non-autonomous system, it is your duty to know for which functions this is okay.
 
@@ -120,6 +112,7 @@ abstract type DynamicalSystem{
     # 6. J (matrix)
 end
 const DS = DynamicalSystem
+systemtype(x) = isdiscretetime(x) ? "discrete" : "continuous"
 
 """
     ContinuousDynamicalSystem(f, state, p [, jacobian [, J]]; t0 = 0.0)
@@ -137,7 +130,7 @@ struct ContinuousDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
     J::JM
 end
 const CDS = ContinuousDynamicalSystem
-systemtype(::CDS) = "continuous"
+isdiscretetime(::CDS) = false
 
 """
     DiscreteDynamicalSystem(f, state, p [, jacobian [, J]]; t0::Int = 0)
@@ -154,7 +147,7 @@ struct DiscreteDynamicalSystem{IIP, S, D, F, P, JAC, JM, IAD} <:
     J::JM
 end
 const DDS = DiscreteDynamicalSystem
-systemtype(::DDS) = "discrete"
+isdiscretetime(::DDS) = true
 
 
 SciMLBase.isinplace(::DS{IIP}) where {IIP} = IIP
@@ -177,7 +170,7 @@ In this case do `p .= values` (which only works for abstract array `p`).
 
 The same function also works for any integrator.
 """
-function set_parameter!(ds, index, value) 
+function set_parameter!(ds, index, value)
     if ds.p isa Union{AbstractArray, AbstractDict}
         setindex!(ds.p, value, index)
     else
@@ -312,54 +305,3 @@ function jacobian(ds::DS{true}, u = ds.u0, p = ds.p, t = ds.t0)
     return J
 end
 jacobian(ds::DS{false}, u = ds.u0, p = ds.p, t = ds.t0) = ds.jacobian(u, p, t)
-
-#####################################################################################
-#                                Pretty-Printing                                    #
-#####################################################################################
-Base.summary(ds::DS) =
-"$(dimension(ds))-dimensional "*systemtype(ds)*" dynamical system"
-
-jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(eomstring(ds.jacobian))"
-eomstring(f::Function) = nameof(f)
-eomstring(f) = nameof(typeof(f))
-
-# Credit to Sebastian Pfitzner
-function printlimited(io, x; Δx = 0, Δy = 0)
-    sz = displaysize(io)
-    io2 = IOBuffer(); ctx = IOContext(io2, :limit => true, :compact => true,
-    :displaysize => (sz[1]-Δy, sz[2]-Δx))
-    if x isa AbstractArray
-        Base.print_array(ctx, x)
-        s = String(take!(io2))
-        s = replace(s[2:end], "  " => ", ")
-        Base.print(io, "["*s*"]")
-    else
-        Base.print(ctx, x)
-        s = String(take!(io2))
-        Base.print(io, s)
-    end
-end
-
-printlimited(io, x::Number; Δx = 0, Δy = 0) = print(io, x)
-
-function Base.show(io::IO, ds::DS)
-    ps = 14
-    text = summary(ds)
-    u0 = get_state(ds)'
-
-    ctx = IOContext(io, :limit => true, :compact => true, :displaysize => (10,50))
-
-    println(io, text)
-    prefix = rpad(" state: ", ps)
-    print(io, prefix); printlimited(io, u0, Δx = length(prefix)); print(io, "\n")
-    println(io,  rpad(" rule f: ", ps),     eomstring(ds.f))
-    println(io,  rpad(" in-place? ", ps),   isinplace(ds))
-    println(io,  rpad(" jacobian: ", ps),   jacobianstring(ds))
-    print(io,    rpad(" parameters: ", ps))
-    printlimited(io, printable(ds.p), Δx = length(prefix), Δy = 10)
-end
-
-printable(p::AbstractArray) = p'
-printable(p::Nothing) = "nothing"
-printable(p) = p
-
