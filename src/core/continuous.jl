@@ -28,7 +28,7 @@ initial state and/or a callback.
 function SciMLBase.ODEProblem(ds::CDS{IIP}, tspan; u0 = ds.u0, callback=CallbackSet()) where {IIP}
     return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian), u0, tspan, ds.p, callback)
 end
-isdiscretetime(::SciMLBase.DEIntegrator) = false
+isdiscretetime(::SciMLBase.AbstractODEIntegrator) = false
 
 #####################################################################################
 #                                 Integrators                                       #

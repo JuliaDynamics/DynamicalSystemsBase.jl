@@ -31,8 +31,9 @@ export get_rule_for_print, isdiscretetime
 export set_parameter!, trajectory, jacobian
 export integrator, tangent_integrator, parallel_integrator
 export set_state!, get_state, get_deviations, set_deviations!
-export init, step!, isinplace, reinit!
+export SciMLBase, init, step!, isinplace, reinit!
 export Systems
 export SVector, SMatrix, @SVector, @SMatrix
+export projected_integrator, stroboscopicmap
 
 end

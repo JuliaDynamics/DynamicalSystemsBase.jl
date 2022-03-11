@@ -1,4 +1,4 @@
-using StaticArrays, ForwardDiff, SciMLBase
+using StaticArrays, ForwardDiff
 
 #####################################################################################
 #                            DiscreteIntegrator                                    #

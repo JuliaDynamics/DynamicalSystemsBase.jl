@@ -1,5 +1,3 @@
-export stroboscopicmap
-
 """
 	stroboscopicmap(ds::ContinuousDynamicalSystem, T; kwargs...)  → smap
 

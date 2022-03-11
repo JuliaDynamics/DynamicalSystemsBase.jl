@@ -1,5 +1,4 @@
-using LinearAlgebra, ForwardDiff, StaticArrays
-using SparseArrays
+using LinearAlgebra, ForwardDiff, StaticArrays, SparseArrays
 
 #####################################################################################
 #                                  DynamicalSystem                                  #
