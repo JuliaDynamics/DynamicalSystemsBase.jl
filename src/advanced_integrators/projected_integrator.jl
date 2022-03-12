@@ -70,10 +70,12 @@ function projected_integrator(ds::DynamicalSystem, projection, complete_state;
     end
     integ = integrator(ds, u0; diffeq)
     u = zeros(dimension(ds))
-	return ProjectedIntegrator(projection, complete_state, u, remidxs, integ)
+	return ProjectedIntegrator{
+        typeof(projection), length(y), typeof(complete_state),
+        typeof(remidxs), typeof(integ)}(projection, complete_state, u, remidxs, integ)
 end
 
-struct ProjectedIntegrator{P, C, R, I}
+struct ProjectedIntegrator{P, PD, C, R, I}
     projection::P
     complete_state::C
     u::Vector{Float64} # dummy variable for a state in full state space
@@ -81,6 +83,7 @@ struct ProjectedIntegrator{P, C, R, I}
 	integ::I
 end
 isdiscretetime(p::ProjectedIntegrator) = isdiscretetime(p.integ)
+DelayEmbeddings.dimension(::ProjectedIntegrator{P, PD}) where {P, PD} = PD
 
 
 integrator(p::ProjectedIntegrator) = p
@@ -96,18 +99,29 @@ end
 
 function Base.show(io::IO, pinteg::ProjectedIntegrator)
     println(io, "Integrator of a projected system")
-    println(io,  rpad(" rule f: ", 14), DynamicalSystemsBase.eomstring(pinteg.integ.f.f))
+    println(io,  rpad(" rule f: ", 14), get_rule_for_print(pinteg.integ))
     println(io,  rpad(" projection: ", 14), pinteg.projection)
+    println(io,  rpad(" dimension: ", 14), dimension(pinteg))
     println(io,  rpad(" complete state: ", 14), pinteg.complete_state)
 end
 
-function SciMLBase.reinit!(pinteg::ProjectedIntegrator{P, <:AbstractVector}, y) where {P}
+function SciMLBase.reinit!(pinteg::ProjectedIntegrator{P, D, <:AbstractVector}, y) where {P, D}
     u = pinteg.u
     u[pinteg.projection] .= y
     u[pinteg.remidxs] .= pinteg.complete_state
     reinit!(pinteg.integ, u)
 end
 
-function SciMLBase.reinit!(pinteg::ProjectedIntegrator{P, <:Function}, y) where {P}
+function SciMLBase.reinit!(pinteg::ProjectedIntegrator{P, D, <:Function}, y) where {P, D}
     reinit!(pinteg.integ, pinteg.complete_state(y))
+end
+
+current_time(pinteg::ProjectedIntegrator) = current_time(pinteg.integ)
+function (pinteg::ProjectedIntegrator{P})(t)  where {P}
+    u = pinteg.integ(t)
+    if P <: Function
+        return pinteg.projection(u)
+    elseif P <: SVector
+        return u[pinteg.projection]
+    end
 end

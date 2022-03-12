@@ -16,6 +16,7 @@ isinplace(::MDI{IIP}) where {IIP} = IIP
 stateeltype(::MDI{IIP, S}) where {IIP, S} = eltype(S)
 stateeltype(::MDI{IIP, S}) where {IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
 isdiscretetime(p::MinimalDiscreteIntegrator) = true
+DelayEmbeddings.dimension(::MDI{IIP, S, D}) where {IIP, S, D} = D
 
 function reinit!(integ::MDI, u = integ.u, Q0 = nothing; t0 = integ.t0)
     integ.u = u
@@ -108,6 +109,7 @@ end
 const TDI = TangentDiscreteIntegrator
 stateeltype(::TDI{IIP, S}) where {IIP, S} = eltype(S)
 isdiscretetime(p::TangentDiscreteIntegrator) = true
+DelayEmbeddings.dimension(::TDI{IIP, S, D}) where {IIP, S, D} = D
 
 u_modified!(t::TDI, a) = nothing
 
@@ -246,24 +248,36 @@ function trajectory(
         Δt = 1, Ttr = 0, save_idxs = nothing, kwargs...
     ) where {IIP, S, D}
     a = svector_access(save_idxs)
-    trajectory(ds, t, u, Δt, Ttr, a)
+    integ = integrator(ds, u)
+    trajectory(integ, t; Δt, Ttr, a)
 end
 
-function trajectory(ds::DDS{IIP, S, D}, t, u, Δt, Ttr, a)  where {IIP, S, D}
+# generic dispatch
+function trajectory(integ, args...; kwargs...)
+    if isdiscretetime(integ)
+        return trajectory_discrete(integ, args...; kwargs...)
+    else
+        return trajectory_continuous(integ, args...; kwargs...)
+    end
+end
+
+# This version of trajectory is for any discrete integrator: Poincare map,
+# stroboscopic map, or standard MinimalDiscreteIntegrator.
+function trajectory_discrete(integ, t, u0 = nothing; Δt=1, Ttr=0, a=nothing)
+    !isnothing(u0) && reinit!(integ, u0)
     Δt = round(Int, Δt)
-    T = eltype(S)
-    integ = integrator(ds, u)
-    ti = ds.t0
-    tvec = (ti+Ttr):Δt:(t+ti+Ttr)
+    T = eltype(get_state(integ))
+    t0 = current_time(integ)
+    tvec = (t0+Ttr):Δt:(t0+t+Ttr)
     L = length(tvec)
-    T = eltype(get_state(ds))
-    X = isnothing(a) ? D : length(a)
+    T = eltype(get_state(integ))
+    X = isnothing(a) ? dimension(integ) : length(a)
     data = Vector{SVector{X, T}}(undef, L)
-    Ttr != 0 && step!(integ, Ttr)
-    data[1] = obtain_access(integ.u, a)
+    Ttr ≠ 0 && step!(integ, Ttr)
+    data[1] = obtain_access(get_state(integ), a)
     for i in 2:L
         step!(integ, Δt)
-        data[i] = SVector{X, T}(obtain_access(integ.u, a))
+        data[i] = SVector{X, T}(obtain_access(get_state(integ), a))
     end
     return Dataset(data)
 end

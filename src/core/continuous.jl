@@ -1,7 +1,6 @@
-using SciMLBase, StaticArrays
-using SciMLBase: __init, ODEFunction, AbstractODEIntegrator
+using StaticArrays
+using SciMLBase: __init, ODEFunction, ODEProblem, AbstractODEIntegrator
 
-export CDS_KWARGS, SimpleATsit5, SimpleTsit5
 #####################################################################################
 #                                    Defaults                                       #
 #####################################################################################
@@ -16,8 +15,9 @@ _get_solver(a) = haskey(a, :alg) ? a[:alg] : DEFAULT_SOLVER
 #                               Interface to DiffEq                                 #
 #####################################################################################
 function ContinuousDynamicalSystem(prob::ODEProblem, args...)
-    return ContinuousDynamicalSystem(prob.f.f, prob.u0, prob.p, args...;
-           t0 = prob.tspan[1])
+    return ContinuousDynamicalSystem(
+        prob.f.f, prob.u0, prob.p, args...; t0 = prob.tspan[1]
+    )
 end
 
 """
@@ -25,10 +25,12 @@ end
 Transform a continuous dynamical system into an `ODEProblem`, optionally using a different
 initial state and/or a callback.
 """
-function SciMLBase.ODEProblem(ds::CDS{IIP}, tspan; u0 = ds.u0, callback=CallbackSet()) where {IIP}
+function SciMLBase.ODEProblem(ds::CDS{IIP}, tspan;
+    u0 = ds.u0, callback=SciMLBase.CallbackSet()) where {IIP}
     return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian), u0, tspan, ds.p, callback)
 end
-isdiscretetime(::SciMLBase.AbstractODEIntegrator) = false
+isdiscretetime(::AbstractODEIntegrator) = false
+DelayEmbeddings.dimension(integ::AbstractODEIntegrator) = length(integ.u)
 
 #####################################################################################
 #                                 Integrators                                       #
@@ -180,20 +182,28 @@ function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
 
     sv_acc = svector_access(save_idxs)
     integ = integrator(ds, u; diffeq)
-    trajectory(ds, integ, T, Δt, Ttr, sv_acc)
+    dimvector = ones(SVector{dimension(ds), Int})
+    trajectory_continuous(integ, T; Δt, Ttr, sv_acc, dimvector)
 end
 
-function trajectory(ds::CDS{IIP, S, D}, integ, T, Δt, Ttr, sv_acc=nothing) where {IIP, S, D}
-    t0 = ds.t0
-    tvec = (t0+Ttr):Δt:(T+t0+Ttr)
+function trajectory_continuous(integ, T, u0 = nothing;
+        Δt = 0.01, Ttr = 0.0, sv_acc=nothing, dimvector = nothing
+    )
+    !isnothing(u0) && reinit!(integ, u0)
+    # This hack is to get type-stable `D`` from integrator
+    # (ODEIntegrator doesn't have `D` as type parameter)
+    D = isnothing(dimvector) ? dimension(integ) : length(dimvector)
+    t0 = current_time(integ)
+    tvec = (t0+Ttr):Δt:(t0+T+Ttr)
     X = isnothing(sv_acc) ? D : length(sv_acc)
-    sol = Vector{SVector{X, eltype(S)}}(undef, length(tvec))
+    ET = eltype(get_state(integ))
+    sol = Vector{SVector{X, ET}}(undef, length(tvec))
     step!(integ, Ttr)
     for (i, t) in enumerate(tvec)
-        while t > integ.t
+        while t > current_time(integ)
             step!(integ)
         end
-        sol[i] = SVector{X, eltype(S)}(obtain_access(integ(t), sv_acc))
+        sol[i] = SVector{X, ET}(obtain_access(integ(t), sv_acc))
     end
     return Dataset(sol)
 end
