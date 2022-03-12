@@ -189,11 +189,14 @@ function integrator(ds::DDS{IIP, S, D, F, P}, u0 = ds.u0; kwargs...) where {IIP,
     return MinimalDiscreteIntegrator{IIP, S, D, F, P}(
     ds.f, S(u0), ds.t0, S(copy(u0)), ds.p, ds.t0)
 end
+integrator(x::MDI) = x
 
 function tangent_integrator(ds::DDS, k::Int = dimension(ds); kwargs...)
     return tangent_integrator(
     ds, orthonormal(dimension(ds), k); kwargs...)
 end
+integrator(x::TDI) = x
+
 
 function tangent_integrator(ds::DDS{IIP, S, D, F, P, JAC, JM}, Q0::AbstractMatrix;
     u0 = ds.u0, kwargs...) where {IIP, S, D, F, P, JAC, JM}
