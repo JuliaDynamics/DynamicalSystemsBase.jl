@@ -43,6 +43,20 @@ using LinearAlgebra: norm
     end
     u = get_state(psys)
     @test abs(sum(u[1:2] - [0.461, 0.461])) < 0.01
+
+    # Trajectory, continuous
+    psys = projected_integrator(ds, projection, complete)
+    tr = trajectory(psys, 10)
+    @test dimension(tr) == 3
+    @test norm(tr[end]) == 1
+
+    # Trajectory, discrete
+    ds = Systems.towel()
+    psys = projected_integrator(ds, [1,2], [0.0])
+    @test get_state(psys) == [0.085, -0.121]
+    @test dimension(psys) == 2
+    tr = trajectory(psys, 10)
+    @test dimension(tr) == 2
 end
 
 

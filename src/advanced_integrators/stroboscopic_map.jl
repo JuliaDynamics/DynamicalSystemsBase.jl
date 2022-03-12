@@ -21,16 +21,16 @@ u = step!(smap)
 u = step!(smap, 4) # step 4 iterations forward
 ```
 """
-function stroboscopicmap(ds::CDS, T; u0 = get_state(ds),	diffeq = NamedTuple())
+function stroboscopicmap(ds::CDS, T; u0 = get_state(ds), diffeq = NamedTuple())
 	integ = integrator(ds, u0; diffeq)
-	return StroboscopicMap(integ, T)
+	return StroboscopicMap{typeof(integ), dimension(ds), typeof(T)}(integ, T)
 end
-
-struct StroboscopicMap{I, F}
+struct StroboscopicMap{I, D, F}
 	integ::I
 	T::F
 end
 isdiscretetime(::StroboscopicMap) = true
+DelayEmbeddings.dimension(::StroboscopicMap{I, D}) where {I, D} = D
 
 integrator(p::StroboscopicMap) = p
 function step!(smap::StroboscopicMap)
@@ -54,3 +54,9 @@ function Base.show(io::IO, smap::StroboscopicMap)
     println(io,  rpad(" rule f: ", 14),     DynamicalSystemsBase.eomstring(smap.integ.f.f))
     println(io,  rpad(" Period: ", 14),     smap.T)
 end
+
+current_time(smap::StroboscopicMap) = current_time(smap.integ)
+function (smap::StroboscopicMap)(t)
+    return pinteg.integ(t)
+end
+integrator(pinteg::StroboscopicMap, args...; kwargs...) = pinteg

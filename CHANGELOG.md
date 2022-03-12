@@ -1,3 +1,7 @@
+# v2.6
+* Added new `current_time(integ)` function.
+* Added `trajectory` for `projected_integrator` and `stroboscopicmap`.
+* Source code of `trajectory` has been expended and generalized. It should now work out of the box for any object that defines the integrator API, as defined in the DynamicalSystems.jl documentation.
 # v2.5
 * Added new boolean function `isdiscretetime` that works for all systems/integrators.
 # v2.4

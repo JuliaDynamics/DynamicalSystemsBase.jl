@@ -118,6 +118,9 @@ See [`Dataset`](@ref) for info on how to use this object.
 The time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)` and is not returned
 (`t0` is the starting time of `ds` which is by default `0`).
 
+`trajectory` also works with all [`Available integrators`](@ref),
+such as [`stroboscopicmap`](@ref).
+
 ## Keyword Arguments
 * `Δt` :  Time step of value output. For discrete systems it must be an integer.
   Defaults to `0.01` for continuous and `1` for discrete.
@@ -186,3 +189,9 @@ svector_access(x::AbstractArray) = SVector{length(x), Int}(x...)
 svector_access(x::Int) = SVector{1, Int}(x)
 obtain_access(u, ::Nothing) = u
 obtain_access(u, i::SVector) = u[i]
+
+"""
+    current_time(integ) → t
+Return the current time of the integrator.
+"""
+current_time(integ) = integ.t
