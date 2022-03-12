@@ -125,3 +125,4 @@ function (pinteg::ProjectedIntegrator{P})(t)  where {P}
         return u[pinteg.projection]
     end
 end
+integrator(pinteg::ProjectedIntegrator, args...; kwargs...) = pinteg

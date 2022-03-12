@@ -59,3 +59,4 @@ current_time(smap::StroboscopicMap) = current_time(smap.integ)
 function (smap::StroboscopicMap)(t)
     return pinteg.integ(t)
 end
+integrator(pinteg::StroboscopicMap, args...; kwargs...) = pinteg
