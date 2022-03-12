@@ -75,7 +75,7 @@ function projected_integrator(ds::DynamicalSystem, projection, complete_state;
         typeof(remidxs), typeof(integ)}(projection, complete_state, u, remidxs, integ)
 end
 
-struct ProjectedIntegrator{P, PD, C, R, I}
+struct ProjectedIntegrator{P, PD, C, R, I} <: GeneralizedDynamicalSystem
     projection::P
     complete_state::C
     u::Vector{Float64} # dummy variable for a state in full state space

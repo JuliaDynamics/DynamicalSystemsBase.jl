@@ -25,7 +25,7 @@ function stroboscopicmap(ds::CDS, T; u0 = get_state(ds), diffeq = NamedTuple())
 	integ = integrator(ds, u0; diffeq)
 	return StroboscopicMap{typeof(integ), dimension(ds), typeof(T)}(integ, T)
 end
-struct StroboscopicMap{I, D, F}
+struct StroboscopicMap{I, D, F} <: GeneralizedDynamicalSystem
 	integ::I
 	T::F
 end

@@ -1,5 +1,16 @@
 using LinearAlgebra, ForwardDiff, StaticArrays, SparseArrays
 
+"""
+    GeneralizedDynamicalSystem
+An umbrella term that includes any instance of [`DynamicalSystem`](@ref)
+but also [`stroboscopicmap`](@ref), [`poincaremap`](@ref) and [`projeted_integrator`](@ref).
+
+It is used as a type decleration in functions that work for any conceivable
+system type, such as [`trajectory`](@ref) or [`basins_of_attraction`](@ref).
+"""
+abstract type GeneralizedDynamicalSystem end
+const GDS = GeneralizedDynamicalSystem
+
 #####################################################################################
 #                                  DynamicalSystem                                  #
 #####################################################################################
@@ -101,7 +112,8 @@ abstract type DynamicalSystem{
         P,       # parameters
         JAC,     # jacobian
         JM,      # jacobian matrix
-        IAD}     # is auto-differentiated
+        IAD      # is auto-differentiated
+    } <: GeneralizedDynamicalSystem
     # one-liner: {IIP, S, D, F, P, JAC, JM, IAD}
     # Subtypes of DynamicalSystem have fields:
     # 1. f

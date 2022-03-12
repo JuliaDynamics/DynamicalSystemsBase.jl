@@ -109,17 +109,17 @@ argument to change the `i`-th state.
 function parallel_integrator end
 
 """
-    trajectory(ds::DynamicalSystem, T [, u]; kwargs...) -> dataset
+    trajectory(ds::GeneralizedDynamicalSystem, T [, u]; kwargs...) -> dataset
 
-Return a dataset that will contain the trajectory of the system,
+Return a dataset that will contain the trajectory of the system `ds`,
 after evolving it for total time `T`, optionally starting from state `u`.
 See [`Dataset`](@ref) for info on how to use this object.
 
 The time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)` and is not returned
 (`t0` is the starting time of `ds` which is by default `0`).
 
-`trajectory` also works with all [`Available integrators`](@ref),
-such as [`stroboscopicmap`](@ref).
+`trajectory` also works with any type of dynamical system where it makes sense,
+see [`GeneralizedDynamicalSystem`](@ref).
 
 ## Keyword Arguments
 * `Δt` :  Time step of value output. For discrete systems it must be an integer.

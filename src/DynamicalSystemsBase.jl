@@ -25,9 +25,10 @@ include("advanced_integrators/stroboscopic_map.jl")
 
 include("predefined/famous_systems.jl") # includes both discrete and continuous
 
-export dimension, get_state, DynamicalSystem
+export GeneralizedDynamicalSystem, DynamicalSystem
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
 export get_rule_for_print, isdiscretetime
+export dimension, get_state
 export set_parameter!, trajectory, jacobian
 export integrator, tangent_integrator, parallel_integrator
 export set_state!, get_state, get_deviations, set_deviations!, current_time
