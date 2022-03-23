@@ -188,7 +188,7 @@ function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
 end
 
 function trajectory_continuous(integ, T, u0 = nothing;
-        Δt = 0.01, Ttr = 0.0, sv_acc=nothing, dimvector = nothing
+        Δt = 0.01, Ttr = 0.0, sv_acc=nothing, dimvector = nothing, kwargs...
     )
     !isnothing(u0) && reinit!(integ, u0)
     # This hack is to get type-stable `D`` from integrator
