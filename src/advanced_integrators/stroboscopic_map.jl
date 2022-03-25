@@ -57,6 +57,6 @@ end
 
 current_time(smap::StroboscopicMap) = current_time(smap.integ)
 function (smap::StroboscopicMap)(t)
-    return pinteg.integ(t)
+    error("Time interpolation is not possible for a stroboscopic map!")
 end
 integrator(pinteg::StroboscopicMap, args...; kwargs...) = pinteg
