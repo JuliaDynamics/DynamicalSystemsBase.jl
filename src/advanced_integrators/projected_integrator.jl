@@ -48,7 +48,7 @@ projection(u) = [sum(u), sqrt(u[1]^2 + u[2]^2)]
 complete_state(y) = repeat(y[1]/5, 5)
 pinteg = # same as in above example...
 """
-function projected_integrator(ds::DynamicalSystem, projection, complete_state;
+function projected_integrator(ds::GeneralizedDynamicalSystem, projection, complete_state;
         u0 = get_state(ds), diffeq = NamedTuple()
 	)
     if projection isa AbstractVector{Int}
@@ -86,7 +86,8 @@ isdiscretetime(p::ProjectedIntegrator) = isdiscretetime(p.integ)
 DelayEmbeddings.dimension(::ProjectedIntegrator{P, PD}) where {P, PD} = PD
 
 
-integrator(p::ProjectedIntegrator) = p
+integrator(pinteg::ProjectedIntegrator, args...; kwargs...) = pinteg
+#integrator(p::ProjectedIntegrator) = p
 get_state(pinteg::ProjectedIntegrator{<:Function}) =
     pinteg.projection(get_state(pinteg.integ))
 get_state(pinteg::ProjectedIntegrator{<:SVector}) =
@@ -125,4 +126,3 @@ function (pinteg::ProjectedIntegrator{P})(t)  where {P}
         return u[pinteg.projection]
     end
 end
-integrator(pinteg::ProjectedIntegrator, args...; kwargs...) = pinteg
