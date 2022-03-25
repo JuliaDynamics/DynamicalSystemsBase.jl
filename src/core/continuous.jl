@@ -190,7 +190,7 @@ end
 function trajectory_continuous(integ, T, u0 = nothing;
         Δt = 0.01, Ttr = 0.0, sv_acc=nothing, dimvector = nothing, kwargs...)
     !isnothing(u0) && reinit!(integ, u0)
-    # This hack is to get type-stable `D`` from integrator
+    # This hack is to get type-stable `D` from integrator
     # (ODEIntegrator doesn't have `D` as type parameter)
     D = isnothing(dimvector) ? dimension(integ) : length(dimvector)
     t0 = current_time(integ)
