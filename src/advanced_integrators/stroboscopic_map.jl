@@ -57,6 +57,10 @@ end
 
 current_time(smap::StroboscopicMap) = current_time(smap.integ)
 function (smap::StroboscopicMap)(t)
-    return pinteg.integ(t)
+	if t == current_time(smap)
+		return get_state(smap)
+	else
+		error("Can't extrapolate discrete systems!")
+	end
 end
 integrator(pinteg::StroboscopicMap, args...; kwargs...) = pinteg

@@ -255,18 +255,9 @@ function trajectory(
     trajectory(integ, t; Δt, Ttr, a)
 end
 
-# generic dispatch
-function trajectory(integ, args...; kwargs...)
-    if isdiscretetime(integ)
-        return trajectory_discrete(integ, args...; kwargs...)
-    else
-        return trajectory_continuous(integ, args...; kwargs...)
-    end
-end
-
 # This version of trajectory is for any discrete integrator: Poincare map,
 # stroboscopic map, or standard MinimalDiscreteIntegrator.
-function trajectory_discrete(integ, t, u0 = nothing; Δt=1, Ttr=0, a=nothing)
+function trajectory_discrete(integ, t, u0 = nothing; Δt=1, Ttr=0, a=nothing, diffeq=nothing)
     !isnothing(u0) && reinit!(integ, u0)
     Δt = round(Int, Δt)
     T = eltype(get_state(integ))

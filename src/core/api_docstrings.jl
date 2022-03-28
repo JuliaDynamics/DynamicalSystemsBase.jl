@@ -148,7 +148,13 @@ You can also choose any other solver except `SimpleATsit5`, such as `Tsit5`, as 
 as you turn off adaptive stepping, e.g.
 `(alg = Tsit5(), adaptive = false, dt = your_step_size)`.
 """
-function trajectory end
+function trajectory(integ, args...; kwargs...)
+  if isdiscretetime(integ)
+      return trajectory_discrete(integ, args...; kwargs...)
+  else
+      return trajectory_continuous(integ, args...; kwargs...)
+  end
+end
 
 
 """
