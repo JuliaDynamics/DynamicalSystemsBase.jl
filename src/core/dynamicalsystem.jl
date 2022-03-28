@@ -5,8 +5,8 @@ using LinearAlgebra, ForwardDiff, StaticArrays, SparseArrays
 An umbrella term that includes any instance of [`DynamicalSystem`](@ref)
 but also [`stroboscopicmap`](@ref), [`poincaremap`](@ref) and [`projeted_integrator`](@ref).
 
-It is used as a type decleration in functions that work for any conceivable
-system type, such as [`trajectory`](@ref) or [`basins_of_attraction`](@ref).
+It is used as type declaration in functions that work for any conceivable
+system type, such as [`trajectory`](@ref) or [`AttractorMapper`](@ref).
 """
 abstract type GeneralizedDynamicalSystem end
 const GDS = GeneralizedDynamicalSystem
