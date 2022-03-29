@@ -372,19 +372,15 @@ x_{n+1} &= -J_0 \\cos \\theta_n
 \\end{aligned}
 ```
 
-This map has two fixed point at `(0,-J_0)` and `(π,J_0)` which are attracting for `|1+2a-4b|<1`. There is a chaotic transient dynamics
-before the dynamical systems settles at a fixed point. This map illustrate the fractalization of the basins boundary and its uncertainty exponent `α` is roughly 0.2.
+This map has two fixed point at `(0,-J_0)` and `(π,J_0)` which are attracting for
+`|1+2a-4b|<1`. There is a chaotic transient dynamics
+before the dynamical systems settles at a fixed point.
+This map illustrate the fractalization of the basins boundary and its uncertainty exponent
+`α` is roughly 0.2.
 
-[^Grebogi1983]: C. Grebogi, S. W. McDonald, E. Ott and J. A. Yorke, Final state sensitivity: An obstruction to predictability, Physics Letters A, 99, 9, 1983
-
-## Example
-```julia
-ds = Systems.grebogi_map(rand(2))
-integ = integrator(ds)
-θg = range(0, 2π, length=300)
-xg = range(-0.5, 0.5, length=300)
-bsn, att = basins_map2D(θg, xg, integ)
-```
+[^Grebogi1983]:
+    C. Grebogi, S. W. McDonald, E. Ott and J. A. Yorke, Final state sensitivity:
+    An obstruction to predictability, Physics Letters A, 99, 9, 1983
 """
 function grebogi_map(u0 = [0.2, 0.]; a = 1.32, b=0.9, J₀=0.3)
     return DDS(grebogi_map_rule, u0, [a,b,J₀], grebogi_map_J)
