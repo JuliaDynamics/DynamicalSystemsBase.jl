@@ -20,7 +20,7 @@ also be a vector that contains the values of the _remaining_ variables of the sy
 i.e., those _not_ contained in the projected space. Obviously in this case
 the projected space needs to be lower-dimensional than the original.
 
-Notice that it does not require an invertible projection,
+Notice that `projected_integrator` does not require an invertible projection,
 `complete_state` is only used during [`reinit!`](@ref). Of course the internal
 integrator operates in the full state space, where the dynamic rule has been defined.
 The projection always happens as a last step, e.g., during [`get_state`](@ref).
@@ -41,12 +41,13 @@ reinit!(pinteg, [0.2, 0.4])
 step!(pinteg)
 get_state(pinteg)
 ```
-Case 2: custom projection
+Case 2: custom projection to general functions of state.
 ```julia
 ds = Systems.lorenz96(5)
 projection(u) = [sum(u), sqrt(u[1]^2 + u[2]^2)]
 complete_state(y) = repeat(y[1]/5, 5)
 pinteg = # same as in above example...
+````
 """
 function projected_integrator(ds::GeneralizedDynamicalSystem, projection, complete_state;
         u0 = get_state(ds), diffeq = NamedTuple()
