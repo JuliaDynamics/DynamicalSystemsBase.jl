@@ -109,7 +109,7 @@ argument to change the `i`-th state.
 function parallel_integrator end
 
 """
-    trajectory(ds::GeneralizedDynamicalSystem, T [, u]; kwargs...) -> dataset
+    trajectory(ds::GeneralizedDynamicalSystem, T [, u]; kwargs...) → dataset
 
 Return a dataset that will contain the trajectory of the system `ds`,
 after evolving it for total time `T`, optionally starting from state `u`.
