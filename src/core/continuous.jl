@@ -143,7 +143,7 @@ end
 # Rosenbrock32, ROS3P, Rodas3, RosShamp4, Veldd4, Velds4, GRK4T,
 # GRK4A, Ros4LStab, Rodas4, Rodas42, Rodas4P)
 
-function parallel_integrator(ds::CDS, states; diffeq = NamedTuple, kwargs...)
+function parallel_integrator(ds::CDS, states; diffeq = NamedTuple(), kwargs...)
     if !isempty(kwargs)
         @warn DIFFEQ_DEP_WARN
         diffeq = NamedTuple(kwargs)
