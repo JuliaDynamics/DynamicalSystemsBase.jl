@@ -219,6 +219,9 @@ get_state(integ::AbstractODEIntegrator{Alg, IIP, S}, k::Int = 1) where {Alg, IIP
 get_state(integ::AbstractODEIntegrator{Alg, IIP, S}, k::Int = 1) where {Alg, IIP, S<:AbstractMatrix} =
     view(integ.u, :, k)
 
+get_states(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:AbstractMatrix} =
+    eachcol(integ.u)
+
 function set_state!(
     integ::AbstractODEIntegrator{Alg, IIP, S}, u::AbstractVector
     ) where {Alg, IIP, S<:AbstractVector}

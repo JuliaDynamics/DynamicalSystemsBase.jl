@@ -33,8 +33,6 @@ get_state(integ) = integ.u
 Return an iterator over all contained states in a [`parallel_integrator`](@ref).
 """
 get_states(integ) = integ.u
-get_states(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:AbstractMatrix} =
-    eachcol(integ.u)
 
 """
     set_state!(integ, u [, i::Int = 1])
