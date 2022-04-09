@@ -1,3 +1,5 @@
+# v2.7
+* New function `get_states` that returns an iterator over states contained in a `parallel_integrator`.
 # v2.6
 * Added new `GeneralizedDynamicalSystem` abstract type that is an umbrella term.
 # v2.5
