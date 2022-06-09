@@ -538,7 +538,7 @@ function nosehoover_jacob(u, p, t)
     x,y,z = u
     return @SMatrix [0 1 0;
                      -1 z y;
-                     0 2y 0]
+                     0 -2y 0]
 end
 
 """
