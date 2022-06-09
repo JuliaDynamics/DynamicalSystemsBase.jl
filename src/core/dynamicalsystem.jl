@@ -182,15 +182,20 @@ In this case do `p .= values` (which only works for abstract array `p`).
 
 The same function also works for any integrator.
 """
-function set_parameter!(ds, index, value)
-    if ds.p isa Union{AbstractArray, AbstractDict}
-        setindex!(ds.p, value, index)
+set_parameter!(ds::DynamicalSystem, args...) = _set_parameter!(ds.p, args...)
+# Generalized system case
+set_parameter!(x, args...) = _set_parameter!(x.integ.p, args...)
+
+function _set_parameter!(p, index, value)
+    if p isa Union{AbstractArray, AbstractDict}
+        setindex!(p, value, index)
     else
-        setproperty!(ds.p, index, value)
+        setproperty!(p, index, value)
     end
 end
 
-set_parameter!(ds, values) = (ds.p .= values)
+_set_parameter!(p, values) = (p .= values)
+
 
 
 #####################################################################################

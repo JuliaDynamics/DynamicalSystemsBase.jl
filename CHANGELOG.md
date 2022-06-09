@@ -1,3 +1,7 @@
+# v2.7.2
+- Integer Δt is now enforced in trajectory calculation of discrete systems. Not doing so led to silently incorrect behavior that the user wouldn't expect.
+- Fixed `set_parameter!` not working for `projected_integrator`.
+
 # v2.7
 * New function `get_states` that returns an iterator over states contained in a `parallel_integrator`.
 # v2.6

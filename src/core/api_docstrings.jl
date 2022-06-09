@@ -151,11 +151,11 @@ adaptive time-stepping. Use `(alg = SimpleTsit5(), dt = your_step_size)` as keyw
 for a non-adaptive time stepping solver.
 """
 function trajectory(integ, args...; kwargs...)
-  if isdiscretetime(integ)
-      return trajectory_discrete(integ, args...; kwargs...)
-  else
-      return trajectory_continuous(integ, args...; kwargs...)
-  end
+    if isdiscretetime(integ)
+        return trajectory_discrete(integ, args...; kwargs...)
+    else
+        return trajectory_continuous(integ, args...; kwargs...)
+    end
 end
 
 
