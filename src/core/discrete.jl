@@ -257,7 +257,9 @@ end
 
 # This version of trajectory is for any discrete integrator: Poincare map,
 # stroboscopic map, or standard MinimalDiscreteIntegrator.
-function trajectory_discrete(integ, t, u0 = nothing; Δt=1, Ttr=0, a=nothing, diffeq=nothing)
+function trajectory_discrete(integ, t, u0 = nothing;
+        Δt::Int = 1, Ttr = 0, a = nothing, diffeq = nothing
+    )
     !isnothing(u0) && reinit!(integ, u0)
     Δt = round(Int, Δt)
     T = eltype(get_state(integ))
