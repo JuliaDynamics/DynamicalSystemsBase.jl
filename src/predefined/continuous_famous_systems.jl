@@ -304,8 +304,8 @@ A conservative dynamical system with rule
 \\begin{aligned}
 \\dot{q}_0 &= A p_0 \\\\
 \\dot{q}_2 &= A p_2 \\\\
-\\dot{p}_0 &= -A q_0 -3 \\frac{B}{\\sqrt{2}} (q_2^2 - q_1^2) - D q_1 (q_1^2 + q_2^2) \\\\
-\\dot{p}_2 &= -q_2 [A + 3\\sqrt{2} B q_1 + D (q_1^2 + q_2^2)] (x^2 - y^2)
+\\dot{p}_0 &= -A q_0 -3 \\frac{B}{\\sqrt{2}} (q_2^2 - q_0^2) - D q_0 (q_0^2 + q_2^2) \\\\
+\\dot{p}_2 &= -q_2 [A + 3\\sqrt{2} B q_0 + D (q_0^2 + q_2^2)]
 \\end{aligned}
 ```
 
