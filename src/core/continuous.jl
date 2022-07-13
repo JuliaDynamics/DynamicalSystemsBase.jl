@@ -4,7 +4,7 @@ using SciMLBase: __init, ODEFunction, ODEProblem, AbstractODEIntegrator
 #####################################################################################
 #                                    Defaults                                       #
 #####################################################################################
-using SimpleDiffEq: SimpleATsit5, SimpleTsit5
+using SimpleDiffEq: SimpleATsit5, SimpleTsit5,AbstractSimpleDiffEqODEAlgorithm
 export SimpleATsit5, SimpleTsit5
 const DEFAULT_SOLVER = SimpleATsit5()
 const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-6, reltol = 1e-6)
@@ -282,4 +282,10 @@ function SciMLBase.reinit!(integ::AbstractODEIntegrator, u0::AbstractVector,
     set_state!(integ, u0)
     set_deviations!(integ, Q0)
     reinit!(integ, integ.u; kwargs...)
+end
+
+successful_step(integ::AbstractODEIntegrator{Alg, IIP, S, T}) where {Alg <:AbstractSimpleDiffEqODEAlgorithm, IIP, S, T} = true
+
+function successful_step(integ)
+	(integ.sol.retcode ==:Success || integ.sol.retcode ==:Default) ? true : false
 end
