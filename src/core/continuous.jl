@@ -284,7 +284,10 @@ function SciMLBase.reinit!(integ::AbstractODEIntegrator, u0::AbstractVector,
     reinit!(integ, integ.u; kwargs...)
 end
 
-successful_step(integ) = true
+function successful_step(integ)
+	all(isfinite,integ.u) ? true : false
+end
+
 successful_step(integ::AbstractODEIntegrator{Alg, IIP, S, T}) where {Alg <:AbstractSimpleDiffEqODEAlgorithm, IIP, S, T} = true
 
 function successful_step(integ::AbstractODEIntegrator)
