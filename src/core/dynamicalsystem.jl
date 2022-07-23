@@ -322,3 +322,7 @@ function jacobian(ds::DS{true}, u = ds.u0, p = ds.p, t = ds.t0)
     return J
 end
 jacobian(ds::DS{false}, u = ds.u0, p = ds.p, t = ds.t0) = ds.jacobian(u, p, t)
+
+function successful_step(integ)
+	all(isfinite,get_state(integ)) ? true : false
+end
