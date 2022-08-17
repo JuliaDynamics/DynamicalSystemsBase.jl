@@ -8,7 +8,7 @@ mutable struct MinimalDiscreteIntegrator{IIP, S, D, F, P}
     u::S      # integrator state
     t::Int    # integrator "time" (counter)
     dummy::S  # dummy, used only in the IIP version
-    p::P      # parameter container, I don't know why
+    p::P      # parameter container
     t0::Int   # initial time (only for reinit!)
 end
 const MDI = MinimalDiscreteIntegrator
@@ -52,6 +52,9 @@ get_deviations(integ::MDI{Alg, S}) where {Alg, S<:AbstractMatrix} =
     @view integ.u[:, 2:end]
 set_deviations!(integ::MDI{Alg, S}, Q) where {Alg, S<:AbstractMatrix} =
     (integ.u[:, 2:end] = Q)
+
+
+set_parameter!(x::MDI, args...) = _set_parameter!(x.p, args...)
 
 #####################################################################################
 #                                   Stepping                                        #
@@ -98,7 +101,7 @@ mutable struct TangentDiscreteIntegrator{IIP, S, D, F, P, JAC, JM, WM}
     u::S            # integrator state
     t::Int          # integrator "time" (counter)
     dummy::S        # dummy, used only in the IIP version
-    p::P            # parameter container, I don't know why
+    p::P            # parameter container
     t0::Int         # initial time (only for reinit!)
     jacobian::JAC   # jacobian function
     J::JM           # jacobian matrix
@@ -134,6 +137,7 @@ function reinit!(integ::TDI, u = integ.u, Q0 = nothing; t0 = integ.t0)
     return
 end
 
+set_parameter!(x::TDI, args...) = _set_parameter!(x.p, args...)
 
 #####################################################################################
 #                                 Tangent Stepping                                  #
