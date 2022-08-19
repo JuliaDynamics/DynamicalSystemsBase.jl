@@ -1217,7 +1217,45 @@ function hindmarshrose_jac(u, p, t)
     end
 end
 
-
+"""
+```julia
+hindmarshrose_two_coupled(u0=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+a = 1.0, b = 3.0, d = 5.0, r = 0.001, s = 4.0, xr = -1.6, I = 4.0, k1 = -0.17, k2 = -0.17, k_el = 0.0, xv = 2.0)
+```
+```math
+\\begin{aligned}
+\\dot x_{i} = y_{i} + bx^{2}_{i} - ax^{3}_{i} - z_{i} + I - k_{i}(x_{i} - v_{s})\Gamma(x_{j}) + k(x_{j} - x_{i})\\
+\\dot y_{i} = c - d x^{2}_{i} - y_{i}\\
+\\dot z_{i} = r[s(x_{i} - x_{R}) - z_{i}]\\
+\\i,j=1,2 \ (i\neq j).\\
+\\end{aligned}
+```
+	
+The two coupled Hindmarsh Rose element by chemical and electrical synapse. Model is reproduced dynamic  of a neuron's membrane potential.
+The default parametres values are taken from article "Dragon-king-like extreme events in coupled bursting neurons", DOI:https://doi.org/10.1103/PhysRevE.97.062311.
+"""
+function hindmarshrose_two_coupled(u0=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+			a = 1.0, b = 3.0, d = 5.0, r = 0.001, s = 4.0, xr = -1.6, I = 4.0,
+			k1 = -0.17, k2 = -0.17, k_el = 0.0, xv = 2.0)
+	return CDS(hindmarshrose_coupled_rule, u0, [a, b, c, d, r, s, xr, I, k1, k2, k_el, xv])
+end
+function hindmarshrose_coupled_rule(du, u, p, t)
+		function sigma(x)
+    			return @fastmath 1.0 / ( 1.0 + exp( -10.0 * ( x  - ( - 0.25 ) ) ) )
+		end
+		a, b, c, d, r, s, xr, I, k1, k2, k_el, xv = p
+		x1, y1, z1, x2, y2, z2 = u
+		
+		du1 = y1 + b * x1 ^ 2 - a * x1 ^3 - z1 + I - k1 * ( x1 - vs ) * sigma(x2) + el_link * ( x2 - x1 )
+    		du2 = c - d * x1 ^2 - y1
+    		du3 = r * ( s * ( x1 - xr ) - z1 )
+    
+    		du4 = y2 + b * x2 ^ 2 - a * x2 ^3 - z2 + I - k2 * ( x2 - vs ) * sigma(x1) + el_link * ( x1 - x2 )
+    		du5 = c - d * x2 ^2 - y2
+    		du6 = r * ( s * ( x2 - xr ) - z2 )
+    		return SVector(du1, du2, du3, du4, du5, du6)
+end	
+	
 """
 ```julia
 stuartlandau_oscillator(u0=[1.0, 0.0]; μ=1.0, ω=1.0, b=1) -> ds
