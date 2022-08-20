@@ -202,7 +202,7 @@ as well as composite types. In the latter case `index` needs to be a `Symbol`.
 
 The same function also works for any integrator.
 """
-set_parameter!(ds, args...) = _set_parameter!(get_parameters(ds.p), args...)
+set_parameter!(ds, args...) = _set_parameter!(get_parameters(ds), args...)
 
 function _set_parameter!(p, index, value)
     if p isa Union{AbstractArray, AbstractDict}
