@@ -3,3 +3,5 @@ Direct propagation of keyword arguments to DifferentialEquations.jl is deprecate
 From now on pass any DiffEq-related keywords as a `NamedTuple` using the
 explicit keyword `diffeq` instead.
 """
+
+_set_parameter!(p, values) = (p .= values)
