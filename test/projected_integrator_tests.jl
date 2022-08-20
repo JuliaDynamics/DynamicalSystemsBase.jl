@@ -14,7 +14,7 @@ using LinearAlgebra: norm
     end
     y = get_state(psys)
     @test length(y) == 2
-    @test abs(sum(y - [16.43, 16.43])) < 0.01
+    @test abs(sum(y .- [16.43, 16.43])) < 0.01
 
     # Test complete state function
     complete = (y) -> [y[1], y[2], y[2] + 1]
@@ -30,11 +30,17 @@ using LinearAlgebra: norm
     u = get_state(psys)
     @test abs(sum(u - [16.43, 16.43])) < 0.01
 
+    p0 = get_parameter(ds, 1)
+    @test get_parameter(psys, 1) == p0
+    set_parameter!(psys, 1, 0.5)
+    @test get_parameter(psys, 1) == 0.5
+    set_parameter!(psys, 1, p0)
+
     # Test projection function on a sphere of unit radius
     projection(u) = u/norm(u)
     complete = y -> 10y
     psys = projected_integrator(ds, projection, complete)
-    @test norm(get_state(psys)) == 1
+    @test norm(get_state(psys)) ≈ 1
     reinit!(psys, ones(3))
     @test psys.integ.u[1] == 10
 
@@ -48,7 +54,7 @@ using LinearAlgebra: norm
     psys = projected_integrator(ds, projection, complete)
     tr = trajectory(psys, 10)
     @test dimension(tr) == 3
-    @test norm(tr[end]) == 1
+    @test norm(tr[end]) ≈ 1
 
     # Trajectory, discrete
     ds = Systems.towel()

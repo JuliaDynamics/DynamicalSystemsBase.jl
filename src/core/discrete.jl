@@ -54,8 +54,6 @@ set_deviations!(integ::MDI{Alg, S}, Q) where {Alg, S<:AbstractMatrix} =
     (integ.u[:, 2:end] = Q)
 
 
-set_parameter!(x::MDI, args...) = _set_parameter!(x.p, args...)
-
 #####################################################################################
 #                                   Stepping                                        #
 #####################################################################################
@@ -136,8 +134,6 @@ function reinit!(integ::TDI, u = integ.u, Q0 = nothing; t0 = integ.t0)
     integ.t = t0
     return
 end
-
-set_parameter!(x::TDI, args...) = _set_parameter!(x.p, args...)
 
 #####################################################################################
 #                                 Tangent Stepping                                  #

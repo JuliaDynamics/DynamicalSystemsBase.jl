@@ -1,3 +1,6 @@
+# v2.8
+- New functions `get_parameters` and `get_parameter` that simplify interacting with the parameters of a dynamical system (and drastically simplify source code of `set_parameter!`).
+
 # v2.7.2
 - Integer Δt is now enforced in trajectory calculation of discrete systems. Not doing so led to silently incorrect behavior that the user wouldn't expect.
 - Fixed `set_parameter!` not working for `projected_integrator`.

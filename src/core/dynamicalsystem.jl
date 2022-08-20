@@ -29,6 +29,8 @@ ContinuousDynamicalSystem(f, state, p [, jacobian [, J0]]; t0 = 0.0)
 with `f` a Julia function (see below).
 `p` is a parameter container, which we highly suggest to be a mutable, concretely typed
 container. Pass `nothing` as `p` if your system does not have parameters.
+Use [`get_parameters`](@ref), [`get_parameter`](@ref) and [`set_parameter!`](@ref)
+to interact with `p`.
 
 `t0`, `J0` allow you to choose the initial time and provide
 an initialized Jacobian matrix. Continuous systems are evolved via the solvers of
@@ -171,20 +173,36 @@ get_state(ds::DS) = ds.u0
 DelayEmbeddings.dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
 
 """
-    set_parameter!(ds::DynamicalSystem, index, value)
+    get_parameters(ds_or_integ)
+Return the parameter container of the system.
+"""
+get_parameters(ds) = ds.p
+
+"""
+    get_parameter(ds_or_integ, index)
+Return the parameter of the system at the given `index`
+(which works for arrays, dictionaries, or composite types if `Symbol`).
+"""
+get_parameter(ds, index) = _get_parameter(get_parameters(ds), index)
+
+function _get_parameter(p, index)
+    if p isa Union{AbstractArray, AbstractDict}
+        getindex(p, index)
+    else
+        getproperty(p, index)
+    end
+end
+
+
+"""
+    set_parameter!(ds_or_integ, index, value)
 Change a parameter of the system given the index it has in the parameter container `p`
 and the `value` to set it to. This function works for both array/dictionary containers
 as well as composite types. In the latter case `index` needs to be a `Symbol`.
 
-
-    set_parameter!(ds::DynamicalSystem, values)
-In this case do `p .= values` (which only works for abstract array `p`).
-
 The same function also works for any integrator.
 """
-set_parameter!(ds::DynamicalSystem, args...) = _set_parameter!(ds.p, args...)
-# Generalized system case
-set_parameter!(x, args...) = _set_parameter!(x.integ.p, args...)
+set_parameter!(ds, args...) = _set_parameter!(get_parameters(ds), args...)
 
 function _set_parameter!(p, index, value)
     if p isa Union{AbstractArray, AbstractDict}
@@ -193,9 +211,6 @@ function _set_parameter!(p, index, value)
         setproperty!(p, index, value)
     end
 end
-
-_set_parameter!(p, values) = (p .= values)
-
 
 
 #####################################################################################

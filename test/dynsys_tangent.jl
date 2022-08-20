@@ -1,6 +1,9 @@
 using DynamicalSystemsBase
 using OrdinaryDiffEq, SimpleDiffEq, StaticArrays, LinearAlgebra
 using Test
+# TODO: Surely it is easier to rewrite these tests
+# to test a LINEAR system (where state evolution == tangent space evolution)
+# and this way we don't have to re-write `lyapunovspectrum` here.
 
 algs = (Vern9(), Tsit5(), SimpleATsit5())
 

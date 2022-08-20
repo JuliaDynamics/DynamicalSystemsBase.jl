@@ -48,6 +48,7 @@ end
 function get_state(smap::StroboscopicMap)
 	return smap.integ.u
 end
+get_parameters(smap::StroboscopicMap) = smap.integ.p
 
 function Base.show(io::IO, smap::StroboscopicMap)
     println(io, "Iterator of the stroboscopic map")

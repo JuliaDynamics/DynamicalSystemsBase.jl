@@ -94,6 +94,8 @@ get_state(pinteg::ProjectedIntegrator{<:Function}) =
 get_state(pinteg::ProjectedIntegrator{<:SVector}) =
     get_state(pinteg.integ)[pinteg.projection]
 
+get_parameters(pinteg::ProjectedIntegrator) = pinteg.integ.p
+
 function SciMLBase.step!(pinteg::ProjectedIntegrator, args...)
 	step!(pinteg.integ, args...)
 	return
