@@ -29,7 +29,7 @@ export GeneralizedDynamicalSystem, DynamicalSystem
 export ContinuousDynamicalSystem, DiscreteDynamicalSystem
 export get_rule_for_print, isdiscretetime
 export dimension, get_state, get_states
-export get_parameter, set_parameter!
+export get_parameter, get_parameters, set_parameter!
 export trajectory, jacobian
 export integrator, tangent_integrator, parallel_integrator
 export set_state!, get_state, get_deviations, set_deviations!, current_time
