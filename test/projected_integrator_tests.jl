@@ -57,6 +57,12 @@ using LinearAlgebra: norm
     @test dimension(psys) == 2
     tr = trajectory(psys, 10)
     @test dimension(tr) == 2
+
+    p0 = get_parameter(ds, 1)
+    @test get_parameter(psys, 1) == p0
+    set_parameter!(psys, 1, 0.5)
+    @test get_parameter(psys, 1) == 0.5
+    set_parameter!(psys, 1, p0)
 end
 
 

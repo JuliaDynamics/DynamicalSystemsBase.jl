@@ -54,6 +54,9 @@ for i in 1:8
         @test tuprev != get_state(tinteg)
 
         integ = integrator(ds; diffeq)
+        @test get_parameters(ds) == get_parameters(integ) == get_parameters(tinteg)
+        @test get_parameter(ds, 1) == get_parameter(integ, 1) == get_parameter(tinteg, 1)
+
         uprev = deepcopy(get_state(integ))
         step!(integ)
         @test uprev != get_state(integ)
@@ -89,6 +92,13 @@ for i in 1:8
         u2 = 2get_state(pinteg, 2)
         set_state!(pinteg, u2, 2)
         @test get_state(pinteg, 2) == u2
+
+        p0 = get_parameter(ds, 1)
+        for obj in (ds, integ, tinteg, pinteg)
+            set_parameter!(obj, 1, 0.5)
+            @test get_parameter(ds, 1) == 0.5
+            set_parameter!(obj, 1, p0)
+        end
     end
 end
 
