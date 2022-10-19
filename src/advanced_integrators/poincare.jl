@@ -1,7 +1,7 @@
-using Roots: find_zero, A42
+import Roots
 export poincaresos, produce_orbitdiagram, PlaneCrossing, poincaremap, PoincareMap
 
-const ROOTS_ALG = A42()
+const ROOTS_ALG = Roots.A42()
 
 #####################################################################################
 #                               Hyperplane                                          #
@@ -143,8 +143,8 @@ const PSOS_ERROR = "The Poincaré surface of section did not have any points!"
 
 """
 	poincaremap!(integ, plane_distance, planecrossing, Tmax, rootkw)
-Low level function that actual performs the algorithm of finding the next crossing
-of the Poincaré surface of section. Return the state at the section or `nothing` if
+Low level function that actually performs the algorithm of finding the next crossing
+of the Poincaré surface of section. Return the state and time at the section or `nothing` if
 evolved for more than `Tmax` without any crossing.
 """
 function poincaremap!(integ, plane_distance, planecrossing, Tmax, rootkw)
@@ -170,7 +170,7 @@ function poincaremap!(integ, plane_distance, planecrossing, Tmax, rootkw)
     # we evolved too long and no crossing, return nothing
     (integ.t - t0) > Tmax && return (nothing, nothing)
     # Else, we're guaranteed to have `t` after plane and `tprev` before plane
-    tcross = Roots.find_zero(plane_distance, (integ.tprev, integ.t), Roots.A42(); rootkw...)
+    tcross = Roots.find_zero(plane_distance, (integ.tprev, integ.t), ROOTS_ALG; rootkw...)
     ucross = integ(tcross)
     return ucross, tcross
 end
