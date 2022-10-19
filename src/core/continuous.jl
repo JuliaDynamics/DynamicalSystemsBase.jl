@@ -188,8 +188,11 @@ function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     trajectory_continuous(integ, T; Δt, Ttr, sv_acc, dimvector)
 end
 
+# This is the low-level interface of trajectory, that works given any continuous
+# time integrator, including projected integrators
 function trajectory_continuous(integ, T, u0 = nothing;
-        Δt = 0.01, Ttr = 0.0, sv_acc=nothing, dimvector = nothing, diffeq=nothing)
+        Δt = 0.01, Ttr = 0.0, sv_acc=nothing, dimvector = nothing
+    )
     !isnothing(u0) && reinit!(integ, u0)
     # This hack is to get type-stable `D` from integrator
     # (ODEIntegrator doesn't have `D` as type parameter)
