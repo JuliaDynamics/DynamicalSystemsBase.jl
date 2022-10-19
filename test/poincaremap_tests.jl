@@ -88,7 +88,4 @@ end
     @test all(abs.(psos[:, 2]) .≤ 1e-15)
     psos = poincaresos(tr, [0, 1.0, 0, 0])
     @test all(abs.(psos[:, 2]) .≤ 1e-15)
-    psos = poincaresos(tr, [1.0, 1.0, 0, 0])
-    g = generalized_dim(psos; q = 0)
-    @test g ≤ 1
 end
