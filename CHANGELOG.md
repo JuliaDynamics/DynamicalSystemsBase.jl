@@ -1,3 +1,6 @@
+# v2.9
+- All code related to the poincare map integrator have been moved here from ChaosTools.jl.
+
 # v2.8
 - New functions `get_parameters` and `get_parameter` that simplify interacting with the parameters of a dynamical system (and drastically simplify source code of `set_parameter!`).
 

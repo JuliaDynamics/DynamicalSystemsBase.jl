@@ -10,4 +10,5 @@ include("discrete_systems.jl")
 include("integrators_with_callbacks.jl")
 include("norm_tests.jl")
 include("projected_integrator_tests.jl")
+include("poincaremap_tests.jl")
 end

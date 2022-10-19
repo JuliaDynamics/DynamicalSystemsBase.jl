@@ -22,6 +22,7 @@ include("core/pretty_printing.jl")
 
 include("advanced_integrators/projected_integrator.jl")
 include("advanced_integrators/stroboscopic_map.jl")
+include("advanced_integrators/poincare.jl")
 
 include("predefined/famous_systems.jl") # includes both discrete and continuous
 
