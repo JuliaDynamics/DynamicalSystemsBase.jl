@@ -12,6 +12,19 @@ const CDS_KWARGS = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
 
 _get_solver(a) = haskey(a, :alg) ? a[:alg] : DEFAULT_SOLVER
 
+function _decompose_into_solver_and_remaining(diffeq)
+    function delete(a::NamedTuple{an}, field::Symbol) where {an}
+        names = Base.diff_names(an, (field,))
+        NamedTuple{names}(a)
+    end
+
+    if haskey(diffeq, :alg)
+        return (diffeq[:alg], delete(diffeq, :alg))
+    else
+        return (DEFAULT_SOLVER, diffeq)
+    end
+end
+
 #####################################################################################
 #                               Interface to DiffEq                                 #
 #####################################################################################
@@ -52,10 +65,14 @@ function integrator(ds::CDS{iip}, u0 = ds.u0;
     u = safe_state_type(Val{iip}(), u0)
     prob = ODEProblem{iip}(ds.f, u, (ds.t0, typeof(ds.t0)(tfinal)), ds.p)
 
-    solver = _get_solver(diffeq)
-    integ = __init(prob, solver; DEFAULT_DIFFEQ_KWARGS...,
-                   save_everystep = false, diffeq...)
+    solver, remaining = _decompose_into_solver_and_remaining(diffeq)
+    if solver == DEFAULT_SOLVER
+        integ = __init(prob, solver; DEFAULT_DIFFEQ_KWARGS...,
+                   save_everystep = false, remaining...)
+    else
+        integ = __init(prob, solver; remaining...)
     return integ
+    end
 end
 
 ############################### Tangent #############################################
@@ -82,9 +99,14 @@ function tangent_integrator(ds::CDS{IIP}, Q0::AbstractMatrix;
     tangentf = create_tangent(ds.f, ds.jacobian, ds.J, Val{IIP}(), Val{k}())
     tanprob = ODEProblem{IIP}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
-    solver = _get_solver(diffeq)
-    return __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., internalnorm = _tannorm,
-                  save_everystep = false, diffeq...)
+    solver, remaining = _decompose_into_solver_and_remaining(diffeq)
+    if solver == DEFAULT_SOLVER
+        integ = __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., internalnorm = _tannorm,
+        save_everystep = false, remaining...)
+    else
+        integ = __init(tanprob, solver; internalnorm = _tannorm, save_everystep = false, remaining...)
+    end
+    return integ
 end
 
 function _tannorm(u::AbstractMatrix, t)
@@ -118,9 +140,14 @@ function tangent_integrator(ds::CDS{true, S, D, F, P, JAC, JM, true},
     tangentf = create_tangent_iad(ds.f, ds.J, u, ds.p, t0, Val{k}())
     tanprob = ODEProblem{true}(tangentf, hcat(u, Q), (t0, typeof(t0)(Inf)), ds.p)
 
-    solver = _get_solver(diffeq)
-    return __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
-                  internalnorm = _tannorm, diffeq...)
+    solver, remaining = _decompose_into_solver_and_remaining(diffeq)
+    if solver == DEFAULT_SOLVER
+        integ = __init(tanprob, solver; DEFAULT_DIFFEQ_KWARGS..., internalnorm = _tannorm,
+        save_everystep = false, remaining...)
+    else
+        integ = __init(tanprob, solver; remaining...)
+    end
+    return integ
 end
 
 ############################### Parallel ############################################
@@ -152,16 +179,18 @@ function parallel_integrator(ds::CDS, states; diffeq = NamedTuple(), kwargs...)
 
     peom, st = create_parallel(ds, states)
     pprob = ODEProblem(peom, st, (ds.t0, typeof(ds.t0)(Inf)), ds.p)
-    solver = _get_solver(diffeq)
+
+    solver, remaining = _decompose_into_solver_and_remaining(diffeq)
     # if typeof(solver) ∈ STIFFSOLVERS
     #     error("Stiff solvers can't support a parallel integrator.")
     # end
+
     if !(typeof(ds) <: CDS{true})
         return __init(pprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
-                      internalnorm = _parallelnorm, diffeq...)
+                      internalnorm = _parallelnorm, remaining...)
     else
         return __init(pprob, solver; DEFAULT_DIFFEQ_KWARGS..., save_everystep = false,
-                      internalnorm = _tannorm, diffeq...)
+                      internalnorm = _tannorm, remaining...)
     end
 end
 
