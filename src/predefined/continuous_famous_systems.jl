@@ -1393,15 +1393,15 @@ function morris_lecar(u0=[0.1, 0.1];
     I = 0.15, V3 = 0.1, V1 = -0.00, V2 = 0.15, V4 = 0.1,
     VCa = 1 ,  VL = -0.5, VK = -0.7, gCa = 1.2, gK = 2,
     gL = 0.5, τ = 3)
-    return CDS(morris_lecar_rule!, u0, [I, V3, V1, V2, V4, VCa, VL, VK, gCa, gK, gL, τ])
+    return CDS(morris_lecar_rule, u0, [I, V3, V1, V2, V4, VCa, VL, VK, gCa, gK, gL, τ])
 end
 
-@inbounds function morris_lecar_rule!(du, u, p, t)
+@inbounds function morris_lecar_rule(u, p, t)
     I, V3, V1, V2, V4, VCa, VL, VK, gCa, gK, gL, τ = p
     V, N = u
-    M(x) = 0.5*(1 + tanh((x-V1)/V2))
-    G(x) = 0.5*(1 + tanh((x-V3)/V4))
-    du[1] = -gCa*M(V)*(V - VCa) -gK*N*(V - VK) -gL*(V-VL) + I
-    du[2] = 1/τ*(-N + G(V))
-    nothing
+    M = 0.5*(1 + tanh((V-V1)/V2))
+    G = 0.5*(1 + tanh((V-V3)/V4))
+    du1 = -gCa*M*(V - VCa) -gK*N*(V - VK) -gL*(V-VL) + I
+    du2 = 1/τ*(-N + G)
+    return SVector{2}(du1, du2)
 end
