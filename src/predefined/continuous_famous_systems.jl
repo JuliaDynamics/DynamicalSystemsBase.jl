@@ -1360,3 +1360,48 @@ function riddled_basins_rule(u, p, t)
         return SVector{4}(du1, du2, du3, du4)
     end
 end
+
+"""
+```julia
+morris_lecar(u0=[0.1, 0.1]; I = 0.15, V3 = 0.1, V1 = -0.00, V2 = 0.15, V4 = 0.1,
+    VCa = 1, VL = -0.5, VK = -0.7, gCa = 1.2, gK = 2, gL = 0.5, τ = 3) -> ds
+```
+The Morris-Lecar model is ubiquitously used in computational neuroscience as a
+**simplified model for neuronal dynamics** (2D), and can also be in general as an
+excitable system [^IzhikevichBook]. It uses the formalism of the more complete
+Hodgkin-Huxley model (4D), and can be viewed as a simplification thereof, with variables V
+for the membrane potential and N for the recovery of the Potassium current. Its original
+parameters were obtained from experimental studies of the giant muscle fiber in the
+Pacific barnacle [^MorrisLecar1981]. Its evolution is given by:
+```math
+\\begin{aligned}
+\\dot{V} &= -g_{Ca} M(V) (V - V_{Ca}) - g_K N (V - V_K) - g_L (V - V_L) + I \\\\
+\\dot{N} &= (1/\tau) (-N + G(V)) \\\\
+\\end{aligned}
+```
+with
+```math
+\\begin{aligned}
+M(V) = 0.5 (1 + \tanh((x-V1)/V2)) \\\\
+G(V) = 0.5 (1 + \tanh((x-V3)/V4)) \\\\
+```
+
+[^IzhikevichBook]: Izhikevich, E. M., Dynamical systems in neuroscience: The geometry of excitability and bursting, 2007, MIT Press.
+[^MorrisLecar1981]: Morris, C. and Lecar, H, [Voltage oscillations in the barnacle giant muscle fiber, 1981](https://www.cell.com/biophysj/pdf/S0006-3495(81)84782-0.pdf).
+"""
+function morris_lecar(u0=[0.1, 0.1];
+    I = 0.15, V3 = 0.1, V1 = -0.00, V2 = 0.15, V4 = 0.1,
+    VCa = 1 ,  VL = -0.5, VK = -0.7, gCa = 1.2, gK = 2,
+    gL = 0.5, τ = 3)
+    return CDS(morris_lecar_rule, u0, [I, V3, V1, V2, V4, VCa, VL, VK, gCa, gK, gL, τ])
+end
+
+@inbounds function morris_lecar_rule(u, p, t)
+    I, V3, V1, V2, V4, VCa, VL, VK, gCa, gK, gL, τ = p
+    V, N = u
+    M = 0.5*(1 + tanh((V-V1)/V2))
+    G = 0.5*(1 + tanh((V-V3)/V4))
+    du1 = -gCa*M*(V - VCa) -gK*N*(V - VK) -gL*(V-VL) + I
+    du2 = 1/τ*(-N + G)
+    return SVector{2}(du1, du2)
+end
