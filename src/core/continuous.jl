@@ -13,10 +13,7 @@ const CDS_KWARGS = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
 _get_solver(a) = haskey(a, :alg) ? a[:alg] : DEFAULT_SOLVER
 
 function _decompose_into_solver_and_remaining(diffeq)
-    function delete(a::NamedTuple{an}, field::Symbol) where {an}
-        names = Base.diff_names(an, (field,))
-        NamedTuple{names}(a)
-    end
+    delete(a::NamedTuple, s::Symbol) = NamedTuple{filter(≠(s), keys(a))}(a)
 
     if haskey(diffeq, :alg)
         return (diffeq[:alg], delete(diffeq, :alg))
