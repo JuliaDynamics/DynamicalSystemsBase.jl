@@ -1405,3 +1405,45 @@ end
     du2 = 1/τ*(-N + G)
     return SVector{2}(du1, du2)
 end
+
+
+function wunderling_4tipping_rule(u, p, t)
+    # variables:
+    # u[1] = greenland
+    # u[2] = west antarctica
+    # u[3] = amoc
+    # u[4] = amazon rainforest
+    (; ΔGMT, T_limit, d, s, τ) = p
+    # notice d is divded by 10, and also notice that the sum term
+    # is just a matrix-vector multiplication
+    sum_term = d*s*(u .+ 1)
+    du = @. -u^3 + u + sqrt(4/27)*ΔGMT/T_limit + sum_term
+
+    return du ./ τ
+end
+
+struct WunderlingParams
+    ΔGMT::Float64
+    T_limit::SVector{4, Float64}
+    d::Float64
+    s::SMatrix{4,4,Float64,16}
+    τ::SVector{4, Float64}
+end
+
+function wunderling_4tipping()
+    p = WunderlingParams(
+        2,
+        @SVector[1.6, 3.0, 4.5, 4.0],
+        0.02,
+        @SMatrix[
+            0     7.7  6.4  0;
+            1.3   0    0    0;
+            -5.7  1.2  0    1.0;
+            0     0    0    0
+        ],
+        @SVector[4900, 2400, 300, 50.0],
+    )
+    u0 = @SVector[-1, -1, -1, -1.0]
+    ds = ContinuousDynamicalSystem(wunderling_4tipping, u0, p)
+    return ds
+end
