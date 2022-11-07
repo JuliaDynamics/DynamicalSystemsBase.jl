@@ -1430,6 +1430,8 @@ struct WunderlingParams
     τ::SVector{4, Float64}
 end
 
+# paper:
+# https://doi.org/10.5194/esd-12-601-2021
 function wunderling_4tipping()
     p = WunderlingParams(
         2,
