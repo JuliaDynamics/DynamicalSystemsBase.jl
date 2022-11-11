@@ -1,5 +1,5 @@
 using DynamicalSystemsBase
-using LinearAlgebra:norm
+using LinearAlgebra: norm
 using Test
 
 println("\nTesting continuous system evolution...")

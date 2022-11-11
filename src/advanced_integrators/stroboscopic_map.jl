@@ -30,7 +30,7 @@ struct StroboscopicMap{I, D, F} <: GeneralizedDynamicalSystem
 	T::F
 end
 isdiscretetime(::StroboscopicMap) = true
-DelayEmbeddings.dimension(::StroboscopicMap{I, D}) where {I, D} = D
+StateSpaceSets.dimension(::StroboscopicMap{I, D}) where {I, D} = D
 
 integrator(p::StroboscopicMap) = p
 function step!(smap::StroboscopicMap)

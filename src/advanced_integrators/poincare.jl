@@ -277,7 +277,7 @@ mutable struct PoincareMap{I, F, P, R, V} <: GeneralizedDynamicalSystem
     diffidxs::Vector{Int}
 end
 DynamicalSystemsBase.isdiscretetime(p::PoincareMap) = true
-DelayEmbeddings.dimension(p::PoincareMap) = length(p.state_on_plane)
+StateSpaceSets.dimension(p::PoincareMap) = length(p.state_on_plane)
 DynamicalSystemsBase.integrator(pinteg::PoincareMap, args...; kwargs...) = pinteg
 
 function DynamicalSystemsBase.step!(pmap::PoincareMap)

@@ -16,7 +16,7 @@ isinplace(::MDI{IIP}) where {IIP} = IIP
 stateeltype(::MDI{IIP, S}) where {IIP, S} = eltype(S)
 stateeltype(::MDI{IIP, S}) where {IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
 isdiscretetime(p::MinimalDiscreteIntegrator) = true
-DelayEmbeddings.dimension(::MDI{IIP, S, D}) where {IIP, S, D} = D
+StateSpaceSets.dimension(::MDI{IIP, S, D}) where {IIP, S, D} = D
 
 function reinit!(integ::MDI, u = integ.u, Q0 = nothing; t0 = integ.t0)
     integ.u = u
@@ -110,7 +110,7 @@ end
 const TDI = TangentDiscreteIntegrator
 stateeltype(::TDI{IIP, S}) where {IIP, S} = eltype(S)
 isdiscretetime(p::TangentDiscreteIntegrator) = true
-DelayEmbeddings.dimension(::TDI{IIP, S, D}) where {IIP, S, D} = D
+StateSpaceSets.dimension(::TDI{IIP, S, D}) where {IIP, S, D} = D
 
 u_modified!(t::TDI, a) = nothing
 

@@ -170,7 +170,7 @@ stateeltype(::DS{IIP, S}) where {IIP, S} = eltype(S)
 isautodiff(::DS{IIP, S, D, F, P, JAC, JM, IAD}) where {IIP, S, D, F, P, JAC, JM, IAD} = IAD
 
 get_state(ds::DS) = ds.u0
-DelayEmbeddings.dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
+StateSpaceSets.dimension(ds::DS{IIP, S, D}) where {IIP, S, D} = D
 
 """
     get_parameters(ds_or_integ)
