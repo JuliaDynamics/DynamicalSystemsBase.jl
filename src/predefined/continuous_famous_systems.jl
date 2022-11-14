@@ -1577,3 +1577,31 @@ function loop_thomas(u, p, t)
     end
     return SVector{3}(du1, du2, du3)
 end
+
+"""
+```julia
+swinging_atwood(u0=[0.113296,1.5707963267948966,0.10992,0.17747]; m1=1.0, m2=4.5)
+```
+```math
+
+```
+A mechanical system consisting of two swinging weights connected by ropes and pulleys. This is only chaotic when m2 is sufficiently larger than m1, and there are nonzero initial momenta [1].
+
+[1] : Tufillaro, Nicholas B.; Abbott, Tyler A.; Griffiths, David J. (1984). Swinging Atwood's Machine. American Journal of Physics. 52 (10): 895--903.
+"""
+function swinging_atwood(u0=[0.113296,1.5707963267948966,0.10992,0.17747]; m1=1.0, m2=4.5)
+    return CDS(loop_swingingatwood, u0, [m1, m2])
+end
+
+function loop_swingingatwood(u, p, t)
+    @inbounds begin
+        m1, m2 = p
+        r, th, pr, pth = u
+        g = 9.82
+        du1 = pr/(m1 + m2)
+        du2 = pth/(m1*r^2)
+        du3 = pth^2/(m1*r^3) - m2*g + m1*g*cos(th)
+        du4 = -m1*g*r*sin(th)
+    end
+    return SVector{4}(du1, du2, du3, du4)
+end
