@@ -1426,7 +1426,8 @@ sakarya(u0= [-2.8976045, 3.8877978, 3.07465];
 \\dot{z} &= cz - rxy
 \\end{aligned}
 ```
-An attractor that arises due to merging of two disjoint bistable attractors [1].
+A system presenting robust chaos that varies from single wing to double wings to four wings.
+Its attractor arises due to merging of two disjoint bistable attractors [1].
 
 [1] : Li, Chunbiao, et al (2015). A novel four-wing strange attractor born in bistability. IEICE Electronics Express 12.4.
 """
@@ -1471,7 +1472,7 @@ lorenz_bounded(u0=[-13.284881, -12.444334, 34.188198];
 \\end{aligned}
 ```
 
-The Lorenz attractor in the presence of a confining potential [1].
+Lorenz system bounded by a confining potential [1].
 
 [1] : Sprott & Xiong (2015). Chaos.
 """
@@ -1583,7 +1584,12 @@ end
 swinging_atwood(u0=[0.113296,1.5707963267948966,0.10992,0.17747]; m1=1.0, m2=4.5)
 ```
 ```math
-
+\\begin{aligned}
+\\dot{r} &= \\frac{p_r}{M+m}\\\\
+\\dot{p}_r &= -Mg + mg\\cos(\\theta)\\\\
+\\dot{\\theta} &= \\frac{p_{\\theta}}{mr^2}\\\\
+\\dot{p}_{\\theta} &= -mgr\\sin(\\theta)
+\\end{aligned}
 ```
 A mechanical system consisting of two swinging weights connected by ropes and pulleys. This is only chaotic when m2 is sufficiently larger than m1, and there are nonzero initial momenta [1].
 
@@ -1604,4 +1610,108 @@ function loop_swingingatwood(u, p, t)
         du4 = -m1*g*r*sin(th)
     end
     return SVector{4}(du1, du2, du3, du4)
+end
+
+"""
+```julia
+guckenheimer_holmes(u0=[-0.55582369,0.05181624,0.37766104]; 
+    a = 0.4,
+    b = 20.25,
+    c = 3,
+    d = 1.6,
+    e = 1.7,
+    f = 0.44)
+```
+```math
+\\begin{aligned}
+\\dot{x} &= ax - by + czx + dz(x^2 + y^2)\\\\
+\\dot{y} &= ay + bx + czy\\\\
+\\dot{z} &= e - z^2 - f(x^2 + y^2) - az^3
+\\end{aligned}
+```
+A nonlinear oscillator [1].
+
+[1] : Guckenheimer, John, and Philip Holmes (1983).  Nonlinear oscillations, dynamical systems, and bifurcations of vector fields. Vol. 42. Springer Science & Business Media.
+"""
+function guckenheimer_holmes(u0=[-0.55582369,0.05181624,0.37766104]; 
+    a = 0.4,
+    b = 20.25,
+    c = 3,
+    d = 1.6,
+    e = 1.7,
+    f = 0.44)
+    return CDS(loop_guckenheimerholmes, u0, [a,b,c,d,e,f])
+end
+
+function loop_guckenheimerholmes(u, p, t)
+    @inbounds begin
+        a,b,c,d,e,f = p
+        x,y,z = u
+        du1 = a*x - b*y + c*z*x + d*z*(x^2 + y^2)
+        du2 = a*y + b*x + c*z*y
+        du3 = e - z^2 - f*(x^2 + y^2) - a*z^3
+    end
+    return SVector{3}(du1, du2, du3)
+end
+
+"""
+```julia
+henon_heiles(u0=[-0.29707259,-0.0031367513,0.42548865,0.071905482]; lam = 1.0)
+```
+```math
+\\begin{aligned}
+\\dot{x} &= -\\frac{\\partial U}{\\partial x}\\\\
+\\dot{y}_r &= -\\frac{\\partial U}{\\partial y}\\\\
+-\\frac{\\partial U}{\\partial x} &= -x - 2xy\\\\
+-\\frac{\\partial U}{\\partial y} &= -y -x^2 + y^2
+\\end{aligned}
+```
+A star's motion around the galactic center [1].
+
+[1] : Henon, M.; Heiles, C. (1964). The applicability of the third integral of motion: Some numerical experiments. The Astronomical Journal. 69: 73.
+"""
+function henon_heiles(u0=[-0.29707259,-0.0031367513,0.42548865,0.071905482]; lam = 1.0)
+    return CDS(loop_henonheiles, u0, lam)
+end
+
+function loop_henonheiles(u, p, t)
+    @inbounds begin
+        x, y, px, py = u
+        lam = p
+        du1 = px
+        du2 = py
+        du3 = -x - 2*lam*x*y
+        du4 = -y - lam*(x^2 - y^2)
+    end
+    return SVector{4}(du1, du2, du3, du4)
+end
+
+"""
+```julia
+halvorsen(u0=[-8.6807408,-2.4741399,0.070775762]; a = 1.4, b = 4.0)
+```
+```math
+\\begin{aligned}
+\\dot{x} &= -a*x - b*(y + z) - y^2\\\\
+\\dot{y} &= -a*y - b*(z + x) - z^2\\\\
+\\dot{z} &= -a*z - b*(x + y) - x^2
+\\end{aligned}
+```
+An algebraically-simple chaotic system with quadratic nonlinearity [1].
+
+[1] : Sprott, Julien C (2010). Elegant chaos: algebraically simple chaotic flows. World Scientific, 2010.
+"""
+function halvorsen(u0=[-8.6807408,-2.4741399,0.070775762]; a = 1.4, b = 4.0)
+    return CDS(loop_halvorsen, u0, [a, b])
+end
+
+function loop_halvorsen(u, p, t)
+    @inbounds begin
+        x, y, z = u
+        a, b = p
+        du1 = -a*x - b*(y + z) - y^2
+        du2 = -a*y - b*(z + x) - z^2
+        du3 = -a*z - b*(x + y) - x^2
+    end
+    return SVector{3}(du1, du2, du3)
 end
