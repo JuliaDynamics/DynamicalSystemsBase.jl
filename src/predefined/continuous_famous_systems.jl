@@ -1536,10 +1536,10 @@ function sakarya(u0= [-2.8976045, 3.8877978, 3.07465];
     r = 0.3,
     s = 1.0
 )
-    return CDS(loop_sakarya, u0, [a,b,c,h,p,q,r,s])
+    return CDS(sakarya_rule, u0, [a,b,c,h,p,q,r,s])
 end
 
-function loop_sakarya(u, p, t)
+function sakarya_rule(u, p, t)
     @inbounds begin
         a, b, c, h, p, q, r, s = p
         du1 = a*u[1] + h*u[2] + s*u[2]*u[3]
@@ -1569,7 +1569,9 @@ lorenz_bounded(u0=[-13.284881, -12.444334, 34.188198];
 
 Lorenz system bounded by a confining potential [^SprottXiong2015].
 
-[^SprottXiong2015]: Sprott & Xiong (2015). Chaos.
+[^SprottXiong2015]:
+    Sprott, J. C., & Xiong, A. (2015). Classifying and quantifying basins of attraction.
+    Chaos: An Interdisciplinary Journal of Nonlinear Science, 25(8), 083101.
 """
 function lorenz_bounded(u0=[-13.284881, -12.444334, 34.188198];
     beta = 2.667,
@@ -1577,104 +1579,16 @@ function lorenz_bounded(u0=[-13.284881, -12.444334, 34.188198];
     rho = 28.0,
     sigma = 10.0
 )
-    return CDS(loop_lorenzbounded, u0, [beta,r,rho,sigma])
+    return CDS(lorenzbounded_rule, u0, [beta,r,rho,sigma])
 end
 
-function loop_lorenzbounded(u, p, t)
+function lorenzbounded_rule(u, p, t)
     @inbounds begin
         beta, r, rho, sigma = p
         f = 1 - (u[1]^2 + u[2]^2 + u[3]^2) / r^2
         du1 = sigma * (u[2] - u[1])*f
         du2 = (u[1]*(rho - u[3]) - u[2])*f
         du3 = (u[1]*u[2] - beta*u[3])*f
-    end
-    return SVector{3}(du1, du2, du3)
-end
-
-"""
-```
-lorenz_coupled(u0=[7.0921483,10.117408,25.708428,2.1689893,0.96121877,0.89550187];
-    beta = 2.667,
-    eps = 2.85,
-    rho = 28,
-    rho1 = 35,
-    rho2 = 1.15,
-    sigma = 10
-)
-```
-```math
-\\begin{aligned}
-\\dot{x}_1 &= \\sigma (y_1 - x_1)\\\\
-\\dot{y}_1 &= x_1 (\\rho _1 - z_1) - y_1 \\\\
-\\dot{z}_1 &= x_1 y_1 - \\beta z_1 \\\\
-\\dot{x}_2 &= \\sigma (y_2 - x_2) + \\eps (x_1 - x_2) \\\\
-\\dot{y}_2 &= x_2 (\\rho _2 - z_2) - y_2
-\\dot{z}_2 &= x_2 y_2 - \\beta z_2
-\\end{aligned}
-```
-Two coupled Lorenz attractors [^Lorenz1963].
-
-[^Lorenz1963]:
-    Lorenz, Edward N. Deterministic nonperiodic flow.
-    Journal of the atmospheric sciences 20.2 (1963): 130-141.
-"""
-function lorenz_coupled(u0=[7.0921483,10.117408,25.708428,2.1689893,0.96121877,0.89550187];
-    beta = 2.667,
-    eps = 2.85,
-    rho = 28,
-    rho1 = 35,
-    rho2 = 1.15,
-    sigma = 10
-)
-    return CDS(loop_lorenzcoupled, u0, [beta,eps,rho,rho1,rho2,sigma])
-end
-
-function loop_lorenzcoupled(u, p, t)
-    @inbounds begin
-        beta, eps, rho, rho1, rho2, sigma = p
-        x1, y1, z1, x2, y2, z2 = u
-        du1 = sigma * (y1 - x1)
-        du2 = x1 * (rho1 - z1) - y1
-        du3 = x1 * y1 - beta * z1
-        du4 = sigma * (y2 - x2) + eps * (x1 - x2)
-        du5 = x2 * (rho2 - z2) - y2
-        du6 = x2 * y2 - beta * z2
-    end
-    return SVector{6}(du1, du2, du3, du4, du5, du6)
-end
-
-"""
-```julia
-thomas(u0=[2.199442,2.3634225,3.220197]; a = 1.85, b = 10)
-```
-```math
-\\begin{aligned}
-\\dot{x} &= b\\sin(y) - ax\\\\
-\\dot{y} &= b\\sin(z) - ay\\\\
-\\dot{z} &= b\\sin(x) - az
-\\end{aligned}
-```
-A cyclically-symmetric attractor correspondng to a frictionally-damped
-particle traversing a 3D lattice of forces [^Rene1999].
-
-[^Rene1999]:
-    Thomas, Rene (1999). Deterministic chaos seen in terms of feedback circuits:
-    Analysis, synthesis, labyrinth chaos.
-    Int. J. Bifurc. Chaos.
-"""
-function thomas(u0=[2.199442,2.3634225,3.220197]; a = 1.85, b = 10)
-    return CDS(loop_thomas, u0, [a,b])
-end
-
-thomas_labyrinth(u0=[-4.9599545,1.0302034,-4.6883893]; a=0.5, b=10) = CDS(loop_thomas, u0, [a,b])
-
-function loop_thomas(u, p, t)
-    @inbounds begin
-        a,b = p
-        x,y,z = u
-        du1 = -a * x + b * sin(y)
-        du2 = -a * y + b * sin(z)
-        du3 = -a * z + b * sin(x)
     end
     return SVector{3}(du1, du2, du3)
 end
@@ -1692,7 +1606,7 @@ swinging_atwood(u0=[0.113296,1.5707963267948966,0.10992,0.17747]; m1=1.0, m2=4.5
 \\end{aligned}
 ```
 A mechanical system consisting of two swinging weights connected by ropes and pulleys.
-This is only chaotic when m2 is sufficiently larger than m1, and there are nonzero initial
+This is only chaotic when `m2` is sufficiently larger than `m1`, and there are nonzero initial
 momenta [^Tufillaro1984].
 
 [^Tufillaro1984]: 
@@ -1700,10 +1614,10 @@ momenta [^Tufillaro1984].
     Swinging Atwood's Machine. American Journal of Physics. 52 (10): 895--903.
 """
 function swinging_atwood(u0=[0.113296,1.5707963267948966,0.10992,0.17747]; m1=1.0, m2=4.5)
-    return CDS(loop_swingingatwood, u0, [m1, m2])
+    return CDS(swingingatwood_rule, u0, [m1, m2])
 end
 
-function loop_swingingatwood(u, p, t)
+function swingingatwood_rule(u, p, t)
     @inbounds begin
         m1, m2 = p
         r, th, pr, pth = u
@@ -1747,10 +1661,10 @@ function guckenheimer_holmes(u0=[-0.55582369,0.05181624,0.37766104];
     d = 1.6,
     e = 1.7,
     f = 0.44)
-    return CDS(loop_guckenheimerholmes, u0, [a,b,c,d,e,f])
+    return CDS(guckenheimerholmes_rule, u0, [a,b,c,d,e,f])
 end
 
-function loop_guckenheimerholmes(u, p, t)
+function guckenheimerholmes_rule(u, p, t)
     @inbounds begin
         a,b,c,d,e,f = p
         x,y,z = u
@@ -1779,10 +1693,10 @@ An algebraically-simple chaotic system with quadratic nonlinearity [^Sprott2010]
     World Scientific, 2010.
 """
 function halvorsen(u0=[-8.6807408,-2.4741399,0.070775762]; a = 1.4, b = 4.0)
-    return CDS(loop_halvorsen, u0, [a, b])
+    return CDS(halvorsen_rule, u0, [a, b])
 end
 
-function loop_halvorsen(u, p, t)
+function halvorsen_rule(u, p, t)
     @inbounds begin
         x, y, z = u
         a, b = p
