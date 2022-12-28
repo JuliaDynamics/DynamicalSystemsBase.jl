@@ -84,7 +84,7 @@ struct ProjectedIntegrator{P, PD, C, R, I} <: GeneralizedDynamicalSystem
 	integ::I
 end
 isdiscretetime(p::ProjectedIntegrator) = isdiscretetime(p.integ)
-DelayEmbeddings.dimension(::ProjectedIntegrator{P, PD}) where {P, PD} = PD
+StateSpaceSets.dimension(::ProjectedIntegrator{P, PD}) where {P, PD} = PD
 
 
 integrator(pinteg::ProjectedIntegrator, args...; kwargs...) = pinteg
