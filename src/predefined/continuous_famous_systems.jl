@@ -1514,9 +1514,9 @@ sakarya(u0= [-2.8976045, 3.8877978, 3.07465];
 ```
 ```math
 \\begin{aligned}
-\\dot{x} &= ax + hy + syz\\\\
-\\dot{y} &= -by - px + qxz \\\\
-\\dot{z} &= cz - rxy
+\\dot{x} &= ax + y + yz\\\\
+\\dot{y} &= - xz + yz \\\\
+\\dot{z} &= - z - mxy + b
 \\end{aligned}
 ```
 A system presenting robust chaos that varies from single wing to double wings to four wings.
@@ -1527,24 +1527,19 @@ Its attractor arises due to merging of two disjoint bistable attractors [^Li2015
     IEICE Electronics Express 12.4.
 """
 function sakarya(u0= [-2.8976045, 3.8877978, 3.07465];
-    a =-1.0,
-    b = 1.0,
-    c = 1.0,
-    h = 1.0,
-    p = 1.0,
-    q = 0.4,
-    r = 0.3,
-    s = 1.0
+    a = 1,
+    b = 1,
+    m = 1
 )
-    return CDS(sakarya_rule, u0, [a,b,c,h,p,q,r,s])
+    return CDS(sakarya_rule, u0, [a,b,m])
 end
 
 function sakarya_rule(u, p, t)
     @inbounds begin
-        a, b, c, h, p, q, r, s = p
-        du1 = a*u[1] + h*u[2] + s*u[2]*u[3]
-        du2 = -b*u[2] - p*u[1] + q*u[1]*u[3]
-        du3 = c*u[3] - r*u[1]*u[2]
+        a, b, m = p
+        du1 = a*u[1] + u[2] + u[2]*u[3]
+        du2 = - u[1]*u[3] + u[2]*u[3]
+        du3 = - u[3] - m*u[1]*u[2] + b
     end
     return SVector{3}(du1, du2, du3)
 end
