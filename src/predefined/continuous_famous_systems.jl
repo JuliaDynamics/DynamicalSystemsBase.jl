@@ -1696,3 +1696,105 @@ function halvorsen_rule(u, p, t)
     end
     return SVector{3}(du1, du2, du3)
 end
+
+"""
+    multispecies_competition(option = 1)
+A model of competition dynamics between multiple species from Huisman and Weissing[^Huisman2001].
+It highlights fundamental unpredictability by having extreme multistability,
+fractal basin boundaries and transient chaos.
+
+# TODO: write here equations when we have access to the paper (not open access).
+# TODO: Describe initial conditions and what option 1 means.
+
+[^Huisman2001]:
+    Huisman & Weissing 2001, Fundamental Unpredictability in Multispecies Competition
+    [The American Naturalist Vol. 157, No. 5.](https://doi.org/10.1086/319929)
+"""
+function multispecies_competition(option = 1)
+    p = CompetitionDynamicsParameters(option)
+    N = size(p.Ks, 2)
+    u0 = [[0.1 for i=1:N]; [S for S in p.Ss]]
+    ds = ContinuousDynamicalSystem(multispecies_competition_rule!, u0, p, (J, x, p, t) -> nothing)
+    return ds
+end
+
+multispecies_competition_monod(r, R, K) = r*R/(K+R)
+function _mc_μ!(μs, rs, Rs, Ks)
+    for i in eachindex(μs)
+        mo1 = multispecies_competition_monod(rs[i], Rs[1], Ks[1,i])
+        mo2 = multispecies_competition_monod(rs[i], Rs[2], Ks[2,i])
+        mo3 = multispecies_competition_monod(rs[i], Rs[3], Ks[3,i])
+        μs[i] = min(mo1, mo2, mo3)
+    end
+    return nothing
+end
+
+#not the most optimized but runs fine
+function _mc_Rcoup!(Rcoups, Ns, Rs, μs, cs)
+    fill!(Rcoups, 0.0)
+    for j in eachindex(Rcoups)
+        for i in eachindex(μs)
+            Rcoups[j] += cs[j,i] * μs[i] * Ns[i]
+        end
+    end
+    return nothing
+end
+
+function multispecies_competition_rule!(du, u, p, t)
+    (; rs, Ks, ms, Ss, cs, μs, Rcoups, D) = p
+    n = size(Ks, 2)
+    Ns = view(u, 1:n)
+    Rs = view(u, n+1:n+3)
+    dNs = view(du, 1:n)
+    dRs = view(du, n+1:n+3)
+    _mc_μ!(μs, rs, Rs, Ks)
+    _mc_Rcoup!(Rcoups, Ns, Rs, μs, cs)
+    @. dNs = Ns * (μs - ms)
+    @. dRs = D*(Ss - Rs) - Rcoups
+    return nothing
+end
+
+mutable struct CompetitionDynamicsParameters
+    rs :: Vector{Float64}
+    ms :: Vector{Float64}
+    Ss :: Vector{Float64}
+    μs :: Vector{Float64}
+    Rcoups :: Vector{Float64}
+    Ks :: Matrix{Float64}
+    cs :: Matrix{Float64}
+    D :: Float64
+end
+
+function CompetitionDynamicsParameters(option = 1)
+    if option == 2
+        Ks  = [
+            0.20 0.05 0.50 0.05 0.50 0.03 0.51 0.51;
+            0.15 0.06 0.05 0.50 0.30 0.18 0.04 0.31;
+            0.15 0.50 0.30 0.06 0.05 0.18 0.31 0.04;
+        ]
+        cs = [
+            0.20 0.10 0.10 0.10 0.10 0.22 0.10 0.10;
+            0.10 0.20 0.10 0.10 0.20 0.10 0.22 0.10;
+            0.10 0.10 0.20 0.20 0.10 0.10 0.10 0.22;
+        ]
+    elseif option == 1
+        Ks = [
+            0.20 0.05 1.00 0.05 1.20;
+            0.25 0.10 0.05 1.00 0.40;
+            0.15 0.95 0.35 0.10 0.05;
+        ]
+        cs = [
+            0.20 0.10 0.10 0.10 0.10;
+            0.10 0.20 0.10 0.10 0.20;
+            0.10 0.10 0.20 0.20 0.10;
+        ]
+    end
+    N = size(Ks, 2)
+    rs = [1.0 for i=1:N]
+    D = 0.25
+    ms = [D for i=1:N]
+    Ss = [10.0 for j=1:3]
+    μs = zeros(Float64, N)
+    Rcoups = zeros(Float64, 3)
+    return CompetitionDynamicsParameters(rs, ms, Ss, μs, Rcoups, Ks, cs, D)
+end

@@ -31,7 +31,7 @@ function SciMLBase.ODEProblem(ds::CDS{IIP}, tspan;
     return ODEProblem{IIP}(ODEFunction(ds.f; jac = ds.jacobian), u0, tspan, ds.p, callback)
 end
 isdiscretetime(::AbstractODEIntegrator) = false
-DelayEmbeddings.dimension(integ::AbstractODEIntegrator) = length(integ.u)
+StateSpaceSets.dimension(integ::AbstractODEIntegrator) = length(integ.u)
 integrator(x::AbstractODEIntegrator) = x
 
 #####################################################################################
