@@ -9,7 +9,7 @@ lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3) -> ds
 \\dot{Z} &= XY - \\beta Z
 \\end{aligned}
 ```
-The famous three dimensional system due to Lorenz [1], shown to exhibit
+The famous three dimensional system due to Lorenz [^Lorenz1963], shown to exhibit
 so-called "deterministic nonperiodic flow". It was originally invented to study a
 simplified form of atmospheric convection.
 
@@ -22,7 +22,7 @@ Default values are the ones used in the original paper.
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 
-[1] : E. N. Lorenz, J. atmos. Sci. **20**, pp 130 (1963)
+[^Lorenz1963]: E. N. Lorenz, J. atmos. Sci. **20**, pp 130 (1963)
 """
 function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
     return CDS(loop, u0, [σ, ρ, β], loop_jac)
@@ -89,18 +89,20 @@ This is a 3D continuous system that exhibits chaos.
 
 Chua designed an electronic circuit with the expressed goal of exhibiting
 chaotic motion, and this system is obtained by rescaling the circuit units
-to simplify the form of the equation. [1]
+to simplify the form of the equation. [^Chua1992]
 
 The parameters are ``a``, ``b``, ``m_0``, and ``m_1``. Setting ``a = 15.6``, ``m_0 = -8/7``
 and ``m_1 = -5/7``, and varying the parameter ``b`` from ``b = 25`` to ``b = 51``, one observes
-a classic period-doubling bifurcation route to chaos. [2]
+a classic period-doubling bifurcation route to chaos. [^Chua2007]
 
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 
-[1] : Chua, Leon O. "The genesis of Chua's circuit", 1992.
+[^Chua1992]: Chua, Leon O. "The genesis of Chua's circuit", 1992.
 
-[2] : [Leon O. Chua (2007) "Chua circuit", Scholarpedia, 2(10):1488.](http://www.scholarpedia.org/article/Chua_circuit)
+[^Chua2007]: 
+    [Leon O. Chua (2007) "Chua circuit", Scholarpedia, 
+    2(10):1488.](http://www.scholarpedia.org/article/Chua_circuit)
 
 """
 function chua(u0 = [0.7, 0.0, 0.0]; a = 15.6, b = 25.58, m0 = -8/7, m1 = -5/7)
@@ -142,7 +144,7 @@ roessler(u0=[1, -2, 0.1]; a = 0.2, b = 0.2, c = 5.7)
 \\dot{z} &= b + z(x-c)
 \\end{aligned}
 ```
-This three-dimensional continuous system is due to Rössler [1].
+This three-dimensional continuous system is due to Rössler [^Rössler1976].
 It is a system that by design behaves similarly
 to the `lorenz` system and displays a (fractal)
 strange attractor. However, it is easier to analyze qualitatively, as for example
@@ -152,7 +154,7 @@ Default values are the same as the original paper.
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 
-[1] : O. E. Rössler, Phys. Lett. **57A**, pp 397 (1976)
+[^Rössler1976]: O. E. Rössler, Phys. Lett. **57A**, pp 397 (1976)
 """
 function roessler(u0=[1, -2, 0.1]; a = 0.2, b = 0.2, c = 5.7)
     return CDS(roessler_rule, u0, [a, b, c], roessler_jacob)
@@ -201,7 +203,8 @@ Jacobian is created automatically (thus methods that use the Jacobian will be sl
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 """
-function double_pendulum(u0=[π/2, 0, 0, 0.5]; G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
+function double_pendulum(u0=[π/2, 0, 0, 0.5];
+    G=10.0, L1 = 1.0, L2 = 1.0, M1 = 1.0, M2 = 1.0)
     return CDS(doublependulum_rule, u0, [G, L1, L2, M1, M2])
 end
 @inbounds function doublependulum_rule(u, p, t)
@@ -238,9 +241,10 @@ end
 \\end{aligned}
 ```
 
-The Hénon–Heiles system [1] is a conservative dynamical system and was introduced as a simplification of the motion
-of a star around a galactic center. It was originally intended to study the
-existence of a "third integral of motion" (which would make this 4D system integrable).
+The Hénon–Heiles system [^HénonHeiles1964] is a conservative dynamical system and was introduced as a 
+simplification of the motion of a star around a galactic center. It was originally intended
+to study the existence of a "third integral of motion" 
+(which would make this 4D system integrable).
 In that search, the authors encountered chaos, as the third integral existed
 for only but a few initial conditions.
 
@@ -248,7 +252,7 @@ The default initial condition is a typical chaotic orbit.
 The function `Systems.henonheiles_ics(E, n)` generates a grid of
 `n×n` initial conditions, all having the same energy `E`.
 
-[1] : Hénon, M. & Heiles, C., The Astronomical Journal **69**, pp 73–79 (1964)
+[^HénonHeiles1964]: Hénon, M. & Heiles, C., The Astronomical Journal **69**, pp 73–79 (1964)
 """
 function henonheiles(u0=[0, -0.25, 0.42081, 0]#=; conserveE::Bool = true=#)
     i = one(eltype(u0))
@@ -310,7 +314,7 @@ A conservative dynamical system with rule
 ```
 
 This dynamical rule corresponds to a Hamiltonian used in nuclear
-physics to study the quadrupole vibrations of the nuclear surface [1,2].
+physics to study the quadrupole vibrations of the nuclear surface [^Eisenberg1975][^Baran1998].
 
 ```math
 H(p_0, p_2, q_0, q_2) = \\frac{A}{2}\\left(p_0^2+p_2^2\\right)+\\frac{A}{2}\\left(q_0^2+q_2^2\\right)
@@ -318,14 +322,20 @@ H(p_0, p_2, q_0, q_2) = \\frac{A}{2}\\left(p_0^2+p_2^2\\right)+\\frac{A}{2}\\lef
 ```
 
 The Hamiltonian has a similar structure with the Henon-Heiles one, but it has an added fourth order term
-and presents a nontrivial dependence of chaoticity with the increase of energy [3].
+and presents a nontrivial dependence of chaoticity with the increase of energy [^Micluta-Campeanu2018].
 The default initial condition is chaotic.
 
-[1]: Eisenberg, J.M., & Greiner, W., Nuclear theory 2 rev ed. Netherlands: North-Holland pp 80 (1975)
+[^Eisenberg1975]:
+    Eisenberg, J.M., & Greiner, W., Nuclear theory 2 rev ed. 
+    Netherlands: North-Holland pp 80 (1975)
 
-[2]: Baran V. and Raduta A. A., International Journal of Modern Physics E, **7**, pp 527--551 (1998)
+[^Baran1998]:
+    Baran V. and Raduta A. A., International Journal of Modern Physics E,
+    **7**, pp 527--551 (1998)
 
-[3]: Micluta-Campeanu S., Raportaru M.C., Nicolin A.I., Baran V., Rom. Rep. Phys. **70**, pp 105 (2018)
+[^Micluta-Campeanu2018]:
+    Micluta-Campeanu S., Raportaru M.C., Nicolin A.I., Baran V., Rom. Rep. Phys.
+    **70**, pp 105 (2018)
 """
 function qbh(u0=[0., -2.5830294658973876, 1.3873470962626937, -4.743416490252585];  A=1., B=0.55, D=0.4)
     return CDS(qrule, u0, [A, B, D])
@@ -441,13 +451,13 @@ gissinger(u0 = [3, 0.5, 1.5]; μ = 0.119, ν = 0.1, Γ = 0.9)
 \\dot{V} &= \\Gamma -V + QD
 \\end{aligned}
 ```
-A continuous system that models chaotic reversals due to Gissinger [1], applied
+A continuous system that models chaotic reversals due to Gissinger [^Gissinger2012], applied
 to study the reversals of the magnetic field of the Earth.
 
 The parameter container has the parameters in the same order as stated in this
 function's documentation string.
 
-[1] : C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
+[^Gissinger2012]: C. Gissinger, Eur. Phys. J. B **85**, 4, pp 1-12 (2012)
 """
 function gissinger(u0 = [3, 0.5, 1.5]; μ = 0.119, ν = 0.1, Γ = 0.9)
     return CDS(gissinger_rule, u0, [μ, ν, Γ], gissinger_jacob)
@@ -477,10 +487,10 @@ rikitake(u0 = [1, 0, 0.6]; μ = 1.0, α = 1.0)
 \\dot{z} &= 1 - xz
 \\end{aligned}
 ```
-Rikitake's dynamo is a system that tries to model the magnetic reversal events
-by means of a double-disk dynamo system.
+Rikitake's dynamo [^Rikitake1958] is a system that tries to model the magnetic
+reversal events by means of a double-disk dynamo system.
 
-[1] : T. Rikitake Math. Proc. Camb. Phil. Soc. **54**, pp 89–105, (1958)
+[^Rikitake1958]: T. Rikitake Math. Proc. Camb. Phil. Soc. **54**, pp 89–105, (1958)
 """
 function rikitake(u0 = [1, 0, 0.6]; μ = 1.0, α = 1.0)
     return CDS(rikitake_rule, u0, [μ, α], rikitake_jacob)
@@ -518,13 +528,17 @@ nosehoover(u0 = [0, 0.1, 0])
 Three dimensional conservative continuous system, discovered in 1984 during
 investigations in thermodynamical chemistry by Nosé and Hoover, then
 rediscovered by Sprott during an exhaustive search as an extremely simple
-chaotic system. [1]
+chaotic system. [^Hoover1995]
 
-See Chapter 4 of "Elegant Chaos" by J. C. Sprott. [2]
+See Chapter 4 of "Elegant Chaos" by J. C. Sprott. [^Sprott2010]
 
-[1] : Hoover, W. G. (1995). Remark on ‘‘Some simple chaotic flows’’. *Physical Review E*, *51*(1), 759.
+[^Hoover1995]:
+    Hoover, W. G. (1995). Remark on ‘‘Some simple chaotic flows’’.
+    *Physical Review E*, *51*(1), 759.
 
-[2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
+[^Sprott2010]:
+    Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*.
+    World Scientific.
 """
 nosehoover(u0 = [0, 0.1, 0]) = CDS(nosehoover_rule, u0, nothing, nosehoover_jacob)
 function nosehoover_rule(u, p, t)
@@ -545,7 +559,7 @@ end
     antidots([u]; B = 1.0, d0 = 0.3, c = 0.2)
 An antidot "superlattice" is a Hamiltonian system that corresponds to a
 smoothened periodic Sinai billiard with disk diameter `d0` and smooth
-factor `c` [1].
+factor `c` [^Datseris2019].
 
 This version is the two dimensional
 classical form of the system, with quadratic dynamical rule and
@@ -569,7 +583,9 @@ normalized such that for energy value of 1 it is a circle of diameter ``d_0``.
 The magnetic field is also normalized such that for value `B = 1` the cyclotron
 diameter is 1.
 
-[1] : G. Datseris *et al*, [New Journal of Physics 2019](https://iopscience.iop.org/article/10.1088/1367-2630/ab19cc/meta)
+[^Datseris2019]:
+    G. Datseris *et al*, 
+    [New Journal of Physics 2019](https://iopscience.iop.org/article/10.1088/1367-2630/ab19cc/meta)
 """
 function antidots(u0 = [0.5, 0.5, 0.25, 0.25];
     d0 = 0.5, c = 0.2, B = 1.0)
@@ -643,7 +659,7 @@ Nonautonomous Duffing-like forced oscillation system, discovered by Ueda in
 1961. It is one of the first chaotic systems to be discovered.
 
 The stroboscopic plot in the (x, ̇x) plane with period 2π creates a "broken-egg
-attractor" for k = 0.1 and B = 12. Figure 5 of [1] is reproduced by
+attractor" for k = 0.1 and B = 12. Figure 5 of [^Ruelle1980] is reproduced by
 
 ```julia
 using Plots
@@ -653,11 +669,15 @@ scatter(a[:, 1], a[:, 2], markersize = 0.5, title="Ueda attractor")
 ```
 
 For more forced oscillation systems, see Chapter 2 of "Elegant Chaos" by
-J. C. Sprott. [2]
+J. C. Sprott. [^Sprott2010]
 
-[1] : [Ruelle, David, ‘Strange Attractors’, The Mathematical Intelligencer, 2.3 (1980), 126–37](https://doi.org/10/dkfd3n)
+[^Ruelle1980]:
+    [Ruelle, David, ‘Strange Attractors’, The Mathematical Intelligencer, 2.3 (1980),
+    126–37](https://doi.org/10/dkfd3n)
 
-[2] : Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*. World Scientific.
+[^Sprott2010]:
+    Sprott, J. C. (2010). *Elegant chaos: algebraically simple chaotic flows*.
+    World Scientific.
 """
 function ueda(u0 = [3.0, 0]; k = 0.1, B = 12.0)
     return CDS(ueda_rule, u0, [k, B], ueda_jacob)
@@ -756,7 +776,9 @@ A three dimensional chaotic system introduced in [^Sprott2020] with rule
 ```
 It is noteworthy because its strange attractor is multifractal with fractal dimension ≈ 3.
 
-[^Sprott2020]: Sprott, J.C. 'Do We Need More Chaos Examples?', Chaos Theory and Applications 2(2),1-3, 2020
+[^Sprott2020]:
+    Sprott, J.C. 'Do We Need More Chaos Examples?',
+    Chaos Theory and Applications 2(2),1-3, 2020
 """
 more_chaos_example(u = [0.0246, 0.79752, 0.3535866]) =
 ContinuousDynamicalSystem(more_chaos_rule, u, nothing)
@@ -786,7 +808,9 @@ For more see the [Wikipedia page](https://en.wikipedia.org/wiki/Thomas%27_cyclic
 Reduces to the labyrinth system for `b=0`, see
 See discussion in Section 4.4.3 of "Elegant Chaos" by J. C. Sprott.
 
-[^Thomas1999]: Thomas, R. (1999). *International Journal of Bifurcation and Chaos*, *9*(10), 1889-1905.
+[^Thomas1999]:
+    Thomas, R. (1999). *International Journal of Bifurcation and Chaos*,
+    *9*(10), 1889-1905.
 """
 thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CDS(thomas_rule, u0, [b], thomas_jacob)
 labyrinth(u0 = [1.0, 0, 0]) = CDS(thomas_rule, u0, [0.0], thomas_jacob)
@@ -819,7 +843,8 @@ Stommel's box model for Atlantic thermohaline circulation
 Here ``T, S`` denote the dimensionless temperature and salinity differences respectively
 between the boxes (polar and equatorial ocean basins) and ``\\eta_i`` are parameters.
 
-[^Stommel1961]: Stommel, Thermohaline convection with two stable regimes of flow. Tellus, 13(2)
+[^Stommel1961]:
+    Stommel, Thermohaline convection with two stable regimes of flow. Tellus, 13(2)
 """
 function stommel_thermohaline(u = [0.3, 0.2]; η1 = 3.0, η2 = 1, η3 = 0.3)
     ds = ContinuousDynamicalSystem(stommel_thermohaline_rule, u, [η1, η2, η3],
@@ -866,7 +891,9 @@ zg = range(-1.5, 1.5; length=30)
 bsn, att = basins_of_attraction((xg, yg, zg), ds; mx_chk_att=4)
 ```
 
-[^Freire2008]: J. G. Freire *et al*,  Multistability, phase diagrams, and intransitivity in the Lorenz-84 low-order atmospheric circulation model, Chaos 18, 033121 (2008)
+[^Freire2008]:
+    J. G. Freire *et al*,  Multistability, phase diagrams, and intransitivity in the
+    Lorenz-84 low-order atmospheric circulation model, Chaos 18, 033121 (2008)
 """
 function lorenz84(u = [0.1, 0.1, 0.1]; F=6.846, G=1.287, a=0.25, b=4.0)
     return ContinuousDynamicalSystem(lorenz84_rule, u, [F, G, a, b],
@@ -903,8 +930,8 @@ chaotic flow.
 ```
 
 For `R=4.7` this system has two coexisting Malasoma strange attractors that are
-linked together as shown in [^Sprott2014]. The fractal boundary between the basins of attractor can be
-visualized with a Poincaré section at `z=0`:
+linked together as shown in [^Sprott2014]. The fractal boundary between the basins
+of attractor can be visualized with a Poincaré section at `z=0`:
 ```julia
 ds = Systems.lorenzdl()
 xg = yg = range(-10.0, 10.0; length=300)
@@ -912,7 +939,9 @@ pmap = poincaremap(ds, (3, 0.), Tmax=1e6; idxs = 1:2)
 bsn, att = basins_of_attraction((xg, yg), pmap)
 ```
 
-[^Sprott2014]: J. C. Sprott,  Simplest Chaotic Flows with Involutional Symmetries, Int. Jour. Bifurcation and Chaos 24, 1450009 (2014)
+[^Sprott2014]:
+    J. C. Sprott,  Simplest Chaotic Flows with Involutional Symmetries,
+    Int. Jour. Bifurcation and Chaos 24, 1450009 (2014)
 """
 function lorenzdl(u = [0.1, 0.1, 0.1]; R=4.7)
     return ContinuousDynamicalSystem(lorenzdl_rule, u, R,
@@ -979,7 +1008,9 @@ The Kuramoto model[^Kuramoto1975] of `D` coupled oscillators with equation
 \\dot{\\phi}_i = \\omega_i + \\frac{K}{D}\\sum_{j=1}^{D} \\sin(\\phi_j - \\phi_i)
 ```
 
-[^Kuramoto1975]: Kuramoto, Yoshiki. International Symposium on Mathematical Problems in Theoretical Physics. 39.
+[^Kuramoto1975]:
+    Kuramoto, Yoshiki.
+    International Symposium on Mathematical Problems in Theoretical Physics. 39.
 """
 function kuramoto(D = 25, u0 = range(0, 2π; length = D);
     K = 0.3, ω = range(-1, 1; length = D))
@@ -1061,18 +1092,30 @@ C_m \\frac{dV_m}{dt} = -\\overline{g}_\\mathrm{K} n^4 (V_m - V_\\mathrm{K}) - \\
 \\beta_h(V_m) = \\frac{1}{1 + \\exp(-\\frac{V+35}{10})}
 \\end{aligned}
 ```
-The Nobel-winning four-dimensional dynamical system due to Hodgkin and Huxley [^HodgkinHuxley1952], which describes the electrical spiking
-activity (action potentials) in neurons. A complete description of all parameters and variables is given in [^HodgkinHuxley1952], [^Ermentrout2010], and [^Abbott2005]. The equations and default parameters used here are taken from [^Ermentrout2010][^Abbott2005]. They differ slightly from the original paper [^HodgkinHuxley1952], since they were changed to shift the resting potential to -65 mV, instead of the 0mV in the original paper.
+The Nobel-winning four-dimensional dynamical system due to Hodgkin and
+Huxley [^HodgkinHuxley1952], which describes the electrical spiking
+activity (action potentials) in neurons. A complete description of all parameters and
+variables is given in [^HodgkinHuxley1952], [^Ermentrout2010], and [^Abbott2005].
+The equations and default parameters used here are taken from [^Ermentrout2010][^Abbott2005].
+They differ slightly from the original paper [^HodgkinHuxley1952], since they were
+changed to shift the resting potential to -65 mV, instead of the 0mV in the original paper.
 
-Varying the injected current I from `I = -5`  to  `I = 12` takes the neuron from quiescent to a single spike, and to a tonic (repetitive) spiking. This is due to a subcritical Hopf bifurcation, which occurs close to `I = 9.5`.
+Varying the injected current I from `I = -5`  to  `I = 12` takes the neuron from quiescent
+to a single spike, and to a tonic (repetitive) spiking. This is due to a subcritical Hopf
+bifurcation, which occurs close to `I = 9.5`.
 
-[^HodgkinHuxley1952] : A. L. Hodgkin, A.F. Huxley J. Physiol., pp. 500-544 (1952).
+[^HodgkinHuxley1952]: A. L. Hodgkin, A.F. Huxley J. Physiol., pp. 500-544 (1952).
 
-[^Ermentrout2010] : G. Bard Ermentrout, and David H. Terman, "Mathematical Foundations of Neuroscience", Springer (2010).
+[^Ermentrout2010]:
+    G. Bard Ermentrout, and David H. Terman,
+    "Mathematical Foundations of Neuroscience", Springer (2010).
 
-[^Abbott2005] : L. F. Abbott, and P. Dayan, "Theoretical Neuroscience: Computational and Mathematical Modeling of Neural Systems", MIT Press (2005).
+[^Abbott2005]:
+    L. F. Abbott, and P. Dayan, "Theoretical Neuroscience: Computational and
+    Mathematical Modeling of Neural Systems", MIT Press (2005).
 """
-function hodgkinhuxley(u0=[-60.0, 0.0, 0.0, 0.0]; I = 12.0, Vna = 50.0, Vk = -77.0, Vl = -54.4, gna = 120.0,gk = 36.0, gl = 0.3)
+function hodgkinhuxley(u0=[-60.0, 0.0, 0.0, 0.0];
+    I = 12.0, Vna = 50.0, Vk = -77.0, Vl = -54.4, gna = 120.0,gk = 36.0, gl = 0.3)
 #In Ermentrout's & Abbott's books
     return CDS(hodgkinhuxley_rule, u0, [I, Vna, Vk, Vl, gna, gk, gl])
 end
@@ -1107,17 +1150,30 @@ vanderpol(u0=[0.5, 0.0]; μ=1.5, F=1.2, T=10) -> ds
 \\ddot{x} -\\mu (1-x^2) \\dot{x} + x = F \\cos(\\frac{2\\pi t}{T})
 \\end{aligned}
 ```
-The forced van der Pol oscillator is an oscillator with a nonlinear damping term driven by a sinusoidal forcing. It was proposed by Balthasar van der Pol, in his studies of nonlinear electrical circuits used in the first radios [^Kanamaru2007][^Strogatz2015].
-The unforced oscillator (`F = 0`) has stable oscillations in the form of a limit cycle with a slow buildup followed by a sudden discharge, which van der Pol called relaxation oscillations [^Strogatz2015][^vanderpol1926].
-The forced oscillator (`F > 0`) also has periodic behavior for some parameters, but can additionally have chaotic behavior.
+The forced van der Pol oscillator is an oscillator with a nonlinear damping term driven
+by a sinusoidal forcing. It was proposed by Balthasar van der Pol, in his studies of
+nonlinear electrical circuits used in the first radios [^Kanamaru2007][^Strogatz2015].
+The unforced oscillator (`F = 0`) has stable oscillations in the form of a limit cycle
+with a slow buildup followed by a sudden discharge, which van der Pol called relaxation
+oscillations [^Strogatz2015][^vanderpol1926].
+The forced oscillator (`F > 0`) also has periodic behavior for some parameters, but can
+additionally have chaotic behavior.
 
-The van der Pol oscillator is a specific case of both the FitzHugh-Nagumo neural model [^Kanamaru2007]. The default damping parameter is taken from [^Strogatz2015] and the forcing parameters are taken from [^Kanamaru2007], which generate periodic oscillations. Setting `\\mu=8.53` generates chaotic oscillations.
+The van der Pol oscillator is a specific case of both the FitzHugh-Nagumo neural
+model [^Kanamaru2007]. The default damping parameter is taken from [^Strogatz2015]
+and the forcing parameters are taken from [^Kanamaru2007], which generate periodic
+oscillations. Setting `\\mu=8.53` generates chaotic oscillations.
 
-[^Kanamaru2007] : Takashi Kanamaru (2007) "Van der Pol oscillator", Scholarpedia, 2(1):2202.
+[^Kanamaru2007]: Takashi Kanamaru (2007) "Van der Pol oscillator", Scholarpedia, 2(1):2202.
 
-[^Strogatz2015] : Steven H. Strogatz (2015) "Nonlinear dynamics and chaos : with applications to physics, biology, chemistry, and engineering", Boulder, CO :Westview Press, a member of the Perseus Books Group.
+[^Strogatz2015]: 
+    Steven H. Strogatz (2015) "Nonlinear dynamics and chaos:
+    with applications to physics, biology, chemistry, and engineering",
+    Boulder, CO :Westview Press, a member of the Perseus Books Group.
 
-[^vanderpol1926] : B. Van der Pol (1926), "On relaxation-oscillations", The London, Edinburgh and Dublin Phil. Mag. & J. of Sci., 2(7), 978–992.
+[^vanderpol1926]:
+    B. Van der Pol (1926), "On relaxation-oscillations",
+    The London, Edinburgh and Dublin Phil. Mag. & J. of Sci., 2(7), 978–992.
 """
 function vanderpol(u0=[0.5, 0.0]; μ=1.5, F=1.2, T=10)
     return CDS(vanderpol_rule, u0, [μ, F, T], vanderpol_jac)
@@ -1149,13 +1205,23 @@ lotkavolterra(u0=[10.0, 5.0]; α = 1.5, β = 1, δ=1, γ=3) -> ds
 \\dot{y} &= \\delta xy - \\gamma y
 \\end{aligned}
 ```
-The famous Lotka-Volterra model is a simple ecological model describing the interaction between a predator and a prey species (or also parasite and host species). It has been used independently in fields such as epidemics, ecology, and economics [^Hoppensteadt2006], and is not to be confused with the Competitive Lotka-Volterra model, which describes competitive interactions between species.
+The famous Lotka-Volterra model is a simple ecological model describing the interaction
+between a predator and a prey species (or also parasite and host species).
+It has been used independently in fields such as epidemics, ecology,
+and economics [^Hoppensteadt2006], and is not to be confused with the
+Competitive Lotka-Volterra model, which describes competitive interactions between species.
 
-The `x` variable describes the number of prey, while `y` describes the number of predator.  The default parameters are taken from [^Weisstein], which lead to typical periodic oscillations.
+The `x` variable describes the number of prey, while `y` describes the number of predator.
+The default parameters are taken from [^Weisstein], which lead to typical periodic 
+oscillations.
 
-[^Hoppensteadt2006] : Frank Hoppensteadt (2006) "Predator-prey model", Scholarpedia, 1(10):1563.
+[^Hoppensteadt2006]:
+    Frank Hoppensteadt (2006) "Predator-prey model", Scholarpedia, 1(10):1563.
 
-[^Weisstein] : Weisstein, Eric W., "Lotka-Volterra Equations." From MathWorld--A Wolfram Web Resource. https://mathworld.wolfram.com/Lotka-VolterraEquations.html
+[^Weisstein]:
+    Weisstein, Eric W., "Lotka-Volterra Equations." 
+    From MathWorld--A Wolfram Web Resource.
+    https://mathworld.wolfram.com/Lotka-VolterraEquations.html
 """
 function lotkavolterra(u0=[10.0, 5.0]; α = 1.5, β = 1, δ=1, γ=3)
     return CDS(lotkavolterra_rule, u0, [α, β, δ, γ], lotkavolterra_jac)
@@ -1189,11 +1255,19 @@ hindmarshrose(u0=[-1.0, 0.0, 0.0]; a=1, b=3, c=1, d=5, r=0.001, s=4, xr=-8/5, I=
 \\end{aligned}
 ```
 
-The Hindmarsh-Rose model reproduces the bursting behavior of a neuron's membrane potential, characterized by a fast sequence of spikes followed by a quiescent period. The `x` variable describes the membane potential, whose behavior can be controlled by the applied current `I`; the `y` variable describes the sodium and potassium ionic currents, and `z` describes an adaptation current [^HindmarshRose1984].
+The Hindmarsh-Rose model reproduces the bursting behavior of a neuron's membrane potential,
+characterized by a fast sequence of spikes followed by a quiescent period. 
+The `x` variable describes the membane potential, whose behavior can be controlled by
+the applied current `I`; the `y` variable describes the sodium and potassium ionic currents,
+and `z` describes an adaptation current [^HindmarshRose1984].
 
-The default parameter values are taken from [^HindmarshRose1984], chosen to lead to periodic bursting.
+The default parameter values are taken from [^HindmarshRose1984], chosen to lead to 
+periodic bursting.
 
-[^HindmarshRose1984] : J. L. Hindmarsh and R. M. Rose (1984) "A model of neuronal bursting using three coupled first order differential equations", Proc. R. Soc. Lond. B 221, 87-102.
+[^HindmarshRose1984]:
+    J. L. Hindmarsh and R. M. Rose (1984) 
+    "A model of neuronal bursting using three coupled first order differential equations",
+    Proc. R. Soc. Lond. B 221, 87-102.
 """
 function hindmarshrose(u0=[-1.0, 0.0, 0.0]; a=1, b=3, c=1, d=5, r=0.001, s=4, xr=-8/5, I=2.0)
     return CDS(hindmarshrose_rule, u0, [a,b,c,d,r,s,xr, I], hindmarshrose_jac)
@@ -1273,17 +1347,30 @@ It can be written in cartesian coordinates as [^Deco2017]
 \\end{aligned}
 ```
 
-The dynamical analysis of the system is greatly facilitated by putting it in polar coordinates, where it becomes the normal form of the supercritical Hopf bifurcation) [^Strogatz2015].
+The dynamical analysis of the system is greatly facilitated by putting it in polar coordinates,
+where it becomes the normal form of the supercritical Hopf bifurcation) [^Strogatz2015].
 ```math
 \\begin{aligned}
 \\dot{r} &= \\mu r - r^3, \\\\
 \\dot{\\theta} &= \\omega +br^2
 \\end{aligned}
 ```
-The parameter `\\mu` serves as the bifurcation parameter, `\\omega` is the frequency of infinitesimal oscillations, and `b` controls the dependence of the frequency on the amplitude.  Increasing `\\mu` from negative to positive generates the supercritical Hopf bifurcation, leading from a stable spiral at the origin to a stable limit cycle with radius `\\sqrt(\\mu)`.
-[^Landau1944] : L. D. Landau, "On the problem of turbulence, In Dokl. Akad. Nauk SSSR (Vol. 44, No. 8, pp. 339-349) (1944).
-[^Deco2017] : G. Deco et al "The dynamics of resting fluctuations in the brain: metastability and its dynamical cortical core",  Sci Rep 7, 3095 (2017).
-[^Strogatz2015] : Steven H. Strogatz "Nonlinear dynamics and chaos : with applications to physics, biology, chemistry, and engineering", Boulder, CO :Westview Press, a member of the Perseus Books Group (2015).
+The parameter `\\mu` serves as the bifurcation parameter, `\\omega` is the frequency
+of infinitesimal oscillations, and `b` controls the dependence of the frequency on
+the amplitude.  Increasing `\\mu` from negative to positive generates the supercritical
+Hopf bifurcation, leading from a stable spiral at the origin to a stable limit cycle with
+radius `\\sqrt(\\mu)`.
+
+[^Landau1944]:
+    L. D. Landau, "On the problem of turbulence,
+    In Dokl. Akad. Nauk SSSR (Vol. 44, No. 8, pp. 339-349) (1944).
+[^Deco2017]:
+    G. Deco et al "The dynamics of resting fluctuations in the brain:
+    metastability and its dynamical cortical core",  Sci Rep 7, 3095 (2017).
+[^Strogatz2015]:
+    Steven H. Strogatz "Nonlinear dynamics and chaos:
+    with applications to physics, biology, chemistry, and engineering",
+    Boulder, CO :Westview Press, a member of the Perseus Books Group (2015).
 """
 function stuartlandau_oscillator(u0=[1.0, 0.0]; μ=1.0, ω=1.0, b=1)
     return CDS(stuartlandau_rule, u0, [μ, ω, b], stuartlandau_jac)
@@ -1342,7 +1429,8 @@ This 5 dimensional (time-forced) dynamical system was used by Ott et al [^OttRid
 to analyze *riddled basins of attraction*. This means nearby any point of a basin of attraction
 of an attractor A there is a point of the basin of attraction of another attractor B.
 
-[^OttRiddled2014]: Ott. et al., [The transition to chaotic attractors with riddled basins](http://yorke.umd.edu/Yorke_papers_most_cited_and_post2000/1994_04_Ott_Alexander_Kan_Sommerer_PhysicaD_riddled%20basins.pdf)
+[^OttRiddled2014]: 
+    Ott. et al., [The transition to chaotic attractors with riddled basins](http://yorke.umd.edu/Yorke_papers_most_cited_and_post2000/1994_04_Ott_Alexander_Kan_Sommerer_PhysicaD_riddled%20basins.pdf)
 """
 function riddled_basins(u0=[0.5, 0.6, 0, 0];
         γ=0.05, x̄ = 1.9, f₀=2.3, ω =3.5, x₀=1.0, y₀=0.0
@@ -1386,8 +1474,13 @@ M(V) = 0.5 (1 + \tanh((x-V1)/V2)) \\\\
 G(V) = 0.5 (1 + \tanh((x-V3)/V4)) \\\\
 ```
 
-[^IzhikevichBook]: Izhikevich, E. M., Dynamical systems in neuroscience: The geometry of excitability and bursting, 2007, MIT Press.
-[^MorrisLecar1981]: Morris, C. and Lecar, H, [Voltage oscillations in the barnacle giant muscle fiber, 1981](https://www.cell.com/biophysj/pdf/S0006-3495(81)84782-0.pdf).
+[^IzhikevichBook]:
+    Izhikevich, E. M., Dynamical systems in neuroscience:
+    The geometry of excitability and bursting,
+    2007, MIT Press.
+[^MorrisLecar1981]:
+    Morris, C. and Lecar, H, [Voltage oscillations in the barnacle giant muscle fiber,
+    1981](https://www.cell.com/biophysj/pdf/S0006-3495(81)84782-0.pdf).
 """
 function morris_lecar(u0=[0.1, 0.1];
     I = 0.15, V3 = 0.1, V1 = -0.00, V2 = 0.15, V4 = 0.1,
@@ -1404,6 +1497,204 @@ end
     du1 = -gCa*M*(V - VCa) -gK*N*(V - VK) -gL*(V-VL) + I
     du2 = 1/τ*(-N + G)
     return SVector{2}(du1, du2)
+end
+
+"""
+```julia
+sakarya(u0= [-2.8976045, 3.8877978, 3.07465];
+    a = 1,
+    b = 1,
+    m = 1
+)
+```
+```math
+\\begin{aligned}
+\\dot{x} &= ax + y + yz\\\\
+\\dot{y} &= - xz + yz \\\\
+\\dot{z} &= - z - mxy + b
+\\end{aligned}
+```
+A system presenting robust chaos that varies from single wing to double wings to four wings.
+Its attractor arises due to merging of two disjoint bistable attractors [^Li2015].
+
+[^Li2015]:
+    Li, Chunbiao, et al (2015). A novel four-wing strange attractor born in bistability.
+    IEICE Electronics Express 12.4.
+"""
+function sakarya(u0= [-2.8976045, 3.8877978, 3.07465];
+    a = 1,
+    b = 1,
+    m = 1
+)
+    return CDS(sakarya_rule, u0, [a,b,m])
+end
+
+function sakarya_rule(u, p, t)
+    @inbounds begin
+        a, b, m = p
+        du1 = a*u[1] + u[2] + u[2]*u[3]
+        du2 = - u[1]*u[3] + u[2]*u[3]
+        du3 = - u[3] - m*u[1]*u[2] + b
+    end
+    return SVector{3}(du1, du2, du3)
+end
+
+
+"""
+```julia
+lorenz_bounded(u0=[-13.284881, -12.444334, 34.188198];
+    beta = 2.667,
+    r = 64.0,
+    rho = 28.0,
+    sigma = 10.0
+)
+```
+```math
+\\begin{aligned}
+\\dot{X} &= \\sigma(Y-X)f(X,Y,Z) \\\\
+\\dot{Y} &= (-XZ + \\rho X -Y)f(X,Y,Z) \\\\
+\\dot{Z} &= (XY - \\beta Z)f(X,Y,Z)
+\\end{aligned}
+```
+
+Lorenz system bounded by a confining potential [^SprottXiong2015].
+
+[^SprottXiong2015]:
+    Sprott, J. C., & Xiong, A. (2015). Classifying and quantifying basins of attraction.
+    Chaos: An Interdisciplinary Journal of Nonlinear Science, 25(8), 083101.
+"""
+function lorenz_bounded(u0=[-13.284881, -12.444334, 34.188198];
+    beta = 2.667,
+    r = 64.0,
+    rho = 28.0,
+    sigma = 10.0
+)
+    return CDS(lorenzbounded_rule, u0, [beta,r,rho,sigma])
+end
+
+function lorenzbounded_rule(u, p, t)
+    @inbounds begin
+        beta, r, rho, sigma = p
+        f = 1 - (u[1]^2 + u[2]^2 + u[3]^2) / r^2
+        du1 = sigma * (u[2] - u[1])*f
+        du2 = (u[1]*(rho - u[3]) - u[2])*f
+        du3 = (u[1]*u[2] - beta*u[3])*f
+    end
+    return SVector{3}(du1, du2, du3)
+end
+
+"""
+```julia
+swinging_atwood(u0=[0.113296,1.5707963267948966,0.10992,0.17747]; m1=1.0, m2=4.5)
+```
+```math
+\\begin{aligned}
+\\dot{r} &= \\frac{p_r}{M+m}\\\\
+\\dot{p}_r &= -Mg + mg\\cos(\\theta)\\\\
+\\dot{\\theta} &= \\frac{p_{\\theta}}{mr^2}\\\\
+\\dot{p}_{\\theta} &= -mgr\\sin(\\theta)
+\\end{aligned}
+```
+A mechanical system consisting of two swinging weights connected by ropes and pulleys.
+This is only chaotic when `m2` is sufficiently larger than `m1`, and there are nonzero initial
+momenta [^Tufillaro1984].
+
+[^Tufillaro1984]: 
+    Tufillaro, Nicholas B.; Abbott, Tyler A.; Griffiths, David J. (1984).
+    Swinging Atwood's Machine. American Journal of Physics. 52 (10): 895--903.
+"""
+function swinging_atwood(u0=[0.113296,1.5707963267948966,0.10992,0.17747]; m1=1.0, m2=4.5)
+    return CDS(swingingatwood_rule, u0, [m1, m2])
+end
+
+function swingingatwood_rule(u, p, t)
+    @inbounds begin
+        m1, m2 = p
+        r, th, pr, pth = u
+        g = 9.82
+        du1 = pr/(m1 + m2)
+        du2 = pth/(m1*r^2)
+        du3 = pth^2/(m1*r^3) - m2*g + m1*g*cos(th)
+        du4 = -m1*g*r*sin(th)
+    end
+    return SVector{4}(du1, du2, du3, du4)
+end
+
+"""
+```julia
+guckenheimer_holmes(u0=[-0.55582369,0.05181624,0.37766104]; 
+    a = 0.4,
+    b = 20.25,
+    c = 3,
+    d = 1.6,
+    e = 1.7,
+    f = 0.44)
+```
+```math
+\\begin{aligned}
+\\dot{x} &= ax - by + czx + dz(x^2 + y^2)\\\\
+\\dot{y} &= ay + bx + czy\\\\
+\\dot{z} &= e - z^2 - f(x^2 + y^2) - az^3
+\\end{aligned}
+```
+A nonlinear oscillator [^GuckenheimerHolmes1983].
+
+[^GuckenheimerHolmes1983]:
+    Guckenheimer, John, and Philip Holmes (1983).
+    Nonlinear oscillations, dynamical systems, and bifurcations of vector fields.
+    Vol. 42. Springer Science & Business Media.
+"""
+function guckenheimer_holmes(u0=[-0.55582369,0.05181624,0.37766104]; 
+    a = 0.4,
+    b = 20.25,
+    c = 3,
+    d = 1.6,
+    e = 1.7,
+    f = 0.44)
+    return CDS(guckenheimerholmes_rule, u0, [a,b,c,d,e,f])
+end
+
+function guckenheimerholmes_rule(u, p, t)
+    @inbounds begin
+        a,b,c,d,e,f = p
+        x,y,z = u
+        du1 = a*x - b*y + c*z*x + d*z*(x^2 + y^2)
+        du2 = a*y + b*x + c*z*y
+        du3 = e - z^2 - f*(x^2 + y^2) - a*z^3
+    end
+    return SVector{3}(du1, du2, du3)
+end
+
+"""
+```julia
+halvorsen(u0=[-8.6807408,-2.4741399,0.070775762]; a = 1.4, b = 4.0)
+```
+```math
+\\begin{aligned}
+\\dot{x} &= -a*x - b*(y + z) - y^2\\\\
+\\dot{y} &= -a*y - b*(z + x) - z^2\\\\
+\\dot{z} &= -a*z - b*(x + y) - x^2
+\\end{aligned}
+```
+An algebraically-simple chaotic system with quadratic nonlinearity [^Sprott2010].
+
+[^Sprott2010]:
+    Sprott, Julien C (2010). Elegant chaos: algebraically simple chaotic flows.
+    World Scientific, 2010.
+"""
+function halvorsen(u0=[-8.6807408,-2.4741399,0.070775762]; a = 1.4, b = 4.0)
+    return CDS(halvorsen_rule, u0, [a, b])
+end
+
+function halvorsen_rule(u, p, t)
+    @inbounds begin
+        x, y, z = u
+        a, b = p
+        du1 = -a*x - b*(y + z) - y^2
+        du2 = -a*y - b*(z + x) - z^2
+        du3 = -a*z - b*(x + y) - x^2
+    end
+    return SVector{3}(du1, du2, du3)
 end
 
 """
