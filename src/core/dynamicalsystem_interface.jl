@@ -80,7 +80,7 @@ errormsg(ds) = "Function not implemented for dynamical system of type $(nameof(t
 
 Return the current state of `ds`. This state is mutated when `ds` is mutated.
 """
-current_state(ds::DynamicalSystem) = errormsg(ds)
+current_state(ds::DynamicalSystem) = ds.u
 
 """
     initial_state(ds::DynamicalSystem) → u0
@@ -88,15 +88,31 @@ current_state(ds::DynamicalSystem) = errormsg(ds)
 Return the initial state of `ds`. This state is never mutated and is set
 when initializing `ds`.
 """
-initial_state(ds::DynamicalSystem) = errormsg(ds)
+initial_state(ds::DynamicalSystem) = ds.u0
 
 """
     current_parameters(ds::DynamicalSystem) → p
 
 Return the current parameter container of `ds`. This is mutated in functions
 that need to evolve `ds` across a parameter range.
+
+The following convenience syntax is also possible:
+
+    current_parameters(ds::DynamicalSystem, index)
+
+which will give the specific parameter from the container at the given `index`
+(which works for arrays, dictionaries, or composite types if `index` is `Symbol`).
 """
-current_parameters(ds::DynamicalSystem) = errormsg(ds)
+current_parameters(ds::DynamicalSystem) = ds.p
+current_parameters(ds::DynamicalSystem, index) = _get_parameter(current_parameters(ds), index)
+function _get_parameter(p, index)
+    if p isa Union{AbstractArray, AbstractDict}
+        getindex(p, index)
+    else
+        getproperty(p, index)
+    end
+end
+
 
 """
     initial_parameters(ds::DynamicalSystem) → p0
@@ -104,7 +120,7 @@ current_parameters(ds::DynamicalSystem) = errormsg(ds)
 Return the initial parameter container of `ds`.
 This is never mutated and is set when initializing `ds`.
 """
-initial_parameters(ds::DynamicalSystem) = errormsg(ds)
+initial_parameters(ds::DynamicalSystem) = ds.p0
 
 """
     isdeterministic(ds::DynamicalSystem) → true/false
@@ -128,14 +144,14 @@ isdiscretetime(ds::DynamicalSystem) = errormsg(ds)
 Return the dynamic rule of `ds`.
 This is never mutated and is set when initializing `ds`.
 """
-dynamic_rule(ds::DynamicalSystem) = errormsg(ds)
+dynamic_rule(ds::DynamicalSystem) = ds.f
 
 """
     current_time(ds::DynamicalSystem) → t
 
 Return the current time that `ds` is at. This is mutated when `ds` is evolved.
 """
-current_time(ds::DynamicalSystem) = errormsg(ds)
+current_time(ds::DynamicalSystem) = ds.t
 
 """
     initial_time(ds::DynamicalSystem) → t0
@@ -143,7 +159,7 @@ current_time(ds::DynamicalSystem) = errormsg(ds)
 Return the initial time defined for `ds`.
 This is never mutated and is set when initializing `ds`.
 """
-initial_time(ds::DynamicalSystem) = errormsg(ds)
+initial_time(ds::DynamicalSystem) = ds.t0
 
 """
     isinplace(ds::DynamicalSystem) → true/false
@@ -165,4 +181,30 @@ SciMLBase.isinplace(ds::DynamicalSystem) = errormsg(ds)
 Set the state of `ds` to `u`, which must match dimensionality with that of `ds`.
 Also ensure that the change is notified to whatever integratio protocol is used.
 """
-set_state!(ds, u) = errormsg(ds)
+set_state!(ds, u) = (ds.u = u)
+
+"""
+    set_parameter!(ds::DynamicalSystem, index, value)
+
+Change a parameter of `ds` given the `index` it has in the parameter container
+and the `value` to set it to. This function works for both array/dictionary containers
+as well as composite types. In the latter case `index` needs to be a `Symbol`.
+"""
+set_parameter!(ds::DynamicalSystem, args...) = _set_parameter!(current_parameters(ds), args...)
+
+function _set_parameter!(p, index, value)
+    if p isa Union{AbstractArray, AbstractDict}
+        setindex!(p, value, index)
+    else
+        setproperty!(p, index, value)
+    end
+end
+
+"""
+    reinit!(ds::DynamicalSystem, u = initial_state(ds))
+
+Reset the status of `ds`, so that it is as if it has be just initialized
+with initial state `u`. Practically every function of the ecosystem that evolves
+`ds` first calls this function on it.
+"""
+SciMLBase.reinit!(ds::DynamicalSystem, u = initial_state(ds)) = errormsg(ds)
