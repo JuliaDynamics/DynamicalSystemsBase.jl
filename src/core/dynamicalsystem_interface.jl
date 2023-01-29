@@ -5,7 +5,10 @@
 
 `DynamicalSystem` is an abstract supertype encompassing all concrete implementations
 of what counts as a "dynamical system" in the DynamicalSystems.jl library.
-The alias `DS` is sometimes used in the documentation instead of `DynamicalSystem`.
+A common example of a concrete dynamical system is a set of ordinary differential equations
+```math
+\\frac{d\\vec{u}}{dt} = \\vec{f}(\\vec{u}, p, t).
+```
 
 **_All concrete implementations of `DynamicalSystem` are mutable objects that
 can be iteratively evolved in time via the [`step!`](@ref) function._**
@@ -23,19 +26,47 @@ for implications this has on e.g., parallelization.
 A `ds::DynamicalSystem` **_representes a flow Φ in a state space_**.
 It mainly encapsulates three things:
 
-1. A state, typically referred to as `u`.
+1. A state, typically referred to as `u`, with initial value `u0`.
    The space that `u` occupies is the state space of `ds`
-   and the size of `u` is the dimension of `ds` (and of the state space).
+   and the length of `u` is the dimension of `ds` (and of the state space).
 2. A dynamic rule, typically referred to as `f`, that dictates how the state
    evolves/changes with time when calling the [`step!`](@ref) function.
-3. A parameter container that parameterizes `f`.
+   `f` is a standard Julia function, see below.
+3. A parameter container `p` that parameterizes `f`. `p` can be anything,
+   but in general it is recommended to be a type-stable mutable container.
 
 In sort, any set of quantities that change in time can be considered a dynamical system,
 however the concrete subtypes of `DynamicalSystem` are much more specific in their scope.
 Concrete subtypes typically also contain more information than the above 3 items.
 
-A dynamical system typically has a known evolution rule defined as a standard Julia
+A dynamical system has a known evolution rule `f` defined as a standard Julia
 function. `Dataset` is used to encode finite data observed from a dynamical system.
+
+## Construction instructions on `f` and `u`
+
+Most of the concrete implementations of `DynamicalSystem`, with the exception of
+[`ArbitrarySteppable`](@ref), have two ways of implementing the dynamic rule `f`,
+and as a consequence the type of the state `u`. The distinction is done on whether
+`f` is defined as an in-place (iip) function or out-of-place (oop) function.
+
+* **oop** : `f` **must** be in the form `f(x, p, t) -> SVector`
+    which means that given a state `x::SVector` and some parameter container
+    `p` it returns the output of `f` as an `SVector` (static vector).
+* **iip** : `f` **must** be in the form `f!(out, x, p, t)`
+    which means that given a state `x::AbstractArray` and some parameter container `p`,
+    it writes in-place the output of `f` in `out::AbstractArray`.
+
+`t` stands for current time in both cases.
+**iip** is suggested for systems with high dimension and **oop** for small.
+The break-even point is between 10 to 100 dimensions but must be benchmarked
+on a case-by-case basis as it depends on the complexity of `f`.
+
+!!! note "Autonomous vs non-autonomous systems"
+    Whether the dynamical system is autonomous (`f` doesn't depend on time) or not, it is
+    still necessary to include `t` as an argument to `f`.
+    While for some methods of DynamicalSystems.jl time-dependence is okay, the theoretical
+    foundation of many functions of the library only makes sense with autonomous systems.
+    In such cases you can convert the system to autonomous by making time an additional variable.
 
 ## API
 
