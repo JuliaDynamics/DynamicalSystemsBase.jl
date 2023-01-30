@@ -17,8 +17,8 @@ include("new_core/dynamicalsystem_interface.jl")
 include("new_core/trajectory.jl")
 include("new_core/utilities.jl")
 
-include("concrete_implementations/discrete_time.jl")
-include("concrete_implementations/continuous_time_ode.jl")
+include("concrete_systems/discrete_time_map.jl")
+include("concrete_systems/continuous_time_ode.jl")
 
 # include("deprecations.jl")
 
