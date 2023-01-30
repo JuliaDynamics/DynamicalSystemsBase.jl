@@ -69,6 +69,10 @@ end
     @test t == 0:1:100
     @test length(X) == length(t) == 101
 
+    # Continue as is from current state:
+    Y, t = trajectory(henon, 100, nothing)
+    @test t[1] == 100
+    @test Y[1] == X[end]
 end
 
 end

@@ -267,5 +267,10 @@ Reset the status of `ds`, so that it is as if it has be just initialized
 with initial state `u`. Practically every function of the ecosystem that evolves
 `ds` first calls this function on it. Besides the new initial state `u`, you
 can also configure the keywords `t0 = initial_time(ds)` and `p0 = current_parameters(ds)`.
+
+The special method `reinit!(ds, ::Nothing; kwargs...)` is also available,
+which does nothing and leaves the system as is. This is so that downstream functions
+that call `reinit!` can still be used without resetting the system but rather
+continuing from its exact current state.
 """
 SciMLBase.reinit!(ds::DynamicalSystem, args...; kwargs...) = errormsg(ds)

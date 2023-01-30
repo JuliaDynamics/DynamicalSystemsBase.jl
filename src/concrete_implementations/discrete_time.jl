@@ -117,6 +117,7 @@ SciMLBase.step!(ds::DIM, N, stop_at_tdt) = SciMLBase.step!(ds, N)
 function reinit!(ds::DIM, u = initial_state(ds);
         p0 = current_parameters(ds), t0 = initial_time(ds)
     )
+    isnothing(u) && return
     set_state!(ds, u)
     ds.t = t0
     set_parameters!(ds, p0)
