@@ -17,7 +17,7 @@ Optionally configure the parameter container `p` and initial time `t0`.
 
 For construction instructions regarding `f, u0` see [`DynamicalSystem`](@ref).
 """
-mutable struct DeterministicIteratedMap{IIP, S, D, F, P} <: DynamicalSystem
+mutable struct DeterministicIteratedMap{IIP, S, D, F, P} <: DiscreteTimeDynamicalSystem
     f::F
     u::S
     const u0::S
@@ -56,13 +56,6 @@ SciMLBase.isinplace(::DIM{IIP}) where {IIP} = IIP
 StateSpaceSets.dimension(::DIM{IIP, S, D}) where {IIP, S, D} = D
 isdiscretetime(::DIM) = true
 isdeterministic(::DIM) = true
-
-function (ds::DeterministicIteratedMap)(t::Real)
-    if t == current_time(ds)
-        return current_state(ds)
-    end
-    throw(ArgumentError("Cannot interpolate or extrapolate `DeterministicIteratedMap`."))
-end
 
 function set_state!(ds::DeterministicIteratedMap, u)
     if isinplace(ds)

@@ -1,4 +1,5 @@
 # This file declares the API/interface of `DynamicalSystem`.
+export DynamicalSystem, ContinuousTimeDynamicalSystem, DiscreteTimeDynamicalSystem
 
 """
     DynamicalSystem
@@ -9,13 +10,16 @@ A common example of a concrete dynamical system is a set of ordinary differentia
 ```math
 \\frac{d\\vec{u}}{dt} = \\vec{f}(\\vec{u}, p, t)
 ```
-that is implemented by the concrete [`ContinuousDynamicalSystem`](@ref).
+that is implemented by the concrete type [`CoupledODEs`](@ref).
 
 **_All concrete implementations of `DynamicalSystem` are mutable objects that
 can be iteratively evolved in time via the [`step!`](@ref) function._**
 Since they are mutable, most library functions that need to evolve the system
 will mutate its current state and/or parameters. See the documentation online
 for implications this has on e.g., parallelization.
+
+`DynamicalSystem` is further separated into two abstract types:
+`ContinuousTimeDynamicalSystem, DiscreteTimeDynamicalSystem`.
 
 ## Description
 
@@ -40,8 +44,8 @@ In sort, any set of quantities that change in time can be considered a dynamical
 however the concrete subtypes of `DynamicalSystem` are much more specific in their scope.
 Concrete subtypes typically also contain more information than the above 3 items.
 
-A dynamical system has a known evolution rule `f` defined as a standard Julia
-function. `Dataset` is used to encode finite data observed from a dynamical system.
+Here dynamical systems have a known evolution rule `f` defined as a standard Julia function.
+`AbstractDataset` is used to encode finite data observed from a dynamical system.
 
 ## Construction instructions on `f` and `u`
 
@@ -83,8 +87,8 @@ unless when developing new algorithm implementations that use dynamical systems.
 ### API - information
 
 - `ds(t)` with `ds` an instance of `DynamicalSystem`: return the state of `ds` at time `t`.
-  For continuous time systems this interpolates, while for discrete it only works if
-  `t` is the current time.
+  For continuous time systems this interpolates and extrapolates,
+  while for discrete time systems it only works if `t` is the current time.
 - [`current_state`](@ref)
 - [`initial_state`](@ref)
 - [`current_parameters`](@ref)
@@ -104,7 +108,11 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`set_parameters!`](@ref)
 """
 abstract type DynamicalSystem end
-const DS = DynamicalSystem
+
+# We utilize nature of time for dispatch; continuous time dispatches to `integ`
+# and dispatches for `::DEIntegrator` are defined in `CoupledODEs` file.
+abstract type ContinuousTimeDynamicalSystem <: DynamicalSystem end
+abstract type DiscreteTimeDynamicalSystem <: DynamicalSystem end
 
 errormsg(ds) = "Not yet implemented for dynamical system of type $(nameof(typeof(ds)))."
 
@@ -115,6 +123,13 @@ export current_state, initial_state, current_parameters, initial_parameters, isi
 ##################################################################################
 # API - information
 ##################################################################################
+function (ds::DiscreteTimeDynamicalSystem)(t::Real)
+    if t == current_time(ds)
+        return current_state(ds)
+    end
+    throw(ArgumentError("Cannot interpolate/extrapolate discrete time dynamical systems."))
+end
+
 """
     current_state(ds::DynamicalSystem) → u
 
@@ -176,7 +191,8 @@ isdeterministic(ds::DynamicalSystem) = errormsg(ds)
 Return `true` if `ds` operates in discrete time, or `false` if it is in continuous time.
 This is information deduced from the type of `ds`.
 """
-isdiscretetime(ds::DynamicalSystem) = errormsg(ds)
+isdiscretetime(ds::ContinuousTimeDynamicalSystem) = false
+isdiscretetime(ds::DiscreteTimeDynamicalSystem) = true
 
 """
     dynamic_rule(ds::DynamicalSystem) → f
