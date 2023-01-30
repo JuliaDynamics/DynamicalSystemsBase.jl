@@ -110,7 +110,7 @@ errormsg(ds) = "Not yet implemented for dynamical system of type $(nameof(typeof
 
 export current_state, initial_state, current_parameters, initial_parameters, isinplace,
     current_time, initial_time, isdeterministic, isdiscretetime, dynamic_rule,
-    reinit!, set_state!, set_parameter!, set_parameters!
+    reinit!, set_state!, set_parameter!, set_parameters!, step!
 
 ##################################################################################
 # API - information
@@ -214,7 +214,6 @@ SciMLBase.isinplace(ds::DynamicalSystem) = errormsg(ds)
 ##################################################################################
 # API - alter status
 ##################################################################################
-
 """
     set_state!(ds::DynamicalSystem, u)
 
@@ -259,6 +258,25 @@ function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
 end
 
 
+##################################################################################
+# API - step and reset
+##################################################################################
+"""
+    step!(discrete_time_ds [, dt::Integer])
+
+Evolve the discrete time dynamical system for 1 or `dt` steps.
+
+    step!(continuous_time_ds, [, dt::Real [, stop_at_tdt]])
+
+Evolve the continuous time dynamical system for one step of the integration routine.
+
+Alternative, if a `dt` is given, then `step!` the integrator until
+there is a temporal difference `≥ dt` (so, step _at least_ for `dt` time).
+
+When `true` is passed to the optional third argument,
+the integrator advances for exactly `dt` time.
+"""
+SciMLBase.step!(ds::DynamicalSystem, args...) = errormsg(ds)
 
 """
     reinit!(ds::DynamicalSystem, u = initial_state(ds); kwargs...)
