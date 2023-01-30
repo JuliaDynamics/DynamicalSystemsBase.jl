@@ -5,7 +5,7 @@ export StroboscopicMap
 ##################################################################################
 """
 	StroboscopicMap(ds::CoupledODEs, T::Real) <: DynamicalSystem
-	StroboscopicMap(f, T, u0, p = nothing; diffeq, t0 = nothing)
+	StroboscopicMap(T::Real, f, u0, p = nothing; diffeq, t0 = nothing)
 
 A discrete time dynamical system that produces iterations of a time-dependent
 (non-autonomous) [`CoupledODEs`](@ref) system exactly over a period `T`.
@@ -23,7 +23,7 @@ end
 StroboscopicMap(ds::CoupledODEs{D, I, P}, T::TT) where {D, I, P, TT} =
 StroboscopicMap{D, I, P, TT}(ds.integ, ds.p0, T)
 
-StroboscopicMap(f, T, u0, p = nothing; kwargs...) =
+StroboscopicMap(T, f, u0, p = nothing; kwargs...) =
 StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
 
 ##################################################################################
