@@ -130,6 +130,8 @@ function (ds::DiscreteTimeDynamicalSystem)(t::Real)
     throw(ArgumentError("Cannot interpolate/extrapolate discrete time dynamical systems."))
 end
 
+(ds::ContinuousTimeDynamicalSystem)(t::Real) = ds.integ(t)
+
 """
     current_state(ds::DynamicalSystem) → u
 
