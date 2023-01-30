@@ -17,23 +17,6 @@ function test_dynamical_system(ds, u0, name, idt, iip)
             @test ds(0) == u0
         end
 
-        @testset "time evolution" begin
-            if idt
-                @test_throws ArgumentError ds(2)
-                step!(ds)
-                @test current_time(ds) == 1
-                @test current_state(ds) == [1, 0]
-                @test ds(1) == [1, 0]
-                step!(ds, 2)
-                @test current_time(ds) == 3
-                @test current_state(ds) != [1, 0] != u0
-                step!(ds, 1, true)
-                @test current_time(ds) == 4
-            else
-                # lalala
-            end
-        end
-
         @testset "alteration" begin
             set_state!(ds, u0 .+ 1)
             @test current_state(ds) == u0 .+ 1
@@ -52,31 +35,59 @@ function test_dynamical_system(ds, u0, name, idt, iip)
             @test current_parameters(ds)[1] == fpv
         end
 
-        @testset "trajectory" begin
+
+        @testset "time evolution" begin
             if idt
-                reinit!(ds)
-                @test current_state(ds) == u0
-                X, t = trajectory(ds, 100)
-                @test X isa Dataset{2, Float64}
-                @test X[1] == u0
-                @test t == 0:1:100
-                @test length(X) == length(t) == 101
+                second_state = if iip
+                    z = deepcopy(current_state(ds))
+                    dynamic_rule(ds)(z, current_state(ds), current_parameters(ds), current_time(ds))
+                    z
+                else
+                    dynamic_rule(ds)(current_state(ds), current_parameters(ds), current_time(ds))
+                end
 
-                # Continue as is from current state:
-                Y, t = trajectory(ds, 100, nothing)
-                @test t[1] == 100
-                @test Y[1] == X[end]
+                @test_throws ArgumentError ds(2)
+                step!(ds)
+                @test current_time(ds) == 1
 
-                second_state = (reinit!(ds); step!(ds); current_state(ds))
-                @test X[2] == second_state
-
-                # obtain only first variable
-                Z, t = trajectory(ds, 100; save_idxs = [1])
-                @test size(Z) == (101, 1)
-                @test Z[1][1] == u0[1]
+                @test current_state(ds) == second_state
+                @test ds(1) == second_state
+                step!(ds, 2)
+                @test current_time(ds) == 3
+                @test current_state(ds) != second_state != u0
+                step!(ds, 1, true)
+                @test current_time(ds) == 4
             else
-                # lalala
+                t0 = current_time(ds)
+                step!(ds)
+                @test current_time(ds) > t0
             end
+
+            @testset "trajectory" begin
+                if idt
+                    reinit!(ds)
+                    @test current_state(ds) == u0
+                    X, t = trajectory(ds, 100)
+                    @test X isa Dataset{2, Float64}
+                    @test X[1] == u0
+                    @test X[2] == second_state
+                    @test t == 0:1:100
+                    @test length(X) == length(t) == 101
+
+                    # Continue as is from current state:
+                    Y, t = trajectory(ds, 100, nothing)
+                    @test t[1] == 100
+                    @test Y[1] == X[end]
+
+                    # obtain only first variable
+                    Z, t = trajectory(ds, 100; save_idxs = [1])
+                    @test size(Z) == (101, 1)
+                    @test Z[1][1] == u0[1]
+                else
+                    # lalala
+                end
+            end
+
         end
 
     end
