@@ -33,11 +33,9 @@ const DIM = DeterministicIteratedMap # Shortcut
     DiscreteDynamicalSystem
 
 An alias to [`DeterministicIteratedMap`](@ref).
-This was the name these systems had before DynamicalSystems.jl 3.0.
+This was the name these systems had before DynamicalSystems.jl v3.0.
 """
 const DiscreteDynamicalSystem = DeterministicIteratedMap
-
-# TODO: Also allow the deprecated method
 
 function DeterministicIteratedMap(f, u0, p = nothing, t0::Integer = 0)
     IIP = isinplace(f, 4) # from SciMLBase

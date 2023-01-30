@@ -25,7 +25,7 @@ p0 = [10, 28, 8/3]
 
 lorenz_oop = CoupledODEs(lorenz_rule, u0, p0)
 lorenz_iip = CoupledODEs(lorenz_rule_iip, copy(u0), p0)
-lorenz_vern = CoupledODEs(lorenz_rule_iip, u0, p0;
+lorenz_vern = CoupledODEs(lorenz_rule, u0, p0;
     diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
 )
 
@@ -33,6 +33,6 @@ for (ds, iip) in zip((lorenz_oop, lorenz_iip, lorenz_vern), (false, true, false)
 
     @test dynamic_rule(ds) == (iip ? lorenz_rule_iip : lorenz_rule)
     name = (ds === lorenz_vern) ? "lorvern" : "lorenz"
-    test_dynamical_system(ds, u0, name, true, iip)
+    test_dynamical_system(ds, u0, name, false, iip)
 
 end

@@ -12,9 +12,9 @@ A common example of a concrete dynamical system is a set of ordinary differentia
 ```
 that is implemented by the concrete type [`CoupledODEs`](@ref).
 
-**_All concrete implementations of `DynamicalSystem` are mutable objects that
+**_All concrete implementations of `DynamicalSystem`
 can be iteratively evolved in time via the [`step!`](@ref) function._**
-Since they are mutable, most library functions that need to evolve the system
+Hence, most library functions that evolve the system
 will mutate its current state and/or parameters. See the documentation online
 for implications this has on e.g., parallelization.
 
@@ -44,8 +44,11 @@ In sort, any set of quantities that change in time can be considered a dynamical
 however the concrete subtypes of `DynamicalSystem` are much more specific in their scope.
 Concrete subtypes typically also contain more information than the above 3 items.
 
-Here dynamical systems have a known evolution rule `f` defined as a standard Julia function.
-`AbstractDataset` is used to encode finite data observed from a dynamical system.
+In this scope dynamical systems have a known dynamic rule `f` defined as a
+standard Julia function. _Observed_ or _measured_ data from a dynamical system
+are represented using `AbstractDataset` and are finite.
+Such data are obtained from the [`trajectory`](@ref) function or
+from an experimental measurement of a dynamical system with an unknown dynamic rule.
 
 ## Construction instructions on `f` and `u`
 
@@ -185,7 +188,7 @@ initial_parameters(ds::DynamicalSystem) = ds.p0
 Return `true` if `ds` is deterministic, i.e., the dynamic rule contains no randomness.
 This is information deduced from the type of `ds`.
 """
-isdeterministic(ds::DynamicalSystem) = errormsg(ds)
+isdeterministic(ds::DynamicalSystem) = true
 
 """
     isdiscretetime(ds::DynamicalSystem) → true/false
