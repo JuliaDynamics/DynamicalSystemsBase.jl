@@ -7,8 +7,9 @@
 of what counts as a "dynamical system" in the DynamicalSystems.jl library.
 A common example of a concrete dynamical system is a set of ordinary differential equations
 ```math
-\\frac{d\\vec{u}}{dt} = \\vec{f}(\\vec{u}, p, t).
+\\frac{d\\vec{u}}{dt} = \\vec{f}(\\vec{u}, p, t)
 ```
+that is implemented by the concrete [`ContinuousDynamicalSystem`](@ref).
 
 **_All concrete implementations of `DynamicalSystem` are mutable objects that
 can be iteratively evolved in time via the [`step!`](@ref) function._**
@@ -55,18 +56,18 @@ and as a consequence the type of the state `u`. The distinction is done on wheth
 * **iip** : `f` **must** be in the form `f!(out, x, p, t)`
     which means that given a state `x::AbstractArray` and some parameter container `p`,
     it writes in-place the output of `f` in `out::AbstractArray`.
+    The function **must** return `nothing` as a final statement.
 
 `t` stands for current time in both cases.
 **iip** is suggested for systems with high dimension and **oop** for small.
-The break-even point is between 10 to 100 dimensions but must be benchmarked
+The break-even point is between 10 to 100 dimensions but should be benchmarked
 on a case-by-case basis as it depends on the complexity of `f`.
 
 !!! note "Autonomous vs non-autonomous systems"
     Whether the dynamical system is autonomous (`f` doesn't depend on time) or not, it is
-    still necessary to include `t` as an argument to `f`.
-    While for some methods of DynamicalSystems.jl time-dependence is okay, the theoretical
-    foundation of many functions of the library only makes sense with autonomous systems.
-    In such cases you can convert the system to autonomous by making time an additional variable.
+    still necessary to include `t` as an argument to `f`. Some algorithms utilize this
+    information, some do not, but we prefer to keep a consistent interface either way.
+    You can also convert any system to autonomous by making time an additional variable.
 
 ## API
 
@@ -81,6 +82,9 @@ unless when developing new algorithm implementations that use dynamical systems.
 
 ### API - information
 
+- `ds(t)` with `ds` an instance of `DynamicalSystem`: return the state of `ds` at time `t`.
+  For continuous time systems this interpolates, while for discrete it only works if
+  `t` is the current time.
 - [`current_state`](@ref)
 - [`initial_state`](@ref)
 - [`current_parameters`](@ref)
@@ -97,11 +101,16 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`reinit!`](@ref)
 - [`set_state!`](@ref)
 - [`set_parameter!`](@ref)
+- [`set_parameters!`](@ref)
 """
 abstract type DynamicalSystem end
 const DS = DynamicalSystem
 
-errormsg(ds) = "Function not implemented for dynamical system of type $(nameof(typeof(ds)))"
+errormsg(ds) = "Not yet implemented for dynamical system of type $(nameof(typeof(ds)))."
+
+export current_state, initial_state, current_parameters, initial_parameters, isinplace,
+    current_time, initial_time, isdeterministic, isdiscretetime, dynamic_rule,
+    reinit!, set_state!, set_parameter!, set_parameters!
 
 ##################################################################################
 # API - information
@@ -210,9 +219,11 @@ SciMLBase.isinplace(ds::DynamicalSystem) = errormsg(ds)
     set_state!(ds::DynamicalSystem, u)
 
 Set the state of `ds` to `u`, which must match dimensionality with that of `ds`.
-Also ensure that the change is notified to whatever integratio protocol is used.
+Also ensure that the change is notified to whatever integration protocol is used.
+This is not done as an in-place change. Hence, if the state of `ds` is mutable,
+it is linked to `u`.
 """
-set_state!(ds, u) = (ds.u = u)
+set_state!(ds, u) = errormsg(ds)
 
 """
     set_parameter!(ds::DynamicalSystem, index, value)
@@ -229,13 +240,32 @@ function _set_parameter!(p, index, value)
     else
         setproperty!(p, index, value)
     end
+    return
 end
 
 """
-    reinit!(ds::DynamicalSystem, u = initial_state(ds))
+    set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
+
+Set the parameter values in the [`current_parameters`](@ref)`(ds)` to match `p`.
+This is done as an in-place overwrite, hence the keys of `p` must be a subset of the keys
+of  [`current_parameters`](@ref)`(ds)`.
+"""
+function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
+    cp = current_parameters(ds)
+    for (index, value) in pairs(p)
+        _set_parameter!(cp, index, value)
+    end
+    return
+end
+
+
+
+"""
+    reinit!(ds::DynamicalSystem, u = initial_state(ds); kwargs...)
 
 Reset the status of `ds`, so that it is as if it has be just initialized
 with initial state `u`. Practically every function of the ecosystem that evolves
-`ds` first calls this function on it.
+`ds` first calls this function on it. Besides the new initial state `u`, you
+can also configure the keywords `t0 = initial_time(ds)` and `p0 = current_parameters(ds)`.
 """
-SciMLBase.reinit!(ds::DynamicalSystem, u = initial_state(ds)) = errormsg(ds)
+SciMLBase.reinit!(ds::DynamicalSystem, args...; kwargs...) = errormsg(ds)
