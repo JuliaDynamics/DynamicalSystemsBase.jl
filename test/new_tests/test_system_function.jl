@@ -107,10 +107,10 @@ function test_dynamical_system(ds, u0, name, idt, iip)
                     @test X isa Dataset{dimension(ds), Float64}
                     @test X[1] == u0
 
-                    # Y, t2 = trajectory(ds, 100, nothing; Δt = 0.1)
-                    # @test Y[1] == X[end]
-                    # @test t2[1] ≤ t[end]
-
+                    prev_u0 = deepcopy(current_state(ds))
+                    Y, t2 = trajectory(ds, 10, nothing; Δt = 1)
+                    @test Y[1] ≈ prev_u0 atol=1e-6
+                    @test t2[1] > t[end]
                 end
             end
 
