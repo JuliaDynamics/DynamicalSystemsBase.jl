@@ -1,14 +1,16 @@
 export trajectory
 
 """
-    trajectory(ds::DynamicalSystem, T, u = current_state(ds); kwargs...) → X
+    trajectory(ds::DynamicalSystem, T [, u]; kwargs...) → X, t
 
-Return accessor dataset that will contain the trajectory of the system `ds`,
-after evolving it for total time `T`, starting from state `u`.
-See [`Dataset`](@ref) for info on how to use this object.
+Return a dataset that will contain the trajectory of the system `ds`,
+after evolving it for total time `T`. If `u` is given, `ds` is [`reinit!`](@ref) at `u`,
+otherwise evolution starts from current status of `ds`.
 
-The time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)` and is not returned.
-(`t0` is the starting time of `ds` which is by default `0`).
+See [`Dataset`](@ref) for info on how to use the returned object.
+
+The returned time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)` and is not returned.
+(`t0` is the [`current_time`](@ref) of `ds` which is by default `0`).
 
 ## Keyword arguments
 
@@ -20,11 +22,10 @@ The time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)` and is not returned.
 function trajectory(ds::DynamicalSystem, args...; save_idxs = nothing, kwargs...)
     accessor = svector_access(save_idxs)
     if isdiscretetime(ds)
-        X = trajectory_discrete(ds, args...; accessor, kwargs...)
+        trajectory_discrete(ds, args...; accessor, kwargs...)
     else
-        X = trajectory_continuous(ds, args...; accessor, kwargs...)
+        trajectory_continuous(ds, args...; accessor, kwargs...)
     end
-    return X
 end
 
 function trajectory_discrete(ds, t, u0 = nothing;
@@ -44,7 +45,7 @@ function trajectory_discrete(ds, t, u0 = nothing;
         step!(ds, Δt)
         data[i] = SVector{X, ET}(obtain_access(current_state(ds), accessor))
     end
-    return Dataset(data)
+    return Dataset(data), tvec
 end
 
 function trajectory_continuous(integ, T, u0 = nothing;
@@ -64,7 +65,7 @@ function trajectory_continuous(integ, T, u0 = nothing;
         end
         sol[i] = SVector{X, ET}(obtain_access(integ(t), accessor))
     end
-    return Dataset(sol)
+    return Dataset(sol), tvec
 end
 
 # Util functions for `trajectory`

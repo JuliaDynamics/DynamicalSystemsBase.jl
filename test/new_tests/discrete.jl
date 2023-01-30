@@ -43,6 +43,8 @@ end
 end
 
 @testset "alteration" begin
+    set_state!(henon, [1, 1])
+    @test current_state(henon) == [1, 1]
     set_parameter!(henon, 1, 1.0)
     @test current_parameters(henon)[1] == 1
     set_parameters!(henon, [2.0])
@@ -54,9 +56,18 @@ end
     @test henon(0) == u0
     @test current_state(henon) == u0
     @test current_parameters(henon)[1] == 1.4
+    @test u0 == [0, 0]
 end
 
 @testset "trajectory" begin
+    reinit!(henon)
+    @test current_state(henon) == [0, 0]
+    X, t = trajectory(henon, 100)
+    @test X isa Dataset{2, Float64}
+    @test X[1] == [0, 0]
+    @test X[2] == [1, 0]
+    @test t == 0:1:100
+    @test length(X) == length(t) == 101
 
 end
 
