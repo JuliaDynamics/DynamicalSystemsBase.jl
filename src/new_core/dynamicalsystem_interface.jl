@@ -75,6 +75,7 @@ on a case-by-case basis as it depends on the complexity of `f`.
     still necessary to include `t` as an argument to `f`. Some algorithms utilize this
     information, some do not, but we prefer to keep a consistent interface either way.
     You can also convert any system to autonomous by making time an additional variable.
+    If the system is non-autonomous, its _effective dimensionality_ is `dimension(ds)+1`.
 
 ## API
 

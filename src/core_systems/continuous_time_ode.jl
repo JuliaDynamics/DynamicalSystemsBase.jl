@@ -85,7 +85,7 @@ function CoupledODEs(f, u0, p = nothing; t0 = 0, diffeq = DEFAULT_DIFFEQ)
 end
 
 ##################################################################################
-# Extend interface - propagate to `DEIntegrator`
+# Extend interface and extend for `DEIntegrator`
 ##################################################################################
 StateSpaceSets.dimension(::CoupledODEs{D}) where {D} = D
 
@@ -95,6 +95,16 @@ for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
 end
 
 SciMLBase.isinplace(ds::ContinuousTimeDynamicalSystem) = isinplace(ds.integ.f)
+
+function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(ds);
+        p0 = current_parameters(ds), t0 = initial_time(ds)
+    )
+    isnothing(u) && return
+    set_parameters!(ds, p0)
+    reinit!(ds.integ, u; reset_dt = true, t0)
+end
+
+# `DEIntegrator` stuff
 dynamic_rule(integ::DEIntegrator) = integ.f.f
 current_parameters(integ::DEIntegrator) = integ.p
 initial_state(integ::DEIntegrator) = integ.sol.prob.u0
@@ -106,12 +116,4 @@ function set_state!(integ::DEIntegrator, u)
     integ.u = u
     u_modified!(integ, true)
     return
-end
-
-function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(ds);
-        p0 = current_parameters(ds), t0 = initial_time(ds)
-    )
-    isnothing(u) && return
-    set_parameters!(ds, p0)
-    reinit!(ds.integ, u; reset_dt = true, t0)
 end

@@ -1,67 +1,54 @@
-"""
-	stroboscopicmap(ds::ContinuousDynamicalSystem, T; kwargs...)  → smap
+export StroboscopicMap
 
-Return a map (integrator) that produces iterations over a period `T` of the `ds`,
-known as a stroboscopic map. See [Integrator API](@ref) for handling integrators.
+##################################################################################
+# Type
+##################################################################################
+"""
+	StroboscopicMap(ds::CoupledODEs, T::Real) <: DynamicalSystem
+	StroboscopicMap(f, T, u0, p = nothing; diffeq, t0 = nothing)
+
+A discrete time dynamical system that produces iterations of a time-dependent
+(non-autonomous) [`CoupledODEs`](@ref) system exactly over a period `T`.
+This is known as a stroboscopic map.
+The second signature creates a [`CoupledODEs`](@ref) and calls the first.
 
 See also [`poincaremap`](@ref).
-
-## Keyword Arguments
-* `u0`: initial state
-* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
-  `init` of DifferentialEquations.jl.
-
-## Example
-```julia
-f = 0.27; ω = 0.1
-ds = Systems.duffing(zeros(2); ω, f, d = 0.15, β = -1)
-smap = stroboscopicmap(ds, 2π/ω; diffeq = (;reltol = 1e-8))
-reinit!(smap, [1.0, 1.0])
-u = step!(smap)
-u = step!(smap, 4) # step 4 iterations forward
-```
 """
-function stroboscopicmap(ds::CDS, T; u0 = get_state(ds), diffeq = NamedTuple())
-	integ = integrator(ds, u0; diffeq)
-	return StroboscopicMap{typeof(integ), dimension(ds), typeof(T)}(integ, T)
-end
-struct StroboscopicMap{I, D, F} <: GeneralizedDynamicalSystem
+struct StroboscopicMap{D, I, P, TT<:Real} <: DiscreteTimeDynamicalSystem
 	integ::I
-	T::F
+	p0::P
+	T::TT
 end
-isdiscretetime(::StroboscopicMap) = true
-StateSpaceSets.dimension(::StroboscopicMap{I, D}) where {I, D} = D
 
-integrator(p::StroboscopicMap) = p
-function step!(smap::StroboscopicMap)
+StroboscopicMap(ds::CoupledODEs{D, I, P}, T::TT) where {D, I, P, TT} =
+StroboscopicMap{D, I, P, TT}(ds.integ, ds.p0, T)
+
+StroboscopicMap(f, T, u0, p = nothing; kwargs...) =
+StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
+
+##################################################################################
+# Extend interface
+##################################################################################
+for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
+    :current_time, :initial_time, :set_state!)
+    @eval $(f)(ds::StroboscopicMap, args...) = $(f)(ds.integ, args...)
+end
+SciMLBase.isinplace(ds::StroboscopicMap) = isinplace(ds.integ.f)
+StateSpaceSets.dimension(::StroboscopicMap{D}) where {D} = D
+
+function SciMLBase.step!(smap::StroboscopicMap)
 	step!(smap.integ, smap.T, true)
-	return smap.integ.u
-end
-function step!(smap::StroboscopicMap, n::Int)
-	for k in 1:n; step!(smap.integ, smap.T, true); end
-	return smap.integ.u
-end
-function reinit!(smap::StroboscopicMap, u0)
-	reinit!(smap.integ, u0)
 	return
 end
-function get_state(smap::StroboscopicMap)
-	return smap.integ.u
-end
-get_parameters(smap::StroboscopicMap) = smap.integ.p
-
-function Base.show(io::IO, smap::StroboscopicMap)
-    println(io, "Iterator of the stroboscopic map")
-    println(io,  rpad(" rule f: ", 14),     DynamicalSystemsBase.eomstring(smap.integ.f.f))
-    println(io,  rpad(" Period: ", 14),     smap.T)
+function SciMLBase.step!(smap::StroboscopicMap, n::Int)
+	for _ in 1:n; step!(smap.integ, smap.T, true); end
+	return
 end
 
-current_time(smap::StroboscopicMap) = current_time(smap.integ)
-function (smap::StroboscopicMap)(t)
-	if t == current_time(smap)
-		return get_state(smap)
-	else
-		error("Can't extrapolate discrete systems!")
-	end
+function SciMLBase.reinit!(ds::StroboscopicMap, u = initial_state(ds);
+		p0 = current_parameters(ds), t0 = initial_time(ds)
+	)
+	isnothing(u) && return
+	set_parameters!(ds, p0)
+	reinit!(ds.integ, u; reset_dt = true, t0)
 end
-integrator(pinteg::StroboscopicMap, args...; kwargs...) = pinteg
