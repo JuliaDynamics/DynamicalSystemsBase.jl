@@ -38,6 +38,7 @@ function test_dynamical_system(ds, u0, name, idt, iip)
 
         @testset "time evolution" begin
             if idt
+                # For discrete systems this is always the second state no matter what
                 second_state = if iip
                     z = deepcopy(current_state(ds))
                     dynamic_rule(ds)(z, current_state(ds), current_parameters(ds), current_time(ds))
@@ -59,8 +60,22 @@ function test_dynamical_system(ds, u0, name, idt, iip)
                 @test current_time(ds) == 4
             else
                 t0 = current_time(ds)
+                xi = deepcopy(current_state(ds)[1])
                 step!(ds)
-                @test current_time(ds) > t0
+                t1 = current_time(ds)
+                @test t1 > t0
+
+                tm = (t1 - t0)/2
+                xm = ds(tm)[1]
+                xf = current_state(ds)[1]
+                @test min(xi, xf) ≤ xm ≤ max(xi, xf)
+
+                step!(ds, 1.0)
+                @test current_time(ds) ≥ t1 + 1
+
+                t2 = current_time(ds)
+                step!(ds, 1.0, true)
+                @test current_time(ds) == t2 + 1.0
             end
 
             @testset "trajectory" begin
@@ -68,7 +83,7 @@ function test_dynamical_system(ds, u0, name, idt, iip)
                     reinit!(ds)
                     @test current_state(ds) == u0
                     X, t = trajectory(ds, 100)
-                    @test X isa Dataset{2, Float64}
+                    @test X isa Dataset{dimension(ds), Float64}
                     @test X[1] == u0
                     @test X[2] == second_state
                     @test t == 0:1:100
@@ -84,7 +99,18 @@ function test_dynamical_system(ds, u0, name, idt, iip)
                     @test size(Z) == (101, 1)
                     @test Z[1][1] == u0[1]
                 else
-                    # lalala
+                    reinit!(ds)
+                    @test current_state(ds) == u0
+                    X, t = trajectory(ds, 100; Δt = 0.1)
+                    @test Base.step(t) == 0.1
+                    @test t[1] == initial_time(ds)
+                    @test X isa Dataset{dimension(ds), Float64}
+                    @test X[1] == u0
+
+                    # Y, t2 = trajectory(ds, 100, nothing; Δt = 0.1)
+                    # @test Y[1] == X[end]
+                    # @test t2[1] ≤ t[end]
+
                 end
             end
 

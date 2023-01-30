@@ -57,7 +57,7 @@ majority of downstream functions in DynamicalSystems.jl assume that `f` is diffe
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
 The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
 """
-struct CoupledODEs{IIP, D, I, P} <: ContinuousTimeDynamicalSystem
+struct CoupledODEs{D, I, P} <: ContinuousTimeDynamicalSystem
     integ::I
     # initial parameter container is the only field we can't recover from `integ`
     p0::P
@@ -74,7 +74,6 @@ const ContinuousDynamicalSystem = CoupledODEs
 function CoupledODEs(f, u0, p = nothing; t0 = 0, diffeq = DEFAULT_DIFFEQ)
     IIP = isinplace(f, 4) # from SciMLBase
     s = correct_state_type(Val{IIP}(), u0)
-    S = typeof(s)
     D = length(s)
     P = typeof(p)
     # Initialize integrator
@@ -82,12 +81,14 @@ function CoupledODEs(f, u0, p = nothing; t0 = 0, diffeq = DEFAULT_DIFFEQ)
     prob = ODEProblem{IIP}(f, s, (T(t0), T(Inf)), p)
     solver, remaining = _decompose_into_solver_and_remaining(diffeq)
     integ = __init(prob, solver; remaining..., save_everystep = false)
-    return CoupledODEs{IIP, D, typeof(integ), P}(integ, deepcopy(p))
+    return CoupledODEs{D, typeof(integ), P}(integ, deepcopy(p))
 end
 
 ##################################################################################
 # Extend interface - propagate to `DEIntegrator`
 ##################################################################################
+StateSpaceSets.dimension(::CoupledODEs{D}) where {D} = D
+
 for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
     :current_time, :initial_time, :set_state!, :(SciMLBase.step!))
     @eval $(f)(ds::ContinuousTimeDynamicalSystem, args...) = $(f)(ds.integ, args...)

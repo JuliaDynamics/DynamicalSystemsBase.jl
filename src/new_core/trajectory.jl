@@ -16,7 +16,7 @@ The returned time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)`.
 
 * `Δt`:  Time step of value output. For discrete systems it must be an integer.
   Defaults to `0.01` for continuous and `1` for discrete time systems.
-* `Ttr=0`: Transient time to evolve the initial state before starting saving states.
+* `Ttr = 0`: Transient time to evolve the initial state before starting saving states.
 * `save_idxs::AbstractVector{Int}`: Which variables to output in `X` (by default all).
 """
 function trajectory(ds::DynamicalSystem, args...; save_idxs = nothing, kwargs...)
@@ -36,7 +36,6 @@ function trajectory_discrete(ds, t, u0 = initial_state(ds);
     t0 = current_time(ds)
     tvec = (t0+Ttr):Δt:(t0+t+Ttr)
     L = length(tvec)
-    T = eltype(current_state(ds))
     X = isnothing(accessor) ? dimension(ds) : length(accessor)
     data = Vector{SVector{X, ET}}(undef, L)
     Ttr ≠ 0 && step!(ds, Ttr)
@@ -48,22 +47,22 @@ function trajectory_discrete(ds, t, u0 = initial_state(ds);
     return Dataset(data), tvec
 end
 
-function trajectory_continuous(integ, T, u0 = initial_state(ds);
+function trajectory_continuous(ds, T, u0 = initial_state(ds);
         Δt = 0.01, Ttr = 0.0, accessor = nothing
     )
-    reinit!(integ, u0)
-    D = dimension(integ)
-    t0 = current_time(integ)
+    reinit!(ds, u0)
+    D = dimension(ds)
+    t0 = current_time(ds)
     tvec = (t0+Ttr):Δt:(t0+T+Ttr)
     X = isnothing(accessor) ? D : length(accessor)
-    ET = eltype(current_state(integ))
+    ET = eltype(current_state(ds))
     sol = Vector{SVector{X, ET}}(undef, length(tvec))
-    step!(integ, Ttr)
+    step!(ds, Ttr)
     for (i, t) in enumerate(tvec)
-        while t > current_time(integ)
-            step!(integ)
+        while t > current_time(ds)
+            step!(ds)
         end
-        sol[i] = SVector{X, ET}(obtain_access(integ(t), accessor))
+        sol[i] = SVector{X, ET}(obtain_access(ds(t), accessor))
     end
     return Dataset(sol), tvec
 end
