@@ -273,6 +273,7 @@ of  [`current_parameters`](@ref)`(ds)`.
 """
 function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
     cp = current_parameters(ds)
+    p === cp && return
     for (index, value) in pairs(p)
         _set_parameter!(cp, index, value)
     end
