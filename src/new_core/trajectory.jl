@@ -10,31 +10,31 @@ and defaults to [`initial_state(ds)`](@ref).
 
 See [`Dataset`](@ref) for info on how to use `X`.
 The returned time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)`.
-(`t0` is the [`current_time`](@ref) of `ds` after `reinit!` is called).
 
 ## Keyword arguments
 
 * `Δt`:  Time step of value output. For discrete systems it must be an integer.
   Defaults to `0.01` for continuous and `1` for discrete time systems.
 * `Ttr = 0`: Transient time to evolve the initial state before starting saving states.
+* `t0 = initial_time(ds)`: Starting time.
 * `save_idxs::AbstractVector{Int}`: Which variables to output in `X` (by default all).
 """
-function trajectory(ds::DynamicalSystem, args...; save_idxs = nothing, kwargs...)
+function trajectory(ds::DynamicalSystem, T, u0 = initial_state(ds);
+        save_idxs = nothing, t0 = initial_time(ds), kwargs...
+    )
     accessor = svector_access(save_idxs)
+    reinit!(ds, u0; t0)
     if isdiscretetime(ds)
-        trajectory_discrete(ds, args...; accessor, kwargs...)
+        trajectory_discrete(ds, T; accessor, kwargs...)
     else
-        trajectory_continuous(ds, args...; accessor, kwargs...)
+        trajectory_continuous(ds, T; accessor, kwargs...)
     end
 end
 
-function trajectory_discrete(ds, t, u0 = initial_state(ds);
-        Δt::Integer = 1, Ttr::Integer = 0, accessor = nothing
-    )
-    reinit!(ds, u0)
+function trajectory_discrete(ds, T; Δt::Integer = 1, Ttr::Integer = 0, accessor = nothing)
     ET = eltype(current_state(ds))
     t0 = current_time(ds)
-    tvec = (t0+Ttr):Δt:(t0+t+Ttr)
+    tvec = (t0+Ttr):Δt:(t0+T+Ttr)
     L = length(tvec)
     X = isnothing(accessor) ? dimension(ds) : length(accessor)
     data = Vector{SVector{X, ET}}(undef, L)
@@ -47,10 +47,7 @@ function trajectory_discrete(ds, t, u0 = initial_state(ds);
     return Dataset(data), tvec
 end
 
-function trajectory_continuous(ds, T, u0 = initial_state(ds);
-        Δt = 0.01, Ttr = 0.0, accessor = nothing
-    )
-    reinit!(ds, u0)
+function trajectory_continuous(ds, T; Δt = 0.01, Ttr = 0.0, accessor = nothing)
     D = dimension(ds)
     t0 = current_time(ds)
     tvec = (t0+Ttr):Δt:(t0+T+Ttr)
