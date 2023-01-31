@@ -1,6 +1,6 @@
 using DynamicalSystemsBase, Test
 
-using OrdinaryDiffEq: Vern9
+using OrdinaryDiffEq: Vern9, ODEProblem
 
 include("test_system_function.jl")
 
@@ -24,7 +24,7 @@ u0 = [0, 10.0, 0]
 p0 = [10, 28, 8/3]
 
 lorenz_oop = CoupledODEs(lorenz_rule, u0, p0)
-lorenz_iip = CoupledODEs(lorenz_rule_iip, copy(u0), p0)
+lorenz_iip = CoupledODEs(ODEProblem(lorenz_rule_iip, copy(u0), (0.0, Inf), p0))
 lorenz_vern = CoupledODEs(lorenz_rule, u0, p0;
     diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
 )

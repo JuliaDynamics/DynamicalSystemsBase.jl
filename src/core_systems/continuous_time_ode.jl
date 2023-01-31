@@ -25,7 +25,7 @@ end
 # Type
 ##################################################################################
 """
-    CoupledODEs(f, u0, p = nothing; diffeq, t0 = 0.0) <: DynamicalSystem
+    CoupledODEs(f, u0 [, p]; diffeq, t0 = 0.0) <: DynamicalSystem
 
 A deterministic continuous time dynamical system defined by a set of
 coupled ordinary differential equations as follows:
@@ -34,13 +34,13 @@ coupled ordinary differential equations as follows:
 ```
 An alias for `CoupledODE` is `ContinuousDynamicalSystem`.
 
-Optionally configure the parameter container `p` and initial time as keyword `t0`.
+Optionally provide the parameter container `p` and initial time as keyword `t0`.
 
 For construction instructions regarding `f, u0` see [`DynamicalSystem`](@ref).
 
 ## DifferentialEquations.jl keyword arguments and interfacing
 
-Continuous dynamical systems are evolved via the solvers of DifferentialEquations.jl.
+The ODEs are evolved via the solvers of DifferentialEquations.jl.
 When initializing a `CoupledODEs`, you can specify the solver that will integrate
 `f` in time, along with any other integration options, using the `diffeq` keyword.
 For example you could use `diffeq = (abstol = 1e-9, reltol = 1e-9)`.
@@ -53,6 +53,8 @@ $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 `diffeq` keywords can also include `callback` for [event handling
 ](http://docs.juliadiffeq.org/latest/features/callback_functions.html), however the
 majority of downstream functions in DynamicalSystems.jl assume that `f` is differentiable.
+
+The convenience constructor `CoupledODEs(prob::ODEProblem, diffeq)` is also available.
 
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
 The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
@@ -71,17 +73,20 @@ This was the name these systems had before DynamicalSystems.jl v3.0.
 """
 const ContinuousDynamicalSystem = CoupledODEs
 
-function CoupledODEs(f, u0, p = nothing; t0 = 0, diffeq = DEFAULT_DIFFEQ)
+function CoupledODEs(f, u0, p = SciMLBase.NullParameters(); t0 = 0, diffeq = DEFAULT_DIFFEQ)
     IIP = isinplace(f, 4) # from SciMLBase
     s = correct_state_type(Val{IIP}(), u0)
-    D = length(s)
-    P = typeof(p)
     # Initialize integrator
     T = eltype(s)
     prob = ODEProblem{IIP}(f, s, (T(t0), T(Inf)), p)
+    return CoupledODEs(prob, diffeq)
+end
+function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ)
+    D = length(prob.u0)
+    P = typeof(prob.p)
     solver, remaining = _decompose_into_solver_and_remaining(diffeq)
     integ = __init(prob, solver; remaining..., save_everystep = false)
-    return CoupledODEs{D, typeof(integ), P}(integ, deepcopy(p))
+    return CoupledODEs{D, typeof(integ), P}(integ, deepcopy(prob.p))
 end
 
 ##################################################################################
