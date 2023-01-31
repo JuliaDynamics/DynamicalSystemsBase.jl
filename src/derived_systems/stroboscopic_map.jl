@@ -37,8 +37,9 @@ StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
 ##################################################################################
 # Extend interface
 ##################################################################################
+# Extensions for integrator happen at `CoupledODEs`
 for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
-    :current_time, :initial_time, :set_state!)
+    :current_time, :set_state!)
     @eval $(f)(ds::StroboscopicMap, args...) = $(f)(ds.integ, args...)
 end
 SciMLBase.isinplace(ds::StroboscopicMap) = isinplace(ds.integ.f)
@@ -51,7 +52,7 @@ function SciMLBase.step!(smap::StroboscopicMap)
 	smap.t[] = smap.t[] + 1
 	return
 end
-function SciMLBase.step!(smap::StroboscopicMap, n::Int)
+function SciMLBase.step!(smap::StroboscopicMap, n::Int, stop_at_dt = true)
 	for _ in 1:n; step!(smap.integ, smap.T, true); end
 	smap.t[] = smap.t[] + n
 	return

@@ -38,18 +38,23 @@ function test_dynamical_system(ds, u0, name, idt, iip)
 
         @testset "time evolution" begin
             if idt
-                # For discrete systems this is always the second state no matter what
-                second_state = if iip
-                    z = deepcopy(current_state(ds))
-                    dynamic_rule(ds)(z, current_state(ds), current_parameters(ds), current_time(ds))
-                    z
-                else
-                    dynamic_rule(ds)(current_state(ds), current_parameters(ds), current_time(ds))
-                end
 
                 @test_throws ArgumentError ds(2)
                 step!(ds)
                 @test current_time(ds) == 1
+
+                # For discrete systems this is always the second state no matter what
+                if ds isa DeterministicIteratedMap
+                    second_state = if iip
+                        z = deepcopy(current_state(ds))
+                        dynamic_rule(ds)(z, current_state(ds), current_parameters(ds), current_time(ds))
+                        z
+                    else
+                        dynamic_rule(ds)(current_state(ds), current_parameters(ds), current_time(ds))
+                    end
+                else
+                    second_state = deepcopy(current_state(ds))
+                end
 
                 @test current_state(ds) == second_state
                 @test ds(1) == second_state

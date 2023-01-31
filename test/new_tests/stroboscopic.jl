@@ -29,7 +29,7 @@ for (ds, iip) in zip((duffing_oop, duffing_iip, duffing_vern), (false, true, fal
 
     @test dynamic_rule(ds) == (iip ? duffing_rule_iip : duffing_rule)
     name = (ds === duffing_vern) ? "duffvern" : "duffing"
-    test_dynamical_system(ds, u0, name, false, iip)
+    test_dynamical_system(ds, u0, name, true, iip)
 
 end
 
