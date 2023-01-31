@@ -86,7 +86,10 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ)
     D = length(prob.u0)
     P = typeof(prob.p)
     solver, remaining = _decompose_into_solver_and_remaining(diffeq)
-    integ = __init(prob, solver; remaining..., save_everystep = false)
+    integ = __init(prob, solver; remaining...,
+        # Integrators are used exclusively iteratively. There is no reason to save anything.
+        save_start = false, save_end = false, save_everystep = false
+    )
     return CoupledODEs{D, typeof(integ), P}(integ, deepcopy(prob.p), diffeq)
 end
 

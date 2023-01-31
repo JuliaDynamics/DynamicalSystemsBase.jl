@@ -19,6 +19,9 @@ include("new_core/utilities.jl")
 
 include("core_systems/discrete_time_map.jl")
 include("core_systems/continuous_time_ode.jl")
+
+AnalyticRuleSystem = Union{CoupledODEs, DeterministicIteratedMap}
+
 include("derived_systems/stroboscopic_map.jl")
 
 # include("deprecations.jl")

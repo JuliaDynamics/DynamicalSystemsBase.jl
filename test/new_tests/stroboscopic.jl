@@ -47,13 +47,13 @@ end
 #     T = 2π
 #     ds = StroboscopicMap(CoupledODEs(duffing_rule, u0, p0), T)
 #     t0s = range(0, 2T; length = 200)
-
+#
 #     fig = Figure()
 #     ax = Axis(fig[1,1])
 #     X, t = trajectory(ds, 1000; t0 = 0)
 #     obs = Observable(vec(X))
 #     scatter!(ax, obs)
-
+#
 #     record(fig, "duffing.mp4", t0s) do t0
 #         X, t = trajectory(ds, 2000, current_state(ds); Ttr = 10, t0)
 #         obs[] = vec(X)
