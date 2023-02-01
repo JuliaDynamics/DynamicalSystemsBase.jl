@@ -59,7 +59,7 @@ The convenience constructor `CoupledODEs(prob::ODEProblem, diffeq)` is also avai
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
 The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
 """
-struct CoupledODEs{D, I, P} <: ContinuousTimeDynamicalSystem
+struct CoupledODEs{IIP, D, I, P} <: ContinuousTimeDynamicalSystem
     integ::I
     # things we can't recover from `integ`
     p0::P
@@ -83,6 +83,7 @@ function CoupledODEs(f, u0, p = SciMLBase.NullParameters(); t0 = 0, diffeq = DEF
     return CoupledODEs(prob, diffeq)
 end
 function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ)
+    IIP = isinplace(prob)
     D = length(prob.u0)
     P = typeof(prob.p)
     solver, remaining = _decompose_into_solver_and_remaining(diffeq)
@@ -90,20 +91,20 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ)
         # Integrators are used exclusively iteratively. There is no reason to save anything.
         save_start = false, save_end = false, save_everystep = false
     )
-    return CoupledODEs{D, typeof(integ), P}(integ, deepcopy(prob.p), diffeq)
+    return CoupledODEs{IIP, D, typeof(integ), P}(integ, deepcopy(prob.p), diffeq)
 end
 
 ##################################################################################
 # Extend interface and extend for `DEIntegrator`
 ##################################################################################
-StateSpaceSets.dimension(::CoupledODEs{D}) where {D} = D
+StateSpaceSets.dimension(::CoupledODEs{IIP, D}) where {IIP, D} = D
 
 for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
-    :current_time, :initial_time, :set_state!, :(SciMLBase.step!))
+    :current_time, :initial_time, :set_state!, :(SciMLBase.step!), :(SciMLBase.isinplace))
     @eval $(f)(ds::ContinuousTimeDynamicalSystem, args...) = $(f)(ds.integ, args...)
 end
 
-SciMLBase.isinplace(ds::ContinuousTimeDynamicalSystem) = isinplace(ds.integ.f)
+SciMLBase.isinplace(::CoupledODEs{IIP}) where {IIP} = IIP
 
 function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(ds);
         p0 = current_parameters(ds), t0 = initial_time(ds)

@@ -31,7 +31,7 @@ current_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = current_states(pdsa)[
 initial_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = initial_states(pdsa)[i]
 
 ##################################################################################
-# Analytically knwon rule
+# Analytically knwon rule: creation
 ##################################################################################
 # We don't parameterize the dimension because it does not need to be known
 # at compile time given the usage of the integrator.
@@ -97,6 +97,21 @@ function parallel_f_oop(ds, states)
     return parallel_f, st
 end
 
+##################################################################################
+# Analytically knwon rule: extensions
+##################################################################################
+
+# This is a workaround currently, until DiffEq allows Vector[Vector]
+# function create_parallel(ds::CDS{true}, states)
+#     st = Matrix(hcat(states...))
+#     L = size(st)[2]
+#     paralleleom = (du, u, p, t) -> begin
+#         for i in 1:L
+#             ds.f(view(du, :, i), view(u, :, i), p, t)
+#         end
+#     end
+#     return paralleleom, st
+# end
 
 # struct ParallelItegratorDiscrete
 # #     systems

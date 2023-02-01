@@ -20,7 +20,7 @@ include("new_core/utilities.jl")
 include("core_systems/discrete_time_map.jl")
 include("core_systems/continuous_time_ode.jl")
 
-AnalyticRuleSystem = Union{CoupledODEs, DeterministicIteratedMap}
+AnalyticRuleSystem{IIP} = Union{CoupledODEs, DeterministicIteratedMap{IIP}}
 
 include("derived_systems/stroboscopic_map.jl")
 include("derived_systems/parallel_systems.jl")
