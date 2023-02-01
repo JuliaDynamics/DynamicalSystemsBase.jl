@@ -14,7 +14,7 @@ end
 u0 = ones(2)
 states = [u0, u0 .+ 0.01, deepcopy(u0)]
 
-p0_disc = [1.1, 0.9]
+p0_disc = [1.1, 0.8]
 
 trivial_disc_oop = DeterministicIteratedMap(trivial_rule, u0, p0_disc)
 trivial_disc_iip = DeterministicIteratedMap(trivial_rule_iip, copy(u0), p0_disc)
@@ -22,7 +22,7 @@ trivial_disc_iip = DeterministicIteratedMap(trivial_rule_iip, copy(u0), p0_disc)
 pds_disc_oop = ParallelDynamicalSystem(trivial_disc_oop, states)
 pds_disc_iip = ParallelDynamicalSystem(trivial_disc_iip, deepcopy(states))
 
-p0_cont = [0.1, -0.2]
+p0_cont = [0.1, -0.4]
 
 trivial_cont_oop = CoupledODEs(trivial_rule, u0, p0_cont)
 trivial_cont_iip = CoupledODEs(trivial_rule_iip, copy(u0), p0_cont)
@@ -38,16 +38,16 @@ function parallel_integration_tests(pdsa)
     reinit!(pdsa)
     @test current_state(pdsa, 1) == current_state(pdsa, 3) == initial_state(pdsa, 1)
     @test current_state(pdsa, 1) != current_state(pdsa, 2)
-    d1 = sum(abs2, current_state(pdsa, 1) .- current_state(pdsa, 2))
-    dmax1 = abs(current_state(pdsa, 1)[1] - current_state(pdsa, 2)[2])
+    dmax1 = abs(current_state(pdsa, 1)[1] - current_state(pdsa, 2)[1])
+    emax1 = abs(current_state(pdsa, 1)[2] - current_state(pdsa, 2)[2])
     step!(pdsa)
     @test current_state(pdsa, 1) == current_state(pdsa, 3) != current_state(pdsa, 2)
     step!(pdsa, 2)
     @test current_state(pdsa, 1) == current_state(pdsa, 3) != current_state(pdsa, 2)
-    d2 = sum(abs2, current_state(pdsa, 1) .- current_state(pdsa, 2))
-    dmax2 = abs(current_state(pdsa, 1)[1] - current_state(pdsa, 2)[2])
-    @test d2 < d1 # dissipative system
+    dmax2 = abs(current_state(pdsa, 1)[1] - current_state(pdsa, 2)[1])
+    emax2 = abs(current_state(pdsa, 1)[2] - current_state(pdsa, 2)[2])
     @test dmax2 > dmax1 # unstable first dimension
+    @test emax2 < emax1 # stable second dimension
 end
 
 function max_lyapunov_test(pdsa, lmax)
@@ -79,9 +79,8 @@ for (ds, idt, iip) in zip(
         (true, true, false, false), (false, true, false, true),
     )
 
-    @test dynamic_rule(ds) == (iip ? lorenz_rule_iip : lorenz_rule)
     p0 = idt ? p0_disc : p0_cont
-    name = "parallel trivial($iip)"
+    name = "parallel(iip=$iip)"
     test_dynamical_system(ds, u0, p0, name; idt, iip = true, test_trajectory = false)
     parallel_integration_tests(ds)
     max_lyapunov_test(ds, idt ? lmax_disc : lmax_cont)
