@@ -57,12 +57,12 @@ Most of the concrete implementations of `DynamicalSystem`, with the exception of
 and as a consequence the type of the state `u`. The distinction is done on whether
 `f` is defined as an in-place (iip) function or out-of-place (oop) function.
 
-* **oop** : `f` **must** be in the form `f(x, p, t) -> SVector`
-    which means that given a state `x::SVector` and some parameter container
-    `p` it returns the output of `f` as an `SVector` (static vector).
-* **iip** : `f` **must** be in the form `f!(out, x, p, t)`
-    which means that given a state `x::AbstractArray` and some parameter container `p`,
-    it writes in-place the output of `f` in `out::AbstractArray`.
+* **oop** : `f` **must** be in the form `f(u, p, t) -> out`
+    which means that given a state `u::SVector{<:Real}` and some parameter container
+    `p` it returns the output of `f` as an `SVector{<:Real}` (static vector).
+* **iip** : `f` **must** be in the form `f!(out, u, p, t)`
+    which means that given a state `u::AbstractArray{<:Real}` and some parameter container `p`,
+    it writes in-place the output of `f` in `out::AbstractArray{<:Real}`.
     The function **must** return `nothing` as a final statement.
 
 `t` stands for current time in both cases.

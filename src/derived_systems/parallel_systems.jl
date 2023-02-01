@@ -46,9 +46,10 @@ function ParallelDynamicalSystem(ds::AnalyticRuleSystem, states)
     if ds isa DeterministicIteratedMap
         pds = DeterministicIteratedMap(f, st, current_parameters(ds), initial_time(ds))
     elseif ds isa CoupledODEs
-        pds = CoupledODEs(
-            f, st, current_parameters(ds); t0 = initial_time(ds), diffeq = ds.diffeq
-        )
+        # TODO: Error measure for adaptive stepping
+        T = eltype(first(st))
+        prob = ODEProblem{true}(f, st, (T(initial_time(ds)), T(Inf)), current_parameters(ds))
+        pds = CoupledODEs(prob, ds.diffeq)
     end
     return ParallelDynamicalSystemAnalytic(pds, dynamic_rule(ds))
 end
@@ -84,12 +85,13 @@ function parallel_f_iip(ds, states)
 end
 
 function parallel_f_oop(ds, states)
+    f = dynamic_rule(ds)
     S = typeof(correct_state(Val{false}(), first(states)))
     st = [S(s) for s in states]
     L = length(st)
     parallel_f = (du, u, p, t) -> begin
         @inbounds for i in 1:L
-            du[i] = ds.f(u[i], p, t)
+            du[i] = f(u[i], p, t)
         end
     end
     return parallel_f, st

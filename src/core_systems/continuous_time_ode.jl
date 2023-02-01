@@ -59,11 +59,11 @@ The convenience constructor `CoupledODEs(prob::ODEProblem, diffeq)` is also avai
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
 The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
 """
-struct CoupledODEs{D, I, P, E} <: ContinuousTimeDynamicalSystem
+struct CoupledODEs{D, I, P} <: ContinuousTimeDynamicalSystem
     integ::I
-    # initial parameter container is the only field we can't recover from `integ`
+    # things we can't recover from `integ`
     p0::P
-    diffeq::E
+    diffeq # isn't parameterized because it is only used for display
 end
 
 """
