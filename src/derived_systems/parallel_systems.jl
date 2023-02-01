@@ -125,4 +125,8 @@ current_states(pdsa::PDSAM) = eachcol(current_state(pdsa.ds))
 current_state(pdsa::PDSAM, i::Int = 1) = view(current_state(pdsa.ds), :, i)
 initial_states(pdsa::PDSAM) = eachcol(initial_state(pdsa.ds))
 initial_state(pdsa::PDSAM, i::Int = 1) = view(initial_state(pdsa.ds), :, i)
-set_state(pdsa::PDSAM, u, i::Int = 1) = (current_state(pdsa, i) .= u)
+(pdsa::PDSAM)(t::Real, i::Int = 1) = view(pdsa.ds(t), :, i)
+function set_state!(pdsa::PDSAM, u, i::Int = 1)
+    current_state(pdsa, i) .= u
+    u_modified!(pdsa.ds.integ, true)
+end

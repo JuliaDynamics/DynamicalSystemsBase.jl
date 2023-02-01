@@ -34,6 +34,7 @@ lmax_disc = log(1.1)
 lmax_cont = 0.1
 
 function parallel_integration_tests(pdsa)
+    @testset "analytic parallel" begin
     # uses knowledge of trivial rule
     reinit!(pdsa)
     @test current_state(pdsa, 1) == current_state(pdsa, 3) == initial_state(pdsa, 1)
@@ -48,9 +49,17 @@ function parallel_integration_tests(pdsa)
     emax2 = abs(current_state(pdsa, 1)[2] - current_state(pdsa, 2)[2])
     @test dmax2 > dmax1 # unstable first dimension
     @test emax2 < emax1 # stable second dimension
+
+    # Check that `set_state!` works as expected
+    set_state!(pdsa, deepcopy(current_state(pdsa, 1)), 2)
+    @test current_state(pdsa) == current_state(pdsa, 2)
+    step!(pdsa, 2)
+    @test current_state(pdsa) == current_state(pdsa, 2)
+    end
 end
 
 function max_lyapunov_test(pdsa, lmax)
+    @testset "max lyapunov" begin
     reinit!(pdsa)
     # Quick and dirt code of estimating max Lyapunov
     current_norm(pdsa) = norm(current_state(pdsa, 1) .- current_state(pdsa, 2))
@@ -72,6 +81,7 @@ function max_lyapunov_test(pdsa, lmax)
     final_λ = λ/(current_time(pdsa) - t0)
     # @show final_λ
     @test final_λ ≈ lmax atol = 1e-2 rtol = 0
+    end
 end
 
 for (ds, idt, iip) in zip(
@@ -79,9 +89,11 @@ for (ds, idt, iip) in zip(
         (true, true, false, false), (false, true, false, true),
     )
 
-    p0 = idt ? p0_disc : p0_cont
-    name = "parallel(iip=$iip)"
-    test_dynamical_system(ds, u0, p0, name; idt, iip = true, test_trajectory = false)
-    parallel_integration_tests(ds)
-    max_lyapunov_test(ds, idt ? lmax_disc : lmax_cont)
+    @testset "parallel, idt=$(idt), iip=$(iip)" begin
+        p0 = idt ? p0_disc : p0_cont
+        name = "parallel(iip=$iip)"
+        test_dynamical_system(ds, u0, p0, name; idt, iip = true, test_trajectory = false)
+        parallel_integration_tests(ds)
+        max_lyapunov_test(ds, idt ? lmax_disc : lmax_cont)
+    end
 end
