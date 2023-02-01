@@ -1,6 +1,6 @@
 using DynamicalSystemsBase, Test
 
-function test_dynamical_system(ds, u0, name, idt, iip)
+function test_dynamical_system(ds, u0, p0, name, idt, iip; test_trajectory = true)
 
     @testset "$(name), idt=$(idt), iip=$(iip)" begin
 
@@ -82,6 +82,8 @@ function test_dynamical_system(ds, u0, name, idt, iip)
                 @test current_time(ds) == t2 + 1.0
             end
 
+            if test_trajectory
+
             @testset "trajectory" begin
                 if idt
                     reinit!(ds)
@@ -116,6 +118,7 @@ function test_dynamical_system(ds, u0, name, idt, iip)
                     @test Y[1] ≈ prev_u0 atol=1e-6
                     @test t2[1] > t[end]
                 end
+            end
             end
 
         end

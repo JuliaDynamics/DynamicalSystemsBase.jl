@@ -21,6 +21,7 @@ This struct follows the [`DynamicalSystem`](@ref) interface with the following a
   set the `i`-th state.
 - [`current_states`](@ref) and [`initial_states`](@ref) can be used to get
   all parallel states.
+- [`reinit!`](@ref) takes in a vector of states (like `states`) for `u`.
 """
 abstract type ParallelDynamicalSystem <: DynamicalSystem end
 
@@ -58,15 +59,16 @@ current_states(pdsa::ParallelDynamicalSystemAnalytic) = current_state(pdsa.ds)
 initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
 function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u, i::Int = 1)
     current_states(pdsa)[i] = u
-    set_state!(pdsa.integ, current_states(pdsa))
+    set_state!(pdsa.ds, current_states(pdsa))
 end
 
-for f in (:(SciMLBase.step!), :current_time, :initial_time,
+for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
         :current_parameters, :initial_parameters
     )
-    @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...) = $(f)(pdsa.ds, args...)
+    @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
 end
 
+(pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
 
 function parallel_f_iip(ds, states)
     f = dynamic_rule(ds)

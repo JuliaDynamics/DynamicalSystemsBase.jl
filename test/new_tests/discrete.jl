@@ -18,6 +18,6 @@ henon_iip = DeterministicIteratedMap(henon_rule_iip, copy(u0), p0)
 for (henon, iip) in zip((henon_oop, henon_iip), (false, true))
 
     @test dynamic_rule(henon) == (iip ? henon_rule_iip : henon_rule)
-    test_dynamical_system(henon, u0, "henon", true, iip)
+    test_dynamical_system(henon, u0, p0, "henon", true, iip)
 
 end
