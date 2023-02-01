@@ -82,12 +82,13 @@ function CoupledODEs(f, u0, p = SciMLBase.NullParameters(); t0 = 0, diffeq = DEF
     prob = ODEProblem{IIP}(f, s, (T(t0), T(Inf)), p)
     return CoupledODEs(prob, diffeq)
 end
-function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ)
+# Below `special_kwargs` is undocumented internal option for passing `internalnorm`
+function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs...)
     IIP = isinplace(prob)
     D = length(prob.u0)
     P = typeof(prob.p)
     solver, remaining = _decompose_into_solver_and_remaining(diffeq)
-    integ = __init(prob, solver; remaining...,
+    integ = __init(prob, solver; remaining..., special_kwargs...,
         # Integrators are used exclusively iteratively. There is no reason to save anything.
         save_start = false, save_end = false, save_everystep = false
     )

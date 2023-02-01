@@ -35,56 +35,30 @@ initial_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = initial_states(pdsa)[
 ##################################################################################
 # We don't parameterize the dimension because it does not need to be known
 # at compile time given the usage of the integrator.
-# It uses the generic `DynamicalSystem` dispatch
-struct ParallelDynamicalSystemAnalytic{D} <: ParallelDynamicalSystem
+# It uses the generic `DynamicalSystem` dispatch.
+# But we do need a special extra parameter that checks if the system
+# is ODE _and_ inplace, because we need a special matrix state in this case
+struct ParallelDynamicalSystemAnalytic{D, M} <: ParallelDynamicalSystem
     ds::D
     original_f # no type parameterization here, this field is only for printing
 end
 
 function ParallelDynamicalSystem(ds::AnalyticRuleSystem, states)
-    f, st = isinplace(ds) ? parallel_f_iip(ds, states) : parallel_f_oop(ds, states)
+    f, st = parallel_rule(ds, states)
     if ds isa DeterministicIteratedMap
         pds = DeterministicIteratedMap(f, st, current_parameters(ds), initial_time(ds))
     elseif ds isa CoupledODEs
-        # TODO: Error measure for adaptive stepping
         T = eltype(first(st))
         prob = ODEProblem{true}(f, st, (T(initial_time(ds)), T(Inf)), current_parameters(ds))
-        pds = CoupledODEs(prob, ds.diffeq)
+        inorm = prob.u0 isa Matrix ? matrixnorm : vectornorm
+        pds = CoupledODEs(prob, ds.diffeq; internalnorm = inorm)
     end
-    return ParallelDynamicalSystemAnalytic(pds, dynamic_rule(ds))
+    M = ds isa CoupledODEs && isinplace(ds)
+    return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds))
 end
 
-# Extensions
-dynamic_rule(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.original_f
-current_states(pdsa::ParallelDynamicalSystemAnalytic) = current_state(pdsa.ds)
-initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
-function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u, i::Int = 1)
-    current_states(pdsa)[i] = u
-    set_state!(pdsa.ds, current_states(pdsa))
-end
-
-for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
-        :current_parameters, :initial_parameters
-    )
-    @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
-end
-
-(pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
-
-function parallel_f_iip(ds, states)
-    f = dynamic_rule(ds)
-    S = typeof(correct_state(Val{true}(), first(states)))
-    st = [S(s) for s in states]
-    L = length(st)
-    parallel_f = (du, u, p, t) -> begin
-        @inbounds for i in 1:L
-            f(du[i], u[i], p, t)
-        end
-    end
-    return parallel_f, st
-end
-
-function parallel_f_oop(ds, states)
+# Out of place: everywhere the same
+function parallel_rule(ds::AnalyticRuleSystem{false}, states)
     f = dynamic_rule(ds)
     S = typeof(correct_state(Val{false}(), first(states)))
     st = [S(s) for s in states]
@@ -97,23 +71,58 @@ function parallel_f_oop(ds, states)
     return parallel_f, st
 end
 
+# In place: for where `Vector{Vector}` is possible
+function parallel_rule(ds::DeterministicIteratedMap{true}, states)
+    f = dynamic_rule(ds)
+    S = typeof(correct_state(Val{true}(), first(states)))
+    st = [S(s) for s in states]
+    L = length(st)
+    parallel_f = (du, u, p, t) -> begin
+        @inbounds for i in 1:L
+            f(du[i], u[i], p, t)
+        end
+    end
+    return parallel_f, st
+end
+
+# In place, uses matrix with each column the
+function parallel_rule(ds::CoupledODEs{true}, states)
+    st = Matrix(hcat(states...))
+    f = dynamic_rule(ds)
+    parallel_f = (du, u, p, t) -> begin
+        for i in axes(st, 2)
+            f(view(du, :, i), view(u, :, i), p, t)
+        end
+    end
+    return parallel_f, st
+end
+
 ##################################################################################
 # Analytically knwon rule: extensions
 ##################################################################################
+for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
+    :current_parameters, :initial_parameters
+)
+@eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
+end
 
-# This is a workaround currently, until DiffEq allows Vector[Vector]
-# function create_parallel(ds::CDS{true}, states)
-#     st = Matrix(hcat(states...))
-#     L = size(st)[2]
-#     paralleleom = (du, u, p, t) -> begin
-#         for i in 1:L
-#             ds.f(view(du, :, i), view(u, :, i), p, t)
-#         end
-#     end
-#     return paralleleom, st
-# end
+(pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
+dynamic_rule(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.original_f
 
-# struct ParallelItegratorDiscrete
-# #     systems
-# # end
+# States IO for vector of vectors state
+current_states(pdsa::ParallelDynamicalSystemAnalytic) = current_state(pdsa.ds)
+initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
+function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u, i::Int = 1)
+    current_states(pdsa)[i] = u
+    set_state!(pdsa.ds, current_states(pdsa))
+end
 
+# States IO for matrix state
+# Unfortunately the `eachcol` generator cannot be accessed with `i`
+# so we need to extend every method manually
+const PDSAM{D} = ParallelDynamicalSystemAnalytic{D, true}
+current_states(pdsa::PDSAM) = eachcol(current_state(pdsa.ds))
+current_state(pdsa::PDSAM, i::Int = 1) = view(current_state(pdsa.ds), :, i)
+initial_states(pdsa::PDSAM) = eachcol(initial_state(pdsa.ds))
+initial_state(pdsa::PDSAM, i::Int = 1) = view(initial_state(pdsa.ds), :, i)
+set_state(pdsa::PDSAM, u, i::Int = 1) = (current_state(pdsa, i) .= u)
