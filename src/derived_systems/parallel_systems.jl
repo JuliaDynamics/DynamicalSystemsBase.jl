@@ -4,9 +4,10 @@
 # For all discrete time systems another structure exists that deepcopies the systems.
 # And for all continuous time systems another structure exists.
 # TODO: Continous time utilizing `step!(integ, dt, true)` and requiring a `dt`.
+export ParallelDynamicalSystem, current_states, initial_states
 
 """
-    ParallelDynamicalSystem(ds::DynamicalSystem, states)
+    ParallelDynamicalSystem(ds::DynamicalSystem, states::AbstractVector)
 
 A struct that evolves several `states` of a given dynamical system in parallel
 **at exactly the same times**. Useful when wanting to evolve several different trajectories
@@ -32,10 +33,11 @@ initial_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = initial_states(pdsa)[
 # Analytically knwon rule
 ##################################################################################
 # We don't parameterize the dimension because it does not need to be known
-# at compile time given the usage of the integrator. Besides, the field `ds`
-# has it as type parameter if need be
+# at compile time given the usage of the integrator.
+# It uses the generic `DynamicalSystem` dispatch
 struct ParallelDynamicalSystemAnalytic{D} <: ParallelDynamicalSystem
     ds::D
+    original_f # no type parameterization here, this field is only for printing
 end
 
 function ParallelDynamicalSystem(ds::AnalyticRuleSystem, states)
@@ -47,9 +49,11 @@ function ParallelDynamicalSystem(ds::AnalyticRuleSystem, states)
             f, st, current_parameters(ds); t0 = initial_time(ds), diffeq = ds.diffeq
         )
     end
-    return ParallelDynamicalSystemAnalytic(pds)
+    return ParallelDynamicalSystemAnalytic(pds, dynamic_rule(ds))
 end
 
+# Extensions
+dynamic_rule(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.original_f
 current_states(pdsa::ParallelDynamicalSystemAnalytic) = current_state(pdsa.ds)
 initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
 function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u, i::Int = 1)
@@ -57,9 +61,16 @@ function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u, i::Int = 1)
     set_state!(pdsa.integ, current_states(pdsa))
 end
 
+for f in (:(SciMLBase.step!), :current_time, :initial_time,
+        :current_parameters, :initial_parameters
+    )
+    @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...) = $(f)(pdsa.ds, args...)
+end
+
+
 function parallel_f_iip(ds, states)
     f = dynamic_rule(ds)
-    S = correct_state_type(Val{true}(), first(states))
+    S = typeof(correct_state(Val{true}(), first(states)))
     st = [S(s) for s in states]
     L = length(st)
     parallel_f = (du, u, p, t) -> begin
@@ -71,7 +82,7 @@ function parallel_f_iip(ds, states)
 end
 
 function parallel_f_oop(ds, states)
-    S = correct_state_type(Val{false}(), first(states))
+    S = typeof(correct_state(Val{false}(), first(states)))
     st = [S(s) for s in states]
     L = length(st)
     parallel_f = (du, u, p, t) -> begin

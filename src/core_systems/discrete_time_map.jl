@@ -39,7 +39,7 @@ const DiscreteDynamicalSystem = DeterministicIteratedMap
 
 function DeterministicIteratedMap(f, u0, p = nothing, t0::Integer = 0)
     IIP = isinplace(f, 4) # from SciMLBase
-    s = correct_state_type(Val{IIP}(), u0)
+    s = correct_state(Val{IIP}(), u0)
     S = typeof(s)
     D = length(s)
     P = typeof(p)

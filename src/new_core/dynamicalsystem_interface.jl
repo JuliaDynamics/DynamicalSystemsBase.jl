@@ -233,6 +233,9 @@ but a developer may care.
 """
 SciMLBase.isinplace(ds::DynamicalSystem) = errormsg(ds)
 
+# Generic implementation, most types re-define it as compile-time info
+StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
+
 ##################################################################################
 # API - alter status
 ##################################################################################

@@ -38,7 +38,6 @@ function test_dynamical_system(ds, u0, name, idt, iip)
 
         @testset "time evolution" begin
             if idt
-
                 @test_throws ArgumentError ds(2)
                 step!(ds)
                 @test current_time(ds) == 1
