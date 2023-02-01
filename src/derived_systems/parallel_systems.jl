@@ -1,11 +1,12 @@
 # Parallel integration is a bit special;
-# For `CoupledODEs` and `DeterministicIteratedMap` a dedicated structure exists;
-# For all discrete time systems another structure exists.
+# For `AnalyticRuleSystem` a dedicated structure exists that uses the existing
+# integrators with a vector of vectors.
+# For all discrete time systems another structure exists that deepcopies the systems.
 # And for all continuous time systems another structure exists.
 # TODO: Continous time utilizing `step!(integ, dt, true)` and requiring a `dt`.
 
 """
-    ParallelEvolver(ds::DynamicalSystem, states)
+    ParallelDynamicalSystem(ds::DynamicalSystem, states)
 
 A struct that evolves several `states` of a given dynamical system in parallel
 **at exactly the same times**. Useful when wanting to evolve several different trajectories
@@ -17,26 +18,27 @@ This struct follows the [`DynamicalSystem`](@ref) interface with the following a
   which returns the `i`th state. Same for [`initial_state`](@ref).
 - Similarly, [`set_state`](@ref) obtains a second argument `i::Int = 1` to
   set the `i`-th state.
+- [`current_states`](@ref) and [`initial_states`](@ref) can be used to get
+  all parallel states.
 """
-abstract type ParallelEvolver <: DynamicalSystem end
+abstract type ParallelDynamicalSystem <: DynamicalSystem end
 
 # Generic interface that doesn't depend on implementation
-isinplace(::ParallelEvolver) = true
-current_state(p::ParalellEvolver, i::Int = 1) = current_states(p)[i]
-initial_state(p::ParalellEvolver, i::Int = 1) = initial_states(p)[i]
+isinplace(::ParallelDynamicalSystem) = true
+current_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = current_states(pdsa)[i]
+initial_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = initial_states(pdsa)[i]
 
 ##################################################################################
 # Analytically knwon rule
 ##################################################################################
 # We don't parameterize the dimension because it does not need to be known
 # at compile time given the usage of the integrator. Besides, the field `ds`
-# has it as type parameter...
-
-struct ParallelEvolverAnalytic{D, U} <: ParallelEvolver
+# has it as type parameter if need be
+struct ParallelDynamicalSystemAnalytic{D} <: ParallelDynamicalSystem
     ds::D
 end
 
-function ParallelEvolver(ds::AnalyticRuleSystem, states)
+function ParallelDynamicalSystem(ds::AnalyticRuleSystem, states)
     f, st = isinplace(ds) ? parallel_f_iip(ds, states) : parallel_f_oop(ds, states)
     if ds isa DeterministicIteratedMap
         pds = DeterministicIteratedMap(f, st, current_parameters(ds), initial_time(ds))
@@ -45,17 +47,15 @@ function ParallelEvolver(ds::AnalyticRuleSystem, states)
             f, st, current_parameters(ds); t0 = initial_time(ds), diffeq = ds.diffeq
         )
     end
-    return ParallelEvolverAnalytic(pds)
+    return ParallelDynamicalSystemAnalytic(pds)
 end
 
-current_states(p::ParallelEvolverAnalytic) = current_state(p.ds)
-initial_states(p::ParallelEvolverAnalytic) = initial_state(p.ds)
-function set_state!(p::::ParallelEvolverAnalytic, i::Int = 1)
-    fafafa
+current_states(pdsa::ParallelDynamicalSystemAnalytic) = current_state(pdsa.ds)
+initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
+function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u, i::Int = 1)
+    current_states(pdsa)[i] = u
+    set_state!(pdsa.integ, current_states(pdsa))
 end
-
-
-
 
 function parallel_f_iip(ds, states)
     f = dynamic_rule(ds)
@@ -70,7 +70,7 @@ function parallel_f_iip(ds, states)
     return parallel_f, st
 end
 
-function parallel_f_oop(ds::DS{false}, states)
+function parallel_f_oop(ds, states)
     S = correct_state_type(Val{false}(), first(states))
     st = [S(s) for s in states]
     L = length(st)
