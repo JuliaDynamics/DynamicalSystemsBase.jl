@@ -23,7 +23,7 @@ pds_oop = ParallelDynamicalSystem(trivial_oop, states)
 pds_iip = ParallelDynamicalSystem(trivial_iip, states)
 
 name = "parallel discrete"
-test_dynamical_system(pds_oop, u0, p0, name, true, true; test_trajectory = false)
+test_dynamical_system(pds_oop, u0, p0, name; idt = true, iip = true, test_trajectory = false)
 
 # function parallel_integration_tests(pdsa)
 #     reinit!(pdsa)

@@ -1,6 +1,6 @@
 using DynamicalSystemsBase, Test
 
-function test_dynamical_system(ds, u0, p0, name, idt, iip; test_trajectory = true)
+function test_dynamical_system(ds, u0, p0, name; idt, iip, test_trajectory = true)
 
     @testset "$(name), idt=$(idt), iip=$(iip)" begin
 

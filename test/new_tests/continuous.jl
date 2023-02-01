@@ -33,6 +33,6 @@ for (ds, iip) in zip((lorenz_oop, lorenz_iip, lorenz_vern), (false, true, false)
 
     @test dynamic_rule(ds) == (iip ? lorenz_rule_iip : lorenz_rule)
     name = (ds === lorenz_vern) ? "lorvern" : "lorenz"
-    test_dynamical_system(ds, u0, p0, name, false, iip)
+    test_dynamical_system(ds, u0, p0, name; idt = false, iip)
 
 end
