@@ -15,9 +15,9 @@ of the same system while ensuring that they share parameters and time vector.
 
 This struct follows the [`DynamicalSystem`](@ref) interface with the following adjustments:
 
-- The function [`current_state`](@ref) is called as `current_state(pe, i::Int = 1)`
+- The function [`current_state`](@ref) is called as `current_state(pds, i::Int = 1)`
   which returns the `i`th state. Same for [`initial_state`](@ref).
-- Similarly, [`set_state`](@ref) obtains a second argument `i::Int = 1` to
+- Similarly, [`set_state!`](@ref) obtains a second argument `i::Int = 1` to
   set the `i`-th state.
 - [`current_states`](@ref) and [`initial_states`](@ref) can be used to get
   all parallel states.
@@ -138,6 +138,7 @@ end
 struct ParallelDiscreteTimeDynamicalSystem{D <: DynamicalSystem} <: ParallelDynamicalSystem
     systems::Vector{D}
 end
+const PDTDS = ParallelDiscreteTimeDynamicalSystem
 
 function ParallelDynamicalSystem(ds::DiscreteTimeDynamicalSystem, states)
     systems = [deepcopy(ds) for s in states]
@@ -148,16 +149,26 @@ end
 for f in (:current_time, :initial_time, :isdiscretetime,
         :current_parameters, :initial_parameters, :dynamic_rule,
     )
-    @eval $(f)(pdtds::ParallelDiscreteTimeDynamicalSystem, args...; kw...) = $(f)(pdtds.systems[1], args...; kw...)
+    @eval $(f)(pdtds::PDTDS, args...; kw...) = $(f)(pdtds.systems[1], args...; kw...)
 end
 
-(pdtds::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdtds.systems[i](t)
+(pdtds::PDTDS)(t::Real, i::Int = 1) = pdtds.systems[i](t)
 
-function step!(pdtds::ParallelDynamicalSystemAnalytic, N::Int = 1, stop_at_dt::Bool = true)
+function step!(pdtds::PDTDS, N::Int = 1, stop_at_dt::Bool = true)
     for ds in pdtds.systems
         step!(ds, N)
     end
     return
 end
 
-# TODO: Set state, set parameter, reinit!
+# Getting states also needs to be adjusted
+for f in (:current_state, :initial_state)
+    @eval $(f)(pdtds::PDTDS, i::Int = 1) = $(f)(pdtds.systems[i])
+end
+
+# Set stuff
+set_parameter!(pdtds::PDTDS) = for ds in pdtds.systems; set_parameter!(ds, args...); end
+set_state!(pdtds::PDTDS, u, i::Int = 1) = set_state!(pdtds.systems[i], u)
+function SciMLBase.reinit!(pdtds::PDTDS, states; kwargs...)
+    for (ds, s) in zip(pdtds.systems, states); reinit!(ds, s; kwargs...); end
+end
