@@ -101,9 +101,9 @@ end
 # Analytically knwon rule: extensions
 ##################################################################################
 for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
-    :current_parameters, :initial_parameters
-)
-@eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
+        :current_parameters, :initial_parameters
+    )
+    @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
 end
 
 (pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
@@ -120,6 +120,7 @@ end
 # States IO for matrix state
 # Unfortunately the `eachcol` generator cannot be accessed with `i`
 # so we need to extend every method manually
+# TODO: In Julia 1.9 `eachcol` can be indexed normally.
 const PDSAM{D} = ParallelDynamicalSystemAnalytic{D, true}
 current_states(pdsa::PDSAM) = eachcol(current_state(pdsa.ds))
 current_state(pdsa::PDSAM, i::Int = 1) = view(current_state(pdsa.ds), :, i)
@@ -130,3 +131,33 @@ function set_state!(pdsa::PDSAM, u, i::Int = 1)
     current_state(pdsa, i) .= u
     u_modified!(pdsa.ds.integ, true)
 end
+
+##################################################################################
+# Generic discrete time system: creation & extension
+##################################################################################
+struct ParallelDiscreteTimeDynamicalSystem{D <: DynamicalSystem} <: ParallelDynamicalSystem
+    systems::Vector{D}
+end
+
+function ParallelDynamicalSystem(ds::DiscreteTimeDynamicalSystem, states)
+    systems = [deepcopy(ds) for s in states]
+    for (i, s) in enumerate(states); reinit!(systems[i], s); end
+    return ParallelDiscreteTimeDynamicalSystem(systems)
+end
+
+for f in (:current_time, :initial_time, :isdiscretetime,
+        :current_parameters, :initial_parameters, :dynamic_rule,
+    )
+    @eval $(f)(pdtds::ParallelDiscreteTimeDynamicalSystem, args...; kw...) = $(f)(pdtds.systems[1], args...; kw...)
+end
+
+(pdtds::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdtds.systems[i](t)
+
+function step!(pdtds::ParallelDynamicalSystemAnalytic, N::Int = 1, stop_at_dt::Bool = true)
+    for ds in pdtds.systems
+        step!(ds, N)
+    end
+    return
+end
+
+# TODO: Set state, set parameter, reinit!
