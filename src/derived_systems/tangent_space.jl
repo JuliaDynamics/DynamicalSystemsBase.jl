@@ -1,4 +1,5 @@
 export TangentDynamicalSystem, XXXX
+using LinearAlgebra: mul!, diagm
 
 # Implementation: the state and deviation vectors are combined in a matrix.
 # First column is formal state, all remaining columns are deviation vectors.
@@ -39,7 +40,7 @@ These two are evolved in parallel according to
 \\dot{\\vec{x}}&=& f(\\vec{x}) \\\\
 \\dot{Y} &=& J_f(\\vec{x}) \\cdot Y
 \\end{array}
-\\quad \\text{or}\\quad
+\\quad \\mathrm{or}\\quad
 \\begin{array}{rcl}
 \\vec{x}_{n+1} &=& f(\\vec{x}_n) \\\\
 Y_{n+1} &=& J_f(\\vec{x}_n) \\cdot Y_n.
@@ -94,7 +95,7 @@ function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
 
     # Create jacobian, tangent rule, initial state
     Jf = jacobian_function(ds, J)
-    newrule = gent_rule(f, J, J0, ::Val{IIP}, ::Val{k})
+    newrule = tangent_rule(f, J, J0, Val{IIP}(), Val{k}())
     u0_correct = correct_state(Val{IIP}(), current_state(ds))
     Q0_correct = correct_matrix_type(Val{IIP}(), Q0)
     newstate = hcat(u0_correct, Q0_correct)
@@ -107,6 +108,8 @@ function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
     elseif ds isa CoupledODEs
         T = eltype(newstate)
         prob = ODEProblem{IIP}(f, newstate, (T(t0), T(Inf)), cp)
+        @show typeof(prob.u0)
+        @show typeof(newrule(u0_correct, cp, t0))
         tands = CoupledODEs(prob, ds.diffeq; internalnorm = matrixnorm)
     end
     return TangentDynamicalSystem(tands, f, Jf, isnothing(J))
@@ -118,7 +121,7 @@ end
 jacobian_function(ds, J) = J
 jacobian_function(ds::AnalyticRuleSystem{IIP}, ::Nothing) where {IIP} =
 autodiff_jacobian(
-    dynamical_rule(ds), Val{IIP}(), current_state(ds),
+    dynamic_rule(ds), Val{IIP}(), current_state(ds),
     current_parameters(ds), current_time(ds)
 )
 # in place
@@ -148,7 +151,6 @@ correct_matrix_type(::Val{true}, Q::AbstractMatrix) = ismutable(Q) ? Q : Array(Q
 # Creation of tangent rule
 ##################################################################################
 # IIP Tangent space dynamics
-using LinearAlgebra: mul!
 
 function tangent_rule(f::F, J::JAC, J0, ::Val{true}, ::Val{k}) where {F, JAC, k}
     tangentf = (du, u, p, t) -> begin
@@ -205,4 +207,3 @@ end
 dynamic_rule(tands::TangentDynamicalSystem) = tands.original_f
 
 (tands::TangentDynamicalSystem)(t::Real) = tands.ds(t)[:, 1]
-dynamic_rule(tands::TangentDynamicalSystem) = tands.original_f

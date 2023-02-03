@@ -17,9 +17,13 @@ u0 = ones(2)
 p0_disc = [1.1, 0.8]
 p0_cont = [0.1, -0.4]
 
+# Test suite explicitly for tangent space
+# if IDT: after one step deviation vectors become the Jacobian
+# and then square.
+# If not IDT: step! for exactly 1, then deviations become exp(λ)
+# actually, step for 1 and always become exp(λ)
+
 # Allright, unfortunately here we have to test a ridiculous amount of multiplicity...
-
-
 @testset "IDT=$(IDT), IIP=$(IIP), IAD=$(IAD)" for IIP in (false, true), IDT in (true, false), IAD in (false, true)
     SystemType = IDT ? DeterministicIteratedMap : CoupledODEs
     rule = IIP ? trivial_rule_iip : trivial_rule
