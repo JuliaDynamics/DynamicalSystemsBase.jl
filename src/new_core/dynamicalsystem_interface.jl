@@ -271,8 +271,8 @@ end
     set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
 
 Set the parameter values in the [`current_parameters`](@ref)`(ds)` to match `p`.
-This is done as an in-place overwrite, hence the keys of `p` must be a subset of the keys
-of  [`current_parameters`](@ref)`(ds)`.
+This is done as an in-place overwrite by looping over the keys of `p`.
+Hence the keys of `p` must be a subset of the keys of [`current_parameters`](@ref)`(ds)`.
 """
 function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
     cp = current_parameters(ds)

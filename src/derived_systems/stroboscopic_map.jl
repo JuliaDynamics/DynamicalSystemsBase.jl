@@ -28,7 +28,7 @@ struct StroboscopicMap{D, I, P, TT<:Real} <: DiscreteTimeDynamicalSystem
 	t::Base.RefValue{Int}
 end
 
-StroboscopicMap(ds::CoupledODEs{D, I, P}, T::TT) where {D, I, P, TT} =
+StroboscopicMap(ds::CoupledODEs{IIP, D, I, P}, T::TT) where {IIP, D, I, P, TT} =
 StroboscopicMap{D, I, P, TT}(ds.integ, ds.p0, T, Ref(0))
 
 StroboscopicMap(T, f, u0, p = nothing; kwargs...) =

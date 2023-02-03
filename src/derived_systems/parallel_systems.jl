@@ -7,7 +7,7 @@
 export ParallelDynamicalSystem, current_states, initial_states
 
 """
-    ParallelDynamicalSystem(ds::DynamicalSystem, states::AbstractVector)
+    ParallelDynamicalSystem(ds::DynamicalSystem, states::AbstractVector{<:AbstractVector})
 
 A struct that evolves several `states` of a given dynamical system in parallel
 **at exactly the same times**. Useful when wanting to evolve several different trajectories
@@ -165,10 +165,12 @@ end
 for f in (:current_state, :initial_state)
     @eval $(f)(pdtds::PDTDS, i::Int = 1) = $(f)(pdtds.systems[i])
 end
+current_states(pdtds::PDTDS) = [current_state(ds) for ds in pdtds.systems]
+initial_states(pdtds::PDTDS) = [initial_state(ds) for ds in pdtds.systems]
 
 # Set stuff
 set_parameter!(pdtds::PDTDS) = for ds in pdtds.systems; set_parameter!(ds, args...); end
 set_state!(pdtds::PDTDS, u, i::Int = 1) = set_state!(pdtds.systems[i], u)
-function SciMLBase.reinit!(pdtds::PDTDS, states; kwargs...)
+function SciMLBase.reinit!(pdtds::PDTDS, states = initial_states(pdtds); kwargs...)
     for (ds, s) in zip(pdtds.systems, states); reinit!(ds, s; kwargs...); end
 end

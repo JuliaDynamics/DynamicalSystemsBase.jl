@@ -97,3 +97,33 @@ for (ds, idt, iip) in zip(
         max_lyapunov_test(ds, idt ? lmax_disc : lmax_cont)
     end
 end
+
+
+# Generic Parallel
+@inbounds function duffing_rule(x, p, t)
+    ω, f, d, β = p
+    dx1 = x[2]
+    dx2 = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
+    return SVector(dx1, dx2)
+end
+function duffing_rule_iip(du, u, p, t)
+    du .= duffing_rule(u, p, t)
+    return nothing
+end
+
+u0 = [0.1, 0.25]
+p0 = [1.0, 0.3, 0.2, -1]
+T = 2π/1.0
+
+duffing_oop = StroboscopicMap(CoupledODEs(duffing_rule, u0, p0), T)
+duffing_iip = StroboscopicMap(T, duffing_rule_iip, copy(u0), p0)
+
+states = [u0, u0 .+ 0.01]
+
+pds_cont_oop = ParallelDynamicalSystem(duffing_oop, states)
+pds_cont_iip = ParallelDynamicalSystem(duffing_iip, deepcopy(states))
+
+for (ds, iip) in zip((pds_cont_oop, pds_cont_iip,), (true, false))
+    name = "duffing(iip=$iip)"
+    test_dynamical_system(ds, u0, p0, name; idt = true, iip = true, test_trajectory = false)
+end
