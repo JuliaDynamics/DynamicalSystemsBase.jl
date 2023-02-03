@@ -1,7 +1,8 @@
 export TangentDynamicalSystem, XXXX
 
 # Implementation: the state and deviation vectors are combined in a matrix.
-# For oop this is SMatrix, for IIP it is the same type as `J0`.
+# First column is formal state, all remaining columns are deviation vectors.
+# For oop this is SMatrix, for IIP it is the same type as `Q0`.
 # The standard analytic systems with matrix state are used. No fancy
 # dedicated discrete tangent integrator anymore. The amount of deviation vectors
 # become a type parameter for efficient static matrix computations.
@@ -81,6 +82,8 @@ function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
         J = nothing, k::Int = dimension(ds), Q0 = diagm(ones(dimension(ds)))[:, 1:k],
         J0 = zeros(dimension(ds), dimension(ds)),
     ) where {IIP}
+
+    # Valid input checks:
     current_state(ds) isa AbstractVector || error("State of `ds` must be vector-like.")
     D = dimension(ds)
     k = size(Q0, 2)
@@ -88,17 +91,22 @@ function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
     size(Q0, 1) ≠ D && throw(ArgumentError("size(Q, 1) ≠ dimension(ds)"))
     size(Q0, 2) > D && throw(ArgumentError("size(Q, 2) > dimension(ds)"))
     size(J0) ≠ (D, D) && throw(ArgumentError("size(J0) ≠ (dimension(ds), dimension(ds))"))
+
+    # Create jacobian, tangent rule, initial state
     Jf = jacobian_function(ds, J)
-    J0_correct = correct_matrix_type(Val{IIP}(), Q0)
-    newrule = gent_rule(f, J, J0_correct, ::Val{IIP}, ::Val{k})
-    newstate = hcat(correct_state(Val{IIP}(), current_state(ds)), J0_correct)
+    newrule = gent_rule(f, J, J0, ::Val{IIP}, ::Val{k})
+    u0_correct = correct_state(Val{IIP}(), current_state(ds))
+    Q0_correct = correct_matrix_type(Val{IIP}(), Q0)
+    newstate = hcat(u0_correct, Q0_correct)
+
+    # Pass everything to analytic system constructors
     cp = current_parameters(ds)
     t0 = initial_time(ds)
     if ds isa DeterministicIteratedMap
         tands = DeterministicIteratedMap(newrule, newstate, cp, t0)
     elseif ds isa CoupledODEs
         T = eltype(newstate)
-        prob = ODEProblem{IIP}(f, st, (T(t0), T(Inf)), cp)
+        prob = ODEProblem{IIP}(f, newstate, (T(t0), T(Inf)), cp)
         tands = CoupledODEs(prob, ds.diffeq; internalnorm = matrixnorm)
     end
     return TangentDynamicalSystem(tands, f, Jf, isnothing(J))
