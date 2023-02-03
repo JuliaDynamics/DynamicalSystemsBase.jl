@@ -39,7 +39,7 @@ initial_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = initial_states(pdsa)[
 # But we do need a special extra parameter that checks if the system
 # is ODE _and_ inplace, because we need a special matrix state in this case
 struct ParallelDynamicalSystemAnalytic{D, M} <: ParallelDynamicalSystem
-    ds::D
+    ds::D      # standard dynamical system but with rule the parallel dynamics
     original_f # no type parameterization here, this field is only for printing
 end
 
