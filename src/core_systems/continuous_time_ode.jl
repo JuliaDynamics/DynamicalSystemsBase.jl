@@ -106,7 +106,8 @@ for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
 end
 
 SciMLBase.isinplace(::CoupledODEs{IIP}) where {IIP} = IIP
-SciMLBase.step!(ds::CoupledODEs) = (step!(ds.integ); ds) # so that `ds` is printed
+# so that `ds` is printed
+SciMLBase.step!(ds::CoupledODEs, args...) = (step!(ds.integ, args...); ds)
 
 function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
