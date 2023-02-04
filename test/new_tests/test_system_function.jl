@@ -40,8 +40,6 @@ function test_dynamical_system(ds, u0, p0; idt, iip, test_trajectory = true)
     @testset "time evolution" begin
         if idt
             @test_throws ArgumentError ds(2)
-            step!(ds)
-            @test current_time(ds) == 1
 
             # For discrete systems this is always the second state no matter what
             if ds isa DeterministicIteratedMap
@@ -56,6 +54,8 @@ function test_dynamical_system(ds, u0, p0; idt, iip, test_trajectory = true)
                 second_state = deepcopy(current_state(ds))
             end
 
+            step!(ds) # notice that `ds` has been `reinit!` in the previous block
+            @test current_time(ds) == 1
             @test current_state(ds) == second_state
             @test ds(1) == second_state
             step!(ds, 2)

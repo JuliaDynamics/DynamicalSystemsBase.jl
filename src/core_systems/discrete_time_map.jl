@@ -44,7 +44,7 @@ function DeterministicIteratedMap(f, u0, p = nothing, t0::Integer = 0)
     D = length(s)
     P = typeof(p)
     F = typeof(f)
-    dummy = deepcopy(u0)
+    dummy = recursivecopy(s)
     # Before initialization do a sanity check that the rule and state match
     if !IIP
         out = f(s, p, t0)
@@ -60,7 +60,7 @@ function DeterministicIteratedMap(f, u0, p = nothing, t0::Integer = 0)
     end
 
     return DeterministicIteratedMap{IIP, S, D, F, P}(
-        f, u0, deepcopy(u0), dummy, t0, t0, p, deepcopy(p)
+        f, recursivecopy(s), recursivecopy(s), dummy, t0, t0, p, deepcopy(p)
     )
 end
 
@@ -76,6 +76,18 @@ function set_state!(ds::DeterministicIteratedMap{IIP}, u) where {IIP}
     return
 end
 
+# Which one is correct...?
+# function set_state!(ds::DeterministicIteratedMap, u)
+#     if isinplace(ds)
+#         ds.u .= u
+#         ds.dummy .= u
+#     else
+#         ds.u = u
+#         ds.dummy = u
+#     end
+#     return
+# end
+
 ##################################################################################
 # step!
 ##################################################################################
@@ -87,7 +99,7 @@ function SciMLBase.step!(ds::DeterministicIteratedMap{true})
     ds.t += 1
     return
 end
-function SciMLBase.step!(ds::DeterministicIteratedMap{true}, N)
+function SciMLBase.step!(ds::DeterministicIteratedMap{true}, N, stop_at_tdt = true)
     for _ in 1:N
         ds.dummy, ds.u = ds.u, ds.dummy
         ds.f(ds.u, ds.dummy, ds.p, ds.t)
@@ -102,15 +114,13 @@ function SciMLBase.step!(ds::DeterministicIteratedMap{false})
     ds.t +=1
     return
 end
-function SciMLBase.step!(ds::DeterministicIteratedMap{false}, N)
+function SciMLBase.step!(ds::DeterministicIteratedMap{false}, N, stop_at_tdt = true)
     for _ in 1:N
         ds.u = ds.f(ds.u, ds.p, ds.t)
         ds.t += 1
     end
     return
 end
-
-SciMLBase.step!(ds::DIM, N, stop_at_tdt) = SciMLBase.step!(ds, N)
 
 ##################################################################################
 # Alterations

@@ -11,6 +11,7 @@ using Reexport
 
 import SciMLBase
 import SciMLBase: reinit!, step!, isinplace
+using SciMLBase: recursivecopy
 export reinit!, step!, isinplace
 
 include("new_core/dynamicalsystem_interface.jl")
