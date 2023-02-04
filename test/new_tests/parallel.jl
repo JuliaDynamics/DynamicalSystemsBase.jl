@@ -97,7 +97,6 @@ for (ds, idt, iip) in zip(
     end
 end
 
-
 # Generic Parallel
 @inbounds function duffing_rule(x, p, t)
     ω, f, d, β = p

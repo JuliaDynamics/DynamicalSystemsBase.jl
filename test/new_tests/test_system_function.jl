@@ -50,11 +50,14 @@ function test_dynamical_system(ds, u0, p0; idt, iip, test_trajectory = true)
                 else
                     dynamic_rule(ds)(current_state(ds), current_parameters(ds), current_time(ds))
                 end
+                step!(ds) # notice that `ds` has been `reinit!` in the previous block
             else
+                # Unfortunately here we don't have a way to get "guaranteed"
+                # what the second state would be in the analytic sense... so we cheat
+                step!(ds)
                 second_state = deepcopy(current_state(ds))
             end
 
-            step!(ds) # notice that `ds` has been `reinit!` in the previous block
             @test current_time(ds) == 1
             @test current_state(ds) == second_state
             @test ds(1) == second_state

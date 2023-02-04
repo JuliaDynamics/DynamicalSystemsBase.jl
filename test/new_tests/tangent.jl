@@ -50,7 +50,7 @@ function tangent_space_test(tands, lyapunovs)
 end
 
 # Allright, unfortunately here we have to test a ridiculous amount of multiplicity...
-@testset "IDT=$(IDT), IIP=$(IIP), IAD=$(IAD)" for IDT in (true, false), IIP in (false, true), IAD in (false, true)
+@testset "tangent IDT=$(IDT), IIP=$(IIP), IAD=$(IAD)" for IDT in (true, false), IIP in (false, true), IAD in (false, true)
     SystemType = IDT ? DeterministicIteratedMap : CoupledODEs
     rule = IIP ? trivial_rule_iip : trivial_rule
     p0 = IDT ? p0_disc : p0_cont
@@ -60,6 +60,6 @@ end
     ds = SystemType(rule, u0, p0)
     tands = TangentDynamicalSystem(ds; J = Jf)
 
-    test_dynamical_system(tands, u0, p0, "tangent"; idt=IDT, iip=IIP, test_trajectory = false)
+    test_dynamical_system(tands, u0, p0; idt=IDT, iip=IIP, test_trajectory = false)
     tangent_space_test(tands, lyapunovs)
 end
