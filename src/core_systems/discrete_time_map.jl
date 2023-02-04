@@ -44,8 +44,23 @@ function DeterministicIteratedMap(f, u0, p = nothing, t0::Integer = 0)
     D = length(s)
     P = typeof(p)
     F = typeof(f)
+    dummy = deepcopy(u0)
+    # Before initialization do a sanity check that the rule and state match
+    if !IIP
+        out = f(s, p, t0)
+        if typeof(out) != S
+            error("Dynamic rule does not output correct state! "*
+            "Got $(typeof(out)) instead of $(S).")
+        end
+    else
+        out = f(dummy, s, p, t0)
+        if !isnothing(out)
+            error("Dynamic rule does not return `nothing`!")
+        end
+    end
+
     return DeterministicIteratedMap{IIP, S, D, F, P}(
-        f, u0, deepcopy(u0), deepcopy(u0), t0, t0, p, deepcopy(p)
+        f, u0, deepcopy(u0), dummy, t0, t0, p, deepcopy(p)
     )
 end
 

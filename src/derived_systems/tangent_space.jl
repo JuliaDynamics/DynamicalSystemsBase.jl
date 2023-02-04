@@ -94,11 +94,10 @@ function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
     size(J0) ≠ (D, D) && throw(ArgumentError("size(J0) ≠ (dimension(ds), dimension(ds))"))
 
     # Create jacobian, tangent rule, initial state
-    Jf = jacobian_function(ds, J)
-    newrule = tangent_rule(f, J, J0, Val{IIP}(), Val{k}())
     u0_correct = correct_state(Val{IIP}(), current_state(ds))
     Q0_correct = correct_matrix_type(Val{IIP}(), Q0)
     newstate = hcat(u0_correct, Q0_correct)
+    newrule = tangent_rule(f, J, J0, Val{IIP}(), Val{k}(), u0_correct)
 
     # Pass everything to analytic system constructors
     cp = current_parameters(ds)
@@ -107,17 +106,23 @@ function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
         tands = DeterministicIteratedMap(newrule, newstate, cp, t0)
     elseif ds isa CoupledODEs
         T = eltype(newstate)
-        prob = ODEProblem{IIP}(f, newstate, (T(t0), T(Inf)), cp)
-        @show typeof(prob.u0)
-        @show typeof(newrule(u0_correct, cp, t0))
+        prob = ODEProblem{IIP}(newrule, newstate, (T(t0), T(Inf)), cp)
         tands = CoupledODEs(prob, ds.diffeq; internalnorm = matrixnorm)
     end
-    return TangentDynamicalSystem(tands, f, Jf, isnothing(J))
+    return TangentDynamicalSystem(tands, f, J, isnothing(J))
 end
+
+function correct_matrix_type(::Val{false}, Q::AbstractMatrix)
+    A, B = size(Q)
+    SMatrix{A, B}(Q)
+end
+correct_matrix_type(::Val{false}, Q::SMatrix) = Q
+correct_matrix_type(::Val{true}, Q::AbstractMatrix) = ismutable(Q) ? Q : Array(Q)
 
 ##################################################################################
 # Creation of Jacobian
 ##################################################################################
+# TODO: Delete this block
 jacobian_function(ds, J) = J
 jacobian_function(ds::AnalyticRuleSystem{IIP}, ::Nothing) where {IIP} =
 autodiff_jacobian(
@@ -140,41 +145,34 @@ function autodiff_jacobian(@nospecialize(f::F), ::Val{false}, args...) where {F}
     return (u, p, t) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
 end
 
-function correct_matrix_type(::Val{false}, Q::AbstractMatrix)
-    A, B = size(Q)
-    SMatrix{A, B}(Q)
-end
-correct_matrix_type(::Val{false}, Q::SMatrix) = Q
-correct_matrix_type(::Val{true}, Q::AbstractMatrix) = ismutable(Q) ? Q : Array(Q)
-
 ##################################################################################
 # Creation of tangent rule
 ##################################################################################
+import ForwardDiff
 # IIP Tangent space dynamics
-
-function tangent_rule(f::F, J::JAC, J0, ::Val{true}, ::Val{k}) where {F, JAC, k}
+function tangent_rule(f::F, J::JAC, J0, ::Val{true}, ::Val{k}, u0) where {F, JAC, k}
     tangentf = (du, u, p, t) -> begin
         uv = @view u[:, 1]
         f(view(du, :, 1), uv, p, t)
         J(J0, uv, p, t)
-        mul!((@view du[:, 2:(k+1)]), J, (@view u[:, 2:(k+1)]))
+        mul!((@view du[:, 2:(k+1)]), J0, (@view u[:, 2:(k+1)]))
         nothing
     end
     return tangentf
 end
 # for the case of autodiffed systems, a specialized version is created
 # so that f! is not called twice in ForwardDiff
-function tangent_rule(f::F, J::Nothing, J0, ::Val{true}, ::Val{k}) where {F, k}
+function tangent_rule(f::F, ::Nothing, J0, ::Val{true}, ::Val{k}, u0) where {F, k}
     let
         cfg = ForwardDiff.JacobianConfig(
-            (du, u) -> f(du, u, p, p), deepcopy(u), deepcopy(u)
+            (du, u) -> f(du, u, p, p), deepcopy(u0), deepcopy(u0)
         )
         tangentf = (du, u, p, t) -> begin
             uv = @view u[:, 1]
             ForwardDiff.jacobian!(
                 J0, (du, u) -> f(du, u, p, t), view(du, :, 1), uv, cfg, Val{false}()
             )
-            mul!((@view du[:, 2:k+1]), J, (@view u[:, 2:k+1]))
+            mul!((@view du[:, 2:k+1]), J0, (@view u[:, 2:k+1]))
             nothing
         end
         return tangentf
@@ -182,10 +180,16 @@ function tangent_rule(f::F, J::Nothing, J0, ::Val{true}, ::Val{k}) where {F, k}
 end
 
 # OOP Tangent space dynamics
-function tangent_rule(f::F, J::JAC, J0, ::Val{false}, ::Val{k}) where {F, JAC, k}
+function tangent_rule(f::F, J::JAC, J0, ::Val{false}, ::Val{k}, u0) where {F, JAC, k}
+    # out of place
+    if JAC == Nothing
+        Jf = (u, p, t) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
+    else
+        Jf = J
+    end
     # Initial matrix `J0` is ignored
     ws_index = SVector{k, Int}(2:(k+1)...)
-    tangentf = TangentOOP{F, JAC, k}(f, J, ws_index)
+    tangentf = TangentOOP(f, Jf, ws_index)
     return tangentf
 end
 struct TangentOOP{F, JAC, k} <: Function
@@ -194,6 +198,7 @@ struct TangentOOP{F, JAC, k} <: Function
     ws::SVector{k, Int}
 end
 function (tan::TangentOOP)(u, p, t)
+    # @show u
     @inbounds s = u[:, 1]
     du = tan.f(s, p, t)
     J = tan.J(s, p, t)
