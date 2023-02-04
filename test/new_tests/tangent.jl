@@ -33,4 +33,7 @@ p0_cont = [0.1, -0.4]
 
     ds = SystemType(rule, u0, p0_cont)
     tands = TangentDynamicalSystem(ds; J = Jf)
+
+    test_dynamical_system(tands, u0, p0, "tangent"; idt=IDT, iip=IIP, test_trajectory = false)
+
 end

@@ -13,7 +13,7 @@ using LinearAlgebra: mul!, diagm
 ##################################################################################
 
 """
-    TangentDynamicalSystem(ds::AnalyticRuleSystem; J = nothing, k = dimension(ds))
+    TangentDynamicalSystem(ds::AnalyticRuleSystem; kwargs...)
 
 A dynamical system that bundles the evolution of `ds`
 (which must be an [`AnalyticRuleSystem`](@ref)) and `k` deviation vectors
@@ -22,12 +22,21 @@ that are evolved according to the _dynamics in the tangent space_
 
 The state of `ds` **must** be an `AbstractVector` for `TangentDynamicalSystem`.
 
+`TangentDynamicalSystem` follows the [`DynamicalSystem`](@ref)
+interface with the following adjustments:
+
+- `reinit!` takes an additional keyword `Q0` (with same default as below)
+- The additional functions [`current_deviations`](@ref) and
+  [`set_deviations!`](@ref) are provided for the deviation vectors.
+
 ## Keyword arguments
 
-- `k` or `Q0`: If `k::Int` is given, the first `k` columns of the identity matrix are used
-  as deviation vectors. Otherwise `Q0` can be given which is a matrix with each column a
-  deviation vector. It must hold that `size(Q, 1) == dimension(ds)`.
+- `k` or `Q0`: `Q0` represents the initial deviation vectors (each column = 1 vector).
+  If `k::Int` is given, a matrix `Q0` is created with the first `k` columns of
+  the identity matrix. Otherwise `Q0` can be given directly as a matrix.
+  It must hold that `size(Q, 1) == dimension(ds)`.
   You can use [`orthonormal`](@ref) for random orthonormal vectors.
+  By default `k = dimension(ds)` is used.
 - `J` and `J0`: See section "Jacobian" below.
 
 ## Description
@@ -70,11 +79,11 @@ This is useful for large in-place systems where only a few components of the Jac
 during the time evolution. `J0` can be a sparse or any other matrix type.
 If not given, a matrix of zeros is used. `J0` is ignored for out of place systems.
 """
-struct TangentDynamicalSystem{D, JAC} <: ParallelDynamicalSystem
+struct TangentDynamicalSystem{IIP, D} <: ParallelDynamicalSystem
     ds::D      # standard dynamical system but with rule the tangent space
-    original_f # no type parameterization here, this field is only for printing
-    J::JAC
-    isautodiff::Bool
+    # no type parameterization here, this field is only for printing
+    original_f
+    J
 end
 
 # it is practically identical to `TangentDynamicalSystem`
@@ -109,7 +118,7 @@ function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
         prob = ODEProblem{IIP}(newrule, newstate, (T(t0), T(Inf)), cp)
         tands = CoupledODEs(prob, ds.diffeq; internalnorm = matrixnorm)
     end
-    return TangentDynamicalSystem(tands, f, J, isnothing(J))
+    return TangentDynamicalSystem{IIP, typeof(tands)}(tands, f, J)
 end
 
 function correct_matrix_type(::Val{false}, Q::AbstractMatrix)
@@ -118,32 +127,6 @@ function correct_matrix_type(::Val{false}, Q::AbstractMatrix)
 end
 correct_matrix_type(::Val{false}, Q::SMatrix) = Q
 correct_matrix_type(::Val{true}, Q::AbstractMatrix) = ismutable(Q) ? Q : Array(Q)
-
-##################################################################################
-# Creation of Jacobian
-##################################################################################
-# TODO: Delete this block
-jacobian_function(ds, J) = J
-jacobian_function(ds::AnalyticRuleSystem{IIP}, ::Nothing) where {IIP} =
-autodiff_jacobian(
-    dynamic_rule(ds), Val{IIP}(), current_state(ds),
-    current_parameters(ds), current_time(ds)
-)
-# in place
-function autodiff_jacobian(@nospecialize(f::F), ::Val{true}, s, p, t) where {F}
-    dum = deepcopy(s)
-    inplace_f_2args = (y, x) -> f(y, x, p, t)
-    cfg = ForwardDiff.JacobianConfig(inplace_f_2args, dum, s)
-    jac! = (J, u, p, t) -> ForwardDiff.jacobian!(
-        J, inplace_f_2args, dum, u, cfg, Val{false}()
-    )
-    return jac!
-end
-# out of place
-function autodiff_jacobian(@nospecialize(f::F), ::Val{false}, args...) where {F}
-    # SVector methods do *not* use the config and hence don't care about `args`
-    return (u, p, t) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
-end
 
 ##################################################################################
 # Creation of tangent rule
@@ -183,6 +166,7 @@ end
 function tangent_rule(f::F, J::JAC, J0, ::Val{false}, ::Val{k}, u0) where {F, JAC, k}
     # out of place
     if JAC == Nothing
+        # There is no config needed here
         Jf = (u, p, t) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
     else
         Jf = J
@@ -210,5 +194,59 @@ end
 # Extensions
 ##################################################################################
 dynamic_rule(tands::TangentDynamicalSystem) = tands.original_f
-
 (tands::TangentDynamicalSystem)(t::Real) = tands.ds(t)[:, 1]
+
+for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime,
+        :current_parameters, :initial_parameters, :isinplace,
+    )
+    @eval $(f)(tands::TangentDynamicalSystem, args...; kw...) = $(f)(tands.ds, args...; kw...)
+end
+
+current_state(t::TangentDynamicalSystem{true}) = view(current_state(t.ds), :, 1)
+current_state(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 1]
+initial_state(t::TangentDynamicalSystem{true}) = view(initial_state(t.ds), :, 1)
+initial_state(t::TangentDynamicalSystem{false}) = initial_state(t.ds)[:, 1]
+current_deviations(t::TangentDynamicalSystem{true}) = @view(current_state(t.ds)[:, 2:end])
+current_deviations(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 2:end]
+
+function set_state!(t::TangentDynamicalSystem{true}, u)
+    current_state(t) .= u
+    set_state!(t.ds, current_state(t))
+end
+function set_state!(t::TangentDynamicalSystem{false}, u)
+    u_correct = typeof(current_state(t))(u)
+    U = hcat(u_correct, current_deviations(t))
+    set_state!(t.ds, U)
+end
+
+function set_deviations!(t::TangentDynamicalSystem{true}, Q)
+    current_deviations(t) .= Q
+    set_state!(t.ds, current_state(t))
+end
+function set_deviations!(t::TangentDynamicalSystem{false}, Q)
+    Q_correct = typeof(current_deviations(t))(Q)
+    U = hcat(current_state(t), Q_correct)
+    set_state!(t.ds, U)
+end
+
+function SciMLBase.reinit!(tands::TangentDynamicalSystem{IIP}, u = initial_state(tands);
+        p = current_parameters(ds), t0 = initial_time(tands), Q0 = default_deviations(tands)
+    ) where {IIP}
+    isnothing(u0) && return
+    u_correct = correct_state(Val{IIP}(), u)
+    Q0_correct = correct_matrix_type(Val{IIP}(), Q0)
+    if IIP
+        current_state(tands) .= u_correct
+        current_deviations(tands) .= Q0_correct
+        U = current_state(tands.ds)
+    else
+        U = hcat(u_correct, Q0_correct)
+    end
+    reinit!(tands.ds, U; p, t0)
+end
+
+function default_deviations(tands)
+    k = size(current_deviations(tands), 2)
+    Q0 = diagm(ones(dimension(ds)))[:, 1:k]
+    return Q0
+end

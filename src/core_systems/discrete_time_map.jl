@@ -71,13 +71,8 @@ isdiscretetime(::DIM) = true
 isdeterministic(::DIM) = true
 
 function set_state!(ds::DeterministicIteratedMap, u)
-    if isinplace(ds)
-        ds.u .= u
-        ds.dummy .= u
-    else
-        ds.u = u
-        ds.dummy = u
-    end
+    ds.u = u
+    ds.dummy = deepcopy(u)
     return
 end
 
