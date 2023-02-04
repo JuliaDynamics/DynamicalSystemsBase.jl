@@ -126,7 +126,7 @@ current_time(integ::DEIntegrator) = integ.t
 initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
 
 function set_state!(integ::DEIntegrator, u)
-    integ.u = u
+    integ.u = recursivecopy(u)
     u_modified!(integ, true)
     return
 end
