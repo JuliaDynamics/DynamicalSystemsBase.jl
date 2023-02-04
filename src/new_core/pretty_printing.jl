@@ -13,7 +13,7 @@ function Base.show(io::IO, ds::DynamicalSystem)
     descriptors = [
         "discrete time" => isdiscretetime(ds),
         "is in place" => isinplace(ds),
-        "dynamic rule" => rulestring(dynamicrule(ds)),
+        "dynamic rule" => rulestring(dynamic_rule(ds)),
     ]
     append!(descriptors, additional_details(ds))
     append!(descriptors, [
@@ -21,22 +21,22 @@ function Base.show(io::IO, ds::DynamicalSystem)
         "time" => current_time(ds),
         "state" => current_state(ds),
     ])
-    ps = max(length(d[1]) for d in descriptors) + 3
+    padlen = maximum(length(d[1]) for d in descriptors) + 3
 
     println(io, summary(ds))
     for (desc, val) in descriptors
-        println(io, rpad(" $(desc): ", ps), val)
+        println(io, rpad(" $(desc): ", padlen), val)
     end
 
     # text = summary(ds)
     # u0 = get_state(ds)'
     # println(io, text)
-    # prefix = rpad(" state: ", ps)
+    # prefix = rpad(" state: ", padlen)
     # print(io, prefix); printlimited(io, u0, Δx = length(prefix)); print(io, "\n")
-    # println(io,  rpad(" rule f: ", ps),     get_rule_for_print(ds))
-    # println(io,  rpad(" in-place? ", ps),   isinplace(ds))
-    # println(io,  rpad(" jacobian: ", ps),   jacobianstring(ds))
-    # print(io,    rpad(" parameters: ", ps))
+    # println(io,  rpad(" rule f: ", padlen),     get_rule_for_print(ds))
+    # println(io,  rpad(" in-place? ", padlen),   isinplace(ds))
+    # println(io,  rpad(" jacobian: ", padlen),   jacobianstring(ds))
+    # print(io,    rpad(" parameters: ", padlen))
     # printlimited(io, printable(ds.p), Δx = length(prefix), Δy = 10)
 end
 
