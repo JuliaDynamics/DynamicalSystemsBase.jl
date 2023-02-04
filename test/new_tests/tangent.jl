@@ -31,7 +31,7 @@ p0_cont = [0.1, -0.4]
     lyapunovs = IDT ? log.(p0) : p0
     Jf = IAD ? nothing : (IIP ? trivial_jac_iip : trivial_jac)
 
-    ds = SystemType(rule, u0, p0_cont)
+    ds = SystemType(rule, u0, p0)
     tands = TangentDynamicalSystem(ds; J = Jf)
 
     test_dynamical_system(tands, u0, p0, "tangent"; idt=IDT, iip=IIP, test_trajectory = false)

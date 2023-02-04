@@ -232,7 +232,7 @@ end
 function SciMLBase.reinit!(tands::TangentDynamicalSystem{IIP}, u = initial_state(tands);
         p = current_parameters(tands), t0 = initial_time(tands), Q0 = default_deviations(tands)
     ) where {IIP}
-    isnothing(u0) && return
+    isnothing(u) && return
     u_correct = correct_state(Val{IIP}(), u)
     Q0_correct = correct_matrix_type(Val{IIP}(), Q0)
     if IIP
