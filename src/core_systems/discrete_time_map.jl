@@ -71,22 +71,10 @@ isdiscretetime(::DIM) = true
 isdeterministic(::DIM) = true
 
 function set_state!(ds::DeterministicIteratedMap{IIP}, u) where {IIP}
-    ds.u = u
-    ds.dummy = copy(u)
+    ds.u = recursivecopy(u)
+    ds.dummy = recursivecopy(u)
     return
 end
-
-# Which one is correct...?
-# function set_state!(ds::DeterministicIteratedMap, u)
-#     if isinplace(ds)
-#         ds.u .= u
-#         ds.dummy .= u
-#     else
-#         ds.u = u
-#         ds.dummy = u
-#     end
-#     return
-# end
 
 ##################################################################################
 # step!
@@ -97,7 +85,7 @@ function SciMLBase.step!(ds::DeterministicIteratedMap{true})
     ds.dummy, ds.u = ds.u, ds.dummy
     ds.f(ds.u, ds.dummy, ds.p, ds.t)
     ds.t += 1
-    return
+    return ds
 end
 function SciMLBase.step!(ds::DeterministicIteratedMap{true}, N, stop_at_tdt = true)
     for _ in 1:N
@@ -105,21 +93,21 @@ function SciMLBase.step!(ds::DeterministicIteratedMap{true}, N, stop_at_tdt = tr
         ds.f(ds.u, ds.dummy, ds.p, ds.t)
         ds.t += 1
     end
-    return
+    return ds
 end
 
 # OOP version
 function SciMLBase.step!(ds::DeterministicIteratedMap{false})
     ds.u = ds.f(ds.u, ds.p, ds.t)
     ds.t +=1
-    return
+    return ds
 end
 function SciMLBase.step!(ds::DeterministicIteratedMap{false}, N, stop_at_tdt = true)
     for _ in 1:N
         ds.u = ds.f(ds.u, ds.p, ds.t)
         ds.t += 1
     end
-    return
+    return ds
 end
 
 ##################################################################################
@@ -132,5 +120,5 @@ function reinit!(ds::DIM, u = initial_state(ds);
     set_state!(ds, u)
     ds.t = t0
     set_parameters!(ds, p)
-    return
+    return ds
 end

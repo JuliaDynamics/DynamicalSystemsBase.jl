@@ -244,8 +244,6 @@ StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 
 Set the state of `ds` to `u`, which must match dimensionality with that of `ds`.
 Also ensure that the change is notified to whatever integration protocol is used.
-This is not done as an in-place change. Hence, if the state of `ds` is mutable,
-it is linked to `u`.
 """
 set_state!(ds, u) = errormsg(ds)
 

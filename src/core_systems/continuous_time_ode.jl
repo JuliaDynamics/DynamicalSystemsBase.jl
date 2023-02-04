@@ -101,11 +101,12 @@ end
 StateSpaceSets.dimension(::CoupledODEs{IIP, D}) where {IIP, D} = D
 
 for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
-    :current_time, :initial_time, :set_state!, :(SciMLBase.step!), :(SciMLBase.isinplace))
+    :current_time, :initial_time, :set_state!, :(SciMLBase.isinplace))
     @eval $(f)(ds::ContinuousTimeDynamicalSystem, args...) = $(f)(ds.integ, args...)
 end
 
 SciMLBase.isinplace(::CoupledODEs{IIP}) where {IIP} = IIP
+SciMLBase.step!(ds::CoupledODEs) = (step!(ds.integ); ds) # so that `ds` is printed
 
 function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
@@ -113,6 +114,7 @@ function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(
     isnothing(u) && return
     set_parameters!(ds, p)
     reinit!(ds.integ, u; reset_dt = true, t0)
+    return ds
 end
 
 # `DEIntegrator` stuff
