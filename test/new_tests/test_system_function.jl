@@ -29,7 +29,7 @@ function test_dynamical_system(ds, u0, p0, name; idt, iip, test_trajectory = tru
             set_parameters!(ds, [2.0, 0.1])
             @test current_parameters(ds)[2] == 0.1
 
-            reinit!(ds; p0 = initial_parameters(ds))
+            reinit!(ds; p = initial_parameters(ds))
             @test ds(0) == u0
             @test current_state(ds) == u0
             @test current_parameters(ds)[1] == fpv

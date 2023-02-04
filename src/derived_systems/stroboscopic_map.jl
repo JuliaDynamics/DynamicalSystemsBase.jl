@@ -59,10 +59,10 @@ function SciMLBase.step!(smap::StroboscopicMap, n::Int, stop_at_dt = true)
 end
 
 function SciMLBase.reinit!(ds::StroboscopicMap, u = initial_state(ds);
-		p0 = current_parameters(ds), t0 = initial_time(ds.integ)
+		p = current_parameters(ds), t0 = initial_time(ds.integ)
 	)
 	isnothing(u) && return
-	set_parameters!(ds, p0)
+	set_parameters!(ds, p)
 	ds.t[] = 0
 	reinit!(ds.integ, u; reset_dt = true, t0)
 end

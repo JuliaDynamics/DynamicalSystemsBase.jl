@@ -230,7 +230,7 @@ function set_deviations!(t::TangentDynamicalSystem{false}, Q)
 end
 
 function SciMLBase.reinit!(tands::TangentDynamicalSystem{IIP}, u = initial_state(tands);
-        p = current_parameters(ds), t0 = initial_time(tands), Q0 = default_deviations(tands)
+        p = current_parameters(tands), t0 = initial_time(tands), Q0 = default_deviations(tands)
     ) where {IIP}
     isnothing(u0) && return
     u_correct = correct_state(Val{IIP}(), u)
@@ -247,6 +247,6 @@ end
 
 function default_deviations(tands)
     k = size(current_deviations(tands), 2)
-    Q0 = diagm(ones(dimension(ds)))[:, 1:k]
+    Q0 = diagm(ones(dimension(tands)))[:, 1:k]
     return Q0
 end

@@ -310,7 +310,7 @@ SciMLBase.step!(ds::DynamicalSystem, args...) = errormsg(ds)
 Reset the status of `ds`, so that it is as if it has be just initialized
 with initial state `u`. Practically every function of the ecosystem that evolves
 `ds` first calls this function on it. Besides the new initial state `u`, you
-can also configure the keywords `t0 = initial_time(ds)` and `p0 = current_parameters(ds)`.
+can also configure the keywords `t0 = initial_time(ds)` and `p = current_parameters(ds)`.
 
 Note the default settings: the state and time are the initial,
 but the parameters are the current.
