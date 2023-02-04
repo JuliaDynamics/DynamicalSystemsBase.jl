@@ -31,8 +31,9 @@ lorenz_vern = CoupledODEs(lorenz_rule, u0, p0;
 
 for (ds, iip) in zip((lorenz_oop, lorenz_iip, lorenz_vern), (false, true, false))
 
-    @test dynamic_rule(ds) == (iip ? lorenz_rule_iip : lorenz_rule)
     name = (ds === lorenz_vern) ? "lorvern" : "lorenz"
-    test_dynamical_system(ds, u0, p0, name; idt = false, iip)
-
+    @testset "$(name) IIP=$(IIP)" begin
+        @test dynamic_rule(ds) == (iip ? lorenz_rule_iip : lorenz_rule)
+        test_dynamical_system(ds, u0, p0; idt = false, iip)
+    end
 end

@@ -91,8 +91,7 @@ for (ds, idt, iip) in zip(
 
     @testset "parallel, idt=$(idt), iip=$(iip)" begin
         p0 = idt ? p0_disc : p0_cont
-        name = "parallel(iip=$iip)"
-        test_dynamical_system(ds, u0, p0, name; idt, iip = true, test_trajectory = false)
+        test_dynamical_system(ds, u0, p0; idt, iip = true, test_trajectory = false)
         parallel_integration_tests(ds)
         max_lyapunov_test(ds, idt ? lmax_disc : lmax_cont)
     end
@@ -123,7 +122,9 @@ states = [u0, u0 .+ 0.01]
 pds_cont_oop = ParallelDynamicalSystem(duffing_oop, states)
 pds_cont_iip = ParallelDynamicalSystem(duffing_iip, deepcopy(states))
 
-for (ds, iip) in zip((pds_cont_oop, pds_cont_iip,), (true, false))
-    name = "duffing(iip=$iip)"
-    test_dynamical_system(ds, u0, p0, name; idt = true, iip = true, test_trajectory = false)
+@testset "parallel duffing IIP=$iip" for (ds, iip) in zip((pds_cont_oop, pds_cont_iip,), (true, false))
+    test_dynamical_system(ds, u0, p0; idt = true, iip = true, test_trajectory = false)
 end
+
+# TODO: Test that Lyapunovs of this match the original system
+# But test this in ChaosTools.jl

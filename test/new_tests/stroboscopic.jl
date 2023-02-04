@@ -26,11 +26,11 @@ duffing_vern = StroboscopicMap(T, duffing_rule, u0, p0;
 )
 
 for (ds, iip) in zip((duffing_oop, duffing_iip, duffing_vern), (false, true, false))
-
-    @test dynamic_rule(ds) == (iip ? duffing_rule_iip : duffing_rule)
     name = (ds === duffing_vern) ? "duffvern" : "duffing"
-    test_dynamical_system(ds, u0, name, true, iip)
-
+    @testset "$name IIP=$(iip)" begin
+        @test dynamic_rule(ds) == (iip ? duffing_rule_iip : duffing_rule)
+        test_dynamical_system(ds, u0, p0; idt = true, iip)
+    end
 end
 
 @testset "Duffing fixed point" begin
