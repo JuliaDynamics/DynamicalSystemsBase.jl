@@ -1,4 +1,5 @@
-export TangentDynamicalSystem, XXXX
+export TangentDynamicalSystem
+export current_deviations, set_deviations!
 using LinearAlgebra: mul!, diagm
 
 # Implementation: the state and deviation vectors are combined in a matrix.
@@ -221,7 +222,7 @@ end
 
 function set_deviations!(t::TangentDynamicalSystem{true}, Q)
     current_deviations(t) .= Q
-    set_state!(t.ds, current_state(t))
+    set_state!(t.ds, current_state(t.ds))
 end
 function set_deviations!(t::TangentDynamicalSystem{false}, Q)
     Q_correct = typeof(current_deviations(t))(Q)

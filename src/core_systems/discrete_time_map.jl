@@ -70,9 +70,9 @@ StateSpaceSets.dimension(::DIM{IIP, S, D}) where {IIP, S, D} = D
 isdiscretetime(::DIM) = true
 isdeterministic(::DIM) = true
 
-function set_state!(ds::DeterministicIteratedMap, u)
+function set_state!(ds::DeterministicIteratedMap{IIP}, u) where {IIP}
     ds.u = u
-    ds.dummy = deepcopy(u)
+    ds.dummy = copy(u)
     return
 end
 

@@ -23,6 +23,32 @@ p0_cont = [0.1, -0.4]
 # If not IDT: step! for exactly 1, then deviations become exp(λ)
 # actually, step for 1 and always become exp(λ)
 
+function tangent_space_test(tands, lyapunovs)
+    reinit!(tands)
+    step!(tands, 1.0, true)
+    Y = current_deviations(tands)
+    y1 = Y[:, 1]
+    y2 = Y[:, 2]
+    @test y1[1] ≈ exp(lyapunovs[1])
+    @test y1[2] == 0
+    @test y2[1] == 0
+    @test y2[2] ≈ exp(lyapunovs[2])
+    # test setting deviations as well
+    newY = [0.0 1.0; 1.0 0.0]
+    set_deviations!(tands, newY)
+    @test current_deviations(tands) == newY
+    reinit!(tands; Q0 = newY)
+    @test current_deviations(tands) == newY
+    step!(tands, 1.0, true)
+    Y = current_deviations(tands)
+    y1 = Y[:, 1]
+    y2 = Y[:, 2]
+    @test y1[1] == 0
+    @test y1[2] ≈ exp(lyapunovs[2])
+    @test y2[1] ≈ exp(lyapunovs[1])
+    @test y2[2] == 0
+end
+
 # Allright, unfortunately here we have to test a ridiculous amount of multiplicity...
 @testset "IDT=$(IDT), IIP=$(IIP), IAD=$(IAD)" for IDT in (true, false), IIP in (false, true), IAD in (false, true)
     SystemType = IDT ? DeterministicIteratedMap : CoupledODEs
@@ -35,5 +61,5 @@ p0_cont = [0.1, -0.4]
     tands = TangentDynamicalSystem(ds; J = Jf)
 
     test_dynamical_system(tands, u0, p0, "tangent"; idt=IDT, iip=IIP, test_trajectory = false)
-
+    tangent_space_test(tands, lyapunovs)
 end
