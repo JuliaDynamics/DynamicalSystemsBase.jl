@@ -211,7 +211,7 @@ current_deviations(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 2:
 
 function set_state!(t::TangentDynamicalSystem{true}, u)
     current_state(t) .= u
-    set_state!(t.ds, current_state(t))
+    set_state!(t.ds, current_state(t.ds))
 end
 function set_state!(t::TangentDynamicalSystem{false}, u)
     u_correct = typeof(current_state(t))(u)
