@@ -14,6 +14,7 @@ using LinearAlgebra: mul!, diagm
 ###########################################################################################
 
 """
+    TangentDynamicalSystem <: DynamicalSystem
     TangentDynamicalSystem(ds::AnalyticRuleSystem; kwargs...)
 
 A dynamical system that bundles the evolution of `ds`

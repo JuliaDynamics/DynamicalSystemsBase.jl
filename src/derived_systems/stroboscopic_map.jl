@@ -4,6 +4,7 @@ export StroboscopicMap
 # Type
 ###########################################################################################
 """
+	StroboscopicMap <: DiscreteTimeDynamicalSystem
 	StroboscopicMap(ds::CoupledODEs, T::Real) <: DynamicalSystem
 	StroboscopicMap(T::Real, f, u0, p = nothing; diffeq, t0 = 0)
 

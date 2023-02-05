@@ -115,7 +115,18 @@ abstract type DynamicalSystem end
 
 # We utilize nature of time for dispatch; continuous time dispatches to `integ`
 # and dispatches for `::DEIntegrator` are defined in `CoupledODEs` file.
+"""
+    ContinuousTimeDynamicalSystem <: DynamicalSystem
+
+Abstract subtype of `DynamicalSystem` encompassing all continuous time systems.
+"""
 abstract type ContinuousTimeDynamicalSystem <: DynamicalSystem end
+
+"""
+    DiscreteTimeDynamicalSystem <: DynamicalSystem
+
+Abstract subtype of `DynamicalSystem` encompassing all discrete time systems.
+"""
 abstract type DiscreteTimeDynamicalSystem <: DynamicalSystem end
 
 errormsg(ds) = "Not yet implemented for dynamical system of type $(nameof(typeof(ds)))."

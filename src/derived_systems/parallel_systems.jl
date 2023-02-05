@@ -7,7 +7,8 @@
 export ParallelDynamicalSystem, current_states, initial_states
 
 """
-    ParallelDynamicalSystem(ds::DynamicalSystem, states::AbstractVector{<:AbstractVector})
+    ParallelDynamicalSystem <: DynamicalSystem
+    ParallelDynamicalSystem(ds::DynamicalSystem, states::Vector{<:AbstractArray})
 
 A struct that evolves several `states` of a given dynamical system in parallel
 **at exactly the same times**. Useful when wanting to evolve several different trajectories

@@ -25,7 +25,8 @@ end
 # Type
 ###########################################################################################
 """
-    CoupledODEs(f, u0 [, p]; diffeq, t0 = 0.0) <: DynamicalSystem
+    CoupledODEs <: ContinuousTimeDynamicalSystem
+    CoupledODEs(f, u0 [, p]; diffeq, t0 = 0.0)
 
 A deterministic continuous time dynamical system defined by a set of
 coupled ordinary differential equations as follows:
