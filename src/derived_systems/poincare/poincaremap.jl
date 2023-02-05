@@ -2,46 +2,97 @@ include("hyperplane.jl")
 import Roots
 export poincaresos, PlaneCrossing, poincaremap, PoincareMap
 
+@deprecate poincaremap PoincareMap
+
 const ROOTS_ALG = Roots.A42()
 
 ###########################################################################################
 # Poincare map as a dynamical system
 ###########################################################################################
 """
-	poincaremap(ds::ContinuousDynamicalSystem, plane, Tmax=1e3; kwargs...) → pmap
+	PoincareMap <: DiscreteTimeDynamicalSystem
+	PoincareMap(ds::CoupledODEs, plane; kwargs...) → pmap
 
-Return a map (integrator) that produces iterations over the Poincaré map of `ds`.
-This map is defined as the sequence of points on the Poincaré surface of section.
-See [`poincaresos`](@ref) for details on `plane` and all other `kwargs`.
-Keyword `idxs` does not apply to `poincaremap`, as it doesn't save any states.
+A discrete time dynamical system that produces iterations over the Poincaré map
+of the given continuous time `ds`. This map is defined as the sequence of points on the
+Poincaré surface of section, which is defined by the `plane` argument.
 
-Notice that while in theory the Poincaré map has one less dimension than `ds`,
-in code the map operates on the full `D`-dimensional state of `ds`
-because that is the only way to accommodate planes with generic orientation.
+See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref), [`produce_orbitdiagram`](@ref).
 
-The output `pmap` follows the [Integrator API](@ref), i.e., `step!` and `reinit!`.
-`current_time(pmap)` returns the time of the last crossing.
+## Description
+
+The Poincaré surface of section is defined as sequential transversal crossings a trajectory
+has with any arbitrary manifold, but for `PoincareMap` the manifold must be a hyperplane.
+
+If the state of `ds` is ``\\mathbf{u} = (u_1, \\ldots, u_D)`` then the
+equation defining a hyperplane is
+```math
+a_1u_1 + \\dots + a_Du_D = \\mathbf{a}\\cdot\\mathbf{u}=b
+```
+where ``\\mathbf{a}, b`` are the parameters of the hyperplane.
+
+In code, `plane` can be either:
+
+* A `Tuple{Int, <: Real}`, like `(j, r)`: the plane is defined
+  as when the `j`th variable of the system equals the value `r`.
+* A vector of length `D+1`. The first `D` elements of the
+  vector correspond to ``\\mathbf{a}`` while the last element is ``b``.
+
+`PoincareMap` uses `ds`, higher order interpolation from DifferentialEquations.jl,
+and root finding from Roots.jl, to create a high accuracy estimate of the section.
+
+`PoincareMap` follows the [`DynamicalSystems`](@ref) interface with the only
+difference that `dimension(pmap) == dimension(ds)`, even though the Poincaré
+map is effectively 1 dimension less (however it still stores a state of same dimension
+as `ds` and for downstream usage the `dimension` must reflect this
 For the special case of `plane` being a `Tuple{Int, <:Real}`, a special `reinit!` method
 is allowed with input state with length `D-1` instead of `D`, i.e., a reduced state already
 on the hyperplane that is then converted into the `D` dimensional state.
 
-**Notice**: The argument `Tmax` exists so that the integrator can terminate instead
-of being evolved for infinite time, to avoid cases where iteration would continue
-forever for ill-defined hyperplanes or for convergence to fixed points.
-If during one `step!` the system has been evolved for more than `Tmax`,
-then `step!(pmap)` will terminate and return `nothing`.
+
+## Keyword arguments
+
+* `direction = -1` : Only crossings with `sign(direction)` are considered to belong to
+  the surface of section. Positive direction means going from less than ``b``
+  to greater than ``b``.
+* `idxs = 1:dimension(ds)` : Optionally you can choose which variables to save.
+  Defaults to the entire state.
+* `Ttr = 0.0` : Transient time to evolve the system before starting
+  to compute the PSOS.
+* `u0 = initial_state(ds)` : Specify an initial state.
+* `warning = true` : Throw a warning if the Poincaré section was empty.
+* `rootkw = (xrtol = 1e-6, atol = 1e-6)` : A `NamedTuple` of keyword arguments
+  passed to `find_zero` from [Roots.jl](https://github.com/JuliaMath/Roots.jl).
+* `Tmax = 1e3`: The argument `Tmax` exists so that the integrator can terminate instead
+   of being evolved for infinite time, to avoid cases where iteration would continue
+   forever for ill-defined hyperplanes or for convergence to fixed points.
+   If during one `step!` the system has been evolved for more than `Tmax`,
+   then `step!(pmap)` will terminate and return `nothing`.
 
 ## Example
 ```julia
+using DynamicalSystemsBase
 ds = Systems.rikitake([0.,0.,0.], μ = 0.47, α = 1.0)
 pmap = poincaremap(ds, (3, 0.0))
-next_state_on_psos = step!(pmap)
-# Change initial condition
-reinit!(pmap, [1.0, 0]) # 3rd variable gets value 0 from the plane
-next_state_on_psos = step!(pmap)
+step!(pmap)
+next_state_on_psos = current_state(pmap)
 ```
 """
-function poincaremap(
+mutable struct PoincareMap{I, F, P, R, V} <: DiscreteTimeDynamicalSystem
+	integ::I
+	f::F
+ 	planecrossing::P
+	Tmax::Float64
+	rootkw::R
+	state_on_plane::V
+    tcross::Float64
+    # These two fields are for setting the state of the pmap from the plane
+    # (i.e., given a D-1 dimensional state, create the full D-dimensional state)
+    dummy::Vector{Float64}
+    diffidxs::Vector{Int}
+end
+
+function PoincareMap(
 		ds::CDS{IIP, S, D}, plane, Tmax = 1e3;
 	    direction = -1, u0 = get_state(ds),
 	    rootkw = (xrtol = 1e-6, atol = 1e-6), diffeq = NamedTuple(), kwargs...
@@ -67,19 +118,6 @@ end
 _indices_on_poincare_plane(plane::Tuple, D) = setdiff(1:D, [plane[1]])
 _indices_on_poincare_plane(::Vector, D) = collect(1:D-1)
 
-mutable struct PoincareMap{I, F, P, R, V} <: GeneralizedDynamicalSystem
-	integ::I
-	f::F
- 	planecrossing::P
-	Tmax::Float64
-	rootkw::R
-	state_on_plane::V
-    tcross::Float64
-    # These two fields are for setting the state of the pmap from the plane
-    # (i.e., given a D-1 dimensional state, create the full D-dimensional state)
-    dummy::Vector{Float64}
-    diffidxs::Vector{Int}
-end
 DynamicalSystemsBase.isdiscretetime(p::PoincareMap) = true
 StateSpaceSets.dimension(p::PoincareMap) = length(p.state_on_plane)
 DynamicalSystemsBase.integrator(pinteg::PoincareMap, args...; kwargs...) = pinteg
