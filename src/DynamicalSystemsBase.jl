@@ -14,10 +14,10 @@ import SciMLBase: reinit!, step!, isinplace
 using SciMLBase: recursivecopy
 export reinit!, step!, isinplace
 
-include("new_core/dynamicalsystem_interface.jl")
-include("new_core/trajectory.jl")
-include("new_core/utilities.jl")
-include("new_core/pretty_printing.jl")
+include("core/dynamicalsystem_interface.jl")
+include("core/trajectory.jl")
+include("core/utilities.jl")
+include("core/pretty_printing.jl")
 
 include("core_systems/discrete_time_map.jl")
 include("core_systems/continuous_time_ode.jl")
