@@ -36,8 +36,9 @@ end
 @testset "Duffing fixed point" begin
     pfp = (ω = 2.2, f = 27.0, d = 0.2, β = 1)
     duffing_fp = StroboscopicMap(CoupledODEs(duffing_rule, u0, pfp), 2π/2.2)
-    X, t = trajectory(duffing_fp, 10; Ttr = 1000)
-    @test X[end] ≈ X[end-1]
+    X, t = trajectory(duffing_fp, 10; Ttr = 5000)
+    @test X[end] ≈ X[end-1] atol = 1e-6
+    @test X[end-1] ≈ X[end-2] atol = 1e-6
 end
 
 # @testset "chaotic attractor rotation" begin
@@ -59,4 +60,5 @@ end
 #         obs[] = vec(X)
 #         # func(i) # or some other manipulation of the figure
 #     end
+#     @test true
 # end

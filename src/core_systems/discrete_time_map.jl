@@ -68,7 +68,6 @@ end
 # Extend the interface components that aren't done by default:
 SciMLBase.isinplace(::DIM{IIP}) where {IIP} = IIP
 StateSpaceSets.dimension(::DIM{IIP, S, D}) where {IIP, S, D} = D
-isdiscretetime(::DIM) = true
 isdeterministic(::DIM) = true
 
 function set_state!(ds::DeterministicIteratedMap{IIP}, u) where {IIP}

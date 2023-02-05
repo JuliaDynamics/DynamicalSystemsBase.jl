@@ -64,12 +64,13 @@ on the hyperplane that is then converted into the `D` dimensional state.
 * `rootkw = (xrtol = 1e-6, atol = 1e-6)` : A `NamedTuple` of keyword arguments
   passed to `find_zero` from [Roots.jl](https://github.com/JuliaMath/Roots.jl).
 * `Tmax = 1e3`: The argument `Tmax` exists so that the integrator can terminate instead
-   of being evolved for infinite time, to avoid cases where iteration would continue
-   forever for ill-defined hyperplanes or for convergence to fixed points.
-   If during one `step!` the system has been evolved for more than `Tmax`,
-   then `step!(pmap)` will terminate and return `nothing`.
+  of being evolved for infinite time, to avoid cases where iteration would continue
+  forever for ill-defined hyperplanes or for convergence to fixed points.
+  If during one `step!` the system has been evolved for more than `Tmax`,
+  then `step!(pmap)` will terminate and error.
 
 ## Example
+
 ```julia
 using DynamicalSystemsBase
 ds = Systems.rikitake([0.,0.,0.], μ = 0.47, α = 1.0)
@@ -79,7 +80,7 @@ next_state_on_psos = current_state(pmap)
 ```
 """
 mutable struct PoincareMap{I, F, P, R, V} <: DiscreteTimeDynamicalSystem
-	integ::I
+	ds::I
 	f::F
  	planecrossing::P
 	Tmax::Float64

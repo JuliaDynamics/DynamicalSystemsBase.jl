@@ -5,8 +5,7 @@ export StroboscopicMap
 ###########################################################################################
 """
 	StroboscopicMap <: DiscreteTimeDynamicalSystem
-	StroboscopicMap(ds::CoupledODEs, T::Real) <: DynamicalSystem
-	StroboscopicMap(T::Real, f, u0, p = nothing; diffeq, t0 = 0)
+	StroboscopicMap(ds::CoupledODEs, T::Real) → smap
 
 A discrete time autonomous dynamical system that produces iterations of a time-dependent
 (non-autonomous) [`CoupledODEs`](@ref) system exactly over a period `T`.
@@ -16,21 +15,26 @@ The second signature creates a [`CoupledODEs`](@ref) and calls the first
 
 As this system is in discrete time, [`current_time`](@Ref) and [`initial_time`](@ref)
 are integers. The initial time is always 0, because `current_time` counts elapsed periods.
-Call these functions on the field `.integ` of `StroboscopicMap` to obtain the
+Call these functions on the field `.ds` of `StroboscopicMap` to obtain the
 corresponding continuous time.
 In contrast, [`reinit!`](@ref) expects `t0` in continuous time.
 
+The convenience constructor
+```julia
+StroboscopicMap(T::Real, f, u0, p = nothing; diffeq, t0 = 0) → smap
+```
+is also provided.
+
 See also [`PoincareMap`](@ref).
 """
-struct StroboscopicMap{D, I, P, TT<:Real} <: DiscreteTimeDynamicalSystem
-	integ::I
-	p0::P
+struct StroboscopicMap{D<:CoupledODEs, TT<:Real} <: DiscreteTimeDynamicalSystem
+	ds::D
 	T::TT
 	t::Base.RefValue{Int}
 end
 
-StroboscopicMap(ds::CoupledODEs{IIP, D, I, P}, T::TT) where {IIP, D, I, P, TT} =
-StroboscopicMap{D, I, P, TT}(ds.integ, ds.p0, T, Ref(0))
+StroboscopicMap(ds::D, T::TT) where {D<:CoupledODEs, TT<:Real} =
+StroboscopicMap{D, TT}(ds, T, Ref(0))
 
 StroboscopicMap(T, f, u0, p = nothing; kwargs...) =
 StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
@@ -38,32 +42,28 @@ StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
 ###########################################################################################
 # Extend interface
 ###########################################################################################
-# Extensions for integrator happen at `CoupledODEs`
-for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
-    :current_time, :set_state!)
-    @eval $(f)(ds::StroboscopicMap, args...) = $(f)(ds.integ, args...)
+for f in (:current_state, :initial_state, :current_parameters, :initial_parameters,
+	:dynamic_rule, :set_state!, :(SciMLBase.isinplace), :(StateSpaceSets.dimension))
+    @eval $(f)(smap::StroboscopicMap, args...) = $(f)(smap.ds, args...)
 end
-SciMLBase.isinplace(ds::StroboscopicMap) = isinplace(ds.integ.f)
-StateSpaceSets.dimension(::StroboscopicMap{D}) where {D} = D
 current_time(smap::StroboscopicMap) = smap.t[]
 initial_time(smap::StroboscopicMap) = 0
 
 function SciMLBase.step!(smap::StroboscopicMap)
-	step!(smap.integ, smap.T, true)
+	step!(smap.ds, smap.T, true)
 	smap.t[] = smap.t[] + 1
 	return
 end
 function SciMLBase.step!(smap::StroboscopicMap, n::Int, stop_at_dt = true)
-	for _ in 1:n; step!(smap.integ, smap.T, true); end
+	step!(smap.ds, n*smap.T, true)
 	smap.t[] = smap.t[] + n
 	return
 end
 
-function SciMLBase.reinit!(ds::StroboscopicMap, u = initial_state(ds);
-		p = current_parameters(ds), t0 = initial_time(ds.integ)
+function SciMLBase.reinit!(smap::StroboscopicMap, u = initial_state(smap);
+		p = current_parameters(smap), t0 = initial_time(smap.ds)
 	)
 	isnothing(u) && return
-	set_parameters!(ds, p)
-	ds.t[] = 0
-	reinit!(ds.integ, u; reset_dt = true, t0)
+	smap.t[] = 0
+	reinit!(smap.ds, u; t0, p)
 end
