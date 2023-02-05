@@ -26,7 +26,7 @@ include("core_systems/analytic_rule.jl")
 include("derived_systems/stroboscopic_map.jl")
 include("derived_systems/parallel_systems.jl")
 include("derived_systems/tangent_space.jl")
-# include("derived_systems/poincare/poincaremap.jl")
+include("derived_systems/poincare/poincaremap.jl")
 
 # include("deprecations.jl")
 

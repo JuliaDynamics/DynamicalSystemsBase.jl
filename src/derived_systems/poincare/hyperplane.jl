@@ -44,6 +44,31 @@ function (hp::PlaneCrossing{P})(u::AbstractVector) where {P<:AbstractVector}
 end
 
 
+"Ensure hyperplane is matching with dimension `D`."
+function check_hyperplane_match(plane, D)
+    P = typeof(plane)
+    L = length(plane)
+    if P <: AbstractVector
+        if L != D + 1
+            throw(ArgumentError(
+            "The plane for the `poincaresos` must be either a 2-Tuple or a vector of "*
+            "length D+1 with D the dimension of the system."
+            ))
+        end
+    elseif P <: Tuple
+        if !(P <: Tuple{Int, Number})
+            throw(ArgumentError(
+            "If the plane for the `poincaresos` is a 2-Tuple then "*
+            "it must be subtype of `Tuple{Int, Number}`."
+            ))
+        end
+    else
+        throw(ArgumentError(
+        "Unrecognized type for the `plane` argument."
+        ))
+    end
+end
+
 ##############################################################################################
 # Poincare Section for Datasets (trajectories)
 ##############################################################################################
@@ -57,7 +82,7 @@ by performing linear interpolation betweeen points that sandwich the hyperplane.
 Argument `plane` and keywords `direction, warning, idxs` are the same as above.
 """
 function poincaresos(A::Dataset, plane; direction = -1, warning = true, idxs = 1:size(A, 2))
-    _check_plane(plane, size(A, 2))
+    check_hyperplane_match(plane, size(A, 2))
     i = typeof(idxs) <: Int ? idxs : SVector{length(idxs), Int}(idxs...)
     planecrossing = PlaneCrossing(plane, direction > 0)
     data = poincaresos(A, planecrossing, i)
