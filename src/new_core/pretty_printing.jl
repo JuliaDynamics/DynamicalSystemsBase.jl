@@ -11,6 +11,7 @@ additional_details(::DynamicalSystem) = []
 
 function Base.show(io::IO, ds::DynamicalSystem)
     descriptors = [
+        "deterministic" => isdeterministic(ds),
         "discrete time" => isdiscretetime(ds),
         "is in place" => isinplace(ds),
         "dynamic rule" => rulestring(dynamic_rule(ds)),
@@ -28,6 +29,7 @@ function Base.show(io::IO, ds::DynamicalSystem)
         println(io, rpad(" $(desc): ", padlen), val)
     end
 
+    # TODO: Improve printing of large containers by using `printlimited`
     # text = summary(ds)
     # u0 = get_state(ds)'
     # println(io, text)
@@ -43,13 +45,9 @@ end
 rulestring(f::Function) = nameof(f)
 rulestring(f) = nameof(typeof(f))
 
-
 printable(p::AbstractVector) = p'
 printable(p::Nothing) = "nothing"
-printable(p) = p
-
-
-
+printable(p) = string(p)
 
 # Credit to Sebastian Pfitzner
 function printlimited(io, x; Δx = 0, Δy = 0)
