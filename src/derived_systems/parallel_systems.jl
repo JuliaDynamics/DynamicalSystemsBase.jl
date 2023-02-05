@@ -30,9 +30,9 @@ isinplace(::ParallelDynamicalSystem) = true
 current_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = current_states(pdsa)[i]
 initial_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = initial_states(pdsa)[i]
 
-##################################################################################
+###########################################################################################
 # Analytically knwon rule: creation
-##################################################################################
+###########################################################################################
 # We don't parameterize the dimension because it does not need to be known
 # at compile time given the usage of the integrator.
 # It uses the generic `DynamicalSystem` dispatch.
@@ -97,9 +97,9 @@ function parallel_rule(ds::CoupledODEs{true}, states)
     return parallel_f, st
 end
 
-##################################################################################
+###########################################################################################
 # Analytically knwon rule: extensions
-##################################################################################
+###########################################################################################
 for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
         :current_parameters, :initial_parameters
     )
@@ -132,9 +132,9 @@ function set_state!(pdsa::PDSAM, u, i::Int = 1)
     u_modified!(pdsa.ds.integ, true)
 end
 
-##################################################################################
+###########################################################################################
 # Generic discrete time system: creation & extension
-##################################################################################
+###########################################################################################
 struct ParallelDiscreteTimeDynamicalSystem{D <: DynamicalSystem} <: ParallelDynamicalSystem
     systems::Vector{D}
 end

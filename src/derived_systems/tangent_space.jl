@@ -9,9 +9,9 @@ using LinearAlgebra: mul!, diagm
 # dedicated discrete tangent integrator anymore. The amount of deviation vectors
 # become a type parameter for efficient static matrix computations.
 
-##################################################################################
+###########################################################################################
 # Type definition and docs
-##################################################################################
+###########################################################################################
 
 """
     TangentDynamicalSystem(ds::AnalyticRuleSystem; kwargs...)
@@ -129,9 +129,9 @@ end
 correct_matrix_type(::Val{false}, Q::SMatrix) = Q
 correct_matrix_type(::Val{true}, Q::AbstractMatrix) = ismutable(Q) ? Q : Array(Q)
 
-##################################################################################
+###########################################################################################
 # Creation of tangent rule
-##################################################################################
+###########################################################################################
 import ForwardDiff
 # IIP Tangent space dynamics
 function tangent_rule(f::F, J::JAC, J0, ::Val{true}, ::Val{k}, u0) where {F, JAC, k}
@@ -191,9 +191,9 @@ function (tan::TangentOOP)(u, p, t)
     return hcat(du, dW)
 end
 
-##################################################################################
+###########################################################################################
 # Extensions
-##################################################################################
+###########################################################################################
 dynamic_rule(tands::TangentDynamicalSystem) = tands.original_f
 (tands::TangentDynamicalSystem)(t::Real) = tands.ds(t)[:, 1]
 

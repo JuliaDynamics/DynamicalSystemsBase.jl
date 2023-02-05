@@ -1,9 +1,9 @@
 using StaticArrays
 using SciMLBase: __init, ODEFunction, ODEProblem, AbstractODEIntegrator
 
-#####################################################################################
+##############################################################################################
 #                                    Defaults                                       #
-#####################################################################################
+##############################################################################################
 using SimpleDiffEq: SimpleATsit5, SimpleTsit5
 export SimpleATsit5, SimpleTsit5
 const DEFAULT_SOLVER = SimpleATsit5()
@@ -12,9 +12,9 @@ const CDS_KWARGS = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
 
 _get_solver(a) = haskey(a, :alg) ? a[:alg] : DEFAULT_SOLVER
 
-#####################################################################################
+##############################################################################################
 #                               Interface to DiffEq                                 #
-#####################################################################################
+##############################################################################################
 function ContinuousDynamicalSystem(prob::ODEProblem, args...)
     return ContinuousDynamicalSystem(
         prob.f.f, prob.u0, prob.p, args...; t0 = prob.tspan[1]
@@ -34,9 +34,9 @@ isdiscretetime(::AbstractODEIntegrator) = false
 StateSpaceSets.dimension(integ::AbstractODEIntegrator) = length(integ.u)
 integrator(x::AbstractODEIntegrator) = x
 
-#####################################################################################
+##############################################################################################
 #                                 Integrators                                       #
-#####################################################################################
+##############################################################################################
 stateeltype(::AbstractODEIntegrator{A, IIP, S}) where {A, IIP, S} = eltype(S)
 stateeltype(::AbstractODEIntegrator{A, IIP, S}) where {
     A, IIP, S<:Vector{<:AbstractArray{T}}} where {T} = T
@@ -171,9 +171,9 @@ end
 @inline _standardnorm(u::Real, t = 0) = abs(u)
 @inline _standardnorm(u::AbstractArray, t = 0) = sum(_standardnorm, u)/length(u)
 
-#####################################################################################
+##############################################################################################
 #                                 Trajectory                                        #
-#####################################################################################
+##############################################################################################
 function trajectory(ds::ContinuousDynamicalSystem, T, u = ds.u0;
     Δt = 0.01, Ttr = 0.0, save_idxs = nothing, diffeq = NamedTuple(), kwargs...)
 
@@ -212,9 +212,9 @@ function trajectory_continuous(integ, T, u0 = nothing;
     return Dataset(sol)
 end
 
-#####################################################################################
+##############################################################################################
 #                                    Get/Set States                                 #
-#####################################################################################
+##############################################################################################
 get_state(integ::AbstractODEIntegrator{Alg, IIP, S}) where {Alg, IIP, S<:AbstractVector} =
     integ.u
 get_state(integ::AbstractODEIntegrator{Alg, IIP, S}, k::Int = 1) where {Alg, IIP, S<:Vector{<:AbstractVector}} =

@@ -1,16 +1,16 @@
 import Roots
-export poincaresos, produce_orbitdiagram, PlaneCrossing, poincaremap, PoincareMap
+export poincaresos, PlaneCrossing, poincaremap, PoincareMap
 
 const ROOTS_ALG = Roots.A42()
 
-#####################################################################################
-#                               Hyperplane                                          #
-#####################################################################################
+####################################################################################################
+# Hyperplane
+####################################################################################################
 """
     PlaneCrossing(plane, dir) → z
 Create a struct that can be called as a function `z(u)` that returns the signed distance
 of state `u` from the hyperplane `plane` (positive means in front of the hyperplane).
-See [`poincaresos`](@ref) for what `plane` can be (tuple or vector).
+See [`PoincareMap`](@ref) for what `plane` can be (tuple or vector).
 """
 struct PlaneCrossing{P, D, T}
     plane::P
@@ -43,9 +43,9 @@ function (hp::PlaneCrossing{P})(u::AbstractVector) where {P<:AbstractVector}
     hp.dir ? x : -x
 end
 
-#####################################################################################
+##############################################################################################
 #                               Poincare Section                                    #
-#####################################################################################
+##############################################################################################
 """
     poincaresos(ds::ContinuousDynamicalSystem, plane, tfinal = 1000.0; kwargs...)
 Calculate the Poincaré surface of section[^Tabor1989]
@@ -200,9 +200,9 @@ function _check_plane(plane, D)
     end
 end
 
-#####################################################################################
+##############################################################################################
 #                               Poincare Map                                        #
-#####################################################################################
+##############################################################################################
 """
 	poincaremap(ds::ContinuousDynamicalSystem, plane, Tmax=1e3; kwargs...) → pmap
 
@@ -322,9 +322,9 @@ function Base.show(io::IO, pmap::PoincareMap)
     println(io,  rpad(" hyperplane: ", 14),     pmap.planecrossing.plane)
 end
 
-#####################################################################################
+##############################################################################################
 # Poincare Section for Datasets (trajectories)                                      #
-#####################################################################################
+##############################################################################################
 # TODO: Nice improvement would be to use cubic interpolation instead of linear,
 # using points i-2, i-1, i, i+1
 """

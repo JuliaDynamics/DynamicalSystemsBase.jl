@@ -2,9 +2,9 @@ using OrdinaryDiffEq: Tsit5
 using SciMLBase: ODEProblem, DEIntegrator, u_modified!, __init
 export CoupledODEs, ContinuousDynamicalSystem
 
-##################################################################################
+###########################################################################################
 # DiffEq options
-##################################################################################
+###########################################################################################
 _get_solver(a) = haskey(a, :alg) ? a[:alg] : DEFAULT_SOLVER
 const DEFAULT_SOLVER = Tsit5()
 const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-6, reltol = 1e-6)
@@ -21,9 +21,9 @@ function _decompose_into_solver_and_remaining(diffeq)
     end
 end
 
-##################################################################################
+###########################################################################################
 # Type
-##################################################################################
+###########################################################################################
 """
     CoupledODEs(f, u0 [, p]; diffeq, t0 = 0.0) <: DynamicalSystem
 
@@ -95,9 +95,9 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs..
     return CoupledODEs{IIP, D, typeof(integ), P}(integ, deepcopy(prob.p), diffeq)
 end
 
-##################################################################################
+###########################################################################################
 # Extend interface and extend for `DEIntegrator`
-##################################################################################
+###########################################################################################
 StateSpaceSets.dimension(::CoupledODEs{IIP, D}) where {IIP, D} = D
 
 for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,

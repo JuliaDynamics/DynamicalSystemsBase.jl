@@ -124,9 +124,9 @@ export current_state, initial_state, current_parameters, initial_parameters, isi
     current_time, initial_time, isdeterministic, isdiscretetime, dynamic_rule,
     reinit!, set_state!, set_parameter!, set_parameters!, step!
 
-##################################################################################
+###########################################################################################
 # API - information
-##################################################################################
+###########################################################################################
 function (ds::DiscreteTimeDynamicalSystem)(t::Real)
     if t == current_time(ds)
         return current_state(ds)
@@ -236,9 +236,9 @@ SciMLBase.isinplace(ds::DynamicalSystem) = errormsg(ds)
 # Generic implementation, most types re-define it as compile-time info
 StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 
-##################################################################################
+###########################################################################################
 # API - alter status
-##################################################################################
+###########################################################################################
 """
     set_state!(ds::DynamicalSystem, u)
 
@@ -282,9 +282,9 @@ function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
 end
 
 
-##################################################################################
+###########################################################################################
 # API - step and reset
-##################################################################################
+###########################################################################################
 """
     step!(discrete_time_ds [, dt::Integer])
 
