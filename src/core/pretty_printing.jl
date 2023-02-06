@@ -1,5 +1,53 @@
-Base.summary(ds::DS) =
-"$(dimension(ds))-dimensional "*systemtype(ds)*" dynamical system"
+# Printing works as follows; first a generic header is used
+# then type-deduce details are printed, then dynamic rule,
+# any additional information that is extendable,
+# and last current parameter, time, state
+
+Base.summary(ds::DynamicalSystem) =
+"$(dimension(ds))-dimensional $(nameof(typeof(ds)))"
+
+# Extend this function to return a vector of `Pair`s of `"description" => value`
+additional_details(::DynamicalSystem) = []
+
+function Base.show(io::IO, ds::DynamicalSystem)
+    descriptors = [
+        "deterministic" => isdeterministic(ds),
+        "discrete time" => isdiscretetime(ds),
+        "in-place" => isinplace(ds),
+        "dynamic rule" => rulestring(dynamic_rule(ds)),
+    ]
+    append!(descriptors, additional_details(ds))
+    append!(descriptors, [
+        "parameters" => current_parameters(ds),
+        "time" => current_time(ds),
+        "state" => current_state(ds),
+    ])
+    padlen = maximum(length(d[1]) for d in descriptors) + 3
+
+    println(io, summary(ds))
+    for (desc, val) in descriptors
+        println(io, rpad(" $(desc): ", padlen), val)
+    end
+
+    # TODO: Improve printing of parameter and state by using `printlimited`
+    # text = summary(ds)
+    # u0 = get_state(ds)'
+    # println(io, text)
+    # prefix = rpad(" state: ", padlen)
+    # print(io, prefix); printlimited(io, u0, Δx = length(prefix)); print(io, "\n")
+    # println(io,  rpad(" rule f: ", padlen),     rulestring(ds))
+    # println(io,  rpad(" in-place? ", padlen),   isinplace(ds))
+    # println(io,  rpad(" jacobian: ", padlen),   jacobianstring(ds))
+    # print(io,    rpad(" parameters: ", padlen))
+    # printlimited(io, printable(ds.p), Δx = length(prefix), Δy = 10)
+end
+
+rulestring(f::Function) = nameof(f)
+rulestring(f) = nameof(typeof(f))
+
+printable(p::AbstractVector) = p'
+printable(p::Nothing) = "nothing"
+printable(p) = string(p)
 
 # Credit to Sebastian Pfitzner
 function printlimited(io, x; Δx = 0, Δy = 0)
@@ -19,31 +67,3 @@ function printlimited(io, x; Δx = 0, Δy = 0)
 end
 
 printlimited(io, x::Number; kwargs...) = print(io, x)
-
-function Base.show(io::IO, ds::DS)
-    ps = 14
-    text = summary(ds)
-    u0 = get_state(ds)'
-    println(io, text)
-    prefix = rpad(" state: ", ps)
-    print(io, prefix); printlimited(io, u0, Δx = length(prefix)); print(io, "\n")
-    println(io,  rpad(" rule f: ", ps),     get_rule_for_print(ds))
-    println(io,  rpad(" in-place? ", ps),   isinplace(ds))
-    println(io,  rpad(" jacobian: ", ps),   jacobianstring(ds))
-    print(io,    rpad(" parameters: ", ps))
-    printlimited(io, printable(ds.p), Δx = length(prefix), Δy = 10)
-end
-
-printable(p::AbstractVector) = p'
-printable(p::Nothing) = "nothing"
-printable(p) = p
-
-get_rule_for_print(a::SciMLBase.AbstractODEIntegrator) = eomstring(a.f.f)
-get_rule_for_print(a::MinimalDiscreteIntegrator) = eomstring(a.f)
-get_rule_for_print(a::DynamicalSystem) = eomstring(a.f)
-get_rule_for_print(a) = get_rule_for_print(a.integ)
-
-eomstring(f::Function) = nameof(f)
-eomstring(f) = nameof(typeof(f))
-
-jacobianstring(ds::DS) = isautodiff(ds) ? "ForwardDiff" : "$(eomstring(ds.jacobian))"
