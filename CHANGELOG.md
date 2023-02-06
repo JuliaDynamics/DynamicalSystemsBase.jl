@@ -1,3 +1,9 @@
+# v3.0
+
+Complete rewrite of the package. See DynamicalSystems.jl v3 changelog for more.
+
+TODO: Write detailed changelog here actually since DS will have summaries.
+
 # v2.9
 - All code related to the poincare map integrator have been moved here from ChaosTools.jl.
 

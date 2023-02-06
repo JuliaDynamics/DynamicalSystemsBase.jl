@@ -15,25 +15,6 @@ proj_comp1 = (1:2, [1.0])
 proj_comp2 = (1:2, (y) -> [y[1], y[2], y[2] + 1])
 proj_comp3 = (u -> u/norm(u), y -> 10y)
 
-@testset "projected IDT=$(IDT), IIP=$(IIP) proj=$(P)" for IDT in (true, false), IIP in (false, true), P in (1, 2, 3)
-    SystemType = IDT ? DeterministicIteratedMap : CoupledODEs
-    rule = !IIP ? trivial_rule : trivial_rule_iip
-    p0 = IDT ? p0_disc : p0_cont
-    ds = SystemType(rule, u0, p0)
-
-    projection, complete = (proj_comp1, proj_comp2, proj_comp3)[P]
-    pds = ProjectedDynamicalSystem(ds, projection, complete)
-    u0init = recursivecopy(current_state(pds))
-
-    if P ∈ (1, 2)
-        test_dynamical_system(pds, u0init, p0;
-        test_init_state_equiv=false, idt=IDT, iip=IIP)
-    end
-
-    # Specific poincare map tests here:
-    projected_tests(ds, pds, P)
-end
-
 function projected_tests(ds, pds, P)
     @testset "projected dedicated" begin
     if P == 1
@@ -60,4 +41,23 @@ function projected_tests(ds, pds, P)
         @test dimension(pds) == 3
     end
     end
+end
+
+@testset "IDT=$(IDT), IIP=$(IIP) proj=$(P)" for IDT in (true, false), IIP in (false, true), P in (1, 2, 3)
+    SystemType = IDT ? DeterministicIteratedMap : CoupledODEs
+    rule = !IIP ? trivial_rule : trivial_rule_iip
+    p0 = IDT ? p0_disc : p0_cont
+    ds = SystemType(rule, u0, p0)
+
+    projection, complete = (proj_comp1, proj_comp2, proj_comp3)[P]
+    pds = ProjectedDynamicalSystem(ds, projection, complete)
+    u0init = recursivecopy(current_state(pds))
+
+    if P ∈ (1, 2)
+        test_dynamical_system(pds, u0init, p0;
+        test_init_state_equiv=false, idt=IDT, iip=IIP)
+    end
+
+    # Specific poincare map tests here:
+    projected_tests(ds, pds, P)
 end

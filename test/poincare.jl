@@ -52,14 +52,15 @@ function poincare_tests(ds, pmap, plane)
     end
 end
 
-@testset "poincare IIP=$(IIP) plane=$(P)" for IIP in (false, true), P in (1, 2)
+@testset "IIP=$(IIP) plane=$(P)" for IIP in (false, true), P in (1, 2)
     rule = !IIP ? gissinger_rule : gissinger_rule_iip
     ds = CoupledODEs(rule, recursivecopy(u0), p)
     plane = P == 1 ? plane1 : plane2
     pmap = PoincareMap(ds, plane)
     u0pmap = recursivecopy(current_state(pmap))
     test_dynamical_system(pmap, u0pmap, p;
-    idt=true, iip=IIP, test_trajectory = true, test_init_state_equiv=false)
+    idt=true, iip=IIP, test_trajectory = true,
+    test_init_state_equiv=false, u0init = initial_state(pmap))
     # Specific poincare map tests here:
     poincare_tests(ds, pmap, plane)
 end
