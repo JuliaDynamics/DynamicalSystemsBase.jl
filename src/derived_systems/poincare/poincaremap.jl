@@ -13,7 +13,7 @@ const ROOTS_ALG = Roots.A42()
 	PoincareMap <: DiscreteTimeDynamicalSystem
 	PoincareMap(ds::CoupledODEs, plane; kwargs...) → pmap
 
-A discrete time dynamical system that produces iterations over the Poincaré map
+A discrete time dynamical system that produces iterations over the Poincaré map[^DatserisParlitz2022]
 of the given continuous time `ds`. This map is defined as the sequence of points on the
 Poincaré surface of section, which is defined by the `plane` argument.
 
@@ -50,7 +50,7 @@ and root finding from Roots.jl, to create a high accuracy estimate of the sectio
    is current iteration number.
 3. A new function [`current_crossing_time`](@ref) returns the real time corresponding
    to the latest crossing of the hyperplane, which is what the [`current_state(ds)`](@ref)
-   corresponds to.
+   corresponds to as well.
 4. For the special case of `plane` being a `Tuple{Int, <:Real}`, a special `reinit!` method
    is allowed with input state of length `D-1` instead of `D`, i.e., a reduced state already
    on the hyperplane that is then converted into the `D` dimensional state.
@@ -60,9 +60,7 @@ and root finding from Roots.jl, to create a high accuracy estimate of the sectio
 * `direction = -1`: Only crossings with `sign(direction)` are considered to belong to
   the surface of section. Positive direction means going from less than ``b``
   to greater than ``b``.
-* `idxs = 1:dimension(ds)`: Optionally you can choose which variables to save.
-  Defaults to the entire state.
-* `u0 = current_state(ds)`: Specify an initial state.
+* `u0 = nothing`: Specify an initial state.
 * `rootkw = (xrtol = 1e-6, atol = 1e-6)`: A `NamedTuple` of keyword arguments
   passed to `find_zero` from [Roots.jl](https://github.com/JuliaMath/Roots.jl).
 * `Tmax = 1e3`: The argument `Tmax` exists so that the integrator can terminate instead
@@ -80,6 +78,10 @@ pmap = poincaremap(ds, (3, 0.0))
 step!(pmap)
 next_state_on_psos = current_state(pmap)
 ```
+
+[^DatserisParlitz2022]:
+    Datseris & Parlitz *Nonlinear Dynamics: A Concise Introduction Interlaced with Code*,
+    [Springer, Undergra. Lect. Notes. In Physics](https://doi.org/10.1007/978-3-030-91032-7)
 """
 mutable struct PoincareMap{I<:ContinuousTimeDynamicalSystem, F, P, R, V} <: DiscreteTimeDynamicalSystem
 	ds::I
@@ -99,10 +101,11 @@ end
 function PoincareMap(
 		ds::DS, plane;
         Tmax = 1e3,
-	    direction = -1, u0 = current_state(ds),
+	    direction = -1, u0 = nothing,
 	    rootkw = (xrtol = 1e-6, atol = 1e-6)
 	) where {DS<:ContinuousTimeDynamicalSystem}
 
+    reinit!(ds, u0)
     D = dimension(ds)
 	check_hyperplane_match(plane, D)
 	planecrossing = PlaneCrossing(plane, direction > 0)
@@ -123,6 +126,7 @@ _indices_on_poincare_plane(plane::Tuple, D) = setdiff(1:D, [plane[1]])
 _indices_on_poincare_plane(::Vector, D) = collect(1:D-1)
 
 additional_details(pmap::PoincareMap) = [
+    "hyperplane" => pmap.planecrossing.plane,
     "crossing time" => pmap.tcross,
 ]
 
@@ -153,6 +157,7 @@ SciMLBase.step!(pmap::PoincareMap, n::Int, s = true) = (for _ ∈ 1:n; step!(pma
 function SciMLBase.reinit!(pmap::PoincareMap, u0 = initial_state(pmap);
         t0 = initial_time(pmap), p = current_parameters(pmap)
     )
+    isnothing(u0) && return pmap
     if length(u0) == dimension(pmap)
 	    u = u0
     elseif length(u0) == dimension(pmap) - 1
@@ -223,97 +228,44 @@ end
 # Poincare surface of section
 ###########################################################################################
 """
-    poincaresos(ds::ContinuousDynamicalSystem, plane, tfinal = 1000.0; kwargs...)
+    poincaresos(ds::CoupledODEs, plane, T = 1000.0; kwargs...) → P::Dataset
 
-Calculate the Poincaré surface of section[^Tabor1989]
-of the given system with the given `plane`.
-The system is evolved for total time of `tfinal`.
+Return the iterations of `ds` on the Poincaré surface of section with the `plane`,
+by evolving `ds` up to a total of `T`.
 Return a [`Dataset`](@ref) of the points that are on the surface of section.
-See also [`poincaremap`](@ref) for the map version.
 
-If the state of the system is ``\\mathbf{u} = (u_1, \\ldots, u_D)`` then the
-equation defining a hyperplane is
-```math
-a_1u_1 + \\dots + a_Du_D = \\mathbf{a}\\cdot\\mathbf{u}=b
-```
-where ``\\mathbf{a}, b`` are the parameters of the hyperplane.
+This function initializes a [`PoincareMap`](@ref) and steps it until its
+[`current_crossing_time`](@ref) exceeds `T`. You can also use [`trajectory`](@ref)
+with [`PoincareMap`](@ref) to get a sequence of `N::Int` points instead.
 
-In code, `plane` can be either:
-
-* A `Tuple{Int, <: Real}`, like `(j, r)` : the plane is defined
-  as when the `j`th variable of the system equals the value `r`.
-* A vector of length `D+1`. The first `D` elements of the
-  vector correspond to ``\\mathbf{a}`` while the last element is ``b``.
-
-This function uses `ds`, higher order interpolation from DifferentialEquations.jl,
-and root finding from Roots.jl, to create a high accuracy estimate of the section.
-See also [`produce_orbitdiagram`](@ref).
-
-Notice that `poincaresos` is just a fancy wrapper of initializing a [`poincaremap`](@ref)
-and then calling `trajectory` on it.
-
-## Keyword Arguments
-* `direction = -1` : Only crossings with `sign(direction)` are considered to belong to
-  the surface of section. Positive direction means going from less than ``b``
-  to greater than ``b``.
-* `idxs = 1:dimension(ds)` : Optionally you can choose which variables to save.
-  Defaults to the entire state.
-* `Ttr = 0.0` : Transient time to evolve the system before starting
-  to compute the PSOS.
-* `u0 = get_state(ds)` : Specify an initial state.
-* `warning = true` : Throw a warning if the Poincaré section was empty.
-* `rootkw = (xrtol = 1e-6, atol = 1e-6)` : A `NamedTuple` of keyword arguments
-  passed to `find_zero` from [Roots.jl](https://github.com/JuliaMath/Roots.jl).
-* `diffeq` is a `NamedTuple` (or `Dict`) of keyword arguments propagated into
-  `init` of DifferentialEquations.jl.
-  See [`trajectory`](@ref) for examples. Only valid for continuous systems.
-
-[^Tabor1989]:
-    M. Tabor, *Chaos and Integrability in Nonlinear Dynamics: An Introduction*,
-    §4.1, in pp. 118-126, New York: Wiley (1989)
+The keywords `Ttr, save_idxs` act as in [`trajectory`](@ref).
+See [`PoincareMap`](@ref) for `plane` and all other keywords.
 """
-# function poincaresos(
-# 		ds::CDS{IIP, S, D}, plane, tfinal = 1000.0;
-# 	    direction = -1, Ttr::Real = 0.0, warning = true, idxs = 1:D, u0 = get_state(ds),
-# 	    rootkw = (xrtol = 1e-6, atol = 1e-6), diffeq = NamedTuple(), kwargs...
-# 	) where {IIP, S, D}
+function poincaresos(ds::CoupledODEs, plane, T = 1000.0;
+        save_idxs = 1:dimension(ds), Ttr = 0, kwargs...
+    )
+    pmap = PoincareMap(ds, plane; kwargs...)
+    i = typeof(save_idxs) <: Int ? save_idxs : SVector{length(save_idxs), Int}(save_idxs...)
+	data = _initialize_output(current_state(pmap), i)
+    poincaresos!(data, pmap, i, T, Ttr)
+end
 
-#     if !isempty(kwargs)
-#         @warn DIFFEQ_DEP_WARN
-#         diffeq = NamedTuple(kwargs)
-#     end
+function poincaresos!(data, pmap, i, T, Ttr)
+    tprev = current_crossing_time(pmap)
+    while current_crossing_time(pmap) - tprev < Ttr
+        step!(pmap)
+    end
+    push!(data, current_state(pmap))
+    tprev = current_crossing_time(pmap)
+    while current_crossing_time(pmap) - tprev < T
+        step!(pmap)
+        push!(data, current_state(pmap)[i])
+    end
+    return Dataset(data)
+end
 
-#     check_hyperplane_match(plane, D)
-#     integ = integrator(ds, u0; diffeq)
-#     i = typeof(idxs) <: Int ? idxs : SVector{length(idxs), Int}(idxs...)
-#     planecrossing = PlaneCrossing(plane, direction > 0)
-# 	Ttr ≠ 0 && step!(integ, Ttr)
-# 	plane_distance = (t) -> planecrossing(integ(t))
-
-# 	data = _poincaresos(integ, plane_distance, planecrossing, tfinal+Ttr, i, rootkw)
-#     warning && length(data) == 0 && @warn PSOS_ERROR
-#     return Dataset(data)
-# end
-
-# # The separation into two functions here exists only to introduce a function barrier
-# # for the low level method, to ensure optimization on argments of `poincaremap!`.
-# function _poincaresos(integ, plane_distance, planecrossing, tfinal, i, rootkw)
-# 	data = _initialize_output(current_state(ds), i)
-# 	while current_time(ds) < tfinal
-# 		out, t = poincaremap!(integ, plane_distance, planecrossing, tfinal, rootkw)
-# 		if !isnothing(out)
-#             push!(data, out[i])
-#         else
-#             break # if we evolved for more than tfinal, we should break anyways.
-#         end
-# 	end
-# 	return data
-# end
-
-# _initialize_output(::S, ::Int) where {S} = eltype(S)[]
-# _initialize_output(u::S, i::SVector{N, Int}) where {N, S} = typeof(u[i])[]
-# function _initialize_output(u, i)
-#     error("The variable index when producing the PSOS must be Int or SVector{Int}")
-# end
-
-# const PSOS_ERROR = "The Poincaré surface of section did not have any points!"
+_initialize_output(::S, ::Int) where {S} = eltype(S)[]
+_initialize_output(u::S, i::SVector{N, Int}) where {N, S} = typeof(u[i])[]
+function _initialize_output(u, i)
+    error("The variable index when producing the PSOS must be Int or SVector{Int}")
+end

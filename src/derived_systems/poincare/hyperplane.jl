@@ -1,6 +1,6 @@
 export PlaneCrossing, poincaresos
 
-# TODO: Remove keyword `idxs`!
+# TODO: Remove keyword `save_idxs`!
 
 ####################################################################################################
 # Hyperplane definitions
@@ -28,7 +28,7 @@ function PlaneCrossing(plane::AbstractVector, dir)
     PlaneCrossing(plane, dir, SVector{D, T}(n), SVector{D, T}(p₀))
 end
 
-# Definition of functional behavior
+# Definition of functional behavior: signed distance from hyperplane
 function (hp::PlaneCrossing{P})(u::AbstractVector) where {P<:Tuple}
     @inbounds x = u[hp.plane[1]] - hp.plane[2]
     hp.dir ? x : -x
@@ -75,15 +75,19 @@ end
 # TODO: Nice improvement would be to use cubic interpolation instead of linear,
 # using points i-2, i-1, i, i+1
 """
-    poincaresos(A::Dataset, plane; kwargs...)
+    poincaresos(A::AbstractDataset, plane; kwargs...) → P::Dataset
+
 Calculate the Poincaré surface of section of the given dataset with the given `plane`
 by performing linear interpolation betweeen points that sandwich the hyperplane.
 
-Argument `plane` and keywords `direction, warning, idxs` are the same as above.
+Argument `plane` and keywords `direction, warning, save_idxs`
+are the same as in the method below.
 """
-function poincaresos(A::Dataset, plane; direction = -1, warning = true, idxs = 1:size(A, 2))
+function poincaresos(A::AbstractDataset, plane;
+        direction = -1, warning = true, save_idxs = dimension(A)
+    )
     check_hyperplane_match(plane, size(A, 2))
-    i = typeof(idxs) <: Int ? idxs : SVector{length(idxs), Int}(idxs...)
+    i = typeof(save_idxs) <: Int ? save_idxs : SVector{length(save_idxs), Int}(save_idxs...)
     planecrossing = PlaneCrossing(plane, direction > 0)
     data = poincaresos(A, planecrossing, i)
     warning && length(data) == 0 && @warn PSOS_ERROR

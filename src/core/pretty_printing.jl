@@ -29,7 +29,7 @@ function Base.show(io::IO, ds::DynamicalSystem)
         println(io, rpad(" $(desc): ", padlen), val)
     end
 
-    # TODO: Improve printing of large containers by using `printlimited`
+    # TODO: Improve printing of parameter and state by using `printlimited`
     # text = summary(ds)
     # u0 = get_state(ds)'
     # println(io, text)
