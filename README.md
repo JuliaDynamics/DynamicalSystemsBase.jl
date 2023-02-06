@@ -1,8 +1,13 @@
-![DynamicalSystems.jl logo: The Double Pendulum](https://i.imgur.com/nFQFdB0.gif)
+# DynamicalSystemsBase.jl
 
-Repository containing core system and data definitions used in the library
-[DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/latest/).
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaDynamics.github.io/DynamicalSystemsBase.jl/stable)
+[![](https://img.shields.io/badge/DOI-10.1007/978-3-030-91032-7-purple)](https://link.springer.com/book/10.1007/978-3-030-91032-7)
+[![CI](https://github.com/JuliaDynamics/DynamicalSystemsBase.jl/workflows/CI/badge.svg)](https://github.com/JuliaDynamics/DynamicalSystemsBase.jl/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/JuliaDynamics/DynamicalSystemsBase.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaDynamics/DynamicalSystemsBase.jl)
+[![Package Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/DynamicalSystemsBase)](https://pkgs.genieframework.com?packages=DynamicalSystemsBase)
 
-| **Documentation**   |  **Travis**     |  Gitter |
-|:--------:|:-------------------:|:-----:|
-|[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://JuliaDynamics.github.io/DynamicalSystems.jl/dev) | [![CI](https://github.com/juliadynamics/DynamicalSystemsBase.jl/workflows/CI/badge.svg)](https://github.com/JuliaDynamics/DynamicalSystemsBase.jl/actions) | [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/JuliaDynamics/Lobby)
+A Julia package that defines the `DynamicalSystem` interface and many concrete implementations used in the [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/dev/) ecosystem.
+
+To install it, run `import Pkg; Pkg.add("DynamicalSystemsBase")`.
+
+All further information is provided in the documentation, which you can either find [online](https://juliadynamics.github.io/DynamicalSystemsBase.jl/dev/) or build locally by running the `docs/make.jl` file.
