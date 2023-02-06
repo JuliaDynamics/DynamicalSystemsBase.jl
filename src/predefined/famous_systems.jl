@@ -1,12 +1,10 @@
 """
 Sub-module of the module `DynamicalSystemsBase`, which contains pre-defined
-famous systems.
+famous systems. This is provided purely as a convenience.
+Nothing here is tested, nor guaranteed to be stable in future versions.
 """
 module Systems
 using DynamicalSystemsBase
-
-using StaticArrays
-const twopi = 2π
 
 using DynamicalSystemsBase: DDS
 include("discrete_famous_systems.jl")

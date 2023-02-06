@@ -100,10 +100,10 @@ end
     theta = x[1]; p = x[2]
     p += par[1]*sin(theta)
     theta += p
-    while theta >= twopi; theta -= twopi; end
-    while theta < 0; theta += twopi; end
-    while p >= twopi; p -= twopi; end
-    while p < 0; p += twopi; end
+    while theta >= 2π; theta -= 2π; end
+    while theta < 0; theta += 2π; end
+    while p >= 2π; p -= 2π; end
+    while p < 0; p += 2π; end
     return SVector(theta, p)
 end
 @inbounds standardmap_jacob(x, p, n) =
