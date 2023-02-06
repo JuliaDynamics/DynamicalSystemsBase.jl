@@ -3,7 +3,8 @@
 # `trajectory` is tested or not.
 using DynamicalSystemsBase, Test
 
-function test_dynamical_system(ds, u0, p0; idt, iip, test_trajectory = true, u0init = deepcopy(u0))
+function test_dynamical_system(ds, u0, p0; idt, iip,
+    test_init_state_equiv = true, test_trajectory = true, u0init = deepcopy(u0))
 
     @testset "obtaining info" begin
         @test current_state(ds) == u0
@@ -20,9 +21,9 @@ function test_dynamical_system(ds, u0, p0; idt, iip, test_trajectory = true, u0i
 
     @testset "alteration" begin
         set_state!(ds, u0 .+ 1)
-        # this test doesnt work on poincare maps
+        # this test doesnt work on poincare map or projected system
         # where by definition state must always be on the plane.
-        if u0init == u0
+        if test_init_state_equiv
             @test current_state(ds) == u0 .+ 1
         end
 

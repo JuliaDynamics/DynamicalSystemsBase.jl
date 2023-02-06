@@ -59,7 +59,7 @@ end
     pmap = PoincareMap(ds, plane)
     u0pmap = recursivecopy(current_state(pmap))
     test_dynamical_system(pmap, u0pmap, p;
-    idt=true, iip=IIP, test_trajectory = true, u0init = initial_state(ds))
+    idt=true, iip=IIP, test_trajectory = true, test_init_state_equiv=false)
     # Specific poincare map tests here:
     poincare_tests(ds, pmap, plane)
 end
