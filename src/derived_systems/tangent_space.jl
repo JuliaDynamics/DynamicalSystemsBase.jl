@@ -88,6 +88,10 @@ struct TangentDynamicalSystem{IIP, D} <: ParallelDynamicalSystem
     J
 end
 
+additional_details(tands::TangentDynamicalSystem) = [
+    "jacobian" => rulestring(tands.J),
+]
+
 # it is practically identical to `TangentDynamicalSystem`
 
 function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
@@ -112,12 +116,11 @@ function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
 
     # Pass everything to analytic system constructors
     cp = current_parameters(ds)
-    t0 = initial_time(ds)
     if ds isa DeterministicIteratedMap
-        tands = DeterministicIteratedMap(newrule, newstate, cp, t0)
+        tands = DeterministicIteratedMap(newrule, newstate, cp)
     elseif ds isa CoupledODEs
         T = eltype(newstate)
-        prob = ODEProblem{IIP}(newrule, newstate, (T(t0), T(Inf)), cp)
+        prob = ODEProblem{IIP}(newrule, newstate, (T(initial_time(ds)), T(Inf)), cp)
         tands = CoupledODEs(prob, ds.diffeq; internalnorm = matrixnorm)
     end
     return TangentDynamicalSystem{IIP, typeof(tands)}(tands, f, J)
@@ -198,18 +201,20 @@ end
 dynamic_rule(tands::TangentDynamicalSystem) = tands.original_f
 (tands::TangentDynamicalSystem)(t::Real) = tands.ds(t)[:, 1]
 
-for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime,
+for f in (:current_time, :initial_time, :isdiscretetime,
         :current_parameters, :initial_parameters, :isinplace,
     )
     @eval $(f)(tands::TangentDynamicalSystem, args...; kw...) = $(f)(tands.ds, args...; kw...)
 end
-
 current_state(t::TangentDynamicalSystem{true}) = view(current_state(t.ds), :, 1)
 current_state(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 1]
 initial_state(t::TangentDynamicalSystem{true}) = view(initial_state(t.ds), :, 1)
 initial_state(t::TangentDynamicalSystem{false}) = initial_state(t.ds)[:, 1]
 current_deviations(t::TangentDynamicalSystem{true}) = @view(current_state(t.ds)[:, 2:end])
 current_deviations(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 2:end]
+
+# Dedicated step so that it retunrs the system itself
+SciMLBase.step!(tands::TangentDynamicalSystem, args...) = (step!(tands.ds, args...); tands)
 
 function set_state!(t::TangentDynamicalSystem{true}, u)
     current_state(t) .= u
