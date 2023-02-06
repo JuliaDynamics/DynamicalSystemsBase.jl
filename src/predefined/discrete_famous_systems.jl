@@ -198,26 +198,10 @@ function's documentation string.
 [1] : M. Hénon, Commun.Math. Phys. **50**, pp 69 (1976)
 """
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
-    return DDS(henon_rule, u0, [a,b], hoop_jac)
+    return DDS(henon_rule, u0, [a,b])
 end # should give lyapunov exponents [0.4189, -1.6229]
 henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-hoop_jac(x, p, n) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
-
-function henon_iip(u0=zeros(2); a = 1.4, b = 0.3)
-    return DDS(hiip, u0, [a, b], hiip_jac)
-end
-function hiip(dx, x, p, n)
-    dx[1] = 1.0 - p[1]*x[1]^2 + x[2]
-    dx[2] = p[2]*x[1]
-    return
-end
-function hiip_jac(J, x, p, n)
-    J[1,1] = -2*p[1]*x[1]
-    J[1,2] = 1.0
-    J[2,1] = p[2]
-    J[2,2] = 0.0
-    return
-end
+henon_jacob(x, p, n) = SMatrix{2,2}(-2*p[1]*x[1], p[2], 1.0, 0.0)
 
 
 """
