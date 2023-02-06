@@ -3,11 +3,11 @@
 # `trajectory` is tested or not.
 using DynamicalSystemsBase, Test
 
-function test_dynamical_system(ds, u0, p0; idt, iip, test_trajectory = true)
+function test_dynamical_system(ds, u0, p0; idt, iip, test_trajectory = true, u0init = deepcopy(u0))
 
     @testset "obtaining info" begin
         @test current_state(ds) == u0
-        @test initial_state(ds) == u0
+        @test initial_state(ds) == u0init
         @test current_parameters(ds) == p0
         @test initial_parameters(ds) == p0
         @test current_time(ds) == 0
@@ -20,7 +20,11 @@ function test_dynamical_system(ds, u0, p0; idt, iip, test_trajectory = true)
 
     @testset "alteration" begin
         set_state!(ds, u0 .+ 1)
-        @test current_state(ds) == u0 .+ 1
+        # this test doesnt work on poincare maps
+        # where by definition state must always be on the plane.
+        if u0init == u0
+            @test current_state(ds) == u0 .+ 1
+        end
 
         fpv = current_parameters(ds)[1]
         set_parameter!(ds, 1, 1.0)

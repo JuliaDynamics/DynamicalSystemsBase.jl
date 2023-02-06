@@ -39,6 +39,10 @@ StroboscopicMap{D, TT}(ds, T, Ref(0))
 StroboscopicMap(T, f, u0, p = nothing; kwargs...) =
 StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
 
+additional_details(smap::StroboscopicMap) = [
+    "period" => smap.T,
+]
+
 ###########################################################################################
 # Extend interface
 ###########################################################################################

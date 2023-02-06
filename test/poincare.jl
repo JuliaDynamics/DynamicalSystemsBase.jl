@@ -1,5 +1,6 @@
 using DynamicalSystemsBase, Test
 using LinearAlgebra: cross
+include("test_system_function.jl")
 
 function gissinger_rule(u, p, t)
     μ, ν, Γ = p
@@ -32,12 +33,21 @@ Nm(μ) = SVector{3}(-sqrt(ν + Γ*sqrt(ν/μ)), sqrt(μ + Γ*sqrt(μ/ν)), -sqrt
 gis_plane(μ) = [cross(Np(μ), Nm(μ))..., 0]
 plane2 = gis_plane(μ)
 
+function poincare_tests(pmap, plane)
+    P, t = trajectory(pmap, 1000)
+    P2 = poincaresos()
+    if plane isa Tuple # test that 0 is first element approximately
+    end
+end
+
 @testset "poincare IIP=$(IIP) plane=$(plane)" for IIP in (false, true), plane in (1, 2)
-    ds = !IIP ? gissinger_oop : gissinger_iip
+    rule = !IIP ? gissinger_rule : gissinger_rule_iip
+    ds = CoupledODEs(rule, recursivecopy(u0), p)
     plan = plane == 1 ? plane1 : plane2
     pmap = PoincareMap(ds, plan)
-    u0 = initial_state(ds)
-    test_dynamical_system(tands, u0, p; idt=true, iip=IIP, test_trajectory = false)
+    u0pmap = recursivecopy(current_state(pmap))
+    test_dynamical_system(pmap, u0pmap, p;
+    idt=true, iip=IIP, test_trajectory = false, u0init = initial_state(ds))
     # Specific poincare map tests here:
     # tangent_space_test(tands, lyapunovs)
 end

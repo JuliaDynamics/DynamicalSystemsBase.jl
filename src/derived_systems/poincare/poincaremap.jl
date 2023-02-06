@@ -1,6 +1,6 @@
 include("hyperplane.jl")
 import Roots
-export poincaresos, PlaneCrossing, poincaremap, PoincareMap
+export PoincareMap, current_crossing_time
 
 @deprecate poincaremap PoincareMap
 
@@ -41,14 +41,19 @@ In code, `plane` can be either:
 `PoincareMap` uses `ds`, higher order interpolation from DifferentialEquations.jl,
 and root finding from Roots.jl, to create a high accuracy estimate of the section.
 
-`PoincareMap` follows the [`DynamicalSystems`](@ref) interface with the only
-difference that `dimension(pmap) == dimension(ds)`, even though the Poincaré
-map is effectively 1 dimension less. [`current_time`](@ref) yields the time the last
-crossing of the hyperplane occurred (which is where [`current_state`](@ref) also is).
-For the special case of `plane` being a `Tuple{Int, <:Real}`, a special `reinit!` method
-is allowed with input state of length `D-1` instead of `D`, i.e., a reduced state already
-on the hyperplane that is then converted into the `D` dimensional state.
+`PoincareMap` follows the [`DynamicalSystem`](@ref) interface with the following adjustments:
 
+1. `dimension(pmap) == dimension(ds)`, even though the Poincaré
+   map is effectively 1 dimension less.
+2. Like [`StroboscopicMap`](@ref) time is discrete and counts the iterations on the
+   surface of section. [`initial_time`](@ref) is always `0` and [`current_time`](@ref)
+   is current iteration number.
+3. A new function [`current_crossing_time`](@ref) returns the real time corresponding
+   to the latest crossing of the hyperplane, which is what the [`current_state(ds)`](@ref)
+   corresponds to.
+4. For the special case of `plane` being a `Tuple{Int, <:Real}`, a special `reinit!` method
+   is allowed with input state of length `D-1` instead of `D`, i.e., a reduced state already
+   on the hyperplane that is then converted into the `D` dimensional state.
 
 ## Keyword arguments
 
@@ -84,6 +89,7 @@ mutable struct PoincareMap{I<:ContinuousTimeDynamicalSystem, F, P, R, V} <: Disc
 	rootkw::R
 	state_on_plane::V
     tcross::Float64
+	t::Base.RefValue{Int}
     # These two fields are for setting the state of the pmap from the plane
     # (i.e., given a D-1 dimensional state, create the full D-dimensional state)
     dummy::Vector{Float64}
@@ -106,15 +112,19 @@ function PoincareMap(
     diffidxs = _indices_on_poincare_plane(plane, D)
 	pmap = PoincareMap(
         ds, plane_distance, planecrossing, Tmax, rootkw,
-        v, current_time(ds), dummy, diffidxs
+        v, current_time(ds), Ref(0), dummy, diffidxs
     )
     step!(pmap)
+    pmap.t[] = 0 # first step is 0
     return pmap
 end
 
 _indices_on_poincare_plane(plane::Tuple, D) = setdiff(1:D, [plane[1]])
 _indices_on_poincare_plane(::Vector, D) = collect(1:D-1)
 
+additional_details(pmap::PoincareMap) = [
+    "crossing time" => pmap.tcross,
+]
 
 ###########################################################################################
 # Extensions
@@ -123,32 +133,37 @@ for f in (:initial_state, :current_parameters, :initial_parameters, :initial_tim
 	:dynamic_rule, :set_state!, :(SciMLBase.isinplace), :(StateSpaceSets.dimension))
     @eval $(f)(pmap::PoincareMap, args...) = $(f)(pmap.ds, args...)
 end
-current_time(pmap::PoincareMap) = pmap.tcross
+current_time(pmap::PoincareMap) = pmap.t[]
 current_state(pmap::PoincareMap) = pmap.state_on_plane
+current_crossing_time(pmap::PoincareMap) = pmap.tcross
 
 function SciMLBase.step!(pmap::PoincareMap)
 	u, t = poincare_step!(pmap.ds, pmap.plane_distance, pmap.planecrossing, pmap.Tmax, pmap.rootkw)
 	if isnothing(u)
 		error("Exceeded `Tmax` without crossing the plane.")
 	else
-		pmap.state_on_plane = u
+		pmap.state_on_plane = u # this is always a brand new vector
         pmap.tcross = t
+        pmap.t[] = pmap.t[] + 1
 		return pmap
 	end
 end
-SciMLBase.step!(pmap::PoincareMap, n::Int, stop = true) = for _ ∈ 1:n; step!(pmap); end
+SciMLBase.step!(pmap::PoincareMap, n::Int, s = true) = (for _ ∈ 1:n; step!(pmap); end; pmap)
 
-function SciMLBase.reinit!(pmap::PoincareMap, u0;
-        t0 = initial_time(ds), p = current_parameters(ds)
+function SciMLBase.reinit!(pmap::PoincareMap, u0 = initial_state(pmap);
+        t0 = initial_time(pmap), p = current_parameters(pmap)
     )
     if length(u0) == dimension(pmap)
 	    u = u0
     elseif length(u0) == dimension(pmap) - 1
         u = _recreate_state_from_poincare_plane(pmap, u0)
     else
-        error("Dimension of state for poincare map reinit is inappropriate.")
+        error("Dimension of state for `PoincareMap` reinit is inappropriate.")
     end
     reinit!(pmap.ds, u; t0, p)
+    step!(pmap) # always step once to reach the PSOS
+    pmap.t[] = 0 # first step is 0
+    pmap
 end
 
 function _recreate_state_from_poincare_plane(pmap::PoincareMap, u0)
