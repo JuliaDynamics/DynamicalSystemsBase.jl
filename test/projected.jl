@@ -1,5 +1,43 @@
 using DynamicalSystemsBase, Test
 using LinearAlgebra: norm
+
+trivial_rule(x, p, n) = SVector{3}(p[1]*x[1], p[2]*x[2], p[3]*x[3])
+function trivial_rule_iip(dx, x, p, n)
+    dx .= trivial_rule(x, p, n)
+    return
+end
+
+u0 = ones(3)
+p0_disc = [1.1, 0.8, 0.9]
+p0_cont = [0.1, -0.4, -0.2]
+proj_comp1 = (1:2, [1.0])
+proj_comp2 = (1:2, (y) -> [y[1], y[2], y[2] + 1])
+proj_comp3 = (u -> u/norm(u), y -> 10y)
+
+for (idt, iip) in zip(
+  (pds_disc_oop, pds_disc_iip, pds_cont_oop, pds_cont_iip,),
+  (true, true, false, false), (false, true, false, true),
+)
+
+@testset "projected IDT=$(IDT), IIP=$(IIP) proj=$(P)" for IDT in (false, true), IIP in (false, true), P in (1, 2, 3)
+    SystemType = IDT ? DeterministicIteratedMap : CoupledODEs
+    rule = !IIP ? trivial_rule : gissinger_rule_iip
+    p0 = IDT ? p0_disc : p0_cont
+    ds = SystemType(rule, u0, p0)
+
+    projection, complete = (proj_comp1, proj_comp2, proj_comp3)[P]
+    pds = ProjectedDynamicalSystem(ds, projection, complete)
+    pmap = PoincareMap(ds, plane)
+    u0pmap = recursivecopy(current_state(pmap))
+    test_dynamical_system(pmap, u0pmap, p;
+    idt=true, iip=IIP, test_trajectory = true, u0init = initial_state(ds))
+    # Specific poincare map tests here:
+    poincare_tests(ds, pmap, plane)
+end
+
+
+
+
 @testset "Projected integrator" begin
 
 @testset "Lorenz" begin
