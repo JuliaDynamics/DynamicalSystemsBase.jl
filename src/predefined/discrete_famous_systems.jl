@@ -84,10 +84,9 @@ end
     while p < 0; p += 2π; end
     return SVector(theta, p)
 end
-@inbounds standardmap_jacob(x, p, n) =
-@SMatrix [1 + p[1]*cos(x[1])    1;
-          p[1]*cos(x[1])        1]
-
+@inbounds standardmap_jacob(x, p, n) = SMatrix{2,2}(
+    1 + p[1]*cos(x[1]), p[1]*cos(x[1]), 1, 1
+)
 
 """
 ```julia

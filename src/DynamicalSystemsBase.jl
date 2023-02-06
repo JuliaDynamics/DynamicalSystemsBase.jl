@@ -49,7 +49,7 @@ include("deprecations.jl")
 
 # export GeneralizedDynamicalSystem, DynamicalSystem
 # export ContinuousDynamicalSystem, DiscreteDynamicalSystem
-# export get_rule_for_print, isdiscretetime
+# export rulestring, isdiscretetime
 # export dimension, get_state, get_states
 # export get_parameter, get_parameters, set_parameter!
 # export trajectory, jacobian
