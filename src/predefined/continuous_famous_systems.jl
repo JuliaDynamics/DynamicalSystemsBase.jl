@@ -715,7 +715,7 @@ function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
     γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N))
     m = MagneticPendulum([SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N])
     p = MagneticPendulumParams(γs, d, α, ω)
-    ds = ContinuousDynamicalSystem(m, u, p)
+    return ContinuousDynamicalSystem(m, u, p)
 end
 
 """
@@ -788,7 +788,7 @@ See discussion in Section 4.4.3 of "Elegant Chaos" by J. C. Sprott.
     *9*(10), 1889-1905.
 """
 thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CDS(thomas_rule, u0, [b], thomas_jacob)
-labyrinth(u0 = [1.0, 0, 0]) = CDS(thomas_rule, u0, [0.0], thomas_jacob)
+labyrinth(u0 = [1.0, 0, 0]) = CDS(thomas_rule, u0, [0.0])
 
 function thomas_rule(u, p, t)
     x,y,z = u
@@ -801,9 +801,7 @@ end
 function thomas_jacob(u, p, t)
     x,y,z = u
     b = p[1]
-    return @SMatrix [-b cos(y) 0;
-                     0 -b cos(z);
-                     cos(x) 0 -b]
+    return SMatrix{3,3}(-b, 0, cos(x), cos(y), -b, 0, 0, cos(z), -b)
 end
 
 """
