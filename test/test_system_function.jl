@@ -96,35 +96,40 @@ function test_dynamical_system(ds, u0, p0; idt, iip, test_trajectory = true, u0i
             if idt
                 reinit!(ds)
                 @test current_state(ds) == u0
-                X, t = trajectory(ds, 100)
+                X, t = trajectory(ds, 10)
                 @test X isa Dataset{dimension(ds), Float64}
                 @test X[1] == u0
                 @test X[2] == second_state
-                @test t == 0:1:100
-                @test length(X) == length(t) == 101
+                @test t == 0:1:10
+                @test length(X) == length(t) == 11
 
                 # Continue as is from current state:
-                Y, t = trajectory(ds, 100, nothing)
-                @test t[1] == 100
+                Y, t = trajectory(ds, 10, nothing)
+                @test t[1] == 10
                 @test Y[1] == X[end]
 
                 # obtain only first variable
-                Z, t = trajectory(ds, 100; save_idxs = [1])
-                @test size(Z) == (101, 1)
+                Z, t = trajectory(ds, 10; save_idxs = [1])
+                @test size(Z) == (11, 1)
                 @test Z[1][1] == u0[1]
             else
                 reinit!(ds)
                 @test current_state(ds) == u0
-                X, t = trajectory(ds, 100; Δt = 0.1)
+                X, t = trajectory(ds, 3; Δt = 0.1)
                 @test Base.step(t) == 0.1
                 @test t[1] == initial_time(ds)
                 @test X isa Dataset{dimension(ds), Float64}
                 @test X[1] == u0
 
                 prev_u0 = deepcopy(current_state(ds))
-                Y, t2 = trajectory(ds, 10, nothing; Δt = 1)
+                Y, t2 = trajectory(ds, 3, nothing; Δt = 1)
                 @test Y[1] ≈ prev_u0 atol=1e-6
                 @test t2[1] > t[end]
+
+                # obtain only first variable
+                Z, t = trajectory(ds, 3; save_idxs = [1], Δt = 1)
+                @test size(Z) == (4, 1)
+                @test Z[1][1] == u0[1]
             end
         end
         end
