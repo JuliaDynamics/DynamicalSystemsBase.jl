@@ -6,11 +6,6 @@ export DynamicalSystem, ContinuousTimeDynamicalSystem, DiscreteTimeDynamicalSyst
 
 `DynamicalSystem` is an abstract supertype encompassing all concrete implementations
 of what counts as a "dynamical system" in the DynamicalSystems.jl library.
-A common example of a concrete dynamical system is a set of ordinary differential equations
-```math
-\\frac{d\\vec{u}}{dt} = \\vec{f}(\\vec{u}, p, t)
-```
-that is implemented by the concrete type [`CoupledODEs`](@ref).
 
 **_All concrete implementations of `DynamicalSystem`
 can be iteratively evolved in time via the [`step!`](@ref) function._**
@@ -20,6 +15,8 @@ for implications this has on e.g., parallelization.
 
 `DynamicalSystem` is further separated into two abstract types:
 `ContinuousTimeDynamicalSystem, DiscreteTimeDynamicalSystem`.
+The simplest and most common concrete implementations of a `DynamicalSystem`
+are [`DeterministicIterativeMap`](@ref) or [`CoupledODEs`](@ref).
 
 ## Description
 
@@ -85,7 +82,7 @@ obtained, it can quieried or altered with the following functions.
 
 The main use of a concrete dynamical system instance is to provide it to downstream
 functions such as `lyapunovspectrum` from ChaosTools.jl or `basins_of_attraction`
-from Attractors.jl. so a typical user will likely not utilize directly the following API,
+from Attractors.jl. A typical user will likely not utilize directly the following API,
 unless when developing new algorithm implementations that use dynamical systems.
 
 ### API - information
@@ -297,13 +294,13 @@ end
 # API - step and reset
 ###########################################################################################
 """
-    step!(discrete_time_ds [, dt::Integer])
+    step!(ds::DiscreteTimeDynamicalSystem [, dt::Integer]) → ds
 
-Evolve the discrete time dynamical system for 1 or `dt` steps.
+Evolve and return the discrete time dynamical system for 1 or `dt` steps.
 
-    step!(continuous_time_ds, [, dt::Real [, stop_at_tdt]])
+    step!(ds::ContinuousTimeDynamicalSystem, [, dt::Real [, stop_at_tdt]]) → ds
 
-Evolve the continuous time dynamical system for one step of the integration routine.
+Evolve and return the continuous time dynamical system for one integration step.
 
 Alternative, if a `dt` is given, then `step!` the integrator until
 there is a temporal difference `≥ dt` (so, step _at least_ for `dt` time).
@@ -314,7 +311,7 @@ the integrator advances for exactly `dt` time.
 SciMLBase.step!(ds::DynamicalSystem, args...) = errormsg(ds)
 
 """
-    reinit!(ds::DynamicalSystem, u = initial_state(ds); kwargs...)
+    reinit!(ds::DynamicalSystem, u = initial_state(ds); kwargs...) → ds
 
 Reset the status of `ds`, so that it is as if it has be just initialized
 with initial state `u`. Practically every function of the ecosystem that evolves

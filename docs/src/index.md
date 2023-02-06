@@ -4,33 +4,75 @@
 DynamicalSystemsBase
 ```
 
-## The `DynamicalSystem` supertype
+## The `DynamicalSystem` API
 
 ```@docs
 DynamicalSystem
 ```
 
-## API for `DynamicalSystem`
-
-### Information
-
 ```@docs
-- [`current_state`](@ref)
-- [`initial_state`](@ref)
-- [`current_parameters`](@ref)
-- [`initial_parameters`](@ref)
-- [`isdeterministic`](@ref)
-- [`isdiscretetime`](@ref)
-- [`dynamic_rule`](@ref)
-- [`current_time`](@ref)
-- [`initial_time`](@ref)
-- [`isinplace`](@ref)
+current_state
+initial_state
+current_parameters
+initial_parameters
+isdeterministic
+isdiscretetime
+dynamic_rule
+current_time
+initial_time
+isinplace
 ```
 
-### Alteration
 ```@docs
-- [`reinit!`](@ref)
-- [`set_state!`](@ref)
-- [`set_parameter!`](@ref)
-- [`set_parameters!`](@ref)
+reinit!(::DynamicalSystem, args...; kwargs...)
+set_state!
+set_parameter!
+set_parameters!
+```
+
+## Time evolution
+```@docs
+step!(::DynamicalSystem, args...; kwargs...)
+trajectory
+```
+
+## `DeterministicIterativeMap`
+```@docs
+DeterministicIterativeMap
+```
+
+## `CoupledODEs`
+```@docs
+CoupledODEs
+```
+
+## `StroboscopicMap`
+```@docs
+StroboscopicMap
+```
+
+## `PoincareMap`
+```@docs
+PoincareMap
+current_crossing_time
+poincaresos
+```
+
+## `ProjectedDynamicalSystem`
+```@docs
+ProjectedDynamicalSystem
+```
+
+## `ParallelDynamicalSystem`
+```@docs
+ParallelDynamicalSystem
+```
+
+## `TangentDynamicalSystem`
+```@docs
+AnalyticRuleSystem
+TangentDynamicalSystem
+current_deviations
+set_deviations!
+orthonormal
 ```

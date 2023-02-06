@@ -1,5 +1,4 @@
-export TangentDynamicalSystem
-export current_deviations, set_deviations!
+export TangentDynamicalSystem, current_deviations, set_deviations!
 using LinearAlgebra: mul!, diagm
 
 # Implementation: the state and deviation vectors are combined in a matrix.

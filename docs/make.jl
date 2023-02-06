@@ -33,10 +33,12 @@ ENV["JULIA_DEBUG"] = "Documenter"
 DYNAMICALSYSTEMSBASE_PAGES = [
     "index.md",
 ]
+using DynamicalSystemsBase.SciMLBase
+
 include("style.jl")
 
 makedocs(
-    modules = [DynamicalSystemsBase, StateSpaceSets],
+    modules = [DynamicalSystemsBase, SciMLBase, StateSpaceSets],
     format = Documenter.HTML(
         prettyurls = CI,
         assets = [
