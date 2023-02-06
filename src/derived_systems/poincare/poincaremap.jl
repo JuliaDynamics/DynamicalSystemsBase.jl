@@ -19,10 +19,26 @@ Poincaré surface of section, which is defined by the `plane` argument.
 
 See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref), [`produce_orbitdiagram`](@ref).
 
+## Keyword arguments
+
+* `direction = -1`: Only crossings with `sign(direction)` are considered to belong to
+  the surface of section. Positive direction means going from less than ``b``
+  to greater than ``b``.
+* `u0 = nothing`: Specify an initial state.
+* `rootkw = (xrtol = 1e-6, atol = 1e-6)`: A `NamedTuple` of keyword arguments
+  passed to `find_zero` from [Roots.jl](https://github.com/JuliaMath/Roots.jl).
+* `Tmax = 1e3`: The argument `Tmax` exists so that the integrator can terminate instead
+  of being evolved for infinite time, to avoid cases where iteration would continue
+  forever for ill-defined hyperplanes or for convergence to fixed points,
+  where the trajectory would never cross again the hyperplane.
+  If during one `step!` the system has been evolved for more than `Tmax`,
+  then `step!(pmap)` will terminate and error.
+
 ## Description
 
 The Poincaré surface of section is defined as sequential transversal crossings a trajectory
-has with any arbitrary manifold, but for `PoincareMap` the manifold must be a hyperplane.
+has with any arbitrary manifold, but here the manifold must be a hyperplane.
+`PoincareMap` iterates over the crossings of the section.
 
 If the state of `ds` is ``\\mathbf{u} = (u_1, \\ldots, u_D)`` then the
 equation defining a hyperplane is
@@ -54,20 +70,6 @@ and root finding from Roots.jl, to create a high accuracy estimate of the sectio
 4. For the special case of `plane` being a `Tuple{Int, <:Real}`, a special `reinit!` method
    is allowed with input state of length `D-1` instead of `D`, i.e., a reduced state already
    on the hyperplane that is then converted into the `D` dimensional state.
-
-## Keyword arguments
-
-* `direction = -1`: Only crossings with `sign(direction)` are considered to belong to
-  the surface of section. Positive direction means going from less than ``b``
-  to greater than ``b``.
-* `u0 = nothing`: Specify an initial state.
-* `rootkw = (xrtol = 1e-6, atol = 1e-6)`: A `NamedTuple` of keyword arguments
-  passed to `find_zero` from [Roots.jl](https://github.com/JuliaMath/Roots.jl).
-* `Tmax = 1e3`: The argument `Tmax` exists so that the integrator can terminate instead
-  of being evolved for infinite time, to avoid cases where iteration would continue
-  forever for ill-defined hyperplanes or for convergence to fixed points.
-  If during one `step!` the system has been evolved for more than `Tmax`,
-  then `step!(pmap)` will terminate and error.
 
 ## Example
 
