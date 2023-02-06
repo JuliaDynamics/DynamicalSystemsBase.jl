@@ -47,8 +47,8 @@ These two are evolved in parallel according to
 
 ```math
 \\begin{array}{rcl}
-\\dot{\\vec{x}}&=& f(\\vec{x}) \\\\
-\\dot{Y} &=& J_f(\\vec{x}) \\cdot Y
+\\frac{d\\vec{x}}{dt} &=& f(\\vec{x}) \\\\
+\\frac{dY}{dt} &=& J_f(\\vec{x}) \\cdot Y
 \\end{array}
 \\quad \\mathrm{or}\\quad
 \\begin{array}{rcl}
@@ -209,6 +209,12 @@ current_state(t::TangentDynamicalSystem{true}) = view(current_state(t.ds), :, 1)
 current_state(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 1]
 initial_state(t::TangentDynamicalSystem{true}) = view(initial_state(t.ds), :, 1)
 initial_state(t::TangentDynamicalSystem{false}) = initial_state(t.ds)[:, 1]
+
+"""
+    current_deviations(tands::TangentDynamicalSystem)
+
+Return the deviation vectors of `tands` as a matrix with each column a vector.
+"""
 current_deviations(t::TangentDynamicalSystem{true}) = @view(current_state(t.ds)[:, 2:end])
 current_deviations(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 2:end]
 
@@ -225,6 +231,11 @@ function set_state!(t::TangentDynamicalSystem{false}, u)
     set_state!(t.ds, U)
 end
 
+"""
+    set_deviations!(tands::TangentDynamicalSystem, Q)
+
+Set the deviation vectors of `tands` to be `Q`, a matrix with each column a vector.
+"""
 function set_deviations!(t::TangentDynamicalSystem{true}, Q)
     current_deviations(t) .= Q
     set_state!(t.ds, current_state(t.ds))

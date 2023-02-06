@@ -111,7 +111,18 @@ end
 dynamic_rule(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.original_f
 
 # States IO for vector of vectors state
+"""
+    current_states(pds::ParallelDynamicalSystem)
+
+Return an iterator over the parallel states of `pds`.
+"""
 current_states(pdsa::ParallelDynamicalSystemAnalytic) = current_state(pdsa.ds)
+
+"""
+    initial_states(pds::ParallelDynamicalSystem)
+
+Return an iterator over the initial parallel states of `pds`.
+"""
 initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
 function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u, i::Int = 1)
     current_states(pdsa)[i] = u

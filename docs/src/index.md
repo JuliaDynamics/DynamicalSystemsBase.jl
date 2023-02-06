@@ -20,7 +20,7 @@ isdiscretetime
 dynamic_rule
 current_time
 initial_time
-isinplace
+isinplace(::DynamicalSystem)
 ```
 
 ```@docs
@@ -34,11 +34,12 @@ set_parameters!
 ```@docs
 step!(::DynamicalSystem, args...; kwargs...)
 trajectory
+Dataset
 ```
 
-## `DeterministicIterativeMap`
+## `DeterministicIteratedMap`
 ```@docs
-DeterministicIterativeMap
+DeterministicIteratedMap
 ```
 
 ## `CoupledODEs`
@@ -66,6 +67,8 @@ ProjectedDynamicalSystem
 ## `ParallelDynamicalSystem`
 ```@docs
 ParallelDynamicalSystem
+initial_states
+current_states
 ```
 
 ## `TangentDynamicalSystem`

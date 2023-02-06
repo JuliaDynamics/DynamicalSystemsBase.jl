@@ -16,7 +16,7 @@ for implications this has on e.g., parallelization.
 `DynamicalSystem` is further separated into two abstract types:
 `ContinuousTimeDynamicalSystem, DiscreteTimeDynamicalSystem`.
 The simplest and most common concrete implementations of a `DynamicalSystem`
-are [`DeterministicIterativeMap`](@ref) or [`CoupledODEs`](@ref).
+are [`DeterministicIteratedMap`](@ref) or [`CoupledODEs`](@ref).
 
 ## Description
 
@@ -296,17 +296,17 @@ end
 """
     step!(ds::DiscreteTimeDynamicalSystem [, dt::Integer]) → ds
 
-Evolve and return the discrete time dynamical system for 1 or `dt` steps.
+Evolve the discrete time dynamical system for 1 or `dt` steps.
 
     step!(ds::ContinuousTimeDynamicalSystem, [, dt::Real [, stop_at_tdt]]) → ds
 
-Evolve and return the continuous time dynamical system for one integration step.
+Evolve the continuous time dynamical system for one integration step.
 
-Alternative, if a `dt` is given, then `step!` the integrator until
+Alternative, if a `dt` is given, then progress the integration until
 there is a temporal difference `≥ dt` (so, step _at least_ for `dt` time).
 
 When `true` is passed to the optional third argument,
-the integrator advances for exactly `dt` time.
+the integration advances for exactly `dt` time.
 """
 SciMLBase.step!(ds::DynamicalSystem, args...) = errormsg(ds)
 

@@ -141,6 +141,12 @@ for f in (:initial_state, :current_parameters, :initial_parameters, :initial_tim
 end
 current_time(pmap::PoincareMap) = pmap.t[]
 current_state(pmap::PoincareMap) = pmap.state_on_plane
+
+"""
+    current_crossing_time(pmap::PoincareMap) → tcross
+
+Return the time of the latest crossing of the Poincare section.
+"""
 current_crossing_time(pmap::PoincareMap) = pmap.tcross
 
 function SciMLBase.step!(pmap::PoincareMap)
