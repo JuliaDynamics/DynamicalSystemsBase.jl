@@ -13,7 +13,7 @@ function Base.show(io::IO, ds::DynamicalSystem)
     descriptors = [
         "deterministic" => isdeterministic(ds),
         "discrete time" => isdiscretetime(ds),
-        "is in place" => isinplace(ds),
+        "in-place" => isinplace(ds),
         "dynamic rule" => rulestring(dynamic_rule(ds)),
     ]
     append!(descriptors, additional_details(ds))

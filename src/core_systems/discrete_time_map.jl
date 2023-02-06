@@ -6,7 +6,7 @@ export DeterministicIteratedMap, DiscreteDynamicalSystem
 ###########################################################################################
 """
     DeterministicIteratedMap <: DynamicalSystem
-    DeterministicIteratedMap(f, u0, p = nothing, t0 = 0)
+    DeterministicIteratedMap(f, u0, p = nothing; t0 = 0)
 
 A deterministic discrete time dynamical system defined by an iterated map as follows:
 ```math
@@ -38,7 +38,7 @@ This was the name these systems had before DynamicalSystems.jl v3.0.
 """
 const DiscreteDynamicalSystem = DeterministicIteratedMap
 
-function DeterministicIteratedMap(f, u0, p = nothing, t0::Integer = 0)
+function DeterministicIteratedMap(f, u0, p = nothing; t0::Integer = 0)
     IIP = isinplace(f, 4) # from SciMLBase
     s = correct_state(Val{IIP}(), u0)
     S = typeof(s)

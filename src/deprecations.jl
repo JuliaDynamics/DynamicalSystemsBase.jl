@@ -1,7 +1,10 @@
-DIFFEQ_DEP_WARN = """
-Direct propagation of keyword arguments to DifferentialEquations.jl is deprecated.
-From now on pass any DiffEq-related keywords as a `NamedTuple` using the
-explicit keyword `diffeq` instead.
-"""
-
-_set_parameter!(p, values) = (p .= values)
+for F in (:DiscreteDynamicalSystem, :ContinuousDynamicalSystem)
+    @eval function $(F)(f, u0, p, J::Function)
+        throw(ArgumentError("""
+        Things have changed in DynamicalSystems.jl and now you cannot provide
+        a Jacobian function as a 4th argument to $(F). You have to
+        first initialize $(F) without a Jacobian, and then pass the initialized
+        system and Jacobian into a `TangentDynamicalSystem`.
+        """))
+    end
+end

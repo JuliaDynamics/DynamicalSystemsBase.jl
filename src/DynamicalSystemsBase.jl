@@ -8,6 +8,7 @@ module DynamicalSystemsBase
 
 using Reexport
 @reexport using StateSpaceSets
+export Systems
 
 import SciMLBase
 import SciMLBase: reinit!, step!, isinplace
@@ -29,7 +30,9 @@ include("derived_systems/tangent_space.jl")
 include("derived_systems/poincare/poincaremap.jl")
 include("derived_systems/projected_system.jl")
 
-# include("deprecations.jl")
+include("predefined/famous_systems.jl")
+
+include("deprecations.jl")
 
 # include("core/dynamicalsystem.jl")
 # include("core/create_dynamics.jl")

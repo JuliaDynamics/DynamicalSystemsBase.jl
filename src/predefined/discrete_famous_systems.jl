@@ -1,3 +1,5 @@
+const DDS = DynamicalSystemsBase.DiscreteDynamicalSystem
+
 """
 ```julia
 towel(u0 = [0.085, -0.121, 0.075])
@@ -21,44 +23,19 @@ Default values are the ones used in the original paper.
 [1] : O. E. Rössler, Phys. Lett. **71A**, pp 155 (1979)
 """
 function towel(u0=[0.085, -0.121, 0.075])
-    return DDS(rule_towel, u0, nothing, jacob_towel)
+    return DDS(towel_rule, u0, nothing)
 end# should result in lyapunovs: [0.432207,0.378834,-3.74638]
-function rule_towel(x, p, n)
+function towel_rule(x, p, n)
     @inbounds x1, x2, x3 = x[1], x[2], x[3]
     SVector( 3.8*x1*(1-x1) - 0.05*(x2+0.35)*(1-2*x3),
     0.1*( (x2+0.35)*(1-2*x3) - 1 )*(1 - 1.9*x1),
     3.78*x3*(1-x3)+0.2*x2 )
 end
-function jacob_towel(x, p, n)
+function towel_jacob(x, p, n)
     @SMatrix [3.8*(1 - 2x[1]) -0.05*(1-2x[3]) 0.1*(x[2] + 0.35);
     -0.19((x[2] + 0.35)*(1-2x[3]) - 1)  0.1*(1-2x[3])*(1-1.9x[1])  -0.2*(x[2] + 0.35)*(1-1.9x[1]);
     0.0  0.2  3.78(1-2x[3]) ]
 end
-
-function rule_towel_iip(dx, x, p, n)
-    @inbounds begin
-        x1, x2, x3 = x[1], x[2], x[3]
-        dx[1] = 3.8*x1*(1-x1) - 0.05*(x2+0.35)*(1-2*x3)
-        dx[2] = 0.1*( (x2+0.35)*(1-2*x3) - 1 )*(1 - 1.9*x1)
-        dx[3] = 3.78*x3*(1-x3)+0.2*x2
-    end
-end
-function jacob_towel_iip(J, x, p, n)
-    @inbounds begin
-        J[1,1] = 3.8*(1 - 2x[1])
-        J[2,1] = -0.19((x[2] + 0.35)*(1-2x[3]) - 1)
-        J[3,1] = 0.0
-        J[1,2] = -0.05*(1-2x[3])
-        J[2,2] =  0.1*(1-2x[3])*(1-1.9x[1])
-        J[3,2] = 0.2
-        J[1,3] = 0.1*(x[2] + 0.35)
-        J[2,3] = -0.2*(x[2] + 0.35)*(1-1.9x[1])
-        J[3,3] = 3.78(1-2x[3])
-    end
-end
-
-
-
 
 """
 ```julia
@@ -94,7 +71,7 @@ Nuclear Physics, Novosibirsk (1969)
 [2] : J. M. Greene, J. Math. Phys. **20**, pp 1183 (1979)
 """
 function standardmap(u0=[0.001245, 0.00875]; k = 0.971635)
-    return DDS(standardmap_rule, u0, [k], standardmap_jacob)
+    return DDS(standardmap_rule, u0, [k])
 end
 @inbounds function standardmap_rule(x, par, n)
     theta = x[1]; p = x[2]
@@ -109,6 +86,7 @@ end
 @inbounds standardmap_jacob(x, p, n) =
 @SMatrix [1 + p[1]*cos(x[1])    1;
           p[1]*cos(x[1])        1]
+
 
 """
 ```julia
@@ -220,9 +198,9 @@ function's documentation string.
 [1] : M. Hénon, Commun.Math. Phys. **50**, pp 69 (1976)
 """
 function henon(u0=zeros(2); a = 1.4, b = 0.3)
-    return DDS(hoop, u0, [a,b], hoop_jac)
+    return DDS(henon_rule, u0, [a,b], hoop_jac)
 end # should give lyapunov exponents [0.4189, -1.6229]
-hoop(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
 hoop_jac(x, p, n) = @SMatrix [-2*p[1]*x[1] 1.0; p[2] 0.0]
 
 function henon_iip(u0=zeros(2); a = 1.4, b = 0.3)

@@ -15,11 +15,11 @@ So, for the above example we have `J = Systems.lorenz_jacob`.
 """
 module Systems
 using DynamicalSystemsBase
+# For `@SMatrix`
+using StaticArrays
 
-using DynamicalSystemsBase: DDS
 include("discrete_famous_systems.jl")
 
-using DynamicalSystemsBase: CDS
 include("continuous_famous_systems.jl")
 
 end# Systems module
