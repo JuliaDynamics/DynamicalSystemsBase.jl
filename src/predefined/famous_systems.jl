@@ -1,10 +1,10 @@
 """
 Submodule of the module `DynamicalSystemsBase`, which contains pre-defined
-famous systems. This is provided purely as a convenience.
+famous dynamical systems. This is provided purely as a convenience.
 Nothing here is tested, nor guaranteed to be stable in future versions.
 
 Predefined systems exist in the `Systems` submodule in the form of functions that
-return a `DynamicalSystem`. They are accessed like:
+return a `DynamicalSystem` instance. They are accessed like:
 ```julia
 ds = Systems.lorenz(u0; ρ = 32.0)
 ```
