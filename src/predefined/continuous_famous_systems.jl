@@ -25,10 +25,10 @@ function's documentation string.
 [^Lorenz1963]: E. N. Lorenz, J. atmos. Sci. **20**, pp 130 (1963)
 """
 function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
-    return CDS(loop, u0, [σ, ρ, β], loop_jac)
+    return CDS(loop, u0, [σ, ρ, β])
 end
 const lorenz63 = lorenz
-function loop(u, p, t)
+function lorenz_rule(u, p, t)
     @inbounds begin
         σ = p[1]; ρ = p[2]; β = p[3]
         du1 = σ*(u[2]-u[1])
@@ -37,37 +37,13 @@ function loop(u, p, t)
         return SVector{3}(du1, du2, du3)
     end
 end
-function loop_jac(u, p, t)
+function lorenz_jacob(u, p, t)
     @inbounds begin
         σ, ρ, β = p
-        J = @SMatrix [-σ  σ  0;
-        ρ - u[3]  (-1)  (-u[1]);
-        u[2]   u[1]  -β]
-        return J
+        return SMatrix{3,3}(-σ, ρ - u[3], u[2], σ, -1, u[1], 0, -u[1], -β)
     end
 end
 
-function lorenz_iip(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
-    return CDS(liip, u0, [σ, ρ, β], liip_jac)
-end
-function liip(du, u, p, t)
-    @inbounds begin
-        σ = p[1]; ρ = p[2]; β = p[3]
-        du[1] = σ*(u[2]-u[1])
-        du[2] = u[1]*(ρ-u[3]) - u[2]
-        du[3] = u[1]*u[2] - β*u[3]
-        return nothing
-    end
-end
-function liip_jac(J, u, p, t)
-    @inbounds begin
-    σ, ρ, β = p
-    J[1,1] = -σ; J[1, 2] = σ; J[1,3] = 0
-    J[2,1] = ρ - u[3]; J[2,2] = -1; J[2,3] = -u[1]
-    J[3,1] = u[2]; J[3,2] = u[1]; J[3,3] = -β
-    return nothing
-    end
-end
 
 
 """
@@ -100,8 +76,8 @@ function's documentation string.
 
 [^Chua1992]: Chua, Leon O. "The genesis of Chua's circuit", 1992.
 
-[^Chua2007]: 
-    [Leon O. Chua (2007) "Chua circuit", Scholarpedia, 
+[^Chua2007]:
+    [Leon O. Chua (2007) "Chua circuit", Scholarpedia,
     2(10):1488.](http://www.scholarpedia.org/article/Chua_circuit)
 
 """
@@ -241,9 +217,9 @@ end
 \\end{aligned}
 ```
 
-The Hénon–Heiles system [^HénonHeiles1964] is a conservative dynamical system and was introduced as a 
+The Hénon–Heiles system [^HénonHeiles1964] is a conservative dynamical system and was introduced as a
 simplification of the motion of a star around a galactic center. It was originally intended
-to study the existence of a "third integral of motion" 
+to study the existence of a "third integral of motion"
 (which would make this 4D system integrable).
 In that search, the authors encountered chaos, as the third integral existed
 for only but a few initial conditions.
@@ -326,7 +302,7 @@ and presents a nontrivial dependence of chaoticity with the increase of energy [
 The default initial condition is chaotic.
 
 [^Eisenberg1975]:
-    Eisenberg, J.M., & Greiner, W., Nuclear theory 2 rev ed. 
+    Eisenberg, J.M., & Greiner, W., Nuclear theory 2 rev ed.
     Netherlands: North-Holland pp 80 (1975)
 
 [^Baran1998]:
@@ -584,7 +560,7 @@ The magnetic field is also normalized such that for value `B = 1` the cyclotron
 diameter is 1.
 
 [^Datseris2019]:
-    G. Datseris *et al*, 
+    G. Datseris *et al*,
     [New Journal of Physics 2019](https://iopscience.iop.org/article/10.1088/1367-2630/ab19cc/meta)
 """
 function antidots(u0 = [0.5, 0.5, 0.25, 0.25];
@@ -1166,7 +1142,7 @@ oscillations. Setting `\\mu=8.53` generates chaotic oscillations.
 
 [^Kanamaru2007]: Takashi Kanamaru (2007) "Van der Pol oscillator", Scholarpedia, 2(1):2202.
 
-[^Strogatz2015]: 
+[^Strogatz2015]:
     Steven H. Strogatz (2015) "Nonlinear dynamics and chaos:
     with applications to physics, biology, chemistry, and engineering",
     Boulder, CO :Westview Press, a member of the Perseus Books Group.
@@ -1212,14 +1188,14 @@ and economics [^Hoppensteadt2006], and is not to be confused with the
 Competitive Lotka-Volterra model, which describes competitive interactions between species.
 
 The `x` variable describes the number of prey, while `y` describes the number of predator.
-The default parameters are taken from [^Weisstein], which lead to typical periodic 
+The default parameters are taken from [^Weisstein], which lead to typical periodic
 oscillations.
 
 [^Hoppensteadt2006]:
     Frank Hoppensteadt (2006) "Predator-prey model", Scholarpedia, 1(10):1563.
 
 [^Weisstein]:
-    Weisstein, Eric W., "Lotka-Volterra Equations." 
+    Weisstein, Eric W., "Lotka-Volterra Equations."
     From MathWorld--A Wolfram Web Resource.
     https://mathworld.wolfram.com/Lotka-VolterraEquations.html
 """
@@ -1256,16 +1232,16 @@ hindmarshrose(u0=[-1.0, 0.0, 0.0]; a=1, b=3, c=1, d=5, r=0.001, s=4, xr=-8/5, I=
 ```
 
 The Hindmarsh-Rose model reproduces the bursting behavior of a neuron's membrane potential,
-characterized by a fast sequence of spikes followed by a quiescent period. 
+characterized by a fast sequence of spikes followed by a quiescent period.
 The `x` variable describes the membane potential, whose behavior can be controlled by
 the applied current `I`; the `y` variable describes the sodium and potassium ionic currents,
 and `z` describes an adaptation current [^HindmarshRose1984].
 
-The default parameter values are taken from [^HindmarshRose1984], chosen to lead to 
+The default parameter values are taken from [^HindmarshRose1984], chosen to lead to
 periodic bursting.
 
 [^HindmarshRose1984]:
-    J. L. Hindmarsh and R. M. Rose (1984) 
+    J. L. Hindmarsh and R. M. Rose (1984)
     "A model of neuronal bursting using three coupled first order differential equations",
     Proc. R. Soc. Lond. B 221, 87-102.
 """
@@ -1429,7 +1405,7 @@ This 5 dimensional (time-forced) dynamical system was used by Ott et al [^OttRid
 to analyze *riddled basins of attraction*. This means nearby any point of a basin of attraction
 of an attractor A there is a point of the basin of attraction of another attractor B.
 
-[^OttRiddled2014]: 
+[^OttRiddled2014]:
     Ott. et al., [The transition to chaotic attractors with riddled basins](http://yorke.umd.edu/Yorke_papers_most_cited_and_post2000/1994_04_Ott_Alexander_Kan_Sommerer_PhysicaD_riddled%20basins.pdf)
 """
 function riddled_basins(u0=[0.5, 0.6, 0, 0];
@@ -1599,7 +1575,7 @@ A mechanical system consisting of two swinging weights connected by ropes and pu
 This is only chaotic when `m2` is sufficiently larger than `m1`, and there are nonzero initial
 momenta [^Tufillaro1984].
 
-[^Tufillaro1984]: 
+[^Tufillaro1984]:
     Tufillaro, Nicholas B.; Abbott, Tyler A.; Griffiths, David J. (1984).
     Swinging Atwood's Machine. American Journal of Physics. 52 (10): 895--903.
 """
@@ -1622,7 +1598,7 @@ end
 
 """
 ```julia
-guckenheimer_holmes(u0=[-0.55582369,0.05181624,0.37766104]; 
+guckenheimer_holmes(u0=[-0.55582369,0.05181624,0.37766104];
     a = 0.4,
     b = 20.25,
     c = 3,
@@ -1644,7 +1620,7 @@ A nonlinear oscillator [^GuckenheimerHolmes1983].
     Nonlinear oscillations, dynamical systems, and bifurcations of vector fields.
     Vol. 42. Springer Science & Business Media.
 """
-function guckenheimer_holmes(u0=[-0.55582369,0.05181624,0.37766104]; 
+function guckenheimer_holmes(u0=[-0.55582369,0.05181624,0.37766104];
     a = 0.4,
     b = 20.25,
     c = 3,
