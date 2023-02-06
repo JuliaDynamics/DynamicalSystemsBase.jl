@@ -89,7 +89,7 @@ for (ds, idt, iip) in zip(
         (true, true, false, false), (false, true, false, true),
     )
 
-    @testset "parallel, idt=$(idt), iip=$(iip)" begin
+    @testset "idt=$(idt), iip=$(iip)" begin
         p0 = idt ? p0_disc : p0_cont
         test_dynamical_system(ds, u0, p0; idt, iip = true, test_trajectory = false)
         parallel_integration_tests(ds)

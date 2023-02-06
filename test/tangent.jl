@@ -50,7 +50,7 @@ function tangent_space_test(tands, lyapunovs)
 end
 
 # Allright, unfortunately here we have to test a ridiculous amount of multiplicity...
-@testset "tangent IDT=$(IDT), IIP=$(IIP), IAD=$(IAD)" for IDT in (true, false), IIP in (false, true), IAD in (false, true)
+@testset "IDT=$(IDT), IIP=$(IIP), IAD=$(IAD)" for IDT in (true, false), IIP in (false, true), IAD in (false, true)
     SystemType = IDT ? DeterministicIteratedMap : CoupledODEs
     rule = IIP ? trivial_rule_iip : trivial_rule
     p0 = IDT ? p0_disc : p0_cont
