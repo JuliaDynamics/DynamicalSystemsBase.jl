@@ -7,7 +7,7 @@ export StroboscopicMap
 	StroboscopicMap <: DiscreteTimeDynamicalSystem
 	StroboscopicMap(ds::CoupledODEs, T::Real) → smap
 
-A discrete time autonomous dynamical system that produces iterations of a time-dependent
+A discrete time dynamical system that produces iterations of a time-dependent
 (non-autonomous) [`CoupledODEs`](@ref) system exactly over a period `T`.
 This is known as a stroboscopic map.
 The second signature creates a [`CoupledODEs`](@ref) and calls the first

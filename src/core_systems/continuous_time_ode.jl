@@ -59,6 +59,7 @@ The convenience constructor `CoupledODEs(prob::ODEProblem, diffeq)` is also avai
 
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
 The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
+The convenience syntax `ODEProblem(ds::CoupledODEs, tspan = (t0, Inf))` is available.
 """
 struct CoupledODEs{IIP, D, I, P} <: ContinuousTimeDynamicalSystem
     integ::I
@@ -94,6 +95,10 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs..
         save_start = false, save_end = false, save_everystep = false
     )
     return CoupledODEs{IIP, D, typeof(integ), P}(integ, deepcopy(prob.p), diffeq)
+end
+
+function SciMLBase.ODEProblem(ds::CoupledODEs{IIP}, tspan = (initial_time(ds), Inf)) where {IIP}
+    ODEProblem{IIP}(dynamic_rule(ds), current_state(ds), tspan, current_parameters(ds))
 end
 
 ###########################################################################################
