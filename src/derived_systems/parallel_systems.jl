@@ -47,7 +47,7 @@ end
 function ParallelDynamicalSystem(ds::AnalyticRuleSystem, states)
     f, st = parallel_rule(ds, states)
     if ds isa DeterministicIteratedMap
-        pds = DeterministicIteratedMap(f, st, current_parameters(ds), initial_time(ds))
+        pds = DeterministicIteratedMap(f, st, current_parameters(ds); t0 = initial_time(ds))
     elseif ds isa CoupledODEs
         T = eltype(first(st))
         prob = ODEProblem{true}(f, st, (T(initial_time(ds)), T(Inf)), current_parameters(ds))
