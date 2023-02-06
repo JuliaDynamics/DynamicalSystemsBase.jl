@@ -376,7 +376,7 @@ function's documentation string.
 function duffing(u0 = [0.1, 0.25]; ω = 2.2, f = 27.0, d = 0.2, β = 1)
     J = zeros(eltype(u0), 2, 2)
     J[1,2] = 1
-    return CDS(duffing_rule, u0, [ω, f, d, β], duffing_jacob, J)
+    return CDS(duffing_rule, u0, [ω, f, d, β])
 end
 @inbounds function duffing_rule(x, p, t)
     ω, f, d, β = p
@@ -386,8 +386,7 @@ end
 end
 @inbounds function duffing_jacob(u, p, t)
     ω, f, d, β = p
-    return @SMatrix [0 1 ;
-    (-β - 3u[1]^2) -d]
+    return SMatrix{2,2}(0, (-β - 3u[1]^2), 1, -d)
 end
 
 """
