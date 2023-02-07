@@ -82,8 +82,8 @@ next_state_on_psos = current_state(pmap)
 ```
 
 [^DatserisParlitz2022]:
-    Datseris & Parlitz *Nonlinear Dynamics: A Concise Introduction Interlaced with Code*,
-    [Springer, Undergra. Lect. Notes. In Physics](https://doi.org/10.1007/978-3-030-91032-7)
+    Datseris & Parlitz 2022, _Nonlinear Dynamics: A Concise Introduction Interlaced with Code_,
+    [Springer Nature, Undergrad. Lect. Notes In Physics](https://doi.org/10.1007/978-3-030-91032-7)
 """
 mutable struct PoincareMap{I<:ContinuousTimeDynamicalSystem, F, P, R, V} <: DiscreteTimeDynamicalSystem
 	ds::I

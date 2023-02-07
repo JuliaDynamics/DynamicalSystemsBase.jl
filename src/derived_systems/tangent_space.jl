@@ -38,6 +38,7 @@ interface with the following adjustments:
   It must hold that `size(Q, 1) == dimension(ds)`.
   You can use [`orthonormal`](@ref) for random orthonormal vectors.
   By default `k = dimension(ds)` is used.
+- `u0 = current_state(ds)`: Starting state.
 - `J` and `J0`: See section "Jacobian" below.
 
 ## Description
@@ -95,7 +96,7 @@ additional_details(tands::TangentDynamicalSystem) = [
 
 function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
         J = nothing, k::Int = dimension(ds), Q0 = diagm(ones(dimension(ds)))[:, 1:k],
-        J0 = zeros(dimension(ds), dimension(ds)),
+        J0 = zeros(dimension(ds), dimension(ds)), u0 = current_state(ds),
     ) where {IIP}
 
     # Valid input checks:
@@ -108,7 +109,7 @@ function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
     size(J0) ≠ (D, D) && throw(ArgumentError("size(J0) ≠ (dimension(ds), dimension(ds))"))
 
     # Create jacobian, tangent rule, initial state
-    u0_correct = correct_state(Val{IIP}(), current_state(ds))
+    u0_correct = correct_state(Val{IIP}(), u0)
     Q0_correct = correct_matrix_type(Val{IIP}(), Q0)
     newstate = hcat(u0_correct, Q0_correct)
     newrule = tangent_rule(f, J, J0, Val{IIP}(), Val{k}(), u0_correct)
