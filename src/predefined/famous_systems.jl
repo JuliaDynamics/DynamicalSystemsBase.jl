@@ -18,8 +18,11 @@ using DynamicalSystemsBase
 # For `@SMatrix`
 using StaticArrays
 
+
+const DDS = DeterministicIteratedMap
 include("discrete_famous_systems.jl")
 
+const CDS = CoupledODEs
 include("continuous_famous_systems.jl")
 
 end# Systems module

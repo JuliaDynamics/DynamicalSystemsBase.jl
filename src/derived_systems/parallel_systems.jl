@@ -86,7 +86,7 @@ function parallel_rule(ds::DeterministicIteratedMap{true}, states)
     return parallel_f, st
 end
 
-# In place, uses matrix with each column the
+# In place, uses matrix with each column a parallel state
 function parallel_rule(ds::CoupledODEs{true}, states)
     st = Matrix(hcat(states...))
     f = dynamic_rule(ds)

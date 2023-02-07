@@ -25,7 +25,7 @@ function's documentation string.
 [^Lorenz1963]: E. N. Lorenz, J. atmos. Sci. **20**, pp 130 (1963)
 """
 function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
-    return CDS(loop, u0, [σ, ρ, β])
+    return CDS(lorenz_rule, u0, [σ, ρ, β])
 end
 const lorenz63 = lorenz
 function lorenz_rule(u, p, t)
