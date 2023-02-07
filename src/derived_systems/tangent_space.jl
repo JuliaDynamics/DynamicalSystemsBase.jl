@@ -217,7 +217,11 @@ initial_state(t::TangentDynamicalSystem{false}) = initial_state(t.ds)[:, 1]
 Return the deviation vectors of `tands` as a matrix with each column a vector.
 """
 current_deviations(t::TangentDynamicalSystem{true}) = @view(current_state(t.ds)[:, 2:end])
-current_deviations(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 2:end]
+function current_deviations(t::TangentDynamicalSystem{false})
+    # state is an SMatrix
+    U = current_state(t.ds)
+    return U[:, t.ds.f.ws] # from TangentOOP
+end
 
 # Dedicated step so that it retunrs the system itself
 SciMLBase.step!(tands::TangentDynamicalSystem, args...) = (step!(tands.ds, args...); tands)
