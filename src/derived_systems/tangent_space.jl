@@ -89,7 +89,8 @@ struct TangentDynamicalSystem{IIP, D} <: ParallelDynamicalSystem
 end
 
 additional_details(tands::TangentDynamicalSystem) = [
-    "jacobian" => rulestring(tands.J),
+    "jacobian" => isnothing(tands.J) ? "ForwardDiff" : rulestring(tands.J),
+    "deviation vectors" => size(current_deviations(tands), 2),
 ]
 
 # it is practically identical to `TangentDynamicalSystem`
