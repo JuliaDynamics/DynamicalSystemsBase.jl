@@ -1,10 +1,11 @@
-"""
-Definition of `DynamicalSystem` as well as all integrators
-used in the ecosystem of DynamicalSystems.jl.
-
-Also contains predefined well-known systems.
-"""
 module DynamicalSystemsBase
+
+# Use the README as the module docs
+@doc let
+    path = joinpath(dirname(@__DIR__), "README.md")
+    include_dependency(path)
+    read(path, String)
+end DynamicalSystemsBase
 
 using Reexport
 @reexport using StateSpaceSets
