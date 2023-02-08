@@ -14,10 +14,10 @@ using LinearAlgebra: mul!, diagm
 
 """
     TangentDynamicalSystem <: DynamicalSystem
-    TangentDynamicalSystem(ds::AnalyticRuleSystem; kwargs...)
+    TangentDynamicalSystem(ds::CoreAnalyticSystem; kwargs...)
 
 A dynamical system that bundles the evolution of `ds`
-(which must be an [`AnalyticRuleSystem`](@ref)) and `k` deviation vectors
+(which must be an [`CoreAnalyticSystem`](@ref)) and `k` deviation vectors
 that are evolved according to the _dynamics in the tangent space_
 (also called linearized dynamics or the tangent dynamics).
 
@@ -95,7 +95,7 @@ additional_details(tands::TangentDynamicalSystem) = [
 
 # it is practically identical to `TangentDynamicalSystem`
 
-function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
+function TangentDynamicalSystem(ds::CoreAnalyticSystem{IIP};
         J = nothing, k::Int = dimension(ds), Q0 = diagm(ones(dimension(ds)))[:, 1:k],
         J0 = zeros(dimension(ds), dimension(ds)), u0 = current_state(ds),
     ) where {IIP}

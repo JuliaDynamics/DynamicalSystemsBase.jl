@@ -1,5 +1,5 @@
 # Parallel integration is a bit special;
-# For `AnalyticRuleSystem` a dedicated structure exists that uses the existing
+# For `CoreAnalyticSystem` a dedicated structure exists that uses the existing
 # integrators with a vector of vectors.
 # For all discrete time systems another structure exists that deepcopies the systems.
 # And for all continuous time systems another structure exists.
@@ -44,7 +44,7 @@ struct ParallelDynamicalSystemAnalytic{D, M} <: ParallelDynamicalSystem
     original_f # no type parameterization here, this field is only for printing
 end
 
-function ParallelDynamicalSystem(ds::AnalyticRuleSystem, states)
+function ParallelDynamicalSystem(ds::CoreAnalyticSystem, states)
     f, st = parallel_rule(ds, states)
     if ds isa DeterministicIteratedMap
         pds = DeterministicIteratedMap(f, st, current_parameters(ds); t0 = initial_time(ds))
@@ -59,7 +59,7 @@ function ParallelDynamicalSystem(ds::AnalyticRuleSystem, states)
 end
 
 # Out of place: everywhere the same
-function parallel_rule(ds::AnalyticRuleSystem{false}, states)
+function parallel_rule(ds::CoreAnalyticSystem{false}, states)
     f = dynamic_rule(ds)
     S = typeof(correct_state(Val{false}(), first(states)))
     st = [S(s) for s in states]
