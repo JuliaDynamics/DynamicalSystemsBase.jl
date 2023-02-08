@@ -73,7 +73,7 @@ current_states
 
 ## `TangentDynamicalSystem`
 ```@docs
-CoreAnalyticSystem
+CoreDynamicalSystem
 TangentDynamicalSystem
 current_deviations
 set_deviations!
