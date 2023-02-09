@@ -869,8 +869,7 @@ bsn, att = basins_of_attraction((xg, yg, zg), ds; mx_chk_att=4)
     Lorenz-84 low-order atmospheric circulation model, Chaos 18, 033121 (2008)
 """
 function lorenz84(u = [0.1, 0.1, 0.1]; F=6.846, G=1.287, a=0.25, b=4.0)
-    return ContinuousDynamicalSystem(lorenz84_rule, u, [F, G, a, b],
-    lorenz84_rule_jacob)
+    return ContinuousDynamicalSystem(lorenz84_rule, u, [F, G, a, b])
 end
 @inline @inbounds function lorenz84_rule(u, p, t)
     F, G, a, b = p
