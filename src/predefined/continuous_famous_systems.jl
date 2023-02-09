@@ -787,8 +787,8 @@ See discussion in Section 4.4.3 of "Elegant Chaos" by J. C. Sprott.
     Thomas, R. (1999). *International Journal of Bifurcation and Chaos*,
     *9*(10), 1889-1905.
 """
-thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CDS(thomas_rule, u0, [b], thomas_jacob)
-labyrinth(u0 = [1.0, 0, 0]) = CDS(thomas_rule, u0, [0.0])
+thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = ContinuousDynamicalSystem(thomas_rule, u0, [b])
+labyrinth(u0 = [1.0, 0, 0]) = ContinuousDynamicalSystem(thomas_rule, u0, [0.0])
 
 function thomas_rule(u, p, t)
     x,y,z = u
