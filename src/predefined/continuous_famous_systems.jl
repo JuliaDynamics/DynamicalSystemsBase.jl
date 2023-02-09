@@ -787,8 +787,8 @@ See discussion in Section 4.4.3 of "Elegant Chaos" by J. C. Sprott.
     Thomas, R. (1999). *International Journal of Bifurcation and Chaos*,
     *9*(10), 1889-1905.
 """
-thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CDS(thomas_rule, u0, [b], thomas_jacob)
-labyrinth(u0 = [1.0, 0, 0]) = CDS(thomas_rule, u0, [0.0])
+thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = ContinuousDynamicalSystem(thomas_rule, u0, [b])
+labyrinth(u0 = [1.0, 0, 0]) = ContinuousDynamicalSystem(thomas_rule, u0, [0.0])
 
 function thomas_rule(u, p, t)
     x,y,z = u
@@ -869,8 +869,7 @@ bsn, att = basins_of_attraction((xg, yg, zg), ds; mx_chk_att=4)
     Lorenz-84 low-order atmospheric circulation model, Chaos 18, 033121 (2008)
 """
 function lorenz84(u = [0.1, 0.1, 0.1]; F=6.846, G=1.287, a=0.25, b=4.0)
-    return ContinuousDynamicalSystem(lorenz84_rule, u, [F, G, a, b],
-    lorenz84_rule_jacob)
+    return ContinuousDynamicalSystem(lorenz84_rule, u, [F, G, a, b])
 end
 @inline @inbounds function lorenz84_rule(u, p, t)
     F, G, a, b = p

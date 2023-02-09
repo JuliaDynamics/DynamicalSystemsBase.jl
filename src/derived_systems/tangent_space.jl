@@ -14,10 +14,10 @@ using LinearAlgebra: mul!, diagm
 
 """
     TangentDynamicalSystem <: DynamicalSystem
-    TangentDynamicalSystem(ds::AnalyticRuleSystem; kwargs...)
+    TangentDynamicalSystem(ds::CoreDynamicalSystem; kwargs...)
 
 A dynamical system that bundles the evolution of `ds`
-(which must be an [`AnalyticRuleSystem`](@ref)) and `k` deviation vectors
+(which must be an [`CoreDynamicalSystem`](@ref)) and `k` deviation vectors
 that are evolved according to the _dynamics in the tangent space_
 (also called linearized dynamics or the tangent dynamics).
 
@@ -89,13 +89,14 @@ struct TangentDynamicalSystem{IIP, D} <: ParallelDynamicalSystem
 end
 
 additional_details(tands::TangentDynamicalSystem) = [
-    "jacobian" => rulestring(tands.J),
+    "jacobian" => isnothing(tands.J) ? "ForwardDiff" : rulestring(tands.J),
+    "deviation vectors" => size(current_deviations(tands), 2),
 ]
 
 # it is practically identical to `TangentDynamicalSystem`
 
-function TangentDynamicalSystem(ds::AnalyticRuleSystem{IIP};
-        J = nothing, k::Int = dimension(ds), Q0 = diagm(ones(dimension(ds)))[:, 1:k],
+function TangentDynamicalSystem(ds::CoreDynamicalSystem{IIP};
+        J = nothing, k::Int = dimension(ds), Q0 = default_deviations(dimension(ds), k),
         J0 = zeros(dimension(ds), dimension(ds)), u0 = current_state(ds),
     ) where {IIP}
 
@@ -217,7 +218,11 @@ initial_state(t::TangentDynamicalSystem{false}) = initial_state(t.ds)[:, 1]
 Return the deviation vectors of `tands` as a matrix with each column a vector.
 """
 current_deviations(t::TangentDynamicalSystem{true}) = @view(current_state(t.ds)[:, 2:end])
-current_deviations(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 2:end]
+function current_deviations(t::TangentDynamicalSystem{false})
+    # state is an SMatrix
+    U = current_state(t.ds)
+    return U[:, t.ds.f.ws] # from TangentOOP
+end
 
 # Dedicated step so that it retunrs the system itself
 SciMLBase.step!(tands::TangentDynamicalSystem, args...) = (step!(tands.ds, args...); tands)
@@ -265,6 +270,6 @@ end
 
 function default_deviations(tands)
     k = size(current_deviations(tands), 2)
-    Q0 = diagm(ones(dimension(tands)))[:, 1:k]
-    return Q0
+    return default_deviations(dimension(tands), k)
 end
+default_deviations(D::Int, k::Int) = diagm(ones(D))[:, 1:k]

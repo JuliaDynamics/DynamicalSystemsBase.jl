@@ -1,6 +1,13 @@
 @deprecate get_state current_state
 @deprecate get_deviations current_deviations
 
+export integrator, tangent_integrator, parallel_integrator, poincaremap
+
+function integrator(ds, args...; kwargs...)
+    @warn "`integrator` is deprecated. Dynamical systems themselves are now integrators."
+    return ds
+end
+
 for F in (:DiscreteDynamicalSystem, :ContinuousDynamicalSystem)
     @eval function $(F)(f, u0, p, J::Function)
         throw(ArgumentError("""
