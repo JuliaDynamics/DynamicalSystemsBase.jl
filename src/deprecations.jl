@@ -2,6 +2,7 @@
 @deprecate get_deviations current_deviations
 
 export integrator, tangent_integrator, parallel_integrator, poincaremap
+export projected_integrator
 
 function integrator(ds, args...; kwargs...)
     @warn "`integrator` is deprecated. Dynamical systems themselves are now integrators."
@@ -43,6 +44,15 @@ function parallel_integrator(ds::DynamicalSystem, states; kwargs...)
     """
     )
     return ParalleDynamicalSystem(ds, states)
+end
+
+function projected_integrator(ds::DynamicalSystem, projection, complete_state; kwargs...)
+    @warn("""
+    `projected_integrator` is deprecated in favor of `ProjectedDynamicalSystem`.
+    It also doesn't accept keywords anymore.
+    """
+    )
+    return ParalleDynamicalSystem(ds, projection, complete_state)
 end
 
 function stroboscopicmap(ds::DynamicalSystem, T; kwargs...)
