@@ -54,6 +54,7 @@ struct ProjectedDynamicalSystem{P, PD, C, R, D} <: DynamicalSystem
     remidxs::R
 	ds::D
 end
+Base.parent(pds::ProjectedDynamicalSystem) = pds.ds
 
 function ProjectedDynamicalSystem(ds::DynamicalSystem, projection, complete_state)
     u0 = initial_state(ds)

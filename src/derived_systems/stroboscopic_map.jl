@@ -5,17 +5,16 @@ export StroboscopicMap
 ###########################################################################################
 """
 	StroboscopicMap <: DiscreteTimeDynamicalSystem
-	StroboscopicMap(ds::CoupledODEs, T::Real) → smap
+	StroboscopicMap(ds::CoupledODEs, period::Real) → smap
+	StroboscopicMap(period::Real, f, u0, p = nothing; kwargs...)
 
 A discrete time dynamical system that produces iterations of a time-dependent
-(non-autonomous) [`CoupledODEs`](@ref) system exactly over a period `T`.
-This is known as a stroboscopic map.
-The second signature creates a [`CoupledODEs`](@ref) and calls the first
-(with `t0` measured in continuous time).
+(non-autonomous) [`CoupledODEs`](@ref) system exactly over a given `period`.
+The second signature first creates a [`CoupledODEs`](@ref) and then calls the first.
 
 As this system is in discrete time, [`current_time`](@Ref) and [`initial_time`](@ref)
 are integers. The initial time is always 0, because `current_time` counts elapsed periods.
-Call these functions on the field `.ds` of `StroboscopicMap` to obtain the
+Call these functions on the `parent` of `StroboscopicMap` to obtain the
 corresponding continuous time.
 In contrast, [`reinit!`](@ref) expects `t0` in continuous time.
 
@@ -42,6 +41,7 @@ StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
 additional_details(smap::StroboscopicMap) = [
     "period" => smap.T,
 ]
+Base.parent(smap::StroboscopicMap) = smap.ds
 
 ###########################################################################################
 # Extend interface

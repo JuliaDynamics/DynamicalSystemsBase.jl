@@ -99,6 +99,7 @@ mutable struct PoincareMap{I<:ContinuousTimeDynamicalSystem, F, P, R, V} <: Disc
     dummy::Vector{Float64}
     diffidxs::Vector{Int}
 end
+Base.parent(pmap::PoincareMap) = pmap.ds
 
 function PoincareMap(
 		ds::DS, plane;
