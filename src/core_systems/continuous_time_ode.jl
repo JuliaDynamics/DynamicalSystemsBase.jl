@@ -92,7 +92,10 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs..
     solver, remaining = _decompose_into_solver_and_remaining(diffeq)
     integ = __init(prob, solver; remaining..., special_kwargs...,
         # Integrators are used exclusively iteratively. There is no reason to save anything.
-        save_start = false, save_end = false, save_everystep = false
+        save_start = false, save_end = false, save_everystep = false,
+        # DynamicalSystems.jl operates on integrators and `step!` exclusively,
+        # so there is no reason to limit the maximum time evolution
+        maxiters = Inf,
     )
     return CoupledODEs{IIP, D, typeof(integ), P}(integ, deepcopy(prob.p), diffeq)
 end
