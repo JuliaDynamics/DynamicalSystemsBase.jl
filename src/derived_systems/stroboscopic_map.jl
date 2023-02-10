@@ -38,7 +38,7 @@ end
 StroboscopicMap(ds::D, T::TT) where {D<:CoupledODEs, TT<:Real} =
 StroboscopicMap{D, TT}(ds, T, 0)
 
-StroboscopicMap(T, f, u0, p = nothing; kwargs...) =
+StroboscopicMap(T::Real, f, u0::AbstractArray, p = nothing; kwargs...) =
 StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
 
 additional_details(smap::StroboscopicMap) = [
