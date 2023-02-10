@@ -221,7 +221,7 @@ current_deviations(t::TangentDynamicalSystem{true}) = @view(current_state(t.ds)[
 function current_deviations(t::TangentDynamicalSystem{false})
     # state is an SMatrix
     U = current_state(t.ds)
-    return U[:, t.ds.f.ws] # from TangentOOP
+    return U[:, dynamic_rule(t.ds).ws] # from TangentOOP
 end
 
 # Dedicated step so that it retunrs the system itself
