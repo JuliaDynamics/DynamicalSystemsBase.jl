@@ -137,3 +137,11 @@ function set_state!(integ::DEIntegrator, u)
     u_modified!(integ, true)
     return
 end
+
+# This is here to ensure that `u_modified!` is called
+function set_parameter!(ds::CoupledODEs, args...)
+    _set_parameter!(current_parameters(ds), args...)
+    u_modified!(ds.integ, true)
+    return
+end
+

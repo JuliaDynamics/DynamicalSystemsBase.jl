@@ -9,5 +9,7 @@
 A Julia package that defines the `DynamicalSystem` interface and many concrete implementations used in the [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/dev/) ecosystem.
 
 To install it, run `import Pkg; Pkg.add("DynamicalSystemsBase")`.
+Typically, you do not want to use `DynamicalSystemsBase` directly,
+as downstream analysis packages re-export it.
 
 All further information is provided in the documentation, which you can either find [online](https://juliadynamics.github.io/DynamicalSystemsBase.jl/dev/) or build locally by running the `docs/make.jl` file.
