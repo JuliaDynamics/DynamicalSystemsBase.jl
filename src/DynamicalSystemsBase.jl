@@ -9,7 +9,6 @@ end DynamicalSystemsBase
 
 using Reexport
 @reexport using StateSpaceSets
-export Systems
 
 import SciMLBase
 import SciMLBase: reinit!, step!, isinplace
