@@ -25,7 +25,7 @@ See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref), [`produce_orbitdiagra
   the surface of section. Positive direction means going from less than ``b``
   to greater than ``b``.
 * `u0 = nothing`: Specify an initial state.
-* `rootkw = (xrtol = 1e-6, atol = 1e-6)`: A `NamedTuple` of keyword arguments
+* `rootkw = (xrtol = 1e-9, atol = 1e-9)`: A `NamedTuple` of keyword arguments
   passed to `find_zero` from [Roots.jl](https://github.com/JuliaMath/Roots.jl).
 * `Tmax = 1e3`: The argument `Tmax` exists so that the integrator can terminate instead
   of being evolved for infinite time, to avoid cases where iteration would continue
@@ -105,7 +105,7 @@ function PoincareMap(
 		ds::DS, plane;
         Tmax = 1e3,
 	    direction = -1, u0 = nothing,
-	    rootkw = (xrtol = 1e-6, atol = 1e-6)
+	    rootkw = (xrtol = 1e-9, atol = 1e-9)
 	) where {DS<:ContinuousTimeDynamicalSystem}
 
     reinit!(ds, u0)
