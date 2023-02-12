@@ -79,7 +79,6 @@ const ContinuousDynamicalSystem = CoupledODEs
 function CoupledODEs(f, u0, p = SciMLBase.NullParameters(); t0 = 0, diffeq = DEFAULT_DIFFEQ)
     IIP = isinplace(f, 4) # from SciMLBase
     s = correct_state(Val{IIP}(), u0)
-    # Initialize integrator
     T = eltype(s)
     prob = ODEProblem{IIP}(f, s, (T(t0), T(Inf)), p)
     return CoupledODEs(prob, diffeq)
@@ -101,7 +100,7 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs..
 end
 
 function SciMLBase.ODEProblem(ds::CoupledODEs{IIP}, tspan = (initial_time(ds), Inf)) where {IIP}
-    ODEProblem{IIP}(dynamic_rule(ds), current_state(ds), tspan, current_parameters(ds))
+    ODEProblem{IIP}(dynamic_rule(ds), initial_state(ds), tspan, current_parameters(ds))
 end
 
 ###########################################################################################

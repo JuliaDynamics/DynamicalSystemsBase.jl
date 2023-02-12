@@ -11,7 +11,7 @@ of what counts as a "dynamical system" in the DynamicalSystems.jl library.
 can be iteratively evolved in time via the [`step!`](@ref) function._**
 Hence, most library functions that evolve the system
 will mutate its current state and/or parameters. See the documentation online
-for implications this has on e.g., parallelization.
+for implications this has on for parallelization.
 
 `DynamicalSystem` is further separated into two abstract types:
 `ContinuousTimeDynamicalSystem, DiscreteTimeDynamicalSystem`.

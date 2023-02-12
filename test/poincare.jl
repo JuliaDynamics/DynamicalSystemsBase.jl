@@ -64,3 +64,27 @@ end
     # Specific poincare map tests here:
     poincare_tests(ds, pmap, plane)
 end
+
+@testset "set_parameter works" begin
+    function lorenz_rule(u, p, t)
+        σ = p[1]; ρ = p[2]; β = p[3]
+        du1 = σ*(u[2]-u[1])
+        du2 = u[1]*(ρ-u[3]) - u[2]
+        du3 = u[1]*u[2] - β*u[3]
+        return SVector{3}(du1, du2, du3)
+    end
+    u0 = fill(10.0, 3)
+    p = [10, 28, 8/3]
+    plane = (1, 0.0)
+    ds = CoupledODEs(lorenz_rule, recursivecopy(u0), p)
+
+    pmap = PoincareMap(ds, plane)
+    P, t = trajectory(pmap, 10)
+    @test all(x -> abs(x) < 1e-6, P[:, 1])
+
+    set_parameter!(pmap, 2, 26.4)
+
+    P, t = trajectory(pmap, 10, nothing)
+    @test all(x -> abs(x) < 1e-6, P[:, 1])
+
+end

@@ -69,5 +69,5 @@ function poincaremap(ds::DynamicalSystem, plane, Tmax=1e3; kwargs...)
     `poincaremap` is deprecated in favor of `PoincareMap`.
     """
     )
-    return StroboscopicMap(ds, plane; Tmax, kwargs...)
+    return PoincareMap(ds, plane; Tmax, kwargs...)
 end
