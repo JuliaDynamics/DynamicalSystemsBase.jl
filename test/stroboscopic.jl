@@ -19,11 +19,13 @@ u0 = [0.1, 0.25]
 p0 = [1.0, 0.3, 0.2, -1]
 T = 2π/1.0
 
+duffing_raw = CoupledODEs(duffing_rule, u0, p0)
 duffing_oop = StroboscopicMap(CoupledODEs(duffing_rule, u0, p0), T)
 duffing_iip = StroboscopicMap(T, duffing_rule_iip, copy(u0), p0)
 duffing_vern = StroboscopicMap(T, duffing_rule, u0, p0;
     diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
 )
+
 
 for (ds, iip) in zip((duffing_oop, duffing_iip, duffing_vern), (false, true, false))
     name = (ds === duffing_vern) ? "duffvern" : "duffing"
@@ -39,6 +41,14 @@ end
     X, t = trajectory(duffing_fp, 10; Ttr = 5000)
     @test X[end] ≈ X[end-1] atol = 1e-6
     @test X[end-1] ≈ X[end-2] atol = 1e-6
+end
+
+@testset "integration matches" begin
+    reinit!(duffing_raw)
+    reinit!(duffing_oop)
+    step!(duffing_oop)
+    step!(duffing_raw, T, true)
+    @test current_state(duffing_oop) == current_state(duffing_raw)
 end
 
 # @testset "chaotic attractor rotation" begin
