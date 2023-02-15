@@ -34,7 +34,7 @@ set_parameters!
 ```@docs
 step!(::DynamicalSystem, args...; kwargs...)
 trajectory
-Dataset
+StateSpaceSet
 ```
 
 ## `DeterministicIteratedMap`

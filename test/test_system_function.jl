@@ -98,7 +98,7 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
                 reinit!(ds)
                 @test current_state(ds) == u0
                 X, t = trajectory(ds, 10)
-                @test X isa Dataset{dimension(ds), Float64}
+                @test X isa StateSpaceSet{dimension(ds), Float64}
                 @test X[1] == u0
                 @test X[2] == second_state
                 @test t == 0:1:10
@@ -119,7 +119,7 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
                 X, t = trajectory(ds, 3; Δt = 0.1)
                 @test Base.step(t) == 0.1
                 @test t[1] == initial_time(ds)
-                @test X isa Dataset{dimension(ds), Float64}
+                @test X isa StateSpaceSet{dimension(ds), Float64}
                 @test X[1] == u0
 
                 prev_u0 = deepcopy(current_state(ds))

@@ -75,7 +75,7 @@ end
 # TODO: Nice improvement would be to use cubic interpolation instead of linear,
 # using points i-2, i-1, i, i+1
 """
-    poincaresos(A::AbstractDataset, plane; kwargs...) → P::Dataset
+    poincaresos(A::AbstractStateSpaceSet, plane; kwargs...) → P::StateSpaceSet
 
 Calculate the Poincaré surface of section of the given dataset with the given `plane`
 by performing linear interpolation betweeen points that sandwich the hyperplane.
@@ -83,7 +83,7 @@ by performing linear interpolation betweeen points that sandwich the hyperplane.
 Argument `plane` and keywords `direction, warning, save_idxs`
 are the same as in the method below.
 """
-function poincaresos(A::AbstractDataset, plane;
+function poincaresos(A::AbstractStateSpaceSet, plane;
         direction = -1, warning = true, save_idxs = dimension(A)
     )
     check_hyperplane_match(plane, size(A, 2))
@@ -91,9 +91,9 @@ function poincaresos(A::AbstractDataset, plane;
     planecrossing = PlaneCrossing(plane, direction > 0)
     data = poincaresos(A, planecrossing, i)
     warning && length(data) == 0 && @warn PSOS_ERROR
-    return Dataset(data)
+    return StateSpaceSet(data)
 end
-function poincaresos(A::Dataset, planecrossing::PlaneCrossing, j)
+function poincaresos(A::StateSpaceSet, planecrossing::PlaneCrossing, j)
     i, L = 1, length(A)
     data = _initialize_output(A[1], j)
     # Check if initial condition is already on the plane

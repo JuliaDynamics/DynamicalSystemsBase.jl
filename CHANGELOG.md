@@ -96,7 +96,7 @@ In addition, be sure that you have version `SimpleDiffEq 0.3.0` or greater (whic
 
 # v1.1
 
-* All functionality related to `neighborhood`, `reconstruct` and `Dataset` has moved to a new package: [`DelayEmbeddings`](https://github.com/JuliaDynamics/DelayEmbeddings.jl). It is reexported by `DynamicalSystemsBase`, which is now (as the name suggests) the basis package for defining `DynamicalSystem`.
+* All functionality related to `neighborhood`, `reconstruct` and `StateSpaceSet` has moved to a new package: [`DelayEmbeddings`](https://github.com/JuliaDynamics/DelayEmbeddings.jl). It is reexported by `DynamicalSystemsBase`, which is now (as the name suggests) the basis package for defining `DynamicalSystem`.
 
 # v1.0
 
@@ -115,7 +115,7 @@ In addition, be sure that you have version `SimpleDiffEq 0.3.0` or greater (whic
 ## Breaking
 * Dropped support of Julia versions < 0.7
 * `Reconstruction` does not exist anymore. Instead, `reconstruct` is used in it's
-  place. The function now also always returns a `Dataset`.
+  place. The function now also always returns a `StateSpaceSet`.
 * In the `reconstruct` function, `D` now stands for the number of temporal neighbors
   which is **one less** than the dimensionality of the reconstructed space.
     *  This change was done because it is more intuitive and more scalable when considering multiple timeseries or spatio temporal timeseries.
@@ -157,7 +157,7 @@ very happy to say that these changes reduced *tremendously* the source code!
 * Multi-time Reconstruction
 * Multi-dimensional, multi-time Reconstruction
 * Methods for estimating Reconstruction parameters are now here.
-* Reconstruction from Dataset
+* Reconstruction from StateSpaceSet
 ## Breaking
 * Corrected name `helies -> heiles`
 * Reconstructions now have field `delay` which is the delay time/times and are
@@ -193,7 +193,7 @@ very happy to say that these changes reduced *tremendously* the source code!
   parameters are passed directly into the function!!!
 
 # Non-breaking
-* Improved the algorithm that converts a Dataset to a Matrix. It is now not only
+* Improved the algorithm that converts a StateSpaceSet to a Matrix. It is now not only
   faster, but also more clear!
 
 # v0.4.1
@@ -218,15 +218,15 @@ very happy to say that these changes reduced *tremendously* the source code!
 ## Non-breaking
 * Bugfix of `eltype` of `Reconstruction`.
 * Added `circlemap` to `Systems`.
-* Bugfix on `Dataset` that incorrect methods were being called due to missing `<:`.
-* Method `Base.getindex(d::AbstractDataset{D,T}, ::Colon, j<:AbstractVector{Int}) ` now exists!
+* Bugfix on `StateSpaceSet` that incorrect methods were being called due to missing `<:`.
+* Method `Base.getindex(d::AbstractStateSpaceSet{D,T}, ::Colon, j<:AbstractVector{Int}) ` now exists!
 * Added function `evolve!`.
 * Clearly state that we do not support matrices in the equations of motion.
 * Bugfixes regarding ODEProblem.
 
 # v0.3.2
 ## Non-breaking
-* Orders of magnitude speed-up in conversions between `Matrix` and `Dataset`,
+* Orders of magnitude speed-up in conversions between `Matrix` and `StateSpaceSet`,
   because now methods use `transpose` internally and only `reinterpret`.
 
 # v0.3.1

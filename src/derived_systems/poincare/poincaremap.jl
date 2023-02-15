@@ -244,11 +244,11 @@ end
 # Poincare surface of section
 ###########################################################################################
 """
-    poincaresos(ds::CoupledODEs, plane, T = 1000.0; kwargs...) → P::Dataset
+    poincaresos(ds::CoupledODEs, plane, T = 1000.0; kwargs...) → P::StateSpaceSet
 
 Return the iterations of `ds` on the Poincaré surface of section with the `plane`,
 by evolving `ds` up to a total of `T`.
-Return a [`Dataset`](@ref) of the points that are on the surface of section.
+Return a [`StateSpaceSet`](@ref) of the points that are on the surface of section.
 
 This function initializes a [`PoincareMap`](@ref) and steps it until its
 [`current_crossing_time`](@ref) exceeds `T`. You can also use [`trajectory`](@ref)
@@ -277,7 +277,7 @@ function poincaresos!(data, pmap, i, T, Ttr)
         step!(pmap)
         push!(data, current_state(pmap)[i])
     end
-    return Dataset(data)
+    return StateSpaceSet(data)
 end
 
 _initialize_output(::S, ::Int) where {S} = eltype(S)[]
