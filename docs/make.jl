@@ -4,7 +4,6 @@ using DynamicalSystemsBase # comes from global environment in CI
 using Documenter
 using DocumenterTools: Themes
 ENV["JULIA_DEBUG"] = "Documenter"
-using CairoMakie
 
 # %% JuliaDynamics theme
 # It includes themeing for the HTML build

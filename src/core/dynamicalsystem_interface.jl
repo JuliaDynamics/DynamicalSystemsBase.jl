@@ -43,7 +43,7 @@ Concrete subtypes typically also contain more information than the above 3 items
 
 In this scope dynamical systems have a known dynamic rule `f` defined as a
 standard Julia function. _Observed_ or _measured_ data from a dynamical system
-are represented using `AbstractStateSpaceSet` and are finite.
+are represented using `StateSpaceSet` and are finite.
 Such data are obtained from the [`trajectory`](@ref) function or
 from an experimental measurement of a dynamical system with an unknown dynamic rule.
 
