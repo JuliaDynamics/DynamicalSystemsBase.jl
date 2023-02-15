@@ -50,6 +50,12 @@ function ArbitrarySteppable(model, step, extract_state, extract_parameters, rein
     )
     p0 = deepcopy(extract_parameters(model))
     u0 = deepcopy(extract_state(model))
+    if !(u0 isa AbstractArray{<:Real})
+        @warn """
+        The state isn't an `AbstractArray{<:Real}` and that may cause problems
+        in downstream functions.
+        """
+    end
     return ArbitrarySteppable(model, step, reinit, extract_state, extract_parameters,
     Ref(0), u0, p0, isdeterministic, set_state)
 end

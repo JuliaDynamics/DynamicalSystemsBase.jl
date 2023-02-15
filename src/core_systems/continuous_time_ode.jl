@@ -143,7 +143,13 @@ current_time(integ::DEIntegrator) = integ.t
 initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
 
 function set_state!(integ::DEIntegrator, u)
-    integ.u = recursivecopy(u)
+    if integ.u isa Array{<:Real}
+        integ.u .= u
+    elseif integ.u isa SArray
+        integ.u = u
+    else
+        integ.u = recursivecopy(u)
+    end
     u_modified!(integ, true)
     return
 end
