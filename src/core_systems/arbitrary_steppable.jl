@@ -38,7 +38,7 @@ struct ArbitrarySteppable{M, F, R, ES, EP, U, P, S} <: DiscreteTimeDynamicalSyst
     reinit::R
     extract_state::ES
     extract_parameters::EP
-	t::RefValue{Int}
+	t::Base.RefValue{Int}
     u0::U
     p0::P
     isdeterministic::Bool
@@ -58,8 +58,9 @@ end
 current_state(ds::ArbitrarySteppable) = ds.extract_state(ds.model)
 current_parameters(ds::ArbitrarySteppable) = ds.extract_parameters(ds.model)
 isdeterministic(ds::ArbitrarySteppable) = ds.isdeterministic
-dynamic_rule(ds::DynamicalSystem) = ds.step
+dynamic_rule(ds::ArbitrarySteppable) = ds.step
 current_time(ds::ArbitrarySteppable) = ds.t[]
+initial_time(ds::ArbitrarySteppable) = 0
 SciMLBase.isinplace(ds::ArbitrarySteppable) = true
 
 function SciMLBase.step!(ds::ArbitrarySteppable, n::Int = 1, stop::Bool = true)
@@ -70,8 +71,13 @@ function SciMLBase.step!(ds::ArbitrarySteppable, n::Int = 1, stop::Bool = true)
     return ds
 end
 
-function SciMLBase.reinit!(ds::ArbitrarySteppable, u = initial_state(ds); p = current_parameters(ds))
+function SciMLBase.reinit!(ds::ArbitrarySteppable, u = initial_state(ds);
+        p = current_parameters(ds), t0 = 0, # t0 is not used.
+    )
+    isnothing(u) && return
     ds.reinit(ds.model, u, p)
+    ds.t[] = 0
+    return ds
 end
 
 function set_state!(ds::ArbitrarySteppable, u)
