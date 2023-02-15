@@ -145,7 +145,7 @@ initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
 function set_state!(integ::DEIntegrator, u)
     if integ.u isa Array{<:Real}
         integ.u .= u
-    elseif integ.u isa SArray
+    elseif integ.u isa Union{SVector, SMatrix}
         integ.u = u
     else
         integ.u = recursivecopy(u)
