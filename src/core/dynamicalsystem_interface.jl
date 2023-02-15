@@ -43,7 +43,7 @@ Concrete subtypes typically also contain more information than the above 3 items
 
 In this scope dynamical systems have a known dynamic rule `f` defined as a
 standard Julia function. _Observed_ or _measured_ data from a dynamical system
-are represented using `AbstractDataset` and are finite.
+are represented using `AbstractStateSpaceSet` and are finite.
 Such data are obtained from the [`trajectory`](@ref) function or
 from an experimental measurement of a dynamical system with an unknown dynamic rule.
 
@@ -294,15 +294,15 @@ end
 # API - step and reset
 ###########################################################################################
 """
-    step!(ds::DiscreteTimeDynamicalSystem [, dt::Integer]) → ds
+    step!(ds::DiscreteTimeDynamicalSystem [, n::Integer]) → ds
 
-Evolve the discrete time dynamical system for 1 or `dt` steps.
+Evolve the discrete time dynamical system for 1 or `n` steps.
 
     step!(ds::ContinuousTimeDynamicalSystem, [, dt::Real [, stop_at_tdt]]) → ds
 
 Evolve the continuous time dynamical system for one integration step.
 
-Alternative, if a `dt` is given, then progress the integration until
+Alternatively, if a `dt` is given, then progress the integration until
 there is a temporal difference `≥ dt` (so, step _at least_ for `dt` time).
 
 When `true` is passed to the optional third argument,

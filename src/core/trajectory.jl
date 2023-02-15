@@ -8,7 +8,7 @@ after evolving it for total time `T`.
 `u0` is the state given given to [`reinit!`](@ref) prior to time evolution
 and defaults to [`initial_state(ds)`](@ref).
 
-See [`Dataset`](@ref) for info on how to use `X`.
+See [`StateSpaceSet`](@ref) for info on how to use `X`.
 The returned time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)`.
 
 ## Keyword arguments
@@ -44,7 +44,7 @@ function trajectory_discrete(ds, T; Δt::Integer = 1, Ttr::Integer = 0, accessor
         step!(ds, Δt)
         data[i] = SVector{X, ET}(obtain_access(current_state(ds), accessor))
     end
-    return Dataset(data), tvec
+    return StateSpaceSet(data), tvec
 end
 
 function trajectory_continuous(ds, T; Δt = 0.1, Ttr = 0.0, accessor = nothing)
@@ -61,7 +61,7 @@ function trajectory_continuous(ds, T; Δt = 0.1, Ttr = 0.0, accessor = nothing)
         end
         sol[i] = SVector{X, ET}(obtain_access(ds(t), accessor))
     end
-    return Dataset(sol), tvec
+    return StateSpaceSet(sol), tvec
 end
 
 # Util functions for `trajectory`

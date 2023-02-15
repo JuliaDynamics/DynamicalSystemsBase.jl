@@ -182,7 +182,18 @@ initial_states(pdtds::PDTDS) = [initial_state(ds) for ds in pdtds.systems]
 
 # Set stuff
 set_parameter!(pdtds::PDTDS) = for ds in pdtds.systems; set_parameter!(ds, args...); end
-set_state!(pdtds::PDTDS, u, i::Int = 1) = set_state!(pdtds.systems[i], u)
+function set_state!(pdtds::PDTDS, u, i::Int = 1)
+    # We need to set state in all systems, in case this does
+    # some kind of resetting, e.g., the `u_modified!` stuff.
+    for (k, ds) in enumerate(pdtds.systems)
+        if k == i
+            set_state!(ds, u)
+        else
+            set_state!(ds, current_state(ds))
+        end
+    end
+end
+
 function SciMLBase.reinit!(pdtds::PDTDS, states = initial_states(pdtds); kwargs...)
     for (ds, s) in zip(pdtds.systems, states); reinit!(ds, s; kwargs...); end
 end

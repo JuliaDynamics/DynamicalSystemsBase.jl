@@ -6,10 +6,14 @@
 Base.summary(ds::DynamicalSystem) =
 "$(dimension(ds))-dimensional $(nameof(typeof(ds)))"
 
+function Base.show(io::IO, ds::DynamicalSystem)
+    print(io, summary(ds))
+end
+
 # Extend this function to return a vector of `Pair`s of `"description" => value`
 additional_details(::DynamicalSystem) = []
 
-function Base.show(io::IO, ds::DynamicalSystem)
+function Base.show(io::IO, ::MIME"text/plain", ds::DynamicalSystem)
     descriptors = [
         "deterministic" => isdeterministic(ds),
         "discrete time" => isdiscretetime(ds),

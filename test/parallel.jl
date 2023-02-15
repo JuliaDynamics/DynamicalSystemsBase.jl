@@ -97,6 +97,7 @@ for (ds, idt, iip) in zip(
     end
 end
 
+@testset "parallel stroboscopic" begin
 # Generic Parallel
 @inbounds function duffing_rule(x, p, t)
     ω, f, d, β = p
@@ -121,8 +122,9 @@ states = [u0, u0 .+ 0.01]
 pds_cont_oop = ParallelDynamicalSystem(duffing_oop, states)
 pds_cont_iip = ParallelDynamicalSystem(duffing_iip, deepcopy(states))
 
-@testset "parallel duffing IIP=$iip" for (ds, iip) in zip((pds_cont_oop, pds_cont_iip,), (true, false))
+@testset "IIP=$iip" for (ds, iip) in zip((pds_cont_oop, pds_cont_iip,), (true, false))
     test_dynamical_system(ds, u0, p0; idt = true, iip = true, test_trajectory = false)
+end
 end
 
 # TODO: Test that Lyapunovs of this match the original system

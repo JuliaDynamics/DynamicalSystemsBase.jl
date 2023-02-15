@@ -25,7 +25,7 @@ See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref), [`produce_orbitdiagra
   the surface of section. Positive direction means going from less than ``b``
   to greater than ``b``.
 * `u0 = nothing`: Specify an initial state.
-* `rootkw = (xrtol = 1e-6, atol = 1e-6)`: A `NamedTuple` of keyword arguments
+* `rootkw = (xrtol = 1e-6, atol = 1e-8)`: A `NamedTuple` of keyword arguments
   passed to `find_zero` from [Roots.jl](https://github.com/JuliaMath/Roots.jl).
 * `Tmax = 1e3`: The argument `Tmax` exists so that the integrator can terminate instead
   of being evolved for infinite time, to avoid cases where iteration would continue
@@ -105,7 +105,7 @@ function PoincareMap(
 		ds::DS, plane;
         Tmax = 1e3,
 	    direction = -1, u0 = nothing,
-	    rootkw = (xrtol = 1e-6, atol = 1e-6)
+	    rootkw = (xrtol = 1e-6, atol = 1e-8)
 	) where {DS<:ContinuousTimeDynamicalSystem}
 
     reinit!(ds, u0)
@@ -136,10 +136,11 @@ additional_details(pmap::PoincareMap) = [
 ###########################################################################################
 # Extensions
 ###########################################################################################
-for f in (:initial_state, :current_parameters, :initial_parameters, :initial_time,
-	:dynamic_rule, :set_state!, :(SciMLBase.isinplace), :(StateSpaceSets.dimension))
+for f in (:initial_state, :current_parameters, :initial_parameters,
+	:dynamic_rule, :(SciMLBase.isinplace), :(StateSpaceSets.dimension))
     @eval $(f)(pmap::PoincareMap, args...) = $(f)(pmap.ds, args...)
 end
+initial_time(pmap::PoincareMap) = 0
 current_time(pmap::PoincareMap) = pmap.t[]
 current_state(pmap::PoincareMap) = pmap.state_on_plane
 
@@ -178,6 +179,12 @@ function SciMLBase.reinit!(pmap::PoincareMap, u0 = initial_state(pmap);
     step!(pmap) # always step once to reach the PSOS
     pmap.t[] = 0 # first step is 0
     pmap
+end
+
+function set_state!(pmap::PoincareMap, u)
+    set_state!(pmap.ds, u)
+    step!(pmap) # always step once to reach the PSOS
+    return
 end
 
 function _recreate_state_from_poincare_plane(pmap::PoincareMap, u0)
@@ -237,11 +244,11 @@ end
 # Poincare surface of section
 ###########################################################################################
 """
-    poincaresos(ds::CoupledODEs, plane, T = 1000.0; kwargs...) → P::Dataset
+    poincaresos(ds::CoupledODEs, plane, T = 1000.0; kwargs...) → P::StateSpaceSet
 
 Return the iterations of `ds` on the Poincaré surface of section with the `plane`,
 by evolving `ds` up to a total of `T`.
-Return a [`Dataset`](@ref) of the points that are on the surface of section.
+Return a [`StateSpaceSet`](@ref) of the points that are on the surface of section.
 
 This function initializes a [`PoincareMap`](@ref) and steps it until its
 [`current_crossing_time`](@ref) exceeds `T`. You can also use [`trajectory`](@ref)
@@ -270,7 +277,7 @@ function poincaresos!(data, pmap, i, T, Ttr)
         step!(pmap)
         push!(data, current_state(pmap)[i])
     end
-    return Dataset(data)
+    return StateSpaceSet(data)
 end
 
 _initialize_output(::S, ::Int) where {S} = eltype(S)[]

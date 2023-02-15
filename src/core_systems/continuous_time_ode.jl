@@ -103,6 +103,14 @@ function SciMLBase.ODEProblem(ds::CoupledODEs{IIP}, tspan = (initial_time(ds), I
     ODEProblem{IIP}(dynamic_rule(ds), initial_state(ds), tspan, current_parameters(ds))
 end
 
+# Pretty print
+function additional_details(ds::CoupledODEs)
+    solver, remaining = _decompose_into_solver_and_remaining(ds.diffeq)
+    return ["ODE solver" => string(nameof(typeof(solver))),
+        "ODE kwargs" => remaining,
+    ]
+end
+
 ###########################################################################################
 # Extend interface and extend for `DEIntegrator`
 ###########################################################################################
@@ -135,7 +143,13 @@ current_time(integ::DEIntegrator) = integ.t
 initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
 
 function set_state!(integ::DEIntegrator, u)
-    integ.u = recursivecopy(u)
+    if integ.u isa Array{<:Real}
+        integ.u .= u
+    elseif integ.u isa Union{SVector, SMatrix}
+        integ.u = u
+    else
+        integ.u = recursivecopy(u)
+    end
     u_modified!(integ, true)
     return
 end
