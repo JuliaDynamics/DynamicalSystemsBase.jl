@@ -1,6 +1,11 @@
 # v3.0
 
-Complete rewrite of the package. The DynamicalSystems.jl v3 changelog summarizes the highlights. Here we will try to list all changes, but it will be difficult to provide a changelog given that everything was changed.
+Complete rewrite of the package. The DynamicalSystems.jl v3 changelog summarizes the highlights. Here we will list all changes to _this specific package_.
+
+## Majorly Breaking
+- The `Discrete/ContinuousDynamicalSystem` constructors no longer accept a Jacobian. Use the dedicated `TangentDynamicalSystem` for something that represents the tangent space and can be given to downstream functions such as `lyapunovspectrum`. As a result, none of the predefined systems come with a hand coded Jacobian. The function is still available for manual use nevertheless.
+- The keyword `diffeq` does not exist anymore and is not given to any downstream functions such as `lyapunovspectrum`. The only struct that cares about DifferentialEquations.jl arguments is `CoupledODEs` so it is the only one that accepts `diffeq` keyword.
+- `trajectory` now returns the actual trajectory _and_ the time vector: `X, t = trajectory(ds, ...)`.
 
 ## Enhancements
 - `DynamicalSystem` now defines a proper, well-thought-out interface that is implemented from all its concrete subtypes. See its docstring for details.
@@ -16,10 +21,6 @@ Complete rewrite of the package. The DynamicalSystems.jl v3 changelog summarizes
 - `stroboscopicmap -> StroboscopicMap`
 - `poincaremap -> PoincareMap`
 
-## Majorly Breaking
-- The `Discrete/ContinuousDynamicalSystem` constructors no longer accept a Jacobian. Use the dedicated `TangentDynamicalSystem` for something that represents the tangent space and can be given to downstream functions such as `lyapunovspectrum`. As a result, none of the predefined systems come with a hand coded Jacobian. The function is still available for manual use nevertheless.
-- The keyword `diffeq` does not exist anymore and is not given to any downstream functions such as `lyapunovspectrum`. The only struct that cares about DifferentialEquations.jl arguments is `CoupledODEs` so it is the only one that accepts `diffeq` keyword.
-- `trajectory` now returns the actual trajectory _and_ the time vector: `X, t = trajectory(ds, ...)`
 
 # v2.9
 - All code related to the poincare map integrator have been moved here from ChaosTools.jl.

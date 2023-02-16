@@ -83,7 +83,7 @@ If not given, a matrix of zeros is used. `J0` is ignored for out of place system
 """
 struct TangentDynamicalSystem{IIP, D} <: ParallelDynamicalSystem
     ds::D      # standard dynamical system but with rule the tangent space
-    # no type parameterization here, this field is only for printing
+    # no type parameterization here, these fields are only for printing
     original_f
     J
 end
