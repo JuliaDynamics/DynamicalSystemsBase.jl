@@ -8,12 +8,14 @@ Complete rewrite of the package. The DynamicalSystems.jl v3 changelog summarizes
 - `trajectory` now returns the actual trajectory _and_ the time vector: `X, t = trajectory(ds, ...)`.
 - There is no longer a special type for 1D discrete time dynamical systems. You will have to use an 1-element `SVector` for them.
 - The `Systems` submodule has been completely removed. Now a package PredefinedDynamicalSystems.jl exists. It is untested and it is not recommended to use in any other setting other a demonstrational example. The `DynamicalSystems` module exports `Systems` as an alias to `PredefinedDynamicalSystems`, so that should not be breaking if you were using `DynamicalSystems`.
+- The default ODE solver is now `Tsit5` from OrdinaryDiffEq.jl. SimpleDiffEq.jl is no longer used. It is almost certain that the evolution of all chaotic systems will yield ever-so-slightly different trajectories due to the different default integrator.
 
 ## Enhancements
 - `DynamicalSystem` now defines a proper, well-thought-out interface that is implemented from all its concrete subtypes. See its docstring for details.
 - All `DynamicalSystem` implementations are now "integrators": mutable objects that are stepped with `step!`. They need to be deepcopied for parallelizing via threads.
 - `ParallelDynamicalSystem` now works for any kind of dynamical system.
 - `trajectory` works for any conceivable thing that extends the `DynamicalSystem` interface
+- New struct `ArbitrarySteppable` for linking DynamicalSystems.jl with other libraries like Agents.jl.
 
 ## Deprecations
 - `DiscreteDynamicalSystem -> DeterministicIteratedMap`
