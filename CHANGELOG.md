@@ -6,6 +6,8 @@ Complete rewrite of the package. The DynamicalSystems.jl v3 changelog summarizes
 - The `Discrete/ContinuousDynamicalSystem` constructors no longer accept a Jacobian. Use the dedicated `TangentDynamicalSystem` for something that represents the tangent space and can be given to downstream functions such as `lyapunovspectrum`. As a result, none of the predefined systems come with a hand coded Jacobian. The function is still available for manual use nevertheless.
 - The keyword `diffeq` does not exist anymore and is not given to any downstream functions such as `lyapunovspectrum`. The only struct that cares about DifferentialEquations.jl arguments is `CoupledODEs` so it is the only one that accepts `diffeq` keyword.
 - `trajectory` now returns the actual trajectory _and_ the time vector: `X, t = trajectory(ds, ...)`.
+- There is no longer a special type for 1D discrete time dynamical systems. You will have to use an 1-element `SVector` for them.
+- The `Systems` submodule has been completely removed. Now a package PredefinedDynamicalSystems.jl exists. It is untested and it is not recommended to use in any other setting other a demonstrational example. The `DynamicalSystems` module exports `Systems` as an alias to `PredefinedDynamicalSystems`, so that should not be breaking if you were using `DynamicalSystems`.
 
 ## Enhancements
 - `DynamicalSystem` now defines a proper, well-thought-out interface that is implemented from all its concrete subtypes. See its docstring for details.
