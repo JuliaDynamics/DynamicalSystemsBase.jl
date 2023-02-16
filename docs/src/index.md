@@ -59,6 +59,15 @@ current_crossing_time
 poincaresos
 ```
 
+## `TangentDynamicalSystem`
+```@docs
+CoreDynamicalSystem
+TangentDynamicalSystem
+current_deviations
+set_deviations!
+orthonormal
+```
+
 ## `ProjectedDynamicalSystem`
 ```@docs
 ProjectedDynamicalSystem
@@ -71,13 +80,9 @@ initial_states
 current_states
 ```
 
-## `TangentDynamicalSystem`
+## `ArbitrarySteppable`
 ```@docs
-CoreDynamicalSystem
-TangentDynamicalSystem
-current_deviations
-set_deviations!
-orthonormal
+ArbitrarySteppable
 ```
 
 ## Parallelization

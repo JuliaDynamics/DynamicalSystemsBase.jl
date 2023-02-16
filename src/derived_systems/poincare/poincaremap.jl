@@ -17,7 +17,7 @@ A discrete time dynamical system that produces iterations over the Poincaré map
 of the given continuous time `ds`. This map is defined as the sequence of points on the
 Poincaré surface of section, which is defined by the `plane` argument.
 
-See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref), [`produce_orbitdiagram`](@ref).
+See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref).
 
 ## Keyword arguments
 
