@@ -52,7 +52,7 @@ function projected_integrator(ds::DynamicalSystem, projection, complete_state; k
     It also doesn't accept keywords anymore.
     """
     )
-    return ParalleDynamicalSystem(ds, projection, complete_state)
+    return ProjectedDynamicalSystem(ds, projection, complete_state)
 end
 
 function stroboscopicmap(ds::DynamicalSystem, T; kwargs...)
