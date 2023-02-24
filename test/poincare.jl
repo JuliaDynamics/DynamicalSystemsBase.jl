@@ -88,3 +88,10 @@ end
     @test all(x -> abs(x) < 1e-6, P[:, 1])
 
 end
+
+@testset "poincare of dataset" begin
+    X, t = trajectory(gissinger_oop, 1000.0)
+    A = poincaresos(X, plane1)
+    @test dimension(A) == 3
+    @test all(x -> abs(x) < 1e-12, A[:, 1])
+end

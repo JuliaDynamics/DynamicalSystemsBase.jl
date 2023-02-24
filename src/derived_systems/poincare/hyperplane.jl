@@ -81,10 +81,10 @@ Calculate the Poincaré surface of section of the given dataset with the given `
 by performing linear interpolation betweeen points that sandwich the hyperplane.
 
 Argument `plane` and keywords `direction, warning, save_idxs`
-are the same as in the method below.
+are the same as in [`PoincareMap`](@ref).
 """
 function poincaresos(A::AbstractStateSpaceSet, plane;
-        direction = -1, warning = true, save_idxs = dimension(A)
+        direction = -1, warning = true, save_idxs = 1:dimension(A)
     )
     check_hyperplane_match(plane, size(A, 2))
     i = typeof(save_idxs) <: Int ? save_idxs : SVector{length(save_idxs), Int}(save_idxs...)
