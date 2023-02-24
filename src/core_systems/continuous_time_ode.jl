@@ -46,7 +46,7 @@ When initializing a `CoupledODEs`, you can specify the solver that will integrat
 `f` in time, along with any other integration options, using the `diffeq` keyword.
 For example you could use `diffeq = (abstol = 1e-9, reltol = 1e-9)`.
 If you want to specify a solver, do so by using the keyword `alg`, e.g.:
-`diffeq = (alg = Tsit5(), maxiters = 100000)`. This requires you to have been first
+`diffeq = (alg = Tsit5(), reltol = 1e-6)`. This requires you to have been first
 `using OrdinaryDiffEq` to access the solvers. The default `diffeq` is:
 
 $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
@@ -55,7 +55,8 @@ $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 ](http://docs.juliadiffeq.org/latest/features/callback_functions.html), however the
 majority of downstream functions in DynamicalSystems.jl assume that `f` is differentiable.
 
-The convenience constructor `CoupledODEs(prob::ODEProblem, diffeq)` is also available.
+The convenience constructor `CoupledODEs(prob::ODEProblem, diffeq)` and
+`CoupledODEs(ds::CoupledODEs, diffeq)` are also available.
 
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
 The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
@@ -83,6 +84,7 @@ function CoupledODEs(f, u0, p = SciMLBase.NullParameters(); t0 = 0, diffeq = DEF
     prob = ODEProblem{IIP}(f, s, (T(t0), T(Inf)), p)
     return CoupledODEs(prob, diffeq)
 end
+CoupledODEs(ds::CoupledODEs, diffeq) = CoupledODEs(ODEProblem(ds), diffeq)
 # Below `special_kwargs` is undocumented internal option for passing `internalnorm`
 function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs...)
     IIP = isinplace(prob)
