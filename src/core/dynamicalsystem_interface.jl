@@ -129,7 +129,7 @@ abstract type DiscreteTimeDynamicalSystem <: DynamicalSystem end
 errormsg(ds) = "Not yet implemented for dynamical system of type $(nameof(typeof(ds)))."
 
 export current_state, initial_state, current_parameters, initial_parameters, isinplace,
-    current_time, initial_time, isdeterministic, isdiscretetime, dynamic_rule,
+    current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
     reinit!, set_state!, set_parameter!, set_parameters!, step!
 
 ###########################################################################################

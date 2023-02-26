@@ -1,5 +1,5 @@
 using OrdinaryDiffEq: Tsit5
-using SciMLBase: ODEProblem, DEIntegrator, u_modified!, __init
+using SciMLBase: ODEProblem, DEIntegrator, u_modified!, __init, check_error, successful_retcode
 export CoupledODEs, ContinuousDynamicalSystem
 
 ###########################################################################################
@@ -119,7 +119,7 @@ end
 StateSpaceSets.dimension(::CoupledODEs{IIP, D}) where {IIP, D} = D
 
 for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
-    :current_time, :initial_time, :set_state!, :(SciMLBase.isinplace))
+    :current_time, :initial_time, :successful_step, :set_state!, :(SciMLBase.isinplace))
     @eval $(f)(ds::ContinuousTimeDynamicalSystem, args...) = $(f)(ds.integ, args...)
 end
 
@@ -143,6 +143,7 @@ initial_state(integ::DEIntegrator) = integ.sol.prob.u0
 current_state(integ::DEIntegrator) = integ.u
 current_time(integ::DEIntegrator) = integ.t
 initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
+successful_step(integ::DEIntegrator) = successful_retcode(check_error(integ))
 
 function set_state!(integ::DEIntegrator, u)
     if integ.u isa Array{<:Real}
