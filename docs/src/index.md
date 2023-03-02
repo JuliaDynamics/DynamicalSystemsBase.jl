@@ -21,6 +21,7 @@ dynamic_rule
 current_time
 initial_time
 isinplace(::DynamicalSystem)
+successful_step
 ```
 
 ```@docs
