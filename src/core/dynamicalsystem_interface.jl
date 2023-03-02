@@ -100,6 +100,7 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`current_time`](@ref)
 - [`initial_time`](@ref)
 - [`isinplace`](@ref)
+- [`succesful_step`](@ref)
 
 ### API - alter status
 
@@ -240,6 +241,18 @@ in place. If `true`, the state is typically `Array`, if `false`, the state is ty
 but a developer may care.
 """
 SciMLBase.isinplace(ds::DynamicalSystem) = errormsg(ds)
+
+"""
+    successful_step(ds::DynamicalSystem) -> true/false
+
+Return `true` if the last `step!` call to `ds` was successful, `false` otherwise.
+For continuous time systems this uses DifferentialEquations.jl error checking,
+for discrete time it checks if any variable is `Inf` or `NaN`.
+
+"""
+successful_step(ds::DynamicalSystem) = true
+successful_step(ds::DiscreteTimeDynamicalSystem) = any(x -> isinf(x) || isnan(x), current_state(ds))
+
 
 # Generic implementation, most types re-define it as compile-time info
 StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
