@@ -1,5 +1,5 @@
 using OrdinaryDiffEq: Tsit5
-using SciMLBase: ODEProblem, DEIntegrator, u_modified!, __init, check_error, successful_retcode
+using SciMLBase: ODEProblem, DEIntegrator, u_modified!, __init
 export CoupledODEs, ContinuousDynamicalSystem
 
 ###########################################################################################
@@ -143,6 +143,8 @@ initial_state(integ::DEIntegrator) = integ.sol.prob.u0
 current_state(integ::DEIntegrator) = integ.u
 current_time(integ::DEIntegrator) = integ.t
 initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
+
+using SciMLBase: successful_retcode, check_error
 successful_step(integ::DEIntegrator) = successful_retcode(check_error(integ))
 
 function set_state!(integ::DEIntegrator, u)

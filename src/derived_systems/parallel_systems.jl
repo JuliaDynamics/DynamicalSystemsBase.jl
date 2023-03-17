@@ -102,7 +102,7 @@ end
 # Analytically knwon rule: extensions
 ###########################################################################################
 for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
-        :current_parameters, :initial_parameters
+        :current_parameters, :initial_parameters,:successful_step
     )
     @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
 end

@@ -250,7 +250,8 @@ For continuous time systems this uses DifferentialEquations.jl error checking,
 for discrete time it checks if any variable is `Inf` or `NaN`.
 
 """
-successful_step(ds::DynamicalSystem) = true
+successful_step(ds::DynamicalSystem) = nothing
+
 successful_step(ds::DiscreteTimeDynamicalSystem) = all(x -> isfinite(x) , current_state(ds))
 
 
