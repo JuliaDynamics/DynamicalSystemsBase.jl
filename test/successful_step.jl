@@ -37,7 +37,6 @@ using OrdinaryDiffEq: Vern9
 		for _ in 1:100
 			step!(sys)
 		end
-		@show sys
 		@test successful_step(sys) == false
 	end
 end
