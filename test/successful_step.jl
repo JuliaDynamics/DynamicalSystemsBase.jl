@@ -20,17 +20,17 @@ using OrdinaryDiffEq: Vern9
 	#projected
 	projection = [1]
 	complete_state = [0.0]
-	pr = ProjectedDynamicalSystem(ode, projection, complete_state)
+	pr = ProjectedDynamicalSystem(deepcopy(ode), projection, complete_state)
 	
 	#parallel
 	states = [u0,u0]
-	pds = ParallelDynamicalSystem(ode,states)
+	pds = ParallelDynamicalSystem(deepcopy(ode),states)
 
 	#tangent
-	tds = TangentDynamicalSystem(ode)
+	tds = TangentDynamicalSystem(deepcopy(ode))
 	
 	#stroboscopic
-	sm = StroboscopicMap(ode,0.5)
+	sm = StroboscopicMap(deepcopy(ode),0.5)
 	
 	#stepping and testing
 	for sys in [dim,ode,pr,pds,tds,sm]
