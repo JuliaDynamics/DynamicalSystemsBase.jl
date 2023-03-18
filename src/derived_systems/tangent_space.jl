@@ -203,7 +203,7 @@ dynamic_rule(tands::TangentDynamicalSystem) = tands.original_f
 (tands::TangentDynamicalSystem)(t::Real) = tands.ds(t)[:, 1]
 
 for f in (:current_time, :initial_time, :isdiscretetime,
-        :current_parameters, :initial_parameters, :isinplace,
+        :current_parameters, :initial_parameters, :isinplace,:successful_step,
     )
     @eval $(f)(tands::TangentDynamicalSystem, args...; kw...) = $(f)(tands.ds, args...; kw...)
 end
@@ -211,6 +211,7 @@ current_state(t::TangentDynamicalSystem{true}) = view(current_state(t.ds), :, 1)
 current_state(t::TangentDynamicalSystem{false}) = current_state(t.ds)[:, 1]
 initial_state(t::TangentDynamicalSystem{true}) = view(initial_state(t.ds), :, 1)
 initial_state(t::TangentDynamicalSystem{false}) = initial_state(t.ds)[:, 1]
+
 
 """
     current_deviations(tands::TangentDynamicalSystem)

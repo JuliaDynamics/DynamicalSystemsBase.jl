@@ -51,7 +51,7 @@ set_period!(smap::StroboscopicMap, T) = (smap.period = T)
 # Extend interface
 ###########################################################################################
 for f in (:current_state, :initial_state, :current_parameters, :initial_parameters,
-	:dynamic_rule, :set_state!, :(SciMLBase.isinplace), :(StateSpaceSets.dimension))
+	:dynamic_rule, :set_state!,:successful_step, :(SciMLBase.isinplace), :(StateSpaceSets.dimension))
     @eval $(f)(smap::StroboscopicMap, args...) = $(f)(smap.ds, args...)
 end
 current_time(smap::StroboscopicMap) = smap.t

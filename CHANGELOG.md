@@ -1,3 +1,7 @@
+# v3.1.0
+New error checking functionality added via `successful_step`. Returns `true` if the last `step!` call to `ds` was successful, `false` otherwise.
+For continuous time systems this uses DifferentialEquations.jl error checking,for discrete time it checks if any variable is `Inf` or `NaN`. Defaults to `true` for other types.   
+
 # v3.0
 
 Complete rewrite of the package. The DynamicalSystems.jl v3 changelog summarizes the highlights. Here we will list all changes to _this specific package_.

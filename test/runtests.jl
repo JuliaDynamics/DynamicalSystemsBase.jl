@@ -13,4 +13,5 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     testfile("tangent.jl")
     testfile("poincare.jl")
     testfile("projected.jl")
+    testfile("successful_step.jl")
 end
