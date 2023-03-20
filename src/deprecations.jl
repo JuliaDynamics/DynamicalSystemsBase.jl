@@ -43,7 +43,7 @@ function parallel_integrator(ds::DynamicalSystem, states; kwargs...)
     It also doesn't accept keywords anymore.
     """
     )
-    return ParalleDynamicalSystem(ds, states)
+    return ParallelDynamicalSystem(ds, states)
 end
 
 function projected_integrator(ds::DynamicalSystem, projection, complete_state; kwargs...)
