@@ -175,6 +175,48 @@ which will give the specific parameter from the container at the given `index`
 """
 current_parameters(ds::DynamicalSystem) = ds.p
 current_parameters(ds::DynamicalSystem, index) = _get_parameter(current_parameters(ds), index)
+       
+"""
+    current_du(ds::DynamicalSystem) → du
+
+Return the current derivative at `t` of `ds`. This is based on the `DiffEqBase.get_du()`.
+    
+    Also the following syntax is provided:
+    
+    current_du!(out, ds::DynamicalSystem) → du
+    
+Write the current derivative at `t` into `out`. This also refers to  `DiffEqBase.get_du!()`
+"""
+function current_du(ds::DynamicalSystem)
+    ds.integ.cache isa FunctionMapCache ||
+        ds.integ.cache isa FunctionMapConstantCache &&
+            error("Derivatives are not defined for this stepper.")
+    return if isdefined(ds.integ, :fsallast)
+        ds.integ.fsallast
+    else
+        current_state(ds)
+    end
+end    
+    
+function current_du!(out, ds::DynamicalSystem)
+    ds.integ.cache isa FunctionMapCache ||
+        ds.integ.cache isa FunctionMapConstantCache &&
+            error("Derivatives are not defined for this stepper.")
+    if typeof(ds.integ.cache) <: FunctionMapCache
+        out .= ds.integ.cache.tmp
+    else
+        return if isdefined(ds.integ, :fsallast) &&
+                  !(typeof(ds.integ.alg) <:
+                    Union{Rosenbrock23, Rosenbrock32, Rodas4, Rodas4P, Rodas4P2, Rodas5,
+                          Rodas5P})
+            # Special stiff interpolations do not store the right value in fsallast
+            out .= ds.integ.fsallast
+        else
+            current_state(ds)
+        end
+    end
+end 
+    
 function _get_parameter(p, index)
     if p isa Union{AbstractArray, AbstractDict}
         getindex(p, index)
