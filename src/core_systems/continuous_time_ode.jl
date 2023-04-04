@@ -5,7 +5,6 @@ export CoupledODEs, ContinuousDynamicalSystem
 ###########################################################################################
 # DiffEq options
 ###########################################################################################
-_get_solver(a) = haskey(a, :alg) ? a[:alg] : DEFAULT_SOLVER
 const DEFAULT_SOLVER = Tsit5()
 const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-6, reltol = 1e-6)
 const DEFAULT_DIFFEQ = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
