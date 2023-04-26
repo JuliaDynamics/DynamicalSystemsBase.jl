@@ -43,6 +43,14 @@ function trajectory_discrete(ds, T; Δt::Integer = 1, Ttr::Integer = 0, accessor
     for i in 2:L
         step!(ds, Δt)
         data[i] = SVector{X, ET}(obtain_access(current_state(ds), accessor))
+        if !successful_step(ds)
+            # Diverged trajectory; set final state to remaining set
+            # and exit iteration early
+            for j in (i+1):L
+                data[j] = data[i]
+            end
+            break
+        end
     end
     return StateSpaceSet(data), tvec
 end
@@ -60,6 +68,15 @@ function trajectory_continuous(ds, T; Δt = 0.1, Ttr = 0.0, accessor = nothing)
             step!(ds)
         end
         sol[i] = SVector{X, ET}(obtain_access(ds(t), accessor))
+        if !successful_step(ds)
+            # Diverged trajectory; set final state to remaining set
+            # and exit iteration early
+            for j in (i+1):length(tvec)
+                sol[j] = sol[i]
+            end
+            break
+        end
+
     end
     return StateSpaceSet(sol), tvec
 end
