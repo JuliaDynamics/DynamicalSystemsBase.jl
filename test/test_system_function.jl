@@ -123,7 +123,7 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
                 @test X[1] == u0
 
                 prev_u0 = deepcopy(current_state(ds))
-                Y, t2 = trajectory(ds, 3, nothing; Δt = 1)
+                Y, t2 = trajectory(ds, 3, nothing; Dt = 1)
                 @test Y[1] ≈ prev_u0 atol=1e-6
                 @test t2[1] > t[end]
 

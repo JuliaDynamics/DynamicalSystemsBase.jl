@@ -14,7 +14,8 @@ The returned time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)`.
 ## Keyword arguments
 
 * `Δt`:  Time step of value output. For discrete time systems it must be an integer.
-  Defaults to `0.1` for continuous and `1` for discrete time systems.
+  Defaults to `0.1` for continuous and `1` for discrete time systems. If you don't
+  have access to unicode, the keyword `Dt` can be used instead.
 * `Ttr = 0`: Transient time to evolve the initial state before starting saving states.
 * `t0 = initial_time(ds)`: Starting time.
 * `save_idxs::AbstractVector{Int}`: Which variables to output in `X` (by default all).
@@ -31,7 +32,9 @@ function trajectory(ds::DynamicalSystem, T, u0 = initial_state(ds);
     end
 end
 
-function trajectory_discrete(ds, T; Δt::Integer = 1, Ttr::Integer = 0, accessor = nothing)
+function trajectory_discrete(ds, T;
+        Dt::Integer = 1, Δt::Integer = Dt, Ttr::Integer = 0, accessor = nothing
+    )
     ET = eltype(current_state(ds))
     t0 = current_time(ds)
     tvec = (t0+Ttr):Δt:(t0+T+Ttr)
@@ -55,7 +58,7 @@ function trajectory_discrete(ds, T; Δt::Integer = 1, Ttr::Integer = 0, accessor
     return StateSpaceSet(data), tvec
 end
 
-function trajectory_continuous(ds, T; Δt = 0.1, Ttr = 0.0, accessor = nothing)
+function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = nothing)
     D = dimension(ds)
     t0 = current_time(ds)
     tvec = (t0+Ttr):Δt:(t0+T+Ttr)
