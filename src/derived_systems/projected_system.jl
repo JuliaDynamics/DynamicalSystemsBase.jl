@@ -72,7 +72,7 @@ function ProjectedDynamicalSystem(ds::DynamicalSystem, projection, complete_stat
         remidxs = setdiff(1:dimension(ds), projection)
         @assert !isempty(remidxs)
     else
-        @assert length(complete_state(y)) == dimension(ds)
+        @assert length(complete_state(u0)) == dimension(ds)
         remidxs = nothing
     end
     u = zeros(dimension(ds))
