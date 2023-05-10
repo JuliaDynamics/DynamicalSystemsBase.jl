@@ -34,7 +34,7 @@ Case 1: project 5-dimensional system to its last two dimensions.
 ds = Systems.lorenz96(5)
 projection = [4, 5]
 complete_state = [0.0, 0.0, 0.0] # completed state just in the plane of last two dimensions
-pds = projected_integrator(ds, projection, complete_state)
+pds = ProjectedDynamicalSystem(ds, projection, complete_state)
 reinit!(pds, [0.2, 0.4])
 step!(pds)
 get_state(pds)
@@ -43,9 +43,9 @@ Case 2: custom projection to general functions of state.
 ```julia
 ds = Systems.lorenz96(5)
 projection(u) = [sum(u), sqrt(u[1]^2 + u[2]^2)]
-complete_state(y) = repeat(y[1]/5, 5)
+complete_state(y) = repeat([y[1]/5], 5)
 pds = # same as in above example...
-````
+```
 """
 struct ProjectedDynamicalSystem{P, PD, C, R, D} <: DynamicalSystem
     projection::P
@@ -59,20 +59,22 @@ Base.parent(pds::ProjectedDynamicalSystem) = pds.ds
 function ProjectedDynamicalSystem(ds::DynamicalSystem, projection, complete_state)
     u0 = initial_state(ds)
     if projection isa AbstractVector{Int}
-        @assert all(1 .≤ projection .≤ dimension(ds))
+        all(1 .≤ projection .≤ dimension(ds)) || error("Dim. of projection must be in 1 ≤ np ≤ dimension(ds)")
         projection = SVector(projection...)
         y = u0[projection]
     else
-        @assert projection(u0) isa AbstractVector
+        projection(u0) isa AbstractVector || error("Projected state must be an AbstracVector")
         y = projection(u0)
     end
     if complete_state isa AbstractVector
-        @assert projection isa AbstractVector{Int}
-        @assert length(complete_state) + length(projection) == dimension(ds)
+        projection isa AbstractVector{Int} || error("Projection vector must be of type Int")
+        length(complete_state) + length(projection) == dimension(ds) || 
+                                error("Wrong dimensions for complete_state and projection")
         remidxs = setdiff(1:dimension(ds), projection)
-        @assert !isempty(remidxs)
+        !isempty(remidxs) || error("Error with the indices of the projection")
     else
-        @assert length(complete_state(y)) == dimension(ds)
+        length(complete_state(u0)) == dimension(ds) || 
+                        error("The returned vector of complete_state must equal dimension(ds)")
         remidxs = nothing
     end
     u = zeros(dimension(ds))
