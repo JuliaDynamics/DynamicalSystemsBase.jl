@@ -34,7 +34,7 @@ Case 1: project 5-dimensional system to its last two dimensions.
 ds = Systems.lorenz96(5)
 projection = [4, 5]
 complete_state = [0.0, 0.0, 0.0] # completed state just in the plane of last two dimensions
-pds = projected_integrator(ds, projection, complete_state)
+pds = ProjectedDynamicalSystem(ds, projection, complete_state)
 reinit!(pds, [0.2, 0.4])
 step!(pds)
 get_state(pds)
@@ -43,9 +43,9 @@ Case 2: custom projection to general functions of state.
 ```julia
 ds = Systems.lorenz96(5)
 projection(u) = [sum(u), sqrt(u[1]^2 + u[2]^2)]
-complete_state(y) = repeat(y[1]/5, 5)
+complete_state(y) = repeat([y[1]/5], 5)
 pds = # same as in above example...
-````
+```
 """
 struct ProjectedDynamicalSystem{P, PD, C, R, D} <: DynamicalSystem
     projection::P
