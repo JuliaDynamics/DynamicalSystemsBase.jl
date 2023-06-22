@@ -80,7 +80,7 @@ end
     plane = (1, 0.0)
     ds = CoupledODEs(lorenz_rule, recursivecopy(u0), p)
 
-    pmap = PoincareMap(ds, plane)
+    pmap = PoincareMap(ds, plane; rootkw = (xrtol = 1e-12, atol = 1e-12))
     P, t = trajectory(pmap, 10)
     @test all(x -> abs(x) < 1e-6, P[:, 1])
 
