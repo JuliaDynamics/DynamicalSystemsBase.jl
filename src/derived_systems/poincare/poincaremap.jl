@@ -22,7 +22,7 @@ See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref).
 ## Keyword arguments
 
 * `direction = -1`: Only crossings with `sign(direction)` are considered to belong to
-  the surface of section. Positive direction means going from less than ``b``
+  the surface of section. Negative direction means going from less than ``b``
   to greater than ``b``.
 * `u0 = nothing`: Specify an initial state.
 * `rootkw = (xrtol = 1e-6, atol = 1e-8)`: A `NamedTuple` of keyword arguments
