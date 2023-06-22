@@ -36,7 +36,7 @@ plane2 = gis_plane(μ)
 function poincare_tests(ds, pmap, plane)
     P, t = trajectory(pmap, 10)
     reinit!(ds)
-    P2 = poincaresos(ds, plane, 100)
+    P2 = poincaresos(ds, plane, 100; rootkw = (xrtol = 1e-12, atol = 1e-12))
     @test length(P) == 11
     @test P[1] == P2[1]
     @test length(P2) > 1
@@ -57,13 +57,14 @@ end
     rule = !IIP ? gissinger_rule : gissinger_rule_iip
     ds = CoupledODEs(rule, recursivecopy(u0), p)
     plane = P == 1 ? plane1 : plane2
-    pmap = PoincareMap(ds, plane)
+    pmap = PoincareMap(ds, plane; rootkw = (xrtol = 1e-12, atol = 1e-12))
     u0pmap = recursivecopy(current_state(pmap))
     test_dynamical_system(pmap, u0pmap, p;
     idt=true, iip=IIP, test_trajectory = true,
     test_init_state_equiv=false, u0init = initial_state(pmap))
-    # Specific poincare map tests here:
-    poincare_tests(ds, pmap, plane)
+    @testset "specific poincare" begin
+        poincare_tests(ds, pmap, plane)
+    end
 end
 
 @testset "set_parameter works" begin
