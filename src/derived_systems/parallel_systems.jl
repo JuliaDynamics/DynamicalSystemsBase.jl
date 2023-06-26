@@ -18,7 +18,7 @@ This struct follows the [`DynamicalSystem`](@ref) interface with the following a
 
 - The function [`current_state`](@ref) is called as `current_state(pds, i::Int = 1)`
   which returns the `i`th state. Same for [`initial_state`](@ref).
-- Similarly, [`set_state!`](@ref) obtains a second argument `i::Int = 1` to
+- Similarly, [`set_state!`](@ref) obtains a third argument `i::Int = 1` to
   set the `i`-th state.
 - [`current_states`](@ref) and [`initial_states`](@ref) can be used to get
   all parallel states.
