@@ -73,7 +73,7 @@ function ProjectedDynamicalSystem(ds::DynamicalSystem, projection, complete_stat
         remidxs = setdiff(1:dimension(ds), projection)
         !isempty(remidxs) || error("Error with the indices of the projection")
     else
-        length(complete_state(u0)) == dimension(ds) || 
+        length(complete_state(y)) == dimension(ds) || 
                         error("The returned vector of complete_state must equal dimension(ds)")
         remidxs = nothing
     end
