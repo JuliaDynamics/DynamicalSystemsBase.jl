@@ -120,6 +120,7 @@ function poincaresos(A::StateSpaceSet, planecrossing::PlaneCrossing, j)
     return data
 end
 
+using LinearAlgebra
 function interpolate_crossing(A, B, pc::PlaneCrossing{<:AbstractVector})
     # https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
     t = LinearAlgebra.dot(pc.n, (pc.p₀ .- A))/LinearAlgebra.dot((B .- A), pc.n)
