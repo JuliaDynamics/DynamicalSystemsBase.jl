@@ -96,4 +96,5 @@ end
     A = poincaresos(X, plane1)
     @test dimension(A) == 3
     @test all(x -> abs(x) < 1e-12, A[:, 1])
+    B = poincaresos(X, plane2)
 end
