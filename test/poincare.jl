@@ -100,5 +100,5 @@ end
     B = poincaresos(X, vec_plane)
     @test dimension(B) == 3
     @test all(x -> abs(x) < 1e-12, B[:, 1])
-    @test A.data == B.data
+    @test vec(A) == vec(B)
 end
