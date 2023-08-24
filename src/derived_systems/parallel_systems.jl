@@ -130,18 +130,23 @@ function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u, i::Int = 1)
 end
 
 # States IO for matrix state
-# Unfortunately the `eachcol` generator cannot be accessed with `i`
-# so we need to extend every method manually
-# TODO: In Julia 1.9 `eachcol` can be indexed normally.
 const PDSAM{D} = ParallelDynamicalSystemAnalytic{D, true}
 current_states(pdsa::PDSAM) = eachcol(current_state(pdsa.ds))
-current_state(pdsa::PDSAM, i::Int = 1) = view(current_state(pdsa.ds), :, i)
 initial_states(pdsa::PDSAM) = eachcol(initial_state(pdsa.ds))
-initial_state(pdsa::PDSAM, i::Int = 1) = view(initial_state(pdsa.ds), :, i)
 (pdsa::PDSAM)(t::Real, i::Int = 1) = view(pdsa.ds(t), :, i)
 function set_state!(pdsa::PDSAM, u, i::Int = 1)
     current_state(pdsa, i) .= u
     u_modified!(pdsa.ds.integ, true)
+    return pdsa
+end
+
+# We make one more extension here: for continuous time, in place systems
+# the state is a matrix (each column a parallel state) for performance.
+# re-init will not work because there is no way to do the recursive copy. we do it ourselves
+function reinit!(pdsa::PDSAM, states::AbstractVector; kwargs...)
+    m = hcat(states...) # convert to matrix
+    reinit!(pdsa.ds, m; kwargs...)
+    return pdsa
 end
 
 ###########################################################################################
