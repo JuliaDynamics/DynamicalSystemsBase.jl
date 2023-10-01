@@ -68,12 +68,12 @@ function ProjectedDynamicalSystem(ds::DynamicalSystem, projection, complete_stat
     end
     if complete_state isa AbstractVector
         projection isa AbstractVector{Int} || error("Projection vector must be of type Int")
-        length(complete_state) + length(projection) == dimension(ds) || 
+        length(complete_state) + length(projection) == dimension(ds) ||
                                 error("Wrong dimensions for complete_state and projection")
         remidxs = setdiff(1:dimension(ds), projection)
         !isempty(remidxs) || error("Error with the indices of the projection")
     else
-        length(complete_state(y)) == dimension(ds) || 
+        length(complete_state(y)) == dimension(ds) ||
                         error("The returned vector of complete_state must equal dimension(ds)")
         remidxs = nothing
     end
@@ -124,6 +124,8 @@ function SciMLBase.reinit!(pds::ProjectedDynamicalSystem{P, D, <:Function}, y = 
     isnothing(y) || reinit!(pds.ds, pds.complete_state(y); kwargs...)
     return pds
 end
+
+set_state!(pds::ProjectedDynamicalSystem, u) = reinit!(pds, u)
 
 function (pds::ProjectedDynamicalSystem{P})(t) where {P}
     u = pds.ds(t)
