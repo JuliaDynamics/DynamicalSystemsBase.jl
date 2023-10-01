@@ -127,7 +127,7 @@ Abstract subtype of `DynamicalSystem` encompassing all discrete time systems.
 """
 abstract type DiscreteTimeDynamicalSystem <: DynamicalSystem end
 
-errormsg(ds) = "Not yet implemented for dynamical system of type $(nameof(typeof(ds)))."
+errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(typeof(ds))).")
 
 export current_state, initial_state, current_parameters, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
