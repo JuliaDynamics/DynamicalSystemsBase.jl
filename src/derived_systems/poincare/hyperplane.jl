@@ -90,7 +90,7 @@ function poincaresos(A::AbstractStateSpaceSet, plane;
     i = typeof(save_idxs) <: Int ? save_idxs : SVector{length(save_idxs), Int}(save_idxs...)
     planecrossing = PlaneCrossing(plane, direction > 0)
     data = poincaresos(A, planecrossing, i)
-    warning && length(data) == 0 && @warn PSOS_ERROR
+    warning && length(data) == 0 && @warn "Poincaré surface of section does not contain any points!"
     return StateSpaceSet(data)
 end
 function poincaresos(A::StateSpaceSet, planecrossing::PlaneCrossing, j)
