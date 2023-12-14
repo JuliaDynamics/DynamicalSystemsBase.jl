@@ -51,15 +51,15 @@ If you want to specify a solver, do so by using the keyword `alg`, e.g.:
 $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 
 `diffeq` keywords can also include `callback` for [event handling
-](http://docs.juliadiffeq.org/latest/features/callback_functions.html), however the
-majority of downstream functions in DynamicalSystems.jl assume that `f` is differentiable.
+](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
 
-The convenience constructor `CoupledODEs(prob::ODEProblem, diffeq)` and
-`CoupledODEs(ds::CoupledODEs, diffeq)` are also available.
+The convenience constructors `CoupledODEs(prob::ODEProblem [, diffeq])` and
+`CoupledODEs(ds::CoupledODEs [, diffeq])` are also available.
 
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
 The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
-The convenience syntax `ODEProblem(ds::CoupledODEs, tspan = (t0, Inf))` is available.
+The convenience syntax `ODEProblem(ds::CoupledODEs, tspan = (t0, Inf))` is available
+to extract the problem.
 """
 struct CoupledODEs{IIP, D, I, P} <: ContinuousTimeDynamicalSystem
     integ::I
@@ -86,6 +86,9 @@ end
 CoupledODEs(ds::CoupledODEs, diffeq) = CoupledODEs(ODEProblem(ds), diffeq)
 # Below `special_kwargs` is undocumented internal option for passing `internalnorm`
 function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs...)
+    if haskey(special_kwargs, :diffeq)
+        throw(ArgumentError("`diffeq` is given as positional argument when an ODEProblem is provided."))
+    end
     IIP = isinplace(prob)
     D = length(prob.u0)
     P = typeof(prob.p)

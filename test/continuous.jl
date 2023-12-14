@@ -1,6 +1,6 @@
 using DynamicalSystemsBase, Test
 
-using OrdinaryDiffEq: Vern9, ODEProblem
+using OrdinaryDiffEq: Vern9, ODEProblem, Rodas5, Tsit5
 
 include("test_system_function.jl")
 
@@ -36,4 +36,26 @@ for (ds, iip) in zip((lorenz_oop, lorenz_iip, lorenz_vern), (false, true, false)
         @test dynamic_rule(ds) == (iip ? lorenz_rule_iip : lorenz_rule)
         test_dynamical_system(ds, u0, p0; idt = false, iip)
     end
+end
+
+@testset "correct ODE propagation" begin
+    lorenz_oop = CoupledODEs(lorenz_rule, u0, p0)
+    @test lorenz_oop.integ.alg isa Tsit5
+
+    lorenz_vern = CoupledODEs(lorenz_rule, u0, p0;
+        diffeq = (alg = Vern9(), verbose = false, abstol = 1e-9, reltol = 1e-9)
+    )
+    @test lorenz_vern.integ.alg isa Vern9
+    @test lorenz_vern.integ.opts.verbose == false
+
+    # also test ODEproblem creation
+    prob = lorenz_vern.integ.sol.prob
+
+    ds = CoupledODEs(prob, (alg=Rodas5(autodiff=false), abstol=0.0, reltol=1e-6, verbose=false))
+
+    @test ds.integ.alg isa Rodas5
+    @test ds.integ.opts.verbose == false
+
+    @test_throws ArgumentError CoupledODEs(prob; diffeq = (alg=Rodas5(autodiff=false), ))
+
 end
