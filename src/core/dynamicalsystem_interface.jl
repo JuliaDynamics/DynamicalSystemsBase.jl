@@ -11,7 +11,7 @@ of what counts as a "dynamical system" in the DynamicalSystems.jl library.
 can be iteratively evolved in time via the [`step!`](@ref) function._**
 Hence, most library functions that evolve the system
 will mutate its current state and/or parameters. See the documentation online
-for implications this has on for parallelization.
+for implications this has for parallelization.
 
 `DynamicalSystem` is further separated into two abstract types:
 `ContinuousTimeDynamicalSystem, DiscreteTimeDynamicalSystem`.
@@ -33,7 +33,7 @@ It mainly encapsulates three things:
    and the length of `u` is the dimension of `ds` (and of the state space).
 2. A dynamic rule, typically referred to as `f`, that dictates how the state
    evolves/changes with time when calling the [`step!`](@ref) function.
-   `f` is a standard Julia function, see below.
+   `f` is typically a standard Julia function, see below.
 3. A parameter container `p` that parameterizes `f`. `p` can be anything,
    but in general it is recommended to be a type-stable mutable container.
 
