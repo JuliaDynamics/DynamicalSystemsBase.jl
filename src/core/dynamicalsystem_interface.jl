@@ -251,8 +251,7 @@ for discrete time it checks if any variable is `Inf` or `NaN`.
 """
 successful_step(ds::DynamicalSystem) = errormsg(ds)
 
-successful_step(ds::DiscreteTimeDynamicalSystem) = all(x -> isfinite(x) , current_state(ds))
-
+successful_step(ds::DiscreteTimeDynamicalSystem) = all(x -> (isfinite(x) || !isnan(x)) , current_state(ds))
 
 # Generic implementation, most types re-define it as compile-time info
 StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
