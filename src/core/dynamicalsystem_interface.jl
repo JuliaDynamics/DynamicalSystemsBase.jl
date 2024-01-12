@@ -78,14 +78,14 @@ on a case-by-case basis as it depends on the complexity of `f`.
 
 The API that the interface of `DynamicalSystem` employs is
 the functions listed below. Once a concrete instance of a subtype of `DynamicalSystem` is
-obtained, it can quieried or altered with the following functions.
+obtained, it can queried or altered with the following functions.
 
 The main use of a concrete dynamical system instance is to provide it to downstream
 functions such as `lyapunovspectrum` from ChaosTools.jl or `basins_of_attraction`
 from Attractors.jl. A typical user will likely not utilize directly the following API,
 unless when developing new algorithm implementations that use dynamical systems.
 
-### API - information
+### API - obtain information
 
 - `ds(t)` with `ds` an instance of `DynamicalSystem`: return the state of `ds` at time `t`.
   For continuous time systems this interpolates and extrapolates,

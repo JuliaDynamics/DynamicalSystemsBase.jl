@@ -1,3 +1,18 @@
+# v3.5.0
+
+The `DynamicalSystem` interface now supports ModelingToolkit.jl created models:
+
+- Obtaining or setting parameters can be done by giving the MTK symbolic variable as index
+- Obtaining a state can be done by giving the MTK symbolic variable index which includes "observed" variables that are not formally part of the state space.
+
+# v3.4.0
+
+Better error handling for `diffeq` and `CoupledODEs`: passing a keyword was possible but should not have been.
+
+# v3.3.0
+
+Sorry, I forgot what goes here!
+
 # v3.2.0
 The keyword `Dt` can now be used instead of `Δt` in `trajectory` if access to unicode isn't available.
 
