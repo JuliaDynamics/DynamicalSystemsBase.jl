@@ -36,6 +36,8 @@ p = [fol_1.τ => 2.0,
 prob = ODEProblem(connected_simp, u0, (0.0, 10.0), p)
 ds = CoupledODEs(prob)
 
+# parameters
+
 @test current_parameter(ds, 1) == 2.0
 @test current_parameter(ds, fol_1.τ) == 2.0
 @test current_parameter(ds, 2) == 4.0
@@ -48,6 +50,10 @@ set_parameter!(ds, 1, 3.0)
 set_parameter!(ds, fol_1.τ, 2.0)
 @test current_parameter(ds, 1) == 2.0
 @test current_parameter(ds, fol_1.τ) == 2.0
+
+# states and observed variables
+@test current_state(ds, 1) == -0.5
+@test current_state(ds, fol_1.x) == -0.5
 
 # %% Test without sys
 function lorenz!(du, u, p, t)
@@ -64,3 +70,5 @@ ds = CoupledODEs(prob)
 @test current_parameter(ds, 1) == 10.0
 set_parameter!(ds, 1, 2.0)
 @test current_parameter(ds, 1) == 2.0
+
+@test current_state(ds, 1) == 1.0

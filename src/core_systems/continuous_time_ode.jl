@@ -120,7 +120,7 @@ end
 ###########################################################################################
 StateSpaceSets.dimension(::CoupledODEs{IIP, D}) where {IIP, D} = D
 
-for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
+for f in (:initial_state, :current_parameters, :dynamic_rule,
     :current_time, :initial_time, :successful_step, :set_state!, :(SciMLBase.isinplace))
     @eval $(f)(ds::ContinuousTimeDynamicalSystem, args...) = $(f)(ds.integ, args...)
 end
@@ -142,6 +142,7 @@ end
 dynamic_rule(integ::DEIntegrator) = integ.f.f
 current_parameters(integ::DEIntegrator) = integ.p
 initial_state(integ::DEIntegrator) = integ.sol.prob.u0
+current_state(ds::CoupledODEs) = current_state(ds.integ)
 current_state(integ::DEIntegrator) = integ.u
 current_time(integ::DEIntegrator) = integ.t
 initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
@@ -168,4 +169,4 @@ function set_parameter!(ds::CoupledODEs, args...)
     return
 end
 
-referrenced_sciml_problem(ds::CoupledODEs) = (ds.integ.sol.prob, ds.integ.f.sys)
+referrenced_sciml_sys(ds::CoupledODEs) = (ds.integ.sol.prob, ds.integ.f.sys, ds.integ)

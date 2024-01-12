@@ -137,10 +137,16 @@ export current_state, initial_state, current_parameters, current_parameter, init
 ###########################################################################################
 # Symbolic support
 ###########################################################################################
-# Simply extend the `referrenced_sciml_problem` and you have symbolic indexing support!
+# Simply extend the `referrenced_sciml_sys` and you have symbolic indexing support!
 import SymbolicIndexingInterface
-# return a tuple of the DEProblem and MTK System
-referrenced_sciml_problem(::DynamicalSystem) = (nothing, nothing)
+# return a tuple of the DEProblem and MTK System and DE Integrator
+referrenced_sciml_sys(::DynamicalSystem) = (nothing, nothing, nothing)
+
+# return true if there is an actual referrenced system (instead of nothing)
+has_referrenced_sys(::Nothing) = false
+has_referrenced_sys(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
+has_referrenced_sys(sys) = true
+
 
 ###########################################################################################
 # API - obtaining information from the system
@@ -168,7 +174,7 @@ Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
 
 - `i::Int` returns the `i`-th dynamic variable.
 - `i::Function` returns `f(current_state(ds))`, which is asserted to be a real number.
-- `i::Num` returns the value of the corresponding symbolic variable.
+- `i::SymbolLike` returns the value of the corresponding symbolic variable.
    This is valid only for dynamical systems referring a ModelingToolkit.jl model
    which also has `i` as one of its listed variables. This can be a formal state variable
    or an "observed" variable according to ModelingToolkit.jl. In short, it can be anything
@@ -177,16 +183,18 @@ Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
 """
 function current_state(ds::DynamicalSystem, index)
     u = current_state(ds)
-    T = eltype(u)
-    # if SciMLBase.issymbollike(index)
-    #     do_symbolic_stuff
-    # else
+    prob, sys, integ = referrenced_sciml_sys(ds)
+    if !has_referrenced_sys(sys)
+        T = eltype(u)
         if index isa Int
             return u[index]::T
         elseif index isa Function
             return index(u)::T
         end
-    # end
+    else
+        ugetter = SymbolicIndexingInterface.getu(sys, index)
+        return ugetter(integ)
+    end
 end
 
 """
@@ -212,9 +220,9 @@ Return the specific parameter corresponding to `index`,
 which can be anything given to [`set_parameter!`](@ref).
 """
 function current_parameter(ds::DynamicalSystem, index)
-    prob, sys = referrenced_sciml_problem(ds)
-    if isnothing(prob)
-        return _get_parameter(current_parameters(ds), i)
+    prob, sys, integ = referrenced_sciml_sys(ds)
+    if !has_referrenced_sys(sys)
+        return _get_parameter(current_parameters(ds), index)
     else # symbolic dispatch
         i = SymbolicIndexingInterface.getp(sys, index)
         return i(prob)
@@ -327,8 +335,8 @@ which also has `index` as one of its parameters.
 set_parameter!(ds::DynamicalSystem, args...) = _set_parameter!(ds, current_parameters(ds), args...)
 
 function _set_parameter!(ds::DynamicalSystem, p, index, value)
-    prob, sys = referrenced_sciml_problem(ds)
-    if isnothing(prob)
+    prob, sys = referrenced_sciml_sys(ds)
+    if !has_referrenced_sys(prob)
         if p isa Union{AbstractArray, AbstractDict}
             setindex!(p, value, index)
         else
