@@ -38,7 +38,7 @@ Optionally provide the parameter container `p` and initial time as keyword `t0`.
 
 For construction instructions regarding `f, u0` see [`DynamicalSystem`](@ref).
 
-## DifferentialEquations.jl keyword arguments and interfacing
+## DifferentialEquations.jl and ModelingToolkit.jl interfacing
 
 The ODEs are evolved via the solvers of DifferentialEquations.jl.
 When initializing a `CoupledODEs`, you can specify the solver that will integrate
@@ -55,6 +55,10 @@ $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 
 The convenience constructors `CoupledODEs(prob::ODEProblem [, diffeq])` and
 `CoupledODEs(ds::CoupledODEs [, diffeq])` are also available.
+
+Additionally, if the `ODEProblem` provided is created from an `ODESystem` of
+ModelingToolkit.jl, then using the `ODESystem` symbolic names is allowed
+in [`set_parameter!`](@ref) and [`current_state`](@ref).
 
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
 The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
