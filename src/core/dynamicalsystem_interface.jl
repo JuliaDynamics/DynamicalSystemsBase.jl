@@ -93,6 +93,7 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`current_state`](@ref)
 - [`initial_state`](@ref)
 - [`current_parameters`](@ref)
+- [`current_parameter`](@ref)
 - [`initial_parameters`](@ref)
 - [`isdeterministic`](@ref)
 - [`isdiscretetime`](@ref)
@@ -129,12 +130,20 @@ abstract type DiscreteTimeDynamicalSystem <: DynamicalSystem end
 
 errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(typeof(ds))).")
 
-export current_state, initial_state, current_parameters, initial_parameters, isinplace,
+export current_state, initial_state, current_parameters, current_parameter, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
     reinit!, set_state!, set_parameter!, set_parameters!, step!
 
 ###########################################################################################
-# API - information
+# Symbolic support
+###########################################################################################
+# Simply extend the `referrenced_sciml_problem` and you have symbolic indexing support!
+import SymbolicIndexingInterface
+# return a tuple of the DEProblem and MTK System
+referrenced_sciml_problem(::DynamicalSystem) = (nothing, nothing)
+
+###########################################################################################
+# API - obtaining information from the system
 ###########################################################################################
 function (ds::DiscreteTimeDynamicalSystem)(t::Real)
     if t == current_time(ds)
@@ -146,11 +155,39 @@ end
 (ds::ContinuousTimeDynamicalSystem)(t::Real) = ds.integ(t)
 
 """
-    current_state(ds::DynamicalSystem) → u
+    current_state(ds::DynamicalSystem) → u::AbstractArray
 
 Return the current state of `ds`. This state is mutated when `ds` is mutated.
 """
 current_state(ds::DynamicalSystem) = ds.u
+
+"""
+    current_state(ds::DynamicalSystem, i) → x::Real
+
+Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
+
+- `i::Int` returns the `i`-th dynamic variable.
+- `i::Function` returns `f(current_state(ds))`, which is asserted to be a real number.
+- `i::Num` returns the value of the corresponding symbolic variable.
+   This is valid only for dynamical systems referring a ModelingToolkit.jl model
+   which also has `i` as one of its listed variables. This can be a formal state variable
+   or an "observed" variable according to ModelingToolkit.jl. In short, it can be anything
+   that can index the solution object of `sol = solve(...)`. This option becomes available
+   when `ModelingToolkit` is loaded.
+"""
+function current_state(ds::DynamicalSystem, index)
+    u = current_state(ds)
+    T = eltype(u)
+    # if SciMLBase.issymbollike(index)
+    #     do_symbolic_stuff
+    # else
+        if index isa Int
+            return u[index]::T
+        elseif index isa Function
+            return index(u)::T
+        end
+    # end
+end
 
 """
     initial_state(ds::DynamicalSystem) → u0
@@ -165,24 +202,28 @@ initial_state(ds::DynamicalSystem) = ds.u0
 
 Return the current parameter container of `ds`. This is mutated in functions
 that need to evolve `ds` across a parameter range.
-
-The following convenience syntax is also possible:
-
-    current_parameters(ds::DynamicalSystem, index)
-
-which will give the specific parameter from the container at the given `index`
-(which works for arrays, dictionaries, or composite types if `index` is `Symbol`).
 """
 current_parameters(ds::DynamicalSystem) = ds.p
-current_parameters(ds::DynamicalSystem, index) = _get_parameter(current_parameters(ds), index)
-function _get_parameter(p, index)
-    if p isa Union{AbstractArray, AbstractDict}
-        getindex(p, index)
-    else
-        getproperty(p, index)
+
+"""
+    current_parameter(ds::DynamicalSystem, index)
+
+Return the specific parameter corresponding to `index`,
+which can be anything given to [`set_parameter!`](@ref).
+"""
+function current_parameter(ds::DynamicalSystem, index)
+    prob, sys = referrenced_sciml_problem(ds)
+    if isnothing(prob)
+        return _get_parameter(current_parameters(ds), i)
+    else # symbolic dispatch
+        i = SymbolicIndexingInterface.getp(sys, index)
+        return i(prob)
     end
 end
 
+# Dispatch for composite types as parameter containers
+_get_parameter(p::Union{AbstractArray, AbstractDict}, index) = getindex(p, index)
+_get_parameter(p, index) = getproperty(p, index)
 
 """
     initial_parameters(ds::DynamicalSystem) → p0
@@ -191,6 +232,10 @@ Return the initial parameter container of `ds`.
 This is never mutated and is set when initializing `ds`.
 """
 initial_parameters(ds::DynamicalSystem) = ds.p0
+function initial_parameters(ds::DynamicalSystem, index)
+    i = parameter_index(ds, index)
+    return _get_parameter(initial_parameters(ds), i)
+end
 
 """
     isdeterministic(ds::DynamicalSystem) → true/false
@@ -257,7 +302,7 @@ successful_step(ds::DiscreteTimeDynamicalSystem) = all(x -> (isfinite(x) || !isn
 StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 
 ###########################################################################################
-# API - alter status
+# API - altering status of the system
 ###########################################################################################
 """
     set_state!(ds::DynamicalSystem, u)
@@ -271,16 +316,27 @@ set_state!(ds, u) = errormsg(ds)
     set_parameter!(ds::DynamicalSystem, index, value)
 
 Change a parameter of `ds` given the `index` it has in the parameter container
-and the `value` to set it to. This function works for both array/dictionary containers
-as well as composite types. In the latter case `index` needs to be a `Symbol`.
-"""
-set_parameter!(ds::DynamicalSystem, args...) = _set_parameter!(current_parameters(ds), args...)
+and the `value` to set it to. This function works for any type of parameter container
+(array/dictionary/composite types) provided the `index` is appropriate type.
 
-function _set_parameter!(p, index, value)
-    if p isa Union{AbstractArray, AbstractDict}
-        setindex!(p, value, index)
+The `index` can be a traditional Julia index (integer for arrays, key for dictionaries,
+or symbol for composite types). However, it can also be a symbolic variable.
+This is valid only for dynamical systems referring a ModelingToolkit.jl model
+which also has `index` as one of its parameters.
+"""
+set_parameter!(ds::DynamicalSystem, args...) = _set_parameter!(ds, current_parameters(ds), args...)
+
+function _set_parameter!(ds::DynamicalSystem, p, index, value)
+    prob, sys = referrenced_sciml_problem(ds)
+    if isnothing(prob)
+        if p isa Union{AbstractArray, AbstractDict}
+            setindex!(p, value, index)
+        else
+            setproperty!(p, index, value)
+        end
     else
-        setproperty!(p, index, value)
+        i = SymbolicIndexingInterface.setp(sys, index)
+        i(prob, value)
     end
     return
 end
@@ -296,7 +352,7 @@ function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
     cp = current_parameters(ds)
     p === cp && return
     for (index, value) in pairs(p)
-        _set_parameter!(cp, index, value)
+        _set_parameter!(ds, cp, index, value)
     end
     return
 end

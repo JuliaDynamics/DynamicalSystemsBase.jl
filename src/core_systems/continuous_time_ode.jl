@@ -160,8 +160,9 @@ end
 
 # This is here to ensure that `u_modified!` is called
 function set_parameter!(ds::CoupledODEs, args...)
-    _set_parameter!(current_parameters(ds), args...)
+    _set_parameter!(ds, current_parameters(ds), args...)
     u_modified!(ds.integ, true)
     return
 end
 
+referrenced_sciml_problem(ds::CoupledODEs) = (ds.integ.sol.prob, ds.integ.f.sys)
