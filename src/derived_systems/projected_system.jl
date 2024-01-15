@@ -34,17 +34,17 @@ Case 1: project 5-dimensional system to its last two dimensions.
 ds = Systems.lorenz96(5)
 projection = [4, 5]
 complete_state = [0.0, 0.0, 0.0] # completed state just in the plane of last two dimensions
-projds = ProjectedDynamicalSystem(ds, projection, complete_state)
-reinit!(projds, [0.2, 0.4])
-step!(projds)
-get_state(projds)
+prods = ProjectedDynamicalSystem(ds, projection, complete_state)
+reinit!(prods, [0.2, 0.4])
+step!(prods)
+get_state(prods)
 ```
 Case 2: custom projection to general functions of state.
 ```julia
 ds = Systems.lorenz96(5)
 projection(u) = [sum(u), sqrt(u[1]^2 + u[2]^2)]
 complete_state(y) = repeat([y[1]/5], 5)
-projds = # same as in above example...
+prods = # same as in above example...
 ```
 """
 struct ProjectedDynamicalSystem{P, PD, C, R, D} <: DynamicalSystem
@@ -54,7 +54,7 @@ struct ProjectedDynamicalSystem{P, PD, C, R, D} <: DynamicalSystem
     remidxs::R
 	ds::D
 end
-Base.parent(projds::ProjectedDynamicalSystem) = projds.ds
+Base.parent(prods::ProjectedDynamicalSystem) = prods.ds
 
 function ProjectedDynamicalSystem(ds::DynamicalSystem, projection, complete_state)
     u0 = initial_state(ds)
@@ -83,9 +83,9 @@ function ProjectedDynamicalSystem(ds::DynamicalSystem, projection, complete_stat
         typeof(remidxs), typeof(ds)}(projection, complete_state, u, remidxs, ds)
 end
 
-additional_details(projds::ProjectedDynamicalSystem) = [
-    "projection" => projds.projection,
-    "complete state" => projds.complete_state,
+additional_details(prods::ProjectedDynamicalSystem) = [
+    "projection" => prods.projection,
+    "complete state" => prods.complete_state,
 ]
 
 ###########################################################################################
@@ -96,45 +96,45 @@ for f in (:(SciMLBase.isinplace), :current_time, :initial_time, :isdiscretetime,
         :referrenced_sciml_sys, :successful_step,
         :current_parameters, :initial_parameters, :isdeterministic, :dynamic_rule,
     )
-    @eval $(f)(projds::ProjectedDynamicalSystem, args...; kw...) =
-    $(f)(projds.ds, args...; kw...)
+    @eval $(f)(prods::ProjectedDynamicalSystem, args...; kw...) =
+    $(f)(prods.ds, args...; kw...)
 end
 StateSpaceSets.dimension(::ProjectedDynamicalSystem{P, PD}) where {P, PD} = PD
 
 for f in (:current_state, :initial_state)
-    @eval $(f)(projds::ProjectedDynamicalSystem{<:Function}) =
-        projds.projection($(f)(projds.ds))
-    @eval $(f)(projds::ProjectedDynamicalSystem{<:SVector}) =
-        $(f)(projds.ds)[projds.projection]
+    @eval $(f)(prods::ProjectedDynamicalSystem{<:Function}) =
+        prods.projection($(f)(prods.ds))
+    @eval $(f)(prods::ProjectedDynamicalSystem{<:SVector}) =
+        $(f)(prods.ds)[prods.projection]
 end
 # Extend `step!` just so that it returns the projected system
-function SciMLBase.step!(projds::ProjectedDynamicalSystem, args...)
-	step!(projds.ds, args...)
-	return projds
+function SciMLBase.step!(prods::ProjectedDynamicalSystem, args...)
+	step!(prods.ds, args...)
+	return prods
 end
 
-function SciMLBase.reinit!(projds::ProjectedDynamicalSystem{P, D, <:AbstractVector}, y = initial_state(projds); kwargs...) where {P, D}
-    isnothing(y) && return(projds)
-    u = projds.u
-    u[projds.projection] .= y
-    u[projds.remidxs] .= projds.complete_state
-    reinit!(projds.ds, u; kwargs...)
-    return projds
+function SciMLBase.reinit!(prods::ProjectedDynamicalSystem{P, D, <:AbstractVector}, y = initial_state(prods); kwargs...) where {P, D}
+    isnothing(y) && return(prods)
+    u = prods.u
+    u[prods.projection] .= y
+    u[prods.remidxs] .= prods.complete_state
+    reinit!(prods.ds, u; kwargs...)
+    return prods
 end
 
-function SciMLBase.reinit!(projds::ProjectedDynamicalSystem{P, D, <:Function}, y = initial_state(projds); kwargs...) where {P, D}
-    isnothing(y) || reinit!(projds.ds, projds.complete_state(y); kwargs...)
-    return projds
+function SciMLBase.reinit!(prods::ProjectedDynamicalSystem{P, D, <:Function}, y = initial_state(prods); kwargs...) where {P, D}
+    isnothing(y) || reinit!(prods.ds, prods.complete_state(y); kwargs...)
+    return prods
 end
 
-set_state!(projds::ProjectedDynamicalSystem, u) = reinit!(projds, u)
+set_state!(prods::ProjectedDynamicalSystem, u) = reinit!(prods, u)
 
-function (projds::ProjectedDynamicalSystem{P})(t) where {P}
-    u = projds.ds(t)
+function (prods::ProjectedDynamicalSystem{P})(t) where {P}
+    u = prods.ds(t)
     if P <: Function
-        return projds.projection(u)
+        return prods.projection(u)
     elseif P <: SVector
-        return u[projds.projection]
+        return u[prods.projection]
     end
 end
 

@@ -27,6 +27,9 @@ connected = compose(ODESystem(connections, name = :connected), fol_1, fol_2)
 
 connected_simp = structural_simplify(connected)
 
+using DynamicalSystemsBase.SymbolicIndexingInterface
+# SymbolicIndexingInterface.observed(connected_simp, fol_1.τ)
+
 u0 = [fol_1.x => -0.5,
     fol_2.x => 1.0]
 
@@ -73,6 +76,11 @@ set_parameter!(sds, fol_1.τ, 3.0)
 @test current_parameter(sds, 1) == 3.0
 @test current_parameter(sds, fol_1.τ) == 3.0
 @test observe_state(sds, fol_1.x) == -0.5
+
+sds = PoincareMap(ds, (1, 0.0))
+set_parameter!(sds, fol_1.τ, 4.0)
+@test current_parameter(sds, 1) == 4.0
+@test current_parameter(sds, fol_1.τ) == 4.0
 
 # %% Test without sys
 function lorenz!(du, u, p, t)

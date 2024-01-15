@@ -180,10 +180,10 @@ Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
    or an "observed" variable according to ModelingToolkit.jl. In short, it can be anything
    that could index the solution object `sol = ModelingToolkit.solve(...)`.
 
-This function does not work yet with [`ParallelDynamicalSystem`](@ref).
 For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
 state of the system is the full state space state, not the projected one
 (this makes the most sense for allowing MTK-based indexing).
+This function does not work with [`PoincareMap`](@ref) and [`ParallelDynamicalSystem`](@ref).
 """
 function observe_state(ds::DynamicalSystem, index)
     u = current_state(ds)
