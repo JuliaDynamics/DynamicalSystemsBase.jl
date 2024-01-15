@@ -29,6 +29,7 @@ connected_simp = structural_simplify(connected)
 
 using DynamicalSystemsBase.SymbolicIndexingInterface
 # SymbolicIndexingInterface.observed(connected_simp, fol_1.τ)
+# SymbolicIndexingInterface.state_values(arr::AbstractArray) = arr
 
 u0 = [fol_1.x => -0.5,
     fol_2.x => 1.0]

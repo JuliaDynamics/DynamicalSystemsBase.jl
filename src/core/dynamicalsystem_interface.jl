@@ -133,7 +133,7 @@ errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(
 
 export current_state, initial_state, current_parameters, current_parameter, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
-    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state
+    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_sys
 
 ###########################################################################################
 # Symbolic support
@@ -226,11 +226,12 @@ current_parameters(ds::DynamicalSystem) = ds.p
 Return the specific parameter corresponding to `index`,
 which can be anything given to [`set_parameter!`](@ref).
 """
-function current_parameter(ds::DynamicalSystem, index)
+current_parameter(ds::DynamicalSystem, index) = current_paramter(ds, current_parameters(ds), index)
+function current_parameter(ds::DynamicalSystem, p, index)
     prob, sys, integ = referrenced_sciml_sys(ds)
     if !has_referrenced_sys(sys)
-        return _get_parameter(current_parameters(ds), index)
-    else # symbolic dispatch
+        return _get_parameter(p, index)
+    else # symbolic dispatch # TODO: Use the `observed` function directly on `p`.
         i = SymbolicIndexingInterface.getp(sys, index)
         return i(prob)
     end
