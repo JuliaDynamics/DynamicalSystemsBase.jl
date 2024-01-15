@@ -178,14 +178,19 @@ Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
    This is valid only for dynamical systems referring a ModelingToolkit.jl model
    which also has `i` as one of its listed variables. This can be a formal state variable
    or an "observed" variable according to ModelingToolkit.jl. In short, it can be anything
-   that can index the solution object of `sol = solve(...)`. This option becomes available
-   when `ModelingToolkit` is loaded.
+   that could index the solution object `sol = ModelingToolkit.solve(...)`.
 
 This function does not work yet with [`ParallelDynamicalSystem`](@ref).
+For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
+state of the system is the full state space state, not the projected one
+(this makes the most sense for allowing MTK-based indexing).
 """
 function observe_state(ds::DynamicalSystem, index)
     u = current_state(ds)
     prob, sys, integ = referrenced_sciml_sys(ds)
+    observe_state(u, prob, sys, integ, index)
+end
+function observe_state(u, prob, sys, integ, index)
     if !has_referrenced_sys(sys)
         T = eltype(u)
         if index isa Int

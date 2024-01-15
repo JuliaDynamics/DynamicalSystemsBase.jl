@@ -68,6 +68,11 @@ set_parameter!(sds, fol_1.τ, 2.0)
 @test current_parameter(sds, fol_1.τ) == 2.0
 @test observe_state(sds, fol_1.x) == -0.5
 
+sds = ProjectedDynamicalSystem(ds, [1], [0.0])
+set_parameter!(sds, fol_1.τ, 3.0)
+@test current_parameter(sds, 1) == 3.0
+@test current_parameter(sds, fol_1.τ) == 3.0
+@test observe_state(sds, fol_1.x) == -0.5
 
 # %% Test without sys
 function lorenz!(du, u, p, t)

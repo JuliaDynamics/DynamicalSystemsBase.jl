@@ -2,7 +2,7 @@
 
 The `DynamicalSystem` interface now supports ModelingToolkit.jl created models:
 
-- Obtaining or setting parameters can be done by giving the MTK symbolic variable as index
+- Obtaining or setting parameters can be done by giving the MTK symbolic variable as index. This works for all dynamical systems!
 - Obtaining a state can be done by giving the MTK symbolic variable index which includes "observed" variables that are not formally part of the state space.
 
 # v3.4.0
