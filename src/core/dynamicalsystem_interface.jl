@@ -92,6 +92,7 @@ unless when developing new algorithm implementations that use dynamical systems.
   while for discrete time systems it only works if `t` is the current time.
 - [`current_state`](@ref)
 - [`initial_state`](@ref)
+- [`observe_state`](@ref)
 - [`current_parameters`](@ref)
 - [`current_parameter`](@ref)
 - [`initial_parameters`](@ref)
@@ -132,7 +133,7 @@ errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(
 
 export current_state, initial_state, current_parameters, current_parameter, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
-    reinit!, set_state!, set_parameter!, set_parameters!, step!
+    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state
 
 ###########################################################################################
 # Symbolic support
@@ -146,7 +147,6 @@ referrenced_sciml_sys(::DynamicalSystem) = (nothing, nothing, nothing)
 has_referrenced_sys(::Nothing) = false
 has_referrenced_sys(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
 has_referrenced_sys(sys) = true
-
 
 ###########################################################################################
 # API - obtaining information from the system
@@ -168,7 +168,7 @@ Return the current state of `ds`. This state is mutated when `ds` is mutated.
 current_state(ds::DynamicalSystem) = ds.u
 
 """
-    current_state(ds::DynamicalSystem, i) → x::Real
+    observe_state(ds::DynamicalSystem, i) → x::Real
 
 Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
 
@@ -181,7 +181,7 @@ Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
    that can index the solution object of `sol = solve(...)`. This option becomes available
    when `ModelingToolkit` is loaded.
 """
-function current_state(ds::DynamicalSystem, index)
+function observe_state(ds::DynamicalSystem, index)
     u = current_state(ds)
     prob, sys, integ = referrenced_sciml_sys(ds)
     if !has_referrenced_sys(sys)
