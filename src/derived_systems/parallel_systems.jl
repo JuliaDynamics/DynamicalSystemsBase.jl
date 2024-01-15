@@ -40,8 +40,10 @@ initial_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = initial_states(pdsa)[
 # But we do need a special extra parameter that checks if the system
 # is ODE _and_ inplace, because we need a special matrix state in this case
 struct ParallelDynamicalSystemAnalytic{D, M} <: ParallelDynamicalSystem
-    ds::D      # standard dynamical system but with rule the parallel dynamics
-    original_f # no type parameterization here, this field is only for printing
+    ds::D       # standard dynamical system but with rule the parallel dynamics
+    original_f  # no type parameterization here, this field is only for printing
+    prob        # reference original MTK ODEProblem and system
+    sys
 end
 
 function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states)
@@ -55,7 +57,8 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states)
         pds = CoupledODEs(prob, ds.diffeq; internalnorm = inorm)
     end
     M = ds isa CoupledODEs && isinplace(ds)
-    return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds))
+    refprob, sys = referrenced_sciml_sys(ds)
+    return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), refprob, sys)
 end
 
 # Out of place: everywhere the same
@@ -102,13 +105,15 @@ end
 # Analytically knwon rule: extensions
 ###########################################################################################
 for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
-        :current_parameters, :initial_parameters,:successful_step
+        :current_parameters, :initial_parameters,:successful_step,
     )
     @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
 end
 
 (pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
 dynamic_rule(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.original_f
+
+referrenced_sciml_sys(pdsa::ParallelDynamicalSystemAnalytic) = (pdsa.prob, pdsa.sys, pdsa.ds)
 
 # States IO for vector of vectors state
 """
@@ -164,7 +169,7 @@ function ParallelDynamicalSystem(ds::DiscreteTimeDynamicalSystem, states)
 end
 
 for f in (:current_time, :initial_time, :isdiscretetime,
-        :current_parameters, :initial_parameters, :dynamic_rule,
+        :current_parameters, :initial_parameters, :dynamic_rule,:referrenced_sciml_sys
     )
     @eval $(f)(pdtds::PDTDS, args...; kw...) = $(f)(pdtds.systems[1], args...; kw...)
 end

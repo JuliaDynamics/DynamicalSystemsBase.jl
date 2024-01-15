@@ -93,6 +93,7 @@ additional_details(pds::ProjectedDynamicalSystem) = [
 ###########################################################################################
 # Everything besides `dimension`, `current/initia_state` and `reinit!` is propagated!
 for f in (:(SciMLBase.isinplace), :current_time, :initial_time, :isdiscretetime,
+        set_parameter!, :referrenced_sciml_sys,
         :current_parameters, :initial_parameters, :isdeterministic, :dynamic_rule,:successful_step
     )
     @eval $(f)(tands::ProjectedDynamicalSystem, args...; kw...) = $(f)(tands.ds, args...; kw...)
@@ -135,3 +136,4 @@ function (pds::ProjectedDynamicalSystem{P})(t) where {P}
         return u[pds.projection]
     end
 end
+

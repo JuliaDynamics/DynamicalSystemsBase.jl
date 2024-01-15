@@ -37,7 +37,6 @@ prob = ODEProblem(connected_simp, u0, (0.0, 10.0), p)
 ds = CoupledODEs(prob)
 
 # parameters
-
 @test current_parameter(ds, 1) == 2.0
 @test current_parameter(ds, fol_1.τ) == 2.0
 @test current_parameter(ds, 2) == 4.0
@@ -52,8 +51,23 @@ set_parameter!(ds, fol_1.τ, 2.0)
 @test current_parameter(ds, fol_1.τ) == 2.0
 
 # states and observed variables
-@test current_state(ds, 1) == -0.5
-@test current_state(ds, fol_1.x) == -0.5
+@test observe_state(ds, 1) == -0.5
+@test observe_state(ds, fol_1.x) == -0.5
+
+# %% Test that derivative dynamical systems also work as execpted
+u1 = current_state(ds)
+pds = ParallelDynamicalSystem(ds, [u1, copy(u1)])
+
+set_parameter!(pds, fol_1.τ, 4.0)
+@test current_parameter(pds, 1) == 4.0
+@test current_parameter(pds, fol_1.τ) == 4.0
+
+sds = StroboscopicMap(ds, 1.0)
+set_parameter!(sds, fol_1.τ, 2.0)
+@test current_parameter(sds, 1) == 2.0
+@test current_parameter(sds, fol_1.τ) == 2.0
+@test observe_state(sds, fol_1.x) == -0.5
+
 
 # %% Test without sys
 function lorenz!(du, u, p, t)

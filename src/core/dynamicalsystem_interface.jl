@@ -180,6 +180,8 @@ Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
    or an "observed" variable according to ModelingToolkit.jl. In short, it can be anything
    that can index the solution object of `sol = solve(...)`. This option becomes available
    when `ModelingToolkit` is loaded.
+
+This function does not work yet with [`ParallelDynamicalSystem`](@ref).
 """
 function observe_state(ds::DynamicalSystem, index)
     u = current_state(ds)
