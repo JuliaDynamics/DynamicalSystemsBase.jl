@@ -42,8 +42,7 @@ initial_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = initial_states(pdsa)[
 struct ParallelDynamicalSystemAnalytic{D, M} <: ParallelDynamicalSystem
     ds::D       # standard dynamical system but with rule the parallel dynamics
     original_f  # no type parameterization here, this field is only for printing
-    prob        # reference original MTK ODEProblem and system
-    sys
+    sys         # reference original MTK system
 end
 
 function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states)
@@ -57,8 +56,8 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states)
         pds = CoupledODEs(prob, ds.diffeq; internalnorm = inorm)
     end
     M = ds isa CoupledODEs && isinplace(ds)
-    refprob, sys = referrenced_sciml_sys(ds)
-    return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), refprob, sys)
+    sys = referrenced_sciml_sys(ds)
+    return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), sys)
 end
 
 # Out of place: everywhere the same
@@ -113,7 +112,7 @@ end
 (pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
 dynamic_rule(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.original_f
 
-referrenced_sciml_sys(pdsa::ParallelDynamicalSystemAnalytic) = (pdsa.prob, pdsa.sys, pdsa.ds)
+referrenced_sciml_sys(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.sys
 
 # States IO for vector of vectors state
 """

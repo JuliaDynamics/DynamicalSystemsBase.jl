@@ -141,7 +141,7 @@ export current_state, initial_state, current_parameters, current_parameter, init
 # Simply extend the `referrenced_sciml_sys` and you have symbolic indexing support!
 import SymbolicIndexingInterface
 # return a tuple of the DEProblem and MTK System and DE Integrator
-referrenced_sciml_sys(::DynamicalSystem) = (nothing, nothing, nothing)
+referrenced_sciml_sys(::DynamicalSystem) = nothing
 
 # return true if there is an actual referrenced system (instead of nothing)
 has_referrenced_sys(::Nothing) = false
@@ -186,8 +186,7 @@ state of the system is the full state space state, not the projected one
 This function does not work with [`PoincareMap`](@ref) and [`ParallelDynamicalSystem`](@ref).
 """
 function observe_state(ds::DynamicalSystem, index, u = current_state(ds))
-    prob, sys, integ = referrenced_sciml_sys(ds)
-    return observe_state(u, index, sys)
+    return observe_state(u, index, referrenced_sciml_sys(ds))
 end
 function observe_state(u, index, sys)
     if !has_referrenced_sys(sys)
@@ -226,7 +225,7 @@ Return the specific parameter corresponding to `index`,
 which can be anything given to [`set_parameter!`](@ref).
 """
 function current_parameter(ds::DynamicalSystem, index, p = current_parameters(ds))
-    prob, sys, integ = referrenced_sciml_sys(ds)
+    sys = referrenced_sciml_sys(ds)
     if !has_referrenced_sys(sys)
         return _get_parameter(p, index)
     else # symbolic dispatch
@@ -338,7 +337,7 @@ function set_parameter!(ds::DynamicalSystem, index, value, p = current_parameter
     _set_parameter!(ds::DynamicalSystem, index, value, p)
 end
 function _set_parameter!(ds::DynamicalSystem, index, value, p = current_parameters(ds))
-    prob, sys = referrenced_sciml_sys(ds)
+    sys = referrenced_sciml_sys(ds)
     if !has_referrenced_sys(sys)
         if p isa Union{AbstractArray, AbstractDict}
             setindex!(p, value, index)
