@@ -168,7 +168,7 @@ end
 
 # This is here to ensure that `u_modified!` is called
 function set_parameter!(ds::CoupledODEs, args...)
-    _set_parameter!(ds, current_parameters(ds), args...)
+    _set_parameter!(ds, args...)
     u_modified!(ds.integ, true)
     return
 end
