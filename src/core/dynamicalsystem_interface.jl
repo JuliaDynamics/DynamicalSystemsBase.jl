@@ -20,12 +20,7 @@ are [`DeterministicIteratedMap`](@ref) or [`CoupledODEs`](@ref).
 
 ## Description
 
-!!! note
-    The documentation of `DynamicalSystem` follows chapter 1 of
-    [Nonlinear Dynamics](https://link.springer.com/book/10.1007/978-3-030-91032-7),
-    Datseris & Parlitz, Springer 2022.
-
-A `ds::DynamicalSystem` **_representes a flow Φ in a state space_**.
+A `DynamicalSystem` **represents the time evolution of a state in a state space**.
 It mainly encapsulates three things:
 
 1. A state, typically referred to as `u`, with initial value `u0`.
@@ -41,9 +36,9 @@ In sort, any set of quantities that change in time can be considered a dynamical
 however the concrete subtypes of `DynamicalSystem` are much more specific in their scope.
 Concrete subtypes typically also contain more information than the above 3 items.
 
-In this scope dynamical systems have a known dynamic rule `f` defined as a
-standard Julia function. _Observed_ or _measured_ data from a dynamical system
-are represented using `StateSpaceSet` and are finite.
+In this scope dynamical systems have a known dynamic rule `f`.
+Finite _measured_ or _sampled_ data from a dynamical system
+are represented using [`StateSpaceSet`](@ref).
 Such data are obtained from the [`trajectory`](@ref) function or
 from an experimental measurement of a dynamical system with an unknown dynamic rule.
 
@@ -71,12 +66,10 @@ on a case-by-case basis as it depends on the complexity of `f`.
     Whether the dynamical system is autonomous (`f` doesn't depend on time) or not, it is
     still necessary to include `t` as an argument to `f`. Some algorithms utilize this
     information, some do not, but we prefer to keep a consistent interface either way.
-    You can also convert any system to autonomous by making time an additional variable.
-    If the system is non-autonomous, its _effective dimensionality_ is `dimension(ds)+1`.
 
 ## API
 
-The API that the interface of `DynamicalSystem` employs is
+The API that `DynamicalSystem` employs is composed of
 the functions listed below. Once a concrete instance of a subtype of `DynamicalSystem` is
 obtained, it can queried or altered with the following functions.
 
