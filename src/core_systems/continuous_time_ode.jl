@@ -175,4 +175,4 @@ function set_parameter!(ds::CoupledODEs, args...)
     return
 end
 
-referrenced_sciml_sys(ds::CoupledODEs) = ds.integ.sol.prob.f.sys
+referrenced_sciml_prob(ds::CoupledODEs) = ds.integ.sol.prob

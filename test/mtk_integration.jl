@@ -25,7 +25,7 @@ connections = [fol_1.f ~ 1.5,
 
 connected = compose(ODESystem(connections, name = :connected), fol_1, fol_2)
 
-connected_simp = structural_simplify(connected)
+sys = structural_simplify(connected)
 
 u0 = [fol_1.x => -0.5,
     fol_2.x => 1.0]
@@ -33,7 +33,7 @@ u0 = [fol_1.x => -0.5,
 p = [fol_1.τ => 2.0,
     fol_2.τ => 4.0]
 
-prob = ODEProblem(connected_simp, u0, (0.0, 10.0), p)
+prob = ODEProblem(sys, u0, (0.0, 10.0), p)
 ds = CoupledODEs(prob)
 
 # parameters
@@ -53,7 +53,7 @@ set_parameter!(ds, fol_1.τ, 2.0)
 # states and observed variables
 @test observe_state(ds, 1) == -0.5
 @test observe_state(ds, fol_1.x) == -0.5
-@test_throws ArgumentError observe_state(ds, "test")
+@test observe_state(ds, fol_2.RHS) == -0.375
 
 # %% Test that derivative dynamical systems also work as execpted
 u1 = current_state(ds)
@@ -63,6 +63,7 @@ set_parameter!(pds, fol_1.τ, 4.0)
 @test current_parameter(pds, 1) == 4.0
 @test current_parameter(pds, fol_1.τ) == 4.0
 @test observe_state(pds, fol_1.x) == -0.5
+@test observe_state(pds, fol_2.RHS) == -0.375
 
 sds = StroboscopicMap(ds, 1.0)
 set_parameter!(sds, fol_1.τ, 2.0)

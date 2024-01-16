@@ -131,12 +131,15 @@ export current_state, initial_state, current_parameters, current_parameter, init
 ###########################################################################################
 # Symbolic support
 ###########################################################################################
-# Simply extend the `referrenced_sciml_sys` and you have symbolic indexing support!
+# Simply extend the `referrenced_sciml_prob` and you have symbolic indexing support!
 import SymbolicIndexingInterface
-# return a tuple of the DEProblem and MTK System and DE Integrator
-referrenced_sciml_sys(::DynamicalSystem) = nothing
 
-# return true if there is an actual referrenced system (instead of nothing)
+referrenced_sciml_prob(::DynamicalSystem) = nothing
+referrenced_sciml_sys(::DynamicalSystem) = nothing
+referrenced_sciml_sys(prob::SciMLBase.DEProblem) = prob.f.sys
+
+# return true if there is an actual referrenced system
+has_referrenced_sys(prob::SciMLBase.DEProblem) = has_referrenced_sys(referrenced_sciml_sys(prob))
 has_referrenced_sys(::Nothing) = false
 has_referrenced_sys(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
 has_referrenced_sys(sys) = true
@@ -168,7 +171,7 @@ Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
 - `i::Int` returns the `i`-th dynamic variable.
 - `i::Function` returns `f(current_state(ds))`, which is asserted to be a real number.
 - `i::SymbolLike` returns the value of the corresponding symbolic variable.
-   This is valid only for dynamical systems referring a ModelingToolkit.jl model
+   This is valid only for dynamical systems referrencing a ModelingToolkit.jl model
    which also has `i` as one of its listed variables. This can be a formal state variable
    or an "observed" variable according to ModelingToolkit.jl. In short, it can be anything
    that could index the solution object `sol = ModelingToolkit.solve(...)`.
@@ -176,22 +179,19 @@ Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
 For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
 state of the system is the full state space state, not the projected one
 (this makes the most sense for allowing MTK-based indexing).
-This function does not work with [`PoincareMap`](@ref) and [`ParallelDynamicalSystem`](@ref).
 """
-function observe_state(ds::DynamicalSystem, index, u = current_state(ds))
-    return observe_state(u, index, referrenced_sciml_sys(ds))
-end
-function observe_state(u, index, sys)
+function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_state(ds))
+    prob = referrenced_sciml_prob(ds)
     T = eltype(u)
     if index isa Function
         return index(u)::T
     elseif index isa Int
         return u[index]::T
-    elseif has_referrenced_sys(sys)
-        ugetter = SymbolicIndexingInterface.getu(sys, index)
-        return ugetter(u)
-    else
-        throw(ArgumentError("Invalid index for observing the state."))
+    elseif has_referrenced_sys(prob)
+        ugetter = SymbolicIndexingInterface.observed(prob, index)
+        p = current_parameters(ds)
+        t = current_time(ds)
+        return ugetter(u, p, t)::T
     end
 end
 
@@ -218,11 +218,11 @@ Return the specific parameter corresponding to `index`,
 which can be anything given to [`set_parameter!`](@ref).
 """
 function current_parameter(ds::DynamicalSystem, index, p = current_parameters(ds))
-    sys = referrenced_sciml_sys(ds)
-    if !has_referrenced_sys(sys)
+    prob = referrenced_sciml_prob(ds)
+    if !has_referrenced_sys(prob)
         return _get_parameter(p, index)
     else # symbolic dispatch
-        i = SymbolicIndexingInterface.getp(sys, index)
+        i = SymbolicIndexingInterface.getp(prob, index)
         return i(p)
     end
 end
@@ -330,15 +330,15 @@ function set_parameter!(ds::DynamicalSystem, index, value, p = current_parameter
     _set_parameter!(ds::DynamicalSystem, index, value, p)
 end
 function _set_parameter!(ds::DynamicalSystem, index, value, p = current_parameters(ds))
-    sys = referrenced_sciml_sys(ds)
-    if !has_referrenced_sys(sys)
+    prob = referrenced_sciml_prob(ds)
+    if !has_referrenced_sys(prob)
         if p isa Union{AbstractArray, AbstractDict}
             setindex!(p, value, index)
         else
             setproperty!(p, index, value)
         end
     else
-        set! = SymbolicIndexingInterface.setp(sys, index)
+        set! = SymbolicIndexingInterface.setp(prob, index)
         set!(p, value)
     end
     return

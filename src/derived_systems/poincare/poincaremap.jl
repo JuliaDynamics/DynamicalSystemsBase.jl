@@ -136,7 +136,7 @@ additional_details(pmap::PoincareMap) = [
 ###########################################################################################
 # Extensions
 ###########################################################################################
-for f in (:initial_state, :current_parameters, :initial_parameters, :referrenced_sciml_sys,
+for f in (:initial_state, :current_parameters, :initial_parameters, :referrenced_sciml_prob,
 	:dynamic_rule, :(SciMLBase.isinplace), :(StateSpaceSets.dimension))
     @eval $(f)(pmap::PoincareMap, args...) = $(f)(pmap.ds, args...)
 end

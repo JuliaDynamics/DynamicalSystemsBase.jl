@@ -93,7 +93,7 @@ additional_details(prods::ProjectedDynamicalSystem) = [
 ###########################################################################################
 # Everything besides `dimension`, `current/initia_state` and `reinit!` is propagated!
 for f in (:(SciMLBase.isinplace), :current_time, :initial_time, :isdiscretetime,
-        :referrenced_sciml_sys, :successful_step,
+        :referrenced_sciml_prob, :successful_step,
         :current_parameters, :initial_parameters, :isdeterministic, :dynamic_rule,
     )
     @eval $(f)(prods::ProjectedDynamicalSystem, args...; kw...) =
@@ -140,6 +140,5 @@ end
 
 function observe_state(ds::ProjectedDynamicalSystem, index)
     u = current_state(ds.ds) # here we use the full state so that indexing makes sense
-    sys = referrenced_sciml_sys(ds)
-    observe_state(u, index, sys)
+    observe_state(ds, index, u)
 end
