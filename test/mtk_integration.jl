@@ -61,6 +61,7 @@ pds = ParallelDynamicalSystem(ds, [u1, copy(u1)])
 set_parameter!(pds, fol_1.τ, 4.0)
 @test current_parameter(pds, 1) == 4.0
 @test current_parameter(pds, fol_1.τ) == 4.0
+# TODO: observe state
 
 sds = StroboscopicMap(ds, 1.0)
 set_parameter!(sds, fol_1.τ, 2.0)
@@ -78,6 +79,7 @@ sds = PoincareMap(ds, (1, 0.0))
 set_parameter!(sds, fol_1.τ, 4.0)
 @test current_parameter(sds, 1) == 4.0
 @test current_parameter(sds, fol_1.τ) == 4.0
+# TODO: observe state
 
 # %% Test without sys
 function lorenz!(du, u, p, t)
@@ -95,4 +97,4 @@ ds = CoupledODEs(prob)
 set_parameter!(ds, 1, 2.0)
 @test current_parameter(ds, 1) == 2.0
 
-@test current_state(ds, 1) == 1.0
+@test observe_state(ds, 1) == 1.0

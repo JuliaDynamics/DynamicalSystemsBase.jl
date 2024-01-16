@@ -187,6 +187,9 @@ This function does not work with [`PoincareMap`](@ref) and [`ParallelDynamicalSy
 """
 function observe_state(ds::DynamicalSystem, index, u = current_state(ds))
     prob, sys, integ = referrenced_sciml_sys(ds)
+    return observe_state(u, index, sys)
+end
+function observe_state(u, index, sys)
     if !has_referrenced_sys(sys)
         T = eltype(u)
         if index isa Int

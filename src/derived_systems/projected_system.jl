@@ -141,5 +141,5 @@ end
 function observe_state(ds::ProjectedDynamicalSystem, index)
     u = current_state(ds.ds) # here we use the full state so that indexing makes sense
     prob, sys, integ = referrenced_sciml_sys(ds)
-    observe_state(u, prob, sys, integ, index)
+    observe_state(u, index, sys)
 end
