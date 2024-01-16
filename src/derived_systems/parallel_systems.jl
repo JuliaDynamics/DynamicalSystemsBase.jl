@@ -114,6 +114,11 @@ dynamic_rule(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.original_f
 
 referrenced_sciml_sys(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.sys
 
+function observe_state(ds::ParallelDynamicalSystemAnalytic, index, i::Int = 1)
+    u = current_state(ds, i)
+    return observe_state(u, index, referrenced_sciml_sys(ds))
+end
+
 # States IO for vector of vectors state
 """
     current_states(pds::ParallelDynamicalSystem)

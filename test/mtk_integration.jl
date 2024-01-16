@@ -61,7 +61,7 @@ pds = ParallelDynamicalSystem(ds, [u1, copy(u1)])
 set_parameter!(pds, fol_1.τ, 4.0)
 @test current_parameter(pds, 1) == 4.0
 @test current_parameter(pds, fol_1.τ) == 4.0
-# TODO: observe state
+@test observe_state(pds, fol_1.x) == -0.5
 
 sds = StroboscopicMap(ds, 1.0)
 set_parameter!(sds, fol_1.τ, 2.0)
@@ -69,17 +69,18 @@ set_parameter!(sds, fol_1.τ, 2.0)
 @test current_parameter(sds, fol_1.τ) == 2.0
 @test observe_state(sds, fol_1.x) == -0.5
 
-sds = ProjectedDynamicalSystem(ds, [1], [0.0])
-set_parameter!(sds, fol_1.τ, 3.0)
-@test current_parameter(sds, 1) == 3.0
-@test current_parameter(sds, fol_1.τ) == 3.0
-@test observe_state(sds, fol_1.x) == -0.5
+prods = ProjectedDynamicalSystem(ds, [1], [0.0])
+set_parameter!(prods, fol_1.τ, 3.0)
+@test current_parameter(prods, 1) == 3.0
+@test current_parameter(prods, fol_1.τ) == 3.0
+@test observe_state(prods, fol_1.x) == -0.5
 
-sds = PoincareMap(ds, (1, 0.0))
-set_parameter!(sds, fol_1.τ, 4.0)
-@test current_parameter(sds, 1) == 4.0
-@test current_parameter(sds, fol_1.τ) == 4.0
-# TODO: observe state
+# notice this evolves the dynamical system
+pmap = PoincareMap(ds, (1, 0.0))
+set_parameter!(pmap, fol_1.τ, 4.0)
+@test current_parameter(pmap, 1) == 4.0
+@test current_parameter(pmap, fol_1.τ) == 4.0
+@test observe_state(pmap, fol_1.x) ≈ 0 atol = 1e-3 rtol = 0
 
 # %% Test without sys
 function lorenz!(du, u, p, t)
