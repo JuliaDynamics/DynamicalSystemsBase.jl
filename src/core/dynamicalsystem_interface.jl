@@ -135,8 +135,9 @@ export current_state, initial_state, current_parameters, current_parameter, init
 import SymbolicIndexingInterface
 
 referrenced_sciml_prob(::DynamicalSystem) = nothing
-referrenced_sciml_sys(::DynamicalSystem) = nothing
+referrenced_sciml_sys(ds::DynamicalSystem) = referrenced_sciml_sys(referrenced_sciml_prob(ds))
 referrenced_sciml_sys(prob::SciMLBase.DEProblem) = prob.f.sys
+referrenced_sciml_sys(::Nothing) = nothing
 
 # return true if there is an actual referrenced system
 has_referrenced_sys(prob::SciMLBase.DEProblem) = has_referrenced_sys(referrenced_sciml_sys(prob))
