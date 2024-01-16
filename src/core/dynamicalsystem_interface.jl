@@ -182,16 +182,16 @@ function observe_state(ds::DynamicalSystem, index, u = current_state(ds))
     return observe_state(u, index, referrenced_sciml_sys(ds))
 end
 function observe_state(u, index, sys)
-    if !has_referrenced_sys(sys)
-        T = eltype(u)
-        if index isa Int
-            return u[index]::T
-        elseif index isa Function
-            return index(u)::T
-        end
-    else
+    T = eltype(u)
+    if index isa Function
+        return index(u)::T
+    elseif index isa Int
+        return u[index]::T
+    elseif has_referrenced_sys(sys)
         ugetter = SymbolicIndexingInterface.getu(sys, index)
         return ugetter(u)
+    else
+        throw(ArgumentError("Invalid index for observing the state."))
     end
 end
 

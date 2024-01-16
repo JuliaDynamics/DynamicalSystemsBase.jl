@@ -53,6 +53,7 @@ set_parameter!(ds, fol_1.τ, 2.0)
 # states and observed variables
 @test observe_state(ds, 1) == -0.5
 @test observe_state(ds, fol_1.x) == -0.5
+@test_throws ArgumentError observe_state(ds, "test")
 
 # %% Test that derivative dynamical systems also work as execpted
 u1 = current_state(ds)

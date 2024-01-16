@@ -87,6 +87,7 @@ function CoupledODEs(f, u0, p = SciMLBase.NullParameters(); t0 = 0, diffeq = DEF
     prob = ODEProblem{IIP}(f, s, (T(t0), T(Inf)), p)
     return CoupledODEs(prob, diffeq)
 end
+# This preserves the referrenced MTK system
 CoupledODEs(ds::CoupledODEs, diffeq) = CoupledODEs(ODEProblem(ds), diffeq)
 # Below `special_kwargs` is undocumented internal option for passing `internalnorm`
 function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs...)
@@ -108,7 +109,8 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs..
 end
 
 function SciMLBase.ODEProblem(ds::CoupledODEs{IIP}, tspan = (initial_time(ds), Inf)) where {IIP}
-    ODEProblem{IIP}(dynamic_rule(ds), initial_state(ds), tspan, current_parameters(ds))
+    prob = ds.integ.sol.prob
+    return SciMLBase.remake(prob; tspan)
 end
 
 # Pretty print
