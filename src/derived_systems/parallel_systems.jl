@@ -143,7 +143,7 @@ const PDSAM{D} = ParallelDynamicalSystemAnalytic{D, true}
 current_states(pdsa::PDSAM) = eachcol(current_state(pdsa.ds))
 initial_states(pdsa::PDSAM) = eachcol(initial_state(pdsa.ds))
 (pdsa::PDSAM)(t::Real, i::Int = 1) = view(pdsa.ds(t), :, i)
-function set_state!(pdsa::PDSAM, u, i::Int = 1)
+function set_state!(pdsa::PDSAM, u::AbstractArray, i::Int = 1)
     current_state(pdsa, i) .= u
     u_modified!(pdsa.ds.integ, true)
     return pdsa
