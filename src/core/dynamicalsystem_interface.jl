@@ -307,12 +307,45 @@ StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 # API - altering status of the system
 ###########################################################################################
 """
-    set_state!(ds::DynamicalSystem, u)
+    set_state!(ds::DynamicalSystem, u::AbstractArray)
 
 Set the state of `ds` to `u`, which must match dimensionality with that of `ds`.
 Also ensure that the change is notified to whatever integration protocol is used.
 """
 set_state!(ds, u) = errormsg(ds)
+
+"""
+    set_state!(ds::DynamicalSystem, value::Real, i) → u
+
+Set the `i`th variable of `ds` to `value`. The index `i` can be an integer or
+a symbolic variable that is a state variable for systems that reference a
+ModelingToolkit.jl model.
+
+Optionally give as fourth argumemt an intialized state `u` to change the `i`th variable
+and then use in `set_state!(ds, u)`. `current_state(ds)` is used as default.
+
+Calling instead `set_state!(u, value, i, ds)` will modify the given
+state `u` and return it, leaving `ds` unaltered.
+"""
+function set_state!(ds::DynamicalSystem, value::Real, i)
+    u = copy(Array(current_state(ds)))
+    u = set_state!(u, value, i, ds)
+    set_state!(ds, u)
+end
+
+function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
+    prob = referrenced_sciml_prob(ds)
+    if i isa Integer
+        u[i] = value
+    elseif has_referrenced_sys(prob)
+        usetter = SymbolicIndexingInterface.setu(prob, i)
+        usetter(u, value)
+    else
+        throw(ArgumentError("Invalid index to set state, or if symbolic index, the "*
+        "dynamical system does not referrence a ModelingToolkit.jl system."))
+    end
+    return u
+end
 
 """
     set_parameter!(ds::DynamicalSystem, index, value)

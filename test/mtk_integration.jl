@@ -55,6 +55,11 @@ set_parameter!(ds, fol_1.τ, 2.0)
 @test observe_state(ds, fol_1.x) == -0.5
 @test observe_state(ds, fol_2.RHS) == -0.375
 
+set_state!(ds, 1.5, 1)
+@test observe_state(ds, 1) == 1.5
+set_state!(ds, -0.5, fol_1.x)
+@test observe_state(ds, 1) == -0.5
+
 # %% Test that derivative dynamical systems also work as execpted
 u1 = current_state(ds)
 pds = ParallelDynamicalSystem(ds, [u1, copy(u1)])
