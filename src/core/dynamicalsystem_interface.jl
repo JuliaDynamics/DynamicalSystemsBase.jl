@@ -326,6 +326,9 @@ and then use in `set_state!(ds, u)`. `current_state(ds)` is used as default.
 
 Calling instead `set_state!(u, value, i, ds)` will modify the given
 state `u` and return it, leaving `ds` unaltered.
+
+**Warning:** this function should not be used with derivative dynamical systems
+such as Poincare/stroboscopic/projected dynamical systems.
 """
 function set_state!(ds::DynamicalSystem, value::Real, i)
     u = copy(Array(current_state(ds)))
