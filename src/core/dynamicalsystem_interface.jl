@@ -324,9 +324,6 @@ Set the `i`th variable of `ds` to `value`. The index `i` can be an integer or
 a symbolic variable that is a state variable for systems that reference a
 ModelingToolkit.jl model.
 
-Optionally give as fourth argumemt an intialized state `u` to change the `i`th variable
-and then use in `set_state!(ds, u)`. `current_state(ds)` is used as default.
-
 Calling instead `set_state!(u, value, i, ds)` will modify the given
 state `u` and return it, leaving `ds` unaltered.
 
@@ -334,7 +331,7 @@ state `u` and return it, leaving `ds` unaltered.
 such as Poincare/stroboscopic/projected dynamical systems.
 """
 function set_state!(ds::DynamicalSystem, value::Real, i)
-    u = copy(Array(current_state(ds)))
+    u = current_state(ds)
     u = set_state!(u, value, i, ds)
     set_state!(ds, u)
 end
