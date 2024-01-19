@@ -106,3 +106,5 @@ set_parameter!(ds, 1, 2.0)
 @test current_parameter(ds, 1) == 2.0
 
 @test observe_state(ds, 1) == 1.0
+
+@test_throws ArgumentError observe_state(ds, 1, fol_1.f)

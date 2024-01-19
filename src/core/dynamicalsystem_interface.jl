@@ -193,6 +193,9 @@ function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_st
         p = current_parameters(ds)
         t = current_time(ds)
         return ugetter(u, p, t)::T
+    else
+        throw(ArgumentError("Invalid index to observe state, or if symbolic index, the "*
+        "dynamical system does not referrence a ModelingToolkit.jl system."))
     end
 end
 
