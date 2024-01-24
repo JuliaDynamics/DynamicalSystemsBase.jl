@@ -1,6 +1,5 @@
 using DynamicalSystemsBase, Test
 using ModelingToolkit
-using OrdinaryDiffEq
 
 # Make the same MTK model as in the basic tutorial
 @variables t
@@ -60,7 +59,7 @@ set_state!(ds, 1.5, 1)
 set_state!(ds, -0.5, fol_1.x)
 @test observe_state(ds, 1) == -0.5
 
-# %% Test that derivative dynamical systems also work as execpted
+# test that derivative dynamical systems also work as execpted
 u1 = current_state(ds)
 pds = ParallelDynamicalSystem(ds, [u1, copy(u1)])
 
@@ -75,21 +74,23 @@ set_parameter!(sds, fol_1.τ, 2.0)
 @test current_parameter(sds, 1) == 2.0
 @test current_parameter(sds, fol_1.τ) == 2.0
 @test observe_state(sds, fol_1.x) == -0.5
+@test observe_state(sds, fol_2.RHS) == -0.375
 
 prods = ProjectedDynamicalSystem(ds, [1], [0.0])
 set_parameter!(prods, fol_1.τ, 3.0)
 @test current_parameter(prods, 1) == 3.0
 @test current_parameter(prods, fol_1.τ) == 3.0
 @test observe_state(prods, fol_1.x) == -0.5
+@test observe_state(prods, fol_2.RHS) == -0.375
 
-# notice this evolves the dynamical system
+# notice this evolves the dynamical system!!!
 pmap = PoincareMap(ds, (1, 0.0))
 set_parameter!(pmap, fol_1.τ, 4.0)
 @test current_parameter(pmap, 1) == 4.0
 @test current_parameter(pmap, fol_1.τ) == 4.0
 @test observe_state(pmap, fol_1.x) ≈ 0 atol = 1e-3 rtol = 0
 
-# %% Test without sys
+# test without sys
 function lorenz!(du, u, p, t)
     du[1] = p[1] * (u[2] - u[1])
     du[2] = u[1] * (28.0 - u[3]) - u[2]
