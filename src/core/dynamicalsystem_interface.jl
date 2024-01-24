@@ -67,6 +67,15 @@ on a case-by-case basis as it depends on the complexity of `f`.
     still necessary to include `t` as an argument to `f`. Some algorithms utilize this
     information, some do not, but we prefer to keep a consistent interface either way.
 
+## Integration with ModelingToolkit.jl
+
+Dynamical systems that have been constructed from `DEProblem`s that themselves
+have been constructed from ModelingToolkit.jl keep a reference to the symbolic
+model and all symbolic variables. Accessing a `DynamicalSystem` using symbolic variables
+is possible via the functions [`observe_state`](@ref), [`set_state!`](@ref),
+[`current_parameter`](@ref) and [`set_parameter!`](@ref).
+See also the online overarching tutorial for an example.
+
 ## API
 
 The API that `DynamicalSystem` employs is composed of
@@ -96,6 +105,7 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`initial_time`](@ref)
 - [`isinplace`](@ref)
 - [`succesful_step`](@ref)
+- [`referrenced_sciml_sys`](@ref)
 
 ### API - alter status
 
@@ -161,6 +171,7 @@ end
     current_state(ds::DynamicalSystem) → u::AbstractArray
 
 Return the current state of `ds`. This state is mutated when `ds` is mutated.
+See also [`initial_state`](@ref), [`observe_state`](@ref).
 """
 current_state(ds::DynamicalSystem) = ds.u
 
@@ -318,13 +329,13 @@ Also ensure that the change is notified to whatever integration protocol is used
 set_state!(ds, u) = errormsg(ds)
 
 """
-    set_state!(ds::DynamicalSystem, value::Real, i) → u
+    set_state!(ds::DynamicalSystem, value::Real, index) → u
 
-Set the `i`th variable of `ds` to `value`. The index `i` can be an integer or
+Set the `i`th variable of `ds` to `value`. The `index` can be an integer or
 a symbolic variable that is a state variable for systems that reference a
 ModelingToolkit.jl model.
 
-Calling instead `set_state!(u, value, i, ds)` will modify the given
+Calling instead `set_state!(u, value, index, ds)` will modify the given
 state `u` and return it, leaving `ds` unaltered.
 
 **Warning:** this function should not be used with derivative dynamical systems

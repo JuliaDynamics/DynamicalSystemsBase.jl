@@ -13,7 +13,9 @@ DynamicalSystem
 ```@docs
 current_state
 initial_state
+observe_state
 current_parameters
+current_parameter
 initial_parameters
 isdeterministic
 isdiscretetime
