@@ -226,6 +226,8 @@ initial_state(ds::DynamicalSystem) = ds.u0
 
 Return the current parameter container of `ds`. This is mutated in functions
 that need to evolve `ds` across a parameter range.
+
+See also [`initial_parameters`](@ref), [`current_parameter`](@ref), [`set_parameter!`](@ref).
 """
 current_parameters(ds::DynamicalSystem) = ds.p
 
@@ -406,7 +408,7 @@ function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
     cp = current_parameters(ds)
     p === cp && return
     for (index, value) in pairs(p)
-        _set_parameter!(ds, cp, index, value)
+        _set_parameter!(ds, index, value, cp)
     end
     return
 end
