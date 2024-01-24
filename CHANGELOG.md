@@ -1,11 +1,18 @@
 # v3.5.0
 
-The `DynamicalSystem` interface now supports ModelingToolkit.jl created models!
-This works for all dynamical systems that stem from `CoupledODEs` that itself was created from an `ODEProblem` that was itself created by an `ODESystem`.
+Dynamical systems that have been constructed from `DEProblem`s that themselves
+have been constructed from ModelingToolkit.jl keep a reference to the symbolic
+model and all symbolic variables. Accessing a `DynamicalSystem` using symbolic variables
+is possible via the functions [`observe_state`](@ref), [`set_state!`](@ref),
+[`current_parameter`](@ref) and [`set_parameter!`](@ref).
+The referenced MTK model corresponding to the dynamical system can be obtained with
+`model = referrenced_sciml_model(ds::DynamicalSystem)`.
+
+See also the online overarching tutorial for an example.
+
+At the moment this is only possible for `CoupledODEs` and its derivative systems, as these are the only systems that can be made by a `DEProblem`, however it should be easy to allow e.g., `DeterministicIterated` to be created by a `DiscreteProblem`.
 
 The integration is supported by the functions `current_parameter`, `set_parameter!` where a symbolic MTK parameter can be given as an index. In `observe_state`, a state variable or observed variable symbol can be given.
-
-The referrenced MTK system corresponding to the dynamical system can be obtained with `sys = referrenced_sciml_sys(ds::DynamicalSystem)`.
 
 # v3.4.0
 

@@ -74,6 +74,9 @@ have been constructed from ModelingToolkit.jl keep a reference to the symbolic
 model and all symbolic variables. Accessing a `DynamicalSystem` using symbolic variables
 is possible via the functions [`observe_state`](@ref), [`set_state!`](@ref),
 [`current_parameter`](@ref) and [`set_parameter!`](@ref).
+The referenced MTK model corresponding to the dynamical system can be obtained with
+`model = referrenced_sciml_model(ds::DynamicalSystem)`.
+
 See also the online overarching tutorial for an example.
 
 ## API
@@ -105,7 +108,7 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`initial_time`](@ref)
 - [`isinplace`](@ref)
 - [`succesful_step`](@ref)
-- [`referrenced_sciml_sys`](@ref)
+- [`referrenced_sciml_model`](@ref)
 
 ### API - alter status
 
@@ -136,7 +139,7 @@ errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(
 
 export current_state, initial_state, current_parameters, current_parameter, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
-    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_sys
+    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_model
 
 ###########################################################################################
 # Symbolic support
@@ -145,12 +148,12 @@ export current_state, initial_state, current_parameters, current_parameter, init
 import SymbolicIndexingInterface
 
 referrenced_sciml_prob(::DynamicalSystem) = nothing
-referrenced_sciml_sys(ds::DynamicalSystem) = referrenced_sciml_sys(referrenced_sciml_prob(ds))
-referrenced_sciml_sys(prob::SciMLBase.DEProblem) = prob.f.sys
-referrenced_sciml_sys(::Nothing) = nothing
+referrenced_sciml_model(ds::DynamicalSystem) = referrenced_sciml_model(referrenced_sciml_prob(ds))
+referrenced_sciml_model(prob::SciMLBase.DEProblem) = prob.f.sys
+referrenced_sciml_model(::Nothing) = nothing
 
 # return true if there is an actual referrenced system
-has_referrenced_sys(prob::SciMLBase.DEProblem) = has_referrenced_sys(referrenced_sciml_sys(prob))
+has_referrenced_sys(prob::SciMLBase.DEProblem) = has_referrenced_sys(referrenced_sciml_model(prob))
 has_referrenced_sys(::Nothing) = false
 has_referrenced_sys(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
 has_referrenced_sys(sys) = true

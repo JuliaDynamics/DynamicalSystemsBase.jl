@@ -173,7 +173,7 @@ function ParallelDynamicalSystem(ds::DiscreteTimeDynamicalSystem, states)
 end
 
 for f in (:current_time, :initial_time, :isdiscretetime,
-        :current_parameters, :initial_parameters, :dynamic_rule,:referrenced_sciml_sys
+        :current_parameters, :initial_parameters, :dynamic_rule,:referrenced_sciml_model
     )
     @eval $(f)(pdtds::PDTDS, args...; kw...) = $(f)(pdtds.systems[1], args...; kw...)
 end
