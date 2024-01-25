@@ -14,6 +14,10 @@ At the moment this is only possible for `CoupledODEs` and its derivative systems
 
 The integration is supported by the functions `current_parameter`, `set_parameter!` where a symbolic MTK parameter can be given as an index. In `observe_state`, a state variable or observed variable symbol can be given.
 
+Also:
+
+- Crucial bugfix for `successful_step` that was not working properly for discrete time systems.
+
 # v3.4.0
 
 Better error handling for `diffeq` and `CoupledODEs`: passing a keyword was possible but should not have been.
