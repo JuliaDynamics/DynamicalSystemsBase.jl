@@ -46,10 +46,6 @@ $documenter-sidebar-size: 1.0em; // the default is 1.0 as well
 $input-hover-border-color: $secondcolor;
 $input-focus-border-color: $mainwhite;
 
-// Include the original theme which will now use the updated variables.
-// This should be the last thing in the SCSS file.
-@import "documenter-light";
-
 #documenter .docs-sidebar { // This makes sidebar have shadow at all displays
   border-right: none;
   box-shadow: 1.2*$shadow-size 0rem 1*$shadow-blur $shadow-color;
@@ -65,3 +61,7 @@ $input-focus-border-color: $mainwhite;
     }
   }
 }
+
+// Include the original theme which will now use the updated variables.
+// This should be the last thing in the SCSS file.
+@import "documenter-light";

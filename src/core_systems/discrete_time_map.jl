@@ -16,7 +16,7 @@ An alias for `DeterministicIteratedMap` is `DiscreteDynamicalSystem`.
 
 Optionally configure the parameter container `p` and initial time `t0`.
 
-For construction instructions regarding `f, u0` see [`DynamicalSystem`](@ref).
+For construction instructions regarding `f, u0` see the DynamicalSystems.jl tutorial.
 """
 mutable struct DeterministicIteratedMap{IIP, S, D, F, P} <: DiscreteTimeDynamicalSystem
     f::F

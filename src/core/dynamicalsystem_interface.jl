@@ -28,7 +28,7 @@ It mainly encapsulates three things:
    and the length of `u` is the dimension of `ds` (and of the state space).
 2. A dynamic rule, typically referred to as `f`, that dictates how the state
    evolves/changes with time when calling the [`step!`](@ref) function.
-   `f` is typically a standard Julia function, see below.
+   `f` is typically a standard Julia function, see the online documentation for examples.
 3. A parameter container `p` that parameterizes `f`. `p` can be anything,
    but in general it is recommended to be a type-stable mutable container.
 
@@ -42,30 +42,7 @@ are represented using [`StateSpaceSet`](@ref).
 Such data are obtained from the [`trajectory`](@ref) function or
 from an experimental measurement of a dynamical system with an unknown dynamic rule.
 
-## Construction instructions on `f` and `u`
-
-Most of the concrete implementations of `DynamicalSystem`, with the exception of
-[`ArbitrarySteppable`](@ref), have two ways of implementing the dynamic rule `f`,
-and as a consequence the type of the state `u`. The distinction is done on whether
-`f` is defined as an in-place (iip) function or out-of-place (oop) function.
-
-* **oop** : `f` **must** be in the form `f(u, p, t) -> out`
-    which means that given a state `u::SVector{<:Real}` and some parameter container
-    `p` it returns the output of `f` as an `SVector{<:Real}` (static vector).
-* **iip** : `f` **must** be in the form `f!(out, u, p, t)`
-    which means that given a state `u::AbstractArray{<:Real}` and some parameter container `p`,
-    it writes in-place the output of `f` in `out::AbstractArray{<:Real}`.
-    The function **must** return `nothing` as a final statement.
-
-`t` stands for current time in both cases.
-**iip** is suggested for systems with high dimension and **oop** for small.
-The break-even point is between 10 to 100 dimensions but should be benchmarked
-on a case-by-case basis as it depends on the complexity of `f`.
-
-!!! note "Autonomous vs non-autonomous systems"
-    Whether the dynamical system is autonomous (`f` doesn't depend on time) or not, it is
-    still necessary to include `t` as an argument to `f`. Some algorithms utilize this
-    information, some do not, but we prefer to keep a consistent interface either way.
+See also the DynamicalSystems.jl tutorial online for examples making dynamical systems.
 
 ## Integration with ModelingToolkit.jl
 
@@ -77,7 +54,7 @@ is possible via the functions [`observe_state`](@ref), [`set_state!`](@ref),
 The referenced MTK model corresponding to the dynamical system can be obtained with
 `model = referrenced_sciml_model(ds::DynamicalSystem)`.
 
-See also the online overarching tutorial for an example.
+See also the DynamicalSystems.jl tutorial online for an example.
 
 ## API
 
@@ -107,7 +84,7 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`current_time`](@ref)
 - [`initial_time`](@ref)
 - [`isinplace`](@ref)
-- [`succesful_step`](@ref)
+- [`successful_step`](@ref)
 - [`referrenced_sciml_model`](@ref)
 
 ### API - alter status
@@ -146,17 +123,24 @@ export current_state, initial_state, current_parameters, current_parameter, init
 ###########################################################################################
 # Simply extend the `referrenced_sciml_prob` and you have symbolic indexing support!
 import SymbolicIndexingInterface
-
 referrenced_sciml_prob(::DynamicalSystem) = nothing
+
+# The rest are all automated!
+"""
+    referrenced_sciml_model(ds::DynamicalSystem)
+
+Return the ModelingToolkit.jl structurally-simplified model referrenced by `ds`.
+Return `nothing` if there is no referrenced model.
+"""
 referrenced_sciml_model(ds::DynamicalSystem) = referrenced_sciml_model(referrenced_sciml_prob(ds))
 referrenced_sciml_model(prob::SciMLBase.DEProblem) = prob.f.sys
 referrenced_sciml_model(::Nothing) = nothing
 
 # return true if there is an actual referrenced system
-has_referrenced_sys(prob::SciMLBase.DEProblem) = has_referrenced_sys(referrenced_sciml_model(prob))
-has_referrenced_sys(::Nothing) = false
-has_referrenced_sys(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
-has_referrenced_sys(sys) = true
+has_referrenced_model(prob::SciMLBase.DEProblem) = has_referrenced_model(referrenced_sciml_model(prob))
+has_referrenced_model(::Nothing) = false
+has_referrenced_model(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
+has_referrenced_model(sys) = true
 
 ###########################################################################################
 # API - obtaining information from the system
@@ -202,7 +186,7 @@ function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_st
         return index(u)::T
     elseif index isa Int
         return u[index]::T
-    elseif has_referrenced_sys(prob)
+    elseif has_referrenced_model(prob)
         ugetter = SymbolicIndexingInterface.observed(prob, index)
         p = current_parameters(ds)
         t = current_time(ds)
@@ -239,7 +223,7 @@ which can be anything given to [`set_parameter!`](@ref).
 """
 function current_parameter(ds::DynamicalSystem, index, p = current_parameters(ds))
     prob = referrenced_sciml_prob(ds)
-    if !has_referrenced_sys(prob)
+    if !has_referrenced_model(prob)
         return _get_parameter(p, index)
     else # symbolic dispatch
         i = SymbolicIndexingInterface.getp(prob, index)
@@ -356,7 +340,7 @@ function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
     prob = referrenced_sciml_prob(ds)
     if i isa Integer
         u[i] = value
-    elseif has_referrenced_sys(prob)
+    elseif has_referrenced_model(prob)
         usetter = SymbolicIndexingInterface.setu(prob, i)
         usetter(u, value)
     else
@@ -384,7 +368,7 @@ function set_parameter!(ds::DynamicalSystem, index, value, p = current_parameter
 end
 function _set_parameter!(ds::DynamicalSystem, index, value, p = current_parameters(ds))
     prob = referrenced_sciml_prob(ds)
-    if !has_referrenced_sys(prob)
+    if !has_referrenced_model(prob)
         if p isa Union{AbstractArray, AbstractDict}
             setindex!(p, value, index)
         else

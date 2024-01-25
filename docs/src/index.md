@@ -27,6 +27,7 @@ current_time
 initial_time
 isinplace(::DynamicalSystem)
 successful_step
+referrenced_sciml_model
 ```
 
 ```@docs

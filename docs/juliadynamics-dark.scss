@@ -4,7 +4,6 @@
 // under documenter/_variables or documenter/_overrides. But some stuff are Bulma defaults
 // as well, so you may need to look them up too: https://bulma.io/documentation/customize/variables/
 
-
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 // Thse define the JuliaDynamics template:
@@ -87,6 +86,8 @@ $input-focus-border-color: $mainwhite;
 
 $documenter-docstring-shadow: 3px 3px 4px invert($shadow-color);
 
+
+
 // Admonition stuff
 $admbg: lighten-color($body-background-color, 0.5);
 $admonition-background: (
@@ -97,6 +98,11 @@ $admonition-header-background: (
   'default': #ba3f1f, 'warning': #a88b17, 'danger': #c7524c,
   'success': #42ac68, 'info': #28c);
 
+// Deprecations
+$admonition-body-color: null;
+$admonition-body-color: null;
+$admonition-header-color: null;
+
 // All secondary themes have to be nested in a theme--$(themename) class. When Documenter
 // switches themes, it applies this class to <html> and then disables the primary
 // stylesheet.
@@ -104,9 +110,11 @@ $admonition-header-background: (
 @import "documenter/variables";
 @import "bulma/utilities/all";
 @import "bulma/base/minireset.sass";
-@import "bulma/base/helpers.sass";
+@import "bulma/helpers/_all.sass";
 
 html.theme--#{$themename} {
+  @extend .is-size-7 !optional;
+
   @import "bulma/base/generic.sass";
 
   @import "documenter/overrides";
@@ -127,7 +135,7 @@ html.theme--#{$themename} {
   @import "documenter/theme_overrides";
 
   // $shadow-color: #202224;
-
+  
   #documenter .docs-sidebar { // This makes sidebar have shadow at all displays
     border-right: none;
     box-shadow: 1.2*$shadow-size 0rem 1*$shadow-blur invert($shadow-color);
