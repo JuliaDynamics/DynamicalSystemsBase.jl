@@ -4,6 +4,9 @@
 DynamicalSystemsBase
 ```
 
+!!! note "Tutorial and examples at DynamicalSystems.jl docs!
+    Please visit the documentation of the main DynamicalSystems.jl docs for a tutorial and examples on using the interface.
+
 ## The `DynamicalSystem` API
 
 ```@docs
@@ -108,64 +111,8 @@ Threads.@threads for i in eachindex(parameters)
 end
 ```
 
-## Examples
+## Advanced example
 
-### Iterated map, out of place
-
-Let's make the [Hénon map](https://en.wikipedia.org/wiki/H%C3%A9non_map) as an example.
-
-```@example MAIN
-using DynamicalSystemsBase
-
-henon_rule(x, p, n) = SVector(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-u0 = zeros(2)
-p0 = [1.4, 0.3]
-
-henon = DeterministicIteratedMap(henon_rule, u0, p0)
-```
-
-and get a trajectory
-
-```@example MAIN
-X, t = trajectory(henon, 10000; Ttr = 100)
-X
-```
-
-### Coupled ODEs, in place
-
-Let's make the Lorenz system
-[Hénon map](https://en.wikipedia.org/wiki/H%C3%A9non_map) as an example.
-The system is small, and therefore should utilize the out of place syntax, but for the case of example, we will use the in-place syntax.
-We'll also use a high accuracy solver from OrdinaryDiffEq.jl.
-
-```@example MAIN
-using DynamicalSystemsBase
-using OrdinaryDiffEq: Vern9
-
-@inbounds function lorenz_rule!(du, u, p, t)
-    σ = p[1]; ρ = p[2]; β = p[3]
-    du[1] = σ*(u[2]-u[1])
-    du[2] = u[1]*(ρ-u[3]) - u[2]
-    du[3] = u[1]*u[2] - β*u[3]
-    return nothing
-end
-
-u0 = [0, 10.0, 0]
-p0 = [10, 28, 8/3]
-diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
-
-lorenz = CoupledODEs(lorenz_rule!, u0, p0; diffeq)
-```
-
-and get a trajectory
-
-```@example MAIN
-X, t = trajectory(lorenz, 1000; Δt = 0.05, Ttr = 10)
-X
-```
-
-
-### Advanced example
 This is an advanced example of making an in-place implementation of coupled [standard maps](https://en.wikipedia.org/wiki/Standard_map). It will utilize a handcoded Jacobian, a sparse matrix for the Jacobinan, a default initial Jacobian matrix, as well as function-like-objects as the dynamic rule.
 
 Coupled standard maps is a deterministic iterated map that can have arbitrary number of equations of motion, since you can couple `N` standard maps which are 2D maps, like so:
@@ -179,6 +126,8 @@ To model this, we will make a dedicated `struct`, which is parameterized on the
 number of coupled maps:
 
 ```@example MAIN
+using DynamicalSystemsBase
+
 struct CoupledStandardMaps{N}
     idxs::SVector{N, Int}
     idxsm1::SVector{N, Int}
