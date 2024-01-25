@@ -12,8 +12,6 @@ See also the online overarching tutorial for an example.
 
 At the moment this is only possible for `CoupledODEs` and its derivative systems, as these are the only systems that can be made by a `DEProblem`, however it should be easy to allow e.g., `DeterministicIterated` to be created by a `DiscreteProblem`.
 
-The integration is supported by the functions `current_parameter`, `set_parameter!` where a symbolic MTK parameter can be given as an index. In `observe_state`, a state variable or observed variable symbol can be given.
-
 Also:
 
 - Crucial bugfix for `successful_step` that was not working properly for discrete time systems.

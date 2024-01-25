@@ -96,6 +96,11 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs..
     IIP = isinplace(prob)
     D = length(prob.u0)
     P = typeof(prob.p)
+    if prob.tspan === (nothing, nothing)
+        # If the problem was made via MTK, it is possible to not have a default timespan.
+        U = eltype(prob.u0)
+        prob = SciMLBase.remake(prob; tspan = (U(0), U(Inf)))
+    end
     solver, remaining = _decompose_into_solver_and_remaining(diffeq)
     integ = __init(prob, solver; remaining..., special_kwargs...,
         # Integrators are used exclusively iteratively. There is no reason to save anything.

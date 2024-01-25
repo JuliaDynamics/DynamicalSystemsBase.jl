@@ -109,3 +109,33 @@ set_parameter!(ds, 1, 2.0)
 @test observe_state(ds, 1) == 1.0
 
 @test_throws ArgumentError observe_state(ds, fol_1.f)
+
+# Test that remake works also without anything initial
+
+@variables t
+D = Differential(t)
+@mtkmodel Roessler begin
+    @parameters begin
+        a = 0.2
+        b = 0.2
+        c = 5.7
+    end
+    @variables begin
+        x(t) = 1.0
+        y(t) = 0.0
+        z(t) = 0.0
+        nlt(t) # nonlinear term
+    end
+    @equations begin
+        D(x) ~ -y -z
+        D(y) ~ x + a*y
+        D(z) ~ b + nlt
+        nlt ~ z*(x - c)
+    end
+end
+
+@mtkbuild roessler_model = Roessler()
+prob = ODEProblem(roessler_model)
+roessler = CoupledODEs(prob)
+
+@test roessler isa CoupledODEs
