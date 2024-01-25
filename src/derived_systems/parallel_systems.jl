@@ -40,8 +40,9 @@ initial_state(pdsa::ParallelDynamicalSystem, i::Int = 1) = initial_states(pdsa)[
 # But we do need a special extra parameter that checks if the system
 # is ODE _and_ inplace, because we need a special matrix state in this case
 struct ParallelDynamicalSystemAnalytic{D, M} <: ParallelDynamicalSystem
-    ds::D      # standard dynamical system but with rule the parallel dynamics
-    original_f # no type parameterization here, this field is only for printing
+    ds::D       # standard dynamical system but with rule the parallel dynamics
+    original_f  # no type parameterization here, this field is only for printing
+    prob        # reference original MTK problem
 end
 
 function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states)
@@ -55,7 +56,8 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states)
         pds = CoupledODEs(prob, ds.diffeq; internalnorm = inorm)
     end
     M = ds isa CoupledODEs && isinplace(ds)
-    return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds))
+    prob = referrenced_sciml_prob(ds)
+    return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), prob)
 end
 
 # Out of place: everywhere the same
@@ -102,13 +104,20 @@ end
 # Analytically knwon rule: extensions
 ###########################################################################################
 for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
-        :current_parameters, :initial_parameters,:successful_step
+        :current_parameters, :initial_parameters,:successful_step,
     )
     @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
 end
 
 (pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
 dynamic_rule(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.original_f
+
+referrenced_sciml_prob(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.prob
+
+function observe_state(ds::ParallelDynamicalSystemAnalytic, index, i::Int = 1)
+    u = current_state(ds, i)
+    return observe_state(ds, index, u)
+end
 
 # States IO for vector of vectors state
 """
@@ -124,7 +133,7 @@ current_states(pdsa::ParallelDynamicalSystemAnalytic) = current_state(pdsa.ds)
 Return an iterator over the initial parallel states of `pds`.
 """
 initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
-function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u, i::Int = 1)
+function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u::AbstractArray, i::Int = 1)
     current_states(pdsa)[i] = u
     set_state!(pdsa.ds, current_states(pdsa))
 end
@@ -134,7 +143,7 @@ const PDSAM{D} = ParallelDynamicalSystemAnalytic{D, true}
 current_states(pdsa::PDSAM) = eachcol(current_state(pdsa.ds))
 initial_states(pdsa::PDSAM) = eachcol(initial_state(pdsa.ds))
 (pdsa::PDSAM)(t::Real, i::Int = 1) = view(pdsa.ds(t), :, i)
-function set_state!(pdsa::PDSAM, u, i::Int = 1)
+function set_state!(pdsa::PDSAM, u::AbstractArray, i::Int = 1)
     current_state(pdsa, i) .= u
     u_modified!(pdsa.ds.integ, true)
     return pdsa
@@ -164,7 +173,7 @@ function ParallelDynamicalSystem(ds::DiscreteTimeDynamicalSystem, states)
 end
 
 for f in (:current_time, :initial_time, :isdiscretetime,
-        :current_parameters, :initial_parameters, :dynamic_rule,
+        :current_parameters, :initial_parameters, :dynamic_rule,:referrenced_sciml_model
     )
     @eval $(f)(pdtds::PDTDS, args...; kw...) = $(f)(pdtds.systems[1], args...; kw...)
 end

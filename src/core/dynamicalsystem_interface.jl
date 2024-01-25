@@ -11,7 +11,7 @@ of what counts as a "dynamical system" in the DynamicalSystems.jl library.
 can be iteratively evolved in time via the [`step!`](@ref) function._**
 Hence, most library functions that evolve the system
 will mutate its current state and/or parameters. See the documentation online
-for implications this has on for parallelization.
+for implications this has for parallelization.
 
 `DynamicalSystem` is further separated into two abstract types:
 `ContinuousTimeDynamicalSystem, DiscreteTimeDynamicalSystem`.
@@ -20,12 +20,7 @@ are [`DeterministicIteratedMap`](@ref) or [`CoupledODEs`](@ref).
 
 ## Description
 
-!!! note
-    The documentation of `DynamicalSystem` follows chapter 1 of
-    [Nonlinear Dynamics](https://link.springer.com/book/10.1007/978-3-030-91032-7),
-    Datseris & Parlitz, Springer 2022.
-
-A `ds::DynamicalSystem` **_representes a flow Φ in a state space_**.
+A `DynamicalSystem` **represents the time evolution of a state in a state space**.
 It mainly encapsulates three things:
 
 1. A state, typically referred to as `u`, with initial value `u0`.
@@ -33,7 +28,7 @@ It mainly encapsulates three things:
    and the length of `u` is the dimension of `ds` (and of the state space).
 2. A dynamic rule, typically referred to as `f`, that dictates how the state
    evolves/changes with time when calling the [`step!`](@ref) function.
-   `f` is a standard Julia function, see below.
+   `f` is typically a standard Julia function, see the online documentation for examples.
 3. A parameter container `p` that parameterizes `f`. `p` can be anything,
    but in general it is recommended to be a type-stable mutable container.
 
@@ -41,58 +36,47 @@ In sort, any set of quantities that change in time can be considered a dynamical
 however the concrete subtypes of `DynamicalSystem` are much more specific in their scope.
 Concrete subtypes typically also contain more information than the above 3 items.
 
-In this scope dynamical systems have a known dynamic rule `f` defined as a
-standard Julia function. _Observed_ or _measured_ data from a dynamical system
-are represented using `StateSpaceSet` and are finite.
+In this scope dynamical systems have a known dynamic rule `f`.
+Finite _measured_ or _sampled_ data from a dynamical system
+are represented using [`StateSpaceSet`](@ref).
 Such data are obtained from the [`trajectory`](@ref) function or
 from an experimental measurement of a dynamical system with an unknown dynamic rule.
 
-## Construction instructions on `f` and `u`
+See also the DynamicalSystems.jl tutorial online for examples making dynamical systems.
 
-Most of the concrete implementations of `DynamicalSystem`, with the exception of
-[`ArbitrarySteppable`](@ref), have two ways of implementing the dynamic rule `f`,
-and as a consequence the type of the state `u`. The distinction is done on whether
-`f` is defined as an in-place (iip) function or out-of-place (oop) function.
+## Integration with ModelingToolkit.jl
 
-* **oop** : `f` **must** be in the form `f(u, p, t) -> out`
-    which means that given a state `u::SVector{<:Real}` and some parameter container
-    `p` it returns the output of `f` as an `SVector{<:Real}` (static vector).
-* **iip** : `f` **must** be in the form `f!(out, u, p, t)`
-    which means that given a state `u::AbstractArray{<:Real}` and some parameter container `p`,
-    it writes in-place the output of `f` in `out::AbstractArray{<:Real}`.
-    The function **must** return `nothing` as a final statement.
+Dynamical systems that have been constructed from `DEProblem`s that themselves
+have been constructed from ModelingToolkit.jl keep a reference to the symbolic
+model and all symbolic variables. Accessing a `DynamicalSystem` using symbolic variables
+is possible via the functions [`observe_state`](@ref), [`set_state!`](@ref),
+[`current_parameter`](@ref) and [`set_parameter!`](@ref).
+The referenced MTK model corresponding to the dynamical system can be obtained with
+`model = referrenced_sciml_model(ds::DynamicalSystem)`.
 
-`t` stands for current time in both cases.
-**iip** is suggested for systems with high dimension and **oop** for small.
-The break-even point is between 10 to 100 dimensions but should be benchmarked
-on a case-by-case basis as it depends on the complexity of `f`.
-
-!!! note "Autonomous vs non-autonomous systems"
-    Whether the dynamical system is autonomous (`f` doesn't depend on time) or not, it is
-    still necessary to include `t` as an argument to `f`. Some algorithms utilize this
-    information, some do not, but we prefer to keep a consistent interface either way.
-    You can also convert any system to autonomous by making time an additional variable.
-    If the system is non-autonomous, its _effective dimensionality_ is `dimension(ds)+1`.
+See also the DynamicalSystems.jl tutorial online for an example.
 
 ## API
 
-The API that the interface of `DynamicalSystem` employs is
+The API that `DynamicalSystem` employs is composed of
 the functions listed below. Once a concrete instance of a subtype of `DynamicalSystem` is
-obtained, it can quieried or altered with the following functions.
+obtained, it can queried or altered with the following functions.
 
 The main use of a concrete dynamical system instance is to provide it to downstream
 functions such as `lyapunovspectrum` from ChaosTools.jl or `basins_of_attraction`
 from Attractors.jl. A typical user will likely not utilize directly the following API,
 unless when developing new algorithm implementations that use dynamical systems.
 
-### API - information
+### API - obtain information
 
 - `ds(t)` with `ds` an instance of `DynamicalSystem`: return the state of `ds` at time `t`.
   For continuous time systems this interpolates and extrapolates,
   while for discrete time systems it only works if `t` is the current time.
 - [`current_state`](@ref)
 - [`initial_state`](@ref)
+- [`observe_state`](@ref)
 - [`current_parameters`](@ref)
+- [`current_parameter`](@ref)
 - [`initial_parameters`](@ref)
 - [`isdeterministic`](@ref)
 - [`isdiscretetime`](@ref)
@@ -100,7 +84,8 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`current_time`](@ref)
 - [`initial_time`](@ref)
 - [`isinplace`](@ref)
-- [`succesful_step`](@ref)
+- [`successful_step`](@ref)
+- [`referrenced_sciml_model`](@ref)
 
 ### API - alter status
 
@@ -129,12 +114,36 @@ abstract type DiscreteTimeDynamicalSystem <: DynamicalSystem end
 
 errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(typeof(ds))).")
 
-export current_state, initial_state, current_parameters, initial_parameters, isinplace,
+export current_state, initial_state, current_parameters, current_parameter, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
-    reinit!, set_state!, set_parameter!, set_parameters!, step!
+    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_model
 
 ###########################################################################################
-# API - information
+# Symbolic support
+###########################################################################################
+# Simply extend the `referrenced_sciml_prob` and you have symbolic indexing support!
+import SymbolicIndexingInterface
+referrenced_sciml_prob(::DynamicalSystem) = nothing
+
+# The rest are all automated!
+"""
+    referrenced_sciml_model(ds::DynamicalSystem)
+
+Return the ModelingToolkit.jl structurally-simplified model referrenced by `ds`.
+Return `nothing` if there is no referrenced model.
+"""
+referrenced_sciml_model(ds::DynamicalSystem) = referrenced_sciml_model(referrenced_sciml_prob(ds))
+referrenced_sciml_model(prob::SciMLBase.DEProblem) = prob.f.sys
+referrenced_sciml_model(::Nothing) = nothing
+
+# return true if there is an actual referrenced system
+has_referrenced_model(prob::SciMLBase.DEProblem) = has_referrenced_model(referrenced_sciml_model(prob))
+has_referrenced_model(::Nothing) = false
+has_referrenced_model(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
+has_referrenced_model(sys) = true
+
+###########################################################################################
+# API - obtaining information from the system
 ###########################################################################################
 function (ds::DiscreteTimeDynamicalSystem)(t::Real)
     if t == current_time(ds)
@@ -146,11 +155,47 @@ end
 (ds::ContinuousTimeDynamicalSystem)(t::Real) = ds.integ(t)
 
 """
-    current_state(ds::DynamicalSystem) → u
+    current_state(ds::DynamicalSystem) → u::AbstractArray
 
 Return the current state of `ds`. This state is mutated when `ds` is mutated.
+See also [`initial_state`](@ref), [`observe_state`](@ref).
 """
 current_state(ds::DynamicalSystem) = ds.u
+
+"""
+    observe_state(ds::DynamicalSystem, i) → x::Real
+
+Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
+
+- `i::Int` returns the `i`-th dynamic variable.
+- `i::Function` returns `f(current_state(ds))`, which is asserted to be a real number.
+- `i::SymbolLike` returns the value of the corresponding symbolic variable.
+   This is valid only for dynamical systems referrencing a ModelingToolkit.jl model
+   which also has `i` as one of its listed variables. This can be a formal state variable
+   or an "observed" variable according to ModelingToolkit.jl. In short, it can be anything
+   that could index the solution object `sol = ModelingToolkit.solve(...)`.
+
+For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
+state of the system is the full state space state, not the projected one
+(this makes the most sense for allowing MTK-based indexing).
+"""
+function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_state(ds))
+    prob = referrenced_sciml_prob(ds)
+    T = eltype(u)
+    if index isa Function
+        return index(u)::T
+    elseif index isa Int
+        return u[index]::T
+    elseif has_referrenced_model(prob)
+        ugetter = SymbolicIndexingInterface.observed(prob, index)
+        p = current_parameters(ds)
+        t = current_time(ds)
+        return ugetter(u, p, t)::T
+    else
+        throw(ArgumentError("Invalid index to observe state, or if symbolic index, the "*
+        "dynamical system does not referrence a ModelingToolkit.jl system."))
+    end
+end
 
 """
     initial_state(ds::DynamicalSystem) → u0
@@ -166,23 +211,28 @@ initial_state(ds::DynamicalSystem) = ds.u0
 Return the current parameter container of `ds`. This is mutated in functions
 that need to evolve `ds` across a parameter range.
 
-The following convenience syntax is also possible:
-
-    current_parameters(ds::DynamicalSystem, index)
-
-which will give the specific parameter from the container at the given `index`
-(which works for arrays, dictionaries, or composite types if `index` is `Symbol`).
+See also [`initial_parameters`](@ref), [`current_parameter`](@ref), [`set_parameter!`](@ref).
 """
 current_parameters(ds::DynamicalSystem) = ds.p
-current_parameters(ds::DynamicalSystem, index) = _get_parameter(current_parameters(ds), index)
-function _get_parameter(p, index)
-    if p isa Union{AbstractArray, AbstractDict}
-        getindex(p, index)
-    else
-        getproperty(p, index)
+
+"""
+    current_parameter(ds::DynamicalSystem, index)
+
+Return the specific parameter corresponding to `index`,
+which can be anything given to [`set_parameter!`](@ref).
+"""
+function current_parameter(ds::DynamicalSystem, index, p = current_parameters(ds))
+    prob = referrenced_sciml_prob(ds)
+    if !has_referrenced_model(prob)
+        return _get_parameter(p, index)
+    else # symbolic dispatch
+        i = SymbolicIndexingInterface.getp(prob, index)
+        return i(p)
     end
 end
-
+_get_parameter(p::Union{AbstractArray, AbstractDict}, index) = getindex(p, index)
+# Dispatch for composite types as parameter containers
+_get_parameter(p, index) = getproperty(p, index)
 
 """
     initial_parameters(ds::DynamicalSystem) → p0
@@ -251,17 +301,16 @@ for discrete time it checks if any variable is `Inf` or `NaN`.
 """
 successful_step(ds::DynamicalSystem) = errormsg(ds)
 
-successful_step(ds::DiscreteTimeDynamicalSystem) = all(x -> isfinite(x) , current_state(ds))
-
+successful_step(ds::DiscreteTimeDynamicalSystem) = all(x -> (isfinite(x) && !isnan(x)), current_state(ds))
 
 # Generic implementation, most types re-define it as compile-time info
 StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 
 ###########################################################################################
-# API - alter status
+# API - altering status of the system
 ###########################################################################################
 """
-    set_state!(ds::DynamicalSystem, u)
+    set_state!(ds::DynamicalSystem, u::AbstractArray)
 
 Set the state of `ds` to `u`, which must match dimensionality with that of `ds`.
 Also ensure that the change is notified to whatever integration protocol is used.
@@ -269,19 +318,65 @@ Also ensure that the change is notified to whatever integration protocol is used
 set_state!(ds, u) = errormsg(ds)
 
 """
+    set_state!(ds::DynamicalSystem, value::Real, index) → u
+
+Set the `i`th variable of `ds` to `value`. The `index` can be an integer or
+a symbolic variable that is a state variable for systems that reference a
+ModelingToolkit.jl model.
+
+Calling instead `set_state!(u, value, index, ds)` will modify the given
+state `u` and return it, leaving `ds` unaltered.
+
+**Warning:** this function should not be used with derivative dynamical systems
+such as Poincare/stroboscopic/projected dynamical systems.
+"""
+function set_state!(ds::DynamicalSystem, value::Real, i)
+    u = current_state(ds)
+    u = set_state!(u, value, i, ds)
+    set_state!(ds, u)
+end
+
+function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
+    prob = referrenced_sciml_prob(ds)
+    if i isa Integer
+        u[i] = value
+    elseif has_referrenced_model(prob)
+        usetter = SymbolicIndexingInterface.setu(prob, i)
+        usetter(u, value)
+    else
+        throw(ArgumentError("Invalid index to set state, or if symbolic index, the "*
+        "dynamical system does not referrence a ModelingToolkit.jl system."))
+    end
+    return u
+end
+
+"""
     set_parameter!(ds::DynamicalSystem, index, value)
 
 Change a parameter of `ds` given the `index` it has in the parameter container
-and the `value` to set it to. This function works for both array/dictionary containers
-as well as composite types. In the latter case `index` needs to be a `Symbol`.
-"""
-set_parameter!(ds::DynamicalSystem, args...) = _set_parameter!(current_parameters(ds), args...)
+and the `value` to set it to. This function works for any type of parameter container
+(array/dictionary/composite types) provided the `index` is appropriate type.
 
-function _set_parameter!(p, index, value)
-    if p isa Union{AbstractArray, AbstractDict}
-        setindex!(p, value, index)
+The `index` can be a traditional Julia index (integer for arrays, key for dictionaries,
+or symbol for composite types). It can also be a symbolic variable.
+This is valid only for dynamical systems referring a ModelingToolkit.jl model
+which also has `index` as one of its parameters.
+"""
+function set_parameter!(ds::DynamicalSystem, index, value, p = current_parameters(ds))
+    # internal function is necessary so that we are able to call `u_modified!` for ODEs.
+    _set_parameter!(ds::DynamicalSystem, index, value, p)
+end
+function _set_parameter!(ds::DynamicalSystem, index, value, p = current_parameters(ds))
+    prob = referrenced_sciml_prob(ds)
+    if !has_referrenced_model(prob)
+        if p isa Union{AbstractArray, AbstractDict}
+            setindex!(p, value, index)
+        else
+            setproperty!(p, index, value)
+        end
     else
-        setproperty!(p, index, value)
+        set! = SymbolicIndexingInterface.setp(prob, index)
+        set!(p, value)
     end
     return
 end
@@ -297,7 +392,7 @@ function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
     cp = current_parameters(ds)
     p === cp && return
     for (index, value) in pairs(p)
-        _set_parameter!(cp, index, value)
+        _set_parameter!(ds, index, value, cp)
     end
     return
 end

@@ -1,3 +1,31 @@
+# v3.5.0
+
+Dynamical systems that have been constructed from `DEProblem`s that themselves
+have been constructed from ModelingToolkit.jl keep a reference to the symbolic
+model and all symbolic variables. Accessing a `DynamicalSystem` using symbolic variables
+is possible via the functions [`observe_state`](@ref), [`set_state!`](@ref),
+[`current_parameter`](@ref) and [`set_parameter!`](@ref).
+The referenced MTK model corresponding to the dynamical system can be obtained with
+`model = referrenced_sciml_model(ds::DynamicalSystem)`.
+
+See also the online overarching tutorial for an example.
+
+At the moment this is only possible for `CoupledODEs` and its derivative systems, as these are the only systems that can be made by a `DEProblem`, however it should be easy to allow e.g., `DeterministicIterated` to be created by a `DiscreteProblem`.
+
+The integration is supported by the functions `current_parameter`, `set_parameter!` where a symbolic MTK parameter can be given as an index. In `observe_state`, a state variable or observed variable symbol can be given.
+
+Also:
+
+- Crucial bugfix for `successful_step` that was not working properly for discrete time systems.
+
+# v3.4.0
+
+Better error handling for `diffeq` and `CoupledODEs`: passing a keyword was possible but should not have been.
+
+# v3.3.0
+
+Sorry, I forgot what goes here!
+
 # v3.2.0
 The keyword `Dt` can now be used instead of `Δt` in `trajectory` if access to unicode isn't available.
 

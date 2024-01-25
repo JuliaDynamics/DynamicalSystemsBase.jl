@@ -36,9 +36,9 @@ An alias for `CoupledODE` is `ContinuousDynamicalSystem`.
 
 Optionally provide the parameter container `p` and initial time as keyword `t0`.
 
-For construction instructions regarding `f, u0` see [`DynamicalSystem`](@ref).
+For construction instructions regarding `f, u0` see the DynamicalSystems.jl tutorial.
 
-## DifferentialEquations.jl keyword arguments and interfacing
+## DifferentialEquations.jl interfacing
 
 The ODEs are evolved via the solvers of DifferentialEquations.jl.
 When initializing a `CoupledODEs`, you can specify the solver that will integrate
@@ -55,6 +55,9 @@ $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 
 The convenience constructors `CoupledODEs(prob::ODEProblem [, diffeq])` and
 `CoupledODEs(ds::CoupledODEs [, diffeq])` are also available.
+To integrate with ModelingToolkit.jl, the dynamical system **must** be created
+via the `ODEProblem` (which itself is created via ModelingToolkit.jl), see
+the Tutorial for an example.
 
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
 The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
@@ -83,6 +86,7 @@ function CoupledODEs(f, u0, p = SciMLBase.NullParameters(); t0 = 0, diffeq = DEF
     prob = ODEProblem{IIP}(f, s, (T(t0), T(Inf)), p)
     return CoupledODEs(prob, diffeq)
 end
+# This preserves the referrenced MTK system
 CoupledODEs(ds::CoupledODEs, diffeq) = CoupledODEs(ODEProblem(ds), diffeq)
 # Below `special_kwargs` is undocumented internal option for passing `internalnorm`
 function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs...)
@@ -104,7 +108,8 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs..
 end
 
 function SciMLBase.ODEProblem(ds::CoupledODEs{IIP}, tspan = (initial_time(ds), Inf)) where {IIP}
-    ODEProblem{IIP}(dynamic_rule(ds), initial_state(ds), tspan, current_parameters(ds))
+    prob = ds.integ.sol.prob
+    return SciMLBase.remake(prob; tspan)
 end
 
 # Pretty print
@@ -120,12 +125,14 @@ end
 ###########################################################################################
 StateSpaceSets.dimension(::CoupledODEs{IIP, D}) where {IIP, D} = D
 
-for f in (:current_state, :initial_state, :current_parameters, :dynamic_rule,
-    :current_time, :initial_time, :successful_step, :set_state!, :(SciMLBase.isinplace))
+for f in (:initial_state, :current_parameters, :dynamic_rule,
+    :current_time, :initial_time, :successful_step,)
     @eval $(f)(ds::ContinuousTimeDynamicalSystem, args...) = $(f)(ds.integ, args...)
 end
 
 SciMLBase.isinplace(::CoupledODEs{IIP}) where {IIP} = IIP
+set_state!(ds::CoupledODEs, u::AbstractArray) = set_state!(ds.integ, u)
+
 # so that `ds` is printed
 SciMLBase.step!(ds::CoupledODEs, args...) = (step!(ds.integ, args...); ds)
 
@@ -142,6 +149,7 @@ end
 dynamic_rule(integ::DEIntegrator) = integ.f.f
 current_parameters(integ::DEIntegrator) = integ.p
 initial_state(integ::DEIntegrator) = integ.sol.prob.u0
+current_state(ds::CoupledODEs) = current_state(ds.integ)
 current_state(integ::DEIntegrator) = integ.u
 current_time(integ::DEIntegrator) = integ.t
 initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
@@ -163,8 +171,9 @@ end
 
 # This is here to ensure that `u_modified!` is called
 function set_parameter!(ds::CoupledODEs, args...)
-    _set_parameter!(current_parameters(ds), args...)
+    _set_parameter!(ds, args...)
     u_modified!(ds.integ, true)
     return
 end
 
+referrenced_sciml_prob(ds::CoupledODEs) = ds.integ.sol.prob
