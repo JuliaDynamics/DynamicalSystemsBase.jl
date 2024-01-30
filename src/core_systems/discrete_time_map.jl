@@ -88,6 +88,8 @@ function SciMLBase.step!(ds::DeterministicIteratedMap{true})
     return ds
 end
 function SciMLBase.step!(ds::DeterministicIteratedMap{true}, N, stop_at_tdt = true)
+    # We do not check for errors here for performance (of not computing equals to NaN
+    # or Inf all the time), because in the end detecting the error early doesn't help
     for _ in 1:N
         ds.dummy, ds.u = ds.u, ds.dummy
         ds.f(ds.u, ds.dummy, ds.p, ds.t)
