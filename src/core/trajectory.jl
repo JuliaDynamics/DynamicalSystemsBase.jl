@@ -3,13 +3,14 @@ export trajectory
 """
     trajectory(ds::DynamicalSystem, T [, u0]; kwargs...) → X, t
 
-Return a dataset `X` that will contain the trajectory of the system `ds`,
-after evolving it for total time `T`.
-`u0` is the state given given to [`reinit!`](@ref) prior to time evolution
-and defaults to [`initial_state(ds)`](@ref).
+Evolve `ds` for a total time of `T` and return its trajectory `X`, sampled at equal time
+intervals, and corresponding time vector.
+Optionally provide a starting state `u0` which is `current_state(ds)` by default.
 
-See [`StateSpaceSet`](@ref) for info on how to use `X`.
 The returned time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)`.
+
+If time evolution diverged before `T`, the remaining of the trajectory is set
+to the last valid point.
 
 ## Keyword arguments
 
@@ -69,6 +70,7 @@ function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = 
     for (i, t) in enumerate(tvec)
         while t > current_time(ds)
             step!(ds)
+            successful_step(ds) || break
         end
         sol[i] = SVector{X, ET}(obtain_access(ds(t), accessor))
         if !successful_step(ds)

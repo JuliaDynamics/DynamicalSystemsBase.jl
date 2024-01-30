@@ -86,8 +86,8 @@ function CoupledODEs(f, u0, p = SciMLBase.NullParameters(); t0 = 0, diffeq = DEF
     prob = ODEProblem{IIP}(f, s, (T(t0), T(Inf)), p)
     return CoupledODEs(prob, diffeq)
 end
-# This preserves the referrenced MTK system
-CoupledODEs(ds::CoupledODEs, diffeq) = CoupledODEs(ODEProblem(ds), diffeq)
+# This preserves the referrenced MTK system and the originally passed diffeq kwargs
+CoupledODEs(ds::CoupledODEs, diffeq) = CoupledODEs(ODEProblem(ds), merge(ds.diffeq, diffeq))
 # Below `special_kwargs` is undocumented internal option for passing `internalnorm`
 function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs...)
     if haskey(special_kwargs, :diffeq)
@@ -159,8 +159,17 @@ current_state(integ::DEIntegrator) = integ.u
 current_time(integ::DEIntegrator) = integ.t
 initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
 
-using SciMLBase: successful_retcode, check_error
-successful_step(integ::DEIntegrator) = successful_retcode(check_error(integ))
+# For checking successful step, the `SciMLBase.step!` function checks
+# `integ.sol.retcode in (ReturnCode.Default, ReturnCode.Success) || break`.
+# But the actual API call would be `successful_retcode(check_error(integ))`.
+# The latter however is already used in `step!(integ)` so there is no reason to re-do it.
+# Besides, within DynamicalSystems.jl the integration is never expected to terminate.
+# Nevertheless here we extend explicitly only for ODE stuff because it may be that for
+# other type of DEIntegrators a different step interruption is possible.
+function successful_step(integ::ODEIntegrator)
+    rcode = integ.sol.retcode
+    return rcode == SciMLBase.ReturnCode.Default || rcode == SciMLBase.ReturnCode.Success
+end
 
 function set_state!(integ::DEIntegrator, u)
     if integ.u isa Array{<:Real}
