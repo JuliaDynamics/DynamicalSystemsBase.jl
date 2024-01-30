@@ -166,7 +166,7 @@ initial_time(integ::DEIntegrator) = integ.sol.prob.tspan[1]
 # Besides, within DynamicalSystems.jl the integration is never expected to terminate.
 # Nevertheless here we extend explicitly only for ODE stuff because it may be that for
 # other type of DEIntegrators a different step interruption is possible.
-function successful_step(integ::SciMLBase.ODEIntegrator)
+function successful_step(integ::SciMLBase.AbstractODEIntegrator)
     rcode = integ.sol.retcode
     return rcode == SciMLBase.ReturnCode.Default || rcode == SciMLBase.ReturnCode.Success
 end
