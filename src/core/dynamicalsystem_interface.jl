@@ -52,7 +52,9 @@ model and all symbolic variables. Accessing a `DynamicalSystem` using symbolic v
 is possible via the functions [`observe_state`](@ref), [`set_state!`](@ref),
 [`current_parameter`](@ref) and [`set_parameter!`](@ref).
 The referenced MTK model corresponding to the dynamical system can be obtained with
-`model = referrenced_sciml_model(ds::DynamicalSystem)`.
+`model = referrenced_sciml_model(ds::DynamicalSystem)` and the convenience functions
+[`integer_state_index`](@ref), [`integer_parameter_index`](@ref) are useful for further
+usage of the dynamical system.
 
 See also the DynamicalSystems.jl tutorial online for an example.
 
@@ -116,7 +118,8 @@ errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(
 
 export current_state, initial_state, current_parameters, current_parameter, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
-    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_model
+    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state,
+    referrenced_sciml_model, integer_state_index, integer_parameter_index
 
 ###########################################################################################
 # Symbolic support
@@ -141,6 +144,35 @@ has_referrenced_model(prob::SciMLBase.DEProblem) = has_referrenced_model(referre
 has_referrenced_model(::Nothing) = false
 has_referrenced_model(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
 has_referrenced_model(sys) = true
+
+"""
+    integer_parameter_index(symbol, ds::DynamicalSystem) → i::Int
+
+Convert the given symbolic variable representing a parameter to its integer
+index in the parameter container ([`current_parameters`](@ref)).
+Return `nothing` if `ds` doesn't reference a symbolic model
+or the model does not have the given `symbol` as parameter.
+"""
+integer_parameter_index(s, ds::DynamicalSystem) = integer_parameter_index(s, referrenced_sciml_model(ds))
+function integer_parameter_index(symbol, model)
+    isnothing(model) && return nothing
+    findfirst(isequal(symbol), parameters(model))
+end
+
+"""
+    integer_state_index(symbol, ds::DynamicalSystem) → i::Int
+
+Convert the given symbolic variable representing a state (dynamic) variable to its integer
+index in the state vector ([`current_state`](@ref)).
+Return `nothing` if `ds` doesn't reference a symbolic model
+or the model does not have the given `symbol` as a state variable.
+"""
+integer_state_index(s, ds::DynamicalSystem) = integer_state_index(s, referrenced_sciml_model(ds))
+function integer_state_index(symbol, model)
+    isnothing(model) && return nothing
+    findfirst(isequal(symbol), states(model))
+end
+
 
 ###########################################################################################
 # API - obtaining information from the system
