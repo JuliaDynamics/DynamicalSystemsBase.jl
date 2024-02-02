@@ -59,6 +59,12 @@ set_state!(ds, 1.5, 1)
 set_state!(ds, -0.5, fol_1.x)
 @test observe_state(ds, 1) == -0.5
 
+# integer conversion
+@test integer_state_index(fol_1.x, ds) == 1
+@test isnothing(integer_state_index(fol_2.RHS, ds))
+@test integer_parameter_index(fol_1.f, ds) == 1
+@test isnothing(integer_parameter_index(fol_1.x, ds))
+
 # test that derivative dynamical systems also work as execpted
 u1 = current_state(ds)
 pds = ParallelDynamicalSystem(ds, [u1, copy(u1)])
@@ -110,8 +116,10 @@ set_parameter!(ds, 1, 2.0)
 
 @test_throws ArgumentError observe_state(ds, fol_1.f)
 
-# Test that remake works also without anything initial
+@test isnothing(integer_state_index(fol_2.RHS, ds))
+@test isnothing(integer_parameter_index(fol_1.x, ds))
 
+# Test that remake works also without anything initial
 @variables t
 D = Differential(t)
 @mtkmodel Roessler begin
