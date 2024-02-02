@@ -122,7 +122,7 @@ export current_state, initial_state, current_parameters, current_parameter, init
     referrenced_sciml_model, integer_state_index, integer_parameter_index
 
 ###########################################################################################
-# Symbolic support
+# Symbolic support (MTK integration)
 ###########################################################################################
 # Simply extend the `referrenced_sciml_prob` and you have symbolic indexing support!
 import SymbolicIndexingInterface

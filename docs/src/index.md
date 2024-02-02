@@ -13,6 +13,7 @@ DynamicalSystemsBase
 DynamicalSystem
 ```
 
+### API - Obtain information
 ```@docs
 current_state
 initial_state
@@ -27,8 +28,9 @@ current_time
 initial_time
 isinplace(::DynamicalSystem)
 successful_step
-referrenced_sciml_model
 ```
+
+### API - Alter status
 
 ```@docs
 reinit!(::DynamicalSystem, args...; kwargs...)
@@ -37,7 +39,16 @@ set_parameter!
 set_parameters!
 ```
 
+### API - MTK integration
+
+```@docs
+referrenced_sciml_model
+integer_state_index
+integer_parameter_index
+```
+
 ## Time evolution
+
 ```@docs
 step!(::DynamicalSystem, args...; kwargs...)
 trajectory
@@ -45,21 +56,25 @@ StateSpaceSet
 ```
 
 ## `DeterministicIteratedMap`
+
 ```@docs
 DeterministicIteratedMap
 ```
 
 ## `CoupledODEs`
+
 ```@docs
 CoupledODEs
 ```
 
 ## `StroboscopicMap`
+
 ```@docs
 StroboscopicMap
 ```
 
 ## `PoincareMap`
+
 ```@docs
 PoincareMap
 current_crossing_time
@@ -67,6 +82,7 @@ poincaresos
 ```
 
 ## `TangentDynamicalSystem`
+
 ```@docs
 CoreDynamicalSystem
 TangentDynamicalSystem
@@ -76,11 +92,13 @@ orthonormal
 ```
 
 ## `ProjectedDynamicalSystem`
+
 ```@docs
 ProjectedDynamicalSystem
 ```
 
 ## `ParallelDynamicalSystem`
+
 ```@docs
 ParallelDynamicalSystem
 initial_states
@@ -88,6 +106,7 @@ current_states
 ```
 
 ## `ArbitrarySteppable`
+
 ```@docs
 ArbitrarySteppable
 ```
