@@ -1,3 +1,7 @@
+# v3.6.0
+
+Two new API functions for MTK integration: `integer_state_index` and `integer_parameter_index`.
+
 # v3.5.0
 
 Dynamical systems that have been constructed from `DEProblem`s that themselves
