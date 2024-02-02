@@ -195,9 +195,9 @@ See also [`initial_state`](@ref), [`observe_state`](@ref).
 current_state(ds::DynamicalSystem) = ds.u
 
 """
-    observe_state(ds::DynamicalSystem, i) → x::Real
+    observe_state(ds::DynamicalSystem, i [,u = current_state(ds)]) → x::Real
 
-Return the current state of `ds` _observed_ at "index" `i`. Possibilities are:
+Return the state `u` of `ds` _observed_ at "index" `i`. Possibilities are:
 
 - `i::Int` returns the `i`-th dynamic variable.
 - `i::Function` returns `f(current_state(ds))`, which is asserted to be a real number.
