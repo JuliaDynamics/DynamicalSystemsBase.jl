@@ -143,7 +143,7 @@ referrenced_sciml_model(::Nothing) = nothing
 has_referrenced_model(prob::SciMLBase.DEProblem) = has_referrenced_model(referrenced_sciml_model(prob))
 has_referrenced_model(::Nothing) = false
 has_referrenced_model(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
-has_referrenced_model(sys) = true
+has_referrenced_model(model) = true
 
 """
     integer_parameter_index(symbol, ds::DynamicalSystem) → i::Int
