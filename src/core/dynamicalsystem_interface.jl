@@ -216,10 +216,12 @@ See also [`initial_parameters`](@ref), [`current_parameter`](@ref), [`set_parame
 current_parameters(ds::DynamicalSystem) = ds.p
 
 """
-    current_parameter(ds::DynamicalSystem, index)
+    current_parameter(ds::DynamicalSystem, index [,p])
 
-Return the specific parameter corresponding to `index`,
+Return the specific parameter of `ds` corresponding to `index`,
 which can be anything given to [`set_parameter!`](@ref).
+`p` defaults to [`current_parameters`](@ref) and is the parameter container
+to extract the parameter from, which must match layout with its default value.
 """
 function current_parameter(ds::DynamicalSystem, index, p = current_parameters(ds))
     prob = referrenced_sciml_prob(ds)
@@ -351,7 +353,7 @@ function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
 end
 
 """
-    set_parameter!(ds::DynamicalSystem, index, value)
+    set_parameter!(ds::DynamicalSystem, index, value [, p])
 
 Change a parameter of `ds` given the `index` it has in the parameter container
 and the `value` to set it to. This function works for any type of parameter container
@@ -361,6 +363,10 @@ The `index` can be a traditional Julia index (integer for arrays, key for dictio
 or symbol for composite types). It can also be a symbolic variable.
 This is valid only for dynamical systems referring a ModelingToolkit.jl model
 which also has `index` as one of its parameters.
+
+The last optional argument `p` defaults to [`current_parameters`](@ref) and is
+the parameter container whose value is changed at the given index.
+It must match layout with its default value.
 """
 function set_parameter!(ds::DynamicalSystem, index, value, p = current_parameters(ds))
     # internal function is necessary so that we are able to call `u_modified!` for ODEs.

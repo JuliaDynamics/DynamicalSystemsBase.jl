@@ -49,6 +49,11 @@ set_parameter!(ds, fol_1.τ, 2.0)
 @test current_parameter(ds, 1) == 2.0
 @test current_parameter(ds, fol_1.τ) == 2.0
 
+# pure parameter container
+pp = deepcopy(current_parameters(ds))
+set_parameter!(ds, fol_1.τ, 4.0)
+@test current_parameter(ds, fol_1.τ, pp) == 4.0
+
 # states and observed variables
 @test observe_state(ds, 1) == -0.5
 @test observe_state(ds, fol_1.x) == -0.5
