@@ -180,17 +180,16 @@ state of the system is the full state space state, not the projected one
 (this makes the most sense for allowing MTK-based indexing).
 """
 function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_state(ds))
-    prob = referrenced_sciml_prob(ds)
-    T = eltype(u)
     if index isa Function
-        return index(u)::T
+        return index(u)
     elseif index isa Int
-        return u[index]::T
-    elseif has_referrenced_model(prob)
+        return u[index]
+    elseif has_referrenced_model(ds)
+        prob = referrenced_sciml_prob(ds)
         ugetter = SymbolicIndexingInterface.observed(prob, index)
         p = current_parameters(ds)
         t = current_time(ds)
-        return ugetter(u, p, t)::T
+        return ugetter(u, p, t)
     else
         throw(ArgumentError("Invalid index to observe state, or if symbolic index, the "*
         "dynamical system does not referrence a ModelingToolkit.jl system."))
