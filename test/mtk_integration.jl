@@ -113,7 +113,7 @@ set_parameter!(ds, 1, 2.0)
 
 @test observe_state(ds, 1) == 1.0
 
-@test_throws ArgumentError observe_state(ds, fol_1.f)
+@test_throws ErrorException observe_state(ds, fol_1.f)
 
 # Test that remake works also without anything initial
 
