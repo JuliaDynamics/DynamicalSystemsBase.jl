@@ -13,7 +13,7 @@ function fol_factory(separate = false; name)
         D(x) ~ RHS] :
           D(x) ~ (f - x) / τ
 
-    ODESystem(eqs; name)
+    ODESystem(eqs, t; name)
 end
 
 @named fol_1 = fol_factory()
@@ -22,9 +22,9 @@ end
 connections = [fol_1.f ~ 1.5,
     fol_2.f ~ fol_1.x]
 
-connected = compose(ODESystem(connections, name = :connected), fol_1, fol_2)
+connected = compose(ODESystem(connections, t; name = :connected), fol_1, fol_2)
 
-sys = structural_simplify(connected)
+sys = structural_simplify(connected; split = false)
 
 u0 = [fol_1.x => -0.5,
     fol_2.x => 1.0]
@@ -51,7 +51,7 @@ set_parameter!(ds, fol_1.τ, 2.0)
 
 # pure parameter container
 pp = deepcopy(current_parameters(ds))
-set_parameter!(ds, fol_1.τ, 4.0)
+set_parameter!(ds, fol_1.τ, 4.0, pp)
 @test current_parameter(ds, fol_1.τ, pp) == 4.0
 
 # states and observed variables

@@ -56,6 +56,13 @@ The referenced MTK model corresponding to the dynamical system can be obtained w
 
 See also the DynamicalSystems.jl tutorial online for an example.
 
+!!! warn "ModelingToolkit.jl v9"
+    In ModelingToolkit.jl v9 the default `split` behavior of the parameter container
+    is `true`. This leads to various accessing errors, so the integration
+    only works if you explicitly pass `structural_simplify(sys; split = false)`
+    when structurally simplifying the equations systems before making the
+    `...Problem` instance.
+
 ## API
 
 The API that `DynamicalSystem` employs is composed of
