@@ -58,10 +58,12 @@ See also the DynamicalSystems.jl tutorial online for an example.
 
 !!! warn "ModelingToolkit.jl v9"
     In ModelingToolkit.jl v9 the default `split` behavior of the parameter container
-    is `true`. This leads to various accessing errors, so the integration
-    only works if you explicitly pass `structural_simplify(sys; split = false)`
-    when structurally simplifying the equations systems before making the
-    `...Problem` instance.
+    is `true`. This means that the parameter container is no longer a `Vector{Float64}`
+    by default, which means that you cannot use integers to access parameters.
+    In this case, the `index` given to `current_parameter/set_parameter!`
+    must be the symbolic parameter binding.
+    Use `structural_simplify(sys; split = false)` to allow accessing parameters
+    with integers again.
 
 ## API
 

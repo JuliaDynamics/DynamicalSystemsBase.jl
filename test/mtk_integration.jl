@@ -95,6 +95,22 @@ set_parameter!(pmap, fol_1.τ, 4.0)
 @test current_parameter(pmap, fol_1.τ) == 4.0
 @test observe_state(pmap, fol_1.x) ≈ 0 atol = 1e-3 rtol = 0
 
+# test with split
+sys = structural_simplify(connected; split = true)
+
+u0 = [fol_1.x => -0.5,
+    fol_2.x => 1.0]
+
+p = [fol_1.τ => 2.0,
+    fol_2.τ => 4.0]
+
+prob = ODEProblem(sys, u0, (0.0, 10.0), p)
+ds = CoupledODEs(prob)
+
+@test current_parameter(ds, fol_1.τ) == 2.0
+set_parameter!(ds, fol_1.τ, 3.0)
+@test current_parameter(ds, fol_1.τ) == 3.0
+
 # test without sys
 function lorenz!(du, u, p, t)
     du[1] = p[1] * (u[2] - u[1])
