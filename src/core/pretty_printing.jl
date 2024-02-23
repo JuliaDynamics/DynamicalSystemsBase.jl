@@ -92,3 +92,36 @@ parameter_name(f::Union{AbstractString,Symbol}) = string(f)
 parameter_name(f) = string(DynamicalSystemsBase.SymbolicIndexingInterface.getname(f))
 
 export state_name, parameter_name
+
+"""
+    subscript(i::Int)
+
+Transform `i` to a string that has `i` as a subscript.
+"""
+function subscript(i::Int)
+    if i < 0
+        "₋"*subscript(-i)
+    elseif i == 1
+        "₁"
+    elseif i == 2
+        "₂"
+    elseif i == 3
+        "₃"
+    elseif i == 4
+        "₄"
+    elseif i == 5
+        "₅"
+    elseif i == 6
+        "₆"
+    elseif i == 7
+        "₇"
+    elseif i == 8
+        "₈"
+    elseif i == 9
+        "₉"
+    elseif i == 0
+        "₀"
+    else
+        join(subscript.(digits(i)))
+    end
+end
