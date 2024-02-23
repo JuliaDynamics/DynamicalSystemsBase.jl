@@ -1,3 +1,8 @@
+# v3.6.0
+
+New convenience functions `state_name, parameter_name` for obtaining a `name::String`
+that matches the indexed state/parameter.
+
 # v3.5.0
 
 Dynamical systems that have been constructed from `DEProblem`s that themselves

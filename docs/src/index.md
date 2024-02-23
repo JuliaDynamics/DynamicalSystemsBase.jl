@@ -17,8 +17,10 @@ DynamicalSystem
 current_state
 initial_state
 observe_state
+state_name
 current_parameters
 current_parameter
+parameter_name
 initial_parameters
 isdeterministic
 isdiscretetime

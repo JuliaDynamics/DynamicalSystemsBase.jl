@@ -71,3 +71,57 @@ function printlimited(io, x; Δx = 0, Δy = 0)
 end
 
 printlimited(io, x::Number; kwargs...) = print(io, x)
+
+"""
+    state_name(index)::String
+
+Return a name that matches the outcome of [`observe_state`](@ref) with `index`.
+"""
+state_name(f::Int) = "u"*subscript(f)
+state_name(f::Function) = string(f)
+state_name(f::Union{AbstractString,Symbol}) = string(f)
+state_name(f) = string(DynamicalSystemsBase.SymbolicIndexingInterface.getname(f))
+
+"""
+    parameter_name(index)::String
+
+Return a name that matches the outcome of [`current_parameter`](@ref) with `index`.
+"""
+parameter_name(f::Int) = "p"*subscript(f)
+parameter_name(f::Union{AbstractString,Symbol}) = string(f)
+parameter_name(f) = string(DynamicalSystemsBase.SymbolicIndexingInterface.getname(f))
+
+export state_name, parameter_name
+
+"""
+    subscript(i::Int)
+
+Transform `i` to a string that has `i` as a subscript.
+"""
+function subscript(i::Int)
+    if i < 0
+        "₋"*subscript(-i)
+    elseif i == 1
+        "₁"
+    elseif i == 2
+        "₂"
+    elseif i == 3
+        "₃"
+    elseif i == 4
+        "₄"
+    elseif i == 5
+        "₅"
+    elseif i == 6
+        "₆"
+    elseif i == 7
+        "₇"
+    elseif i == 8
+        "₈"
+    elseif i == 9
+        "₉"
+    elseif i == 0
+        "₀"
+    else
+        join(subscript.(digits(i)))
+    end
+end

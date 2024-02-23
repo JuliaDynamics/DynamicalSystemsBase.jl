@@ -1,0 +1,6 @@
+# sample regex patterns
+ignore:
+  - "src/deprecated.jl"  # ignore folders and all its contents
+  - "src/plotting.jl"
+  - "src/core/pretty_printing.jl"
+  - "ext/*"
