@@ -188,6 +188,8 @@ Return the state `u` of `ds` _observed_ at "index" `i`. Possibilities are:
 For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
 state of the system is the full state space state, not the projected one
 (this makes the most sense for allowing MTK-based indexing).
+
+Use [`state_name`](@ref) for an accompanying name.
 """
 function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_state(ds))
     if index isa Function
@@ -231,6 +233,8 @@ Return the specific parameter of `ds` corresponding to `index`,
 which can be anything given to [`set_parameter!`](@ref).
 `p` defaults to [`current_parameters`](@ref) and is the parameter container
 to extract the parameter from, which must match layout with its default value.
+
+Use [`parameter_name`](@ref) for an accompanying name.
 """
 function current_parameter(ds::DynamicalSystem, index, p = current_parameters(ds))
     prob = referrenced_sciml_prob(ds)
