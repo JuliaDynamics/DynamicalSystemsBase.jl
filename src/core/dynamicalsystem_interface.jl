@@ -60,8 +60,8 @@ See also the DynamicalSystems.jl tutorial online for an example.
     In ModelingToolkit.jl v9 the default `split` behavior of the parameter container
     is `true`. This means that the parameter container is no longer a `Vector{Float64}`
     by default, which means that you cannot use integers to access parameters.
-    In this case, the `index` given to `current_parameter/set_parameter!`
-    must be the symbolic parameter binding.
+    It is recommended to keep `split = true` (default) and only access
+    parameters via their symbolic parameter binding.
     Use `structural_simplify(sys; split = false)` to allow accessing parameters
     with integers again.
 
@@ -180,9 +180,10 @@ Return the state `u` of `ds` _observed_ at "index" `i`. Possibilities are:
 - `i::Function` returns `f(current_state(ds))`, which is asserted to be a real number.
 - `i::SymbolLike` returns the value of the corresponding symbolic variable.
    This is valid only for dynamical systems referrencing a ModelingToolkit.jl model
-   which also has `i` as one of its listed variables. This can be a formal state variable
-   or an "observed" variable according to ModelingToolkit.jl. In short, it can be anything
-   that could index the solution object `sol = ModelingToolkit.solve(...)`.
+   which also has `i` as one of its listed variables (either uknowns or observed).
+   Here `i` can be anything can be anything
+   that could index the solution object `sol = ModelingToolkit.solve(...)`,
+   such as a `Num` or `Symbol` instance with the name of the symbolic variable.
 
 For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
 state of the system is the full state space state, not the projected one
@@ -331,8 +332,7 @@ set_state!(ds, u) = errormsg(ds)
     set_state!(ds::DynamicalSystem, value::Real, index) → u
 
 Set the `i`th variable of `ds` to `value`. The `index` can be an integer or
-a symbolic variable that is a state variable for systems that reference a
-ModelingToolkit.jl model.
+a symbolic-like index for systems that reference a ModelingToolkit.jl model.
 
 Calling instead `set_state!(u, value, index, ds)` will modify the given
 state `u` and return it, leaving `ds` unaltered.
@@ -368,7 +368,7 @@ and the `value` to set it to. This function works for any type of parameter cont
 (array/dictionary/composite types) provided the `index` is appropriate type.
 
 The `index` can be a traditional Julia index (integer for arrays, key for dictionaries,
-or symbol for composite types). It can also be a symbolic variable.
+or symbol for composite types). It can also be a symbolic variable or `Symbol` instance.
 This is valid only for dynamical systems referring a ModelingToolkit.jl model
 which also has `index` as one of its parameters.
 
