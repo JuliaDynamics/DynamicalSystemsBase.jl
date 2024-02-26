@@ -19,7 +19,9 @@ to the last valid point.
   have access to unicode, the keyword `Dt` can be used instead.
 * `Ttr = 0`: Transient time to evolve the initial state before starting saving states.
 * `t0 = initial_time(ds)`: Starting time.
-* `save_idxs::AbstractVector{Int}`: Which variables to output in `X` (by default all).
+* `save_idxs::AbstractVector`: Which variables to output in `X`. It can be
+  any type of index that can be given to [`observe_state`](@ref).
+  Defaults to `1:dimension(ds)` (all dynamic variables).
 """
 function trajectory(ds::DynamicalSystem, T, u0 = initial_state(ds);
         save_idxs = nothing, t0 = initial_time(ds), kwargs...
@@ -43,10 +45,10 @@ function trajectory_discrete(ds, T;
     X = isnothing(accessor) ? dimension(ds) : length(accessor)
     data = Vector{SVector{X, ET}}(undef, L)
     Ttr ≠ 0 && step!(ds, Ttr)
-    data[1] = obtain_access(current_state(ds), accessor)
+    data[1] = obtain_state(current_state(ds), accessor)
     for i in 2:L
         step!(ds, Δt)
-        data[i] = SVector{X, ET}(obtain_access(current_state(ds), accessor))
+        data[i] = SVector{X, ET}(obtain_state(ds, current_state(ds), accessor))
         if !successful_step(ds)
             # Diverged trajectory; set final state to remaining set
             # and exit iteration early
@@ -72,7 +74,7 @@ function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = 
             step!(ds)
             successful_step(ds) || break
         end
-        sol[i] = SVector{X, ET}(obtain_access(ds(t), accessor))
+        sol[i] = SVector{X, ET}(obtain_state(ds, t, accessor))
         if !successful_step(ds)
             # Diverged trajectory; set final state to remaining set
             # and exit iteration early
@@ -86,9 +88,21 @@ function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = 
     return StateSpaceSet(sol), tvec
 end
 
-# Util functions for `trajectory`
+# Util functions for `trajectory` to make indexing static vectors
+# as efficient as possible
 svector_access(::Nothing) = nothing
-svector_access(x::AbstractArray) = SVector{length(x), Int}(x...)
+svector_access(x::AbstractVector{Int}) = SVector{length(x), Int}(x...)
 svector_access(x::Int) = SVector{1, Int}(x)
-obtain_access(u, ::Nothing) = u
-obtain_access(u, i::SVector) = u[i]
+svector_access(x::AbstractVector) = x
+
+# this is a special wrapper around `observe_state` to make indexing
+# static arrays more performant without unecessary allocations
+obtain_state(u, ::Nothing) = u
+obtain_state(u, i::SVector) = u[i]
+function obtain_state(ds::DynamicalSystem, t::Real, i::Union{Nothing, SVector})
+    return obtain_state(ds(t), i)
+end
+function obtain_state(ds::DynamicalSystem, t::Real, idxs::AbstractVector)
+    u = ds(t)
+    return [observe_state(ds, i, u, t) for i in idxs]
+end

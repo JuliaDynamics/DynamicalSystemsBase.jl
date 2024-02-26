@@ -172,18 +172,20 @@ See also [`initial_state`](@ref), [`observe_state`](@ref).
 current_state(ds::DynamicalSystem) = ds.u
 
 """
-    observe_state(ds::DynamicalSystem, i [,u = current_state(ds)]) → x::Real
+    observe_state(ds::DynamicalSystem, i, u = current_state(ds)) → x::Real
 
 Return the state `u` of `ds` _observed_ at "index" `i`. Possibilities are:
 
 - `i::Int` returns the `i`-th dynamic variable.
-- `i::Function` returns `f(current_state(ds))`, which is asserted to be a real number.
+- `i::Function` returns `f(current_state(ds))`.
 - `i::SymbolLike` returns the value of the corresponding symbolic variable.
    This is valid only for dynamical systems referrencing a ModelingToolkit.jl model
    which also has `i` as one of its listed variables (either uknowns or observed).
    Here `i` can be anything can be anything
    that could index the solution object `sol = ModelingToolkit.solve(...)`,
    such as a `Num` or `Symbol` instance with the name of the symbolic variable.
+   In this case, a last fourth optional positional argument `t` defaults to
+   `current_time(ds)` and is the time to observe the state at.
 
 For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
 state of the system is the full state space state, not the projected one
@@ -191,16 +193,15 @@ state of the system is the full state space state, not the projected one
 
 Use [`state_name`](@ref) for an accompanying name.
 """
-function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_state(ds))
+function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_state(ds), t = current_time(ds))
     if index isa Function
         return index(u)
-    elseif index isa Int
+    elseif index isa Integer
         return u[index]
     elseif has_referrenced_model(ds)
         prob = referrenced_sciml_prob(ds)
         ugetter = SymbolicIndexingInterface.observed(prob, index)
         p = current_parameters(ds)
-        t = current_time(ds)
         return ugetter(u, p, t)
     else
         throw(ArgumentError("Invalid index to observe state, or if symbolic index, the "*
