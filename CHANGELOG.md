@@ -1,3 +1,9 @@
+# v3.7.0
+
+Symbolic indices used in `observe_state` can now also be used in `trajectory`.
+
+It is possible to specify time to observe a state at now.
+
 # v3.6.0
 
 New convenience functions `state_name, parameter_name` for obtaining a `name::String`
