@@ -74,7 +74,7 @@ function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = 
             step!(ds)
             successful_step(ds) || break
         end
-        sol[i] = SVector{X, ET}(obtain_state(ds, ds(t), accessor))
+        sol[i] = SVector{X, ET}(obtain_state(ds, t, accessor))
         if !successful_step(ds)
             # Diverged trajectory; set final state to remaining set
             # and exit iteration early
@@ -99,10 +99,10 @@ svector_access(x::AbstractVector) = x
 # static arrays more performant without unecessary allocations
 obtain_state(u, ::Nothing) = u
 obtain_state(u, i::SVector) = u[i]
-function obtain_state(ds::DynamicalSystem, u, i::Union{Nothing, SVector})
-    return obtain_state(u, i)
+function obtain_state(ds::DynamicalSystem, t::Real, i::Union{Nothing, SVector})
+    return obtain_state(ds(t), i)
 end
-function obtain_state(ds::DynamicalSystem, u, idxs::AbstractVector)
-    return [observe_state(ds, i, u) for i in idxs]
+function obtain_state(ds::DynamicalSystem, t::Real, idxs::AbstractVector)
+    u = ds(t)
+    return [observe_state(ds, i, u, t) for i in idxs]
 end
-
