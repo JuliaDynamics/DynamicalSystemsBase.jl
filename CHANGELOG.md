@@ -15,7 +15,7 @@ The referenced MTK model corresponding to the dynamical system can be obtained w
 
 See also the online overarching tutorial for an example.
 
-At the moment this is only possible for `CoupledODEs` and its derivative systems, as these are the only systems that can be made by a `DEProblem`, however it should be easy to allow e.g., `DeterministicIterated` to be created by a `DiscreteProblem`.
+At the moment this is only possible for `CoupledODEs` and its derivative systems, as these are the only systems that can be made by a `DEProblem`, however it should be easy to allow e.g., `DeterministicIteratedMap` to be created by a `DiscreteProblem`.
 
 Also:
 
