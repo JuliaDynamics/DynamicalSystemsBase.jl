@@ -160,3 +160,30 @@ prob = ODEProblem(roessler_model)
 roessler = CoupledODEs(prob)
 
 @test roessler isa CoupledODEs
+
+# %% Trajectory with mixed and time dependent indexing
+η2 = 1.0
+η3 = 0.3
+@variables η1(t)
+@variables DT(t) = 1.2 DS(t) = 1.5
+
+@parameters η1_0 = 2.0 # starting value for η1 parameter
+@parameters r_η = 0.01  # the rate that η1 changes
+
+eqs = [
+Differential(t)(DT) ~ η1 - DT - abs(DT - DS)*DT,
+Differential(t)(DS) ~ η2 - η3*DS - abs(DT - DS)*DS,
+η1 ~ η1_0 + r_η*t, # this symbolic variable has its own equation!
+]
+
+sys = ODESystem(eqs, t; name = :stommel)
+sys = structural_simplify(sys; split = false)
+
+prob = ODEProblem(sys)
+ds = CoupledODEs(prob)
+
+X, tvec = trajectory(ds, 10.0; Δt = 0.1, save_idxs = [1, 2, η1])
+
+@test all(diff(X[:, 1]) .> 0.001)
+@test all(diff(X[:, 3]) .≈ 0.001)
+
