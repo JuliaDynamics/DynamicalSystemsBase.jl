@@ -22,6 +22,8 @@ to the last valid point.
 * `save_idxs::AbstractVector`: Which variables to output in `X`. It can be
   any type of index that can be given to [`observe_state`](@ref).
   Defaults to `1:dimension(ds)` (all dynamic variables).
+  Note: if you mix integer and symbolic indexing be sure to initialize the array
+  as `Any` so that integers `1, 2, ...` are not converted to symbolic expressions.
 """
 function trajectory(ds::DynamicalSystem, T, u0 = initial_state(ds);
         save_idxs = nothing, t0 = initial_time(ds), kwargs...
