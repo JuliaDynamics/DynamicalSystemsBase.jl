@@ -12,6 +12,11 @@ The returned time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)`.
 If time evolution diverged before `T`, the remaining of the trajectory is set
 to the last valid point.
 
+`trajectory` is a very simple function provided for convenience.
+For continuous time systems, it doesn't play well with callbacks,
+use `DifferentialEquations.solve` if you want a trajectory/timeseries
+that works with callbacks.
+
 ## Keyword arguments
 
 * `Δt`:  Time step of value output. For discrete time systems it must be an integer.
