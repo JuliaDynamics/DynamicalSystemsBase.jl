@@ -55,7 +55,7 @@ function trajectory_discrete(ds, T;
     data[1] = obtain_state(current_state(ds), accessor)
     for i in 2:L
         step!(ds, Δt)
-        data[i] = SVector{X, ET}(obtain_state(ds, current_state(ds), accessor))
+        data[i] = SVector{X, ET}(obtain_state(ds, current_time(ds), accessor))
         if !successful_step(ds)
             # Diverged trajectory; set final state to remaining set
             # and exit iteration early

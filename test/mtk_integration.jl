@@ -186,4 +186,3 @@ X, tvec = trajectory(ds, 10.0; Δt = 0.1, save_idxs = Any[1, 2, η1])
 
 @test all(abs.(diff(X[:, 1])) .> 1e-8)
 @test all(diff(X[:, 3]) .≈ 0.001)
-
