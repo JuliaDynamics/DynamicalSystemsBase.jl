@@ -15,4 +15,5 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     testfile("projected.jl")
     testfile("successful_step.jl")
     testfile("mtk_integration.jl")
+    testfile("trajectory.jl")
 end
