@@ -112,7 +112,7 @@ end
 ###########################################################################################
 # Alterations
 ###########################################################################################
-function reinit!(ds::DIM, u::AbstractArray{<:Real} = initial_state(ds);
+function reinit!(ds::DIM, u = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
     )
     isnothing(u) && return

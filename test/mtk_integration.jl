@@ -191,10 +191,10 @@ end
     @testset "parallel dynamical system" begin
         dicts = [Dict(:y => 0.6), Dict(:x => 0.6)]
         pds = ParallelDynamicalSystem(ds, dicts)
-        @test observe_state(ds, :x, current_state(ds, 1)) == 0.5
-        @test observe_state(ds, :y, current_state(ds, 1)) == 0.6
-        @test observe_state(ds, :x, current_state(ds, 2)) == 0.6
-        @test observe_state(ds, :y, current_state(ds, 2)) == 0.9
+        @test observe_state(ds, :x, current_state(pds, 1)) == 0.5
+        @test observe_state(ds, :y, current_state(pds, 1)) == 0.6
+        @test observe_state(ds, :x, current_state(pds, 2)) == 0.6
+        @test observe_state(ds, :y, current_state(pds, 2)) == 0.9
     end
 
 end

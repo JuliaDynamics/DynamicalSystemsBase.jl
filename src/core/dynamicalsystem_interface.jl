@@ -334,7 +334,7 @@ StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 Set the state of `ds` to `u`, which must match dimensionality with that of `ds`.
 Also ensure that the change is notified to whatever integration protocol is used.
 """
-set_state!(ds::DynamicalSystem, u::AbstractArray{<:Real}) = errormsg(ds)
+set_state!(ds::DynamicalSystem, u) = errormsg(ds)
 
 """
     set_state!(ds::DynamicalSystem, value::Real, i) → u
@@ -493,8 +493,4 @@ function SciMLBase.reinit!(ds::DynamicalSystem, mapping::Dict;
     um = Array(reference_state)
     set_state!(um, mapping, ds)
     reinit!(ds, um; kwargs...)
-end
-
-function SciMLBase.reinit!(ds::DynamicalSystem, ::Nothing; kw...)
-    return ds
 end

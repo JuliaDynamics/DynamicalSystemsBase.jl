@@ -41,7 +41,6 @@ function poincare_tests(ds, pmap, plane)
     @test P[1] == P2[1]
     @test length(P2) > 1
     if plane isa Tuple # test that 0 is first element approximately
-        @show P[:,1]
         @test all(x -> abs(x) < 1e-6, P[:, 1])
         @test all(x -> abs(x) < 1e-6, P2[:, 1])
     else

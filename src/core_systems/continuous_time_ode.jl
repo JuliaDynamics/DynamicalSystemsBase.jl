@@ -141,10 +141,10 @@ set_state!(ds::CoupledODEs, u::AbstractArray{<:Real}) = set_state!(ds.integ, u)
 # so that `ds` is printed
 SciMLBase.step!(ds::CoupledODEs, args...) = (step!(ds.integ, args...); ds)
 
-function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u::AbstractArray = initial_state(ds);
+function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
     )
-    isnothing(u) && return
+    isnothing(u) && return ds
     set_parameters!(ds, p)
     newu = set_state!(ds, u) # this allows `u` to be a Dict for partial setting
     reinit!(ds.integ, newu; reset_dt = true, t0)
