@@ -13,6 +13,7 @@ providing a dictionary mapping indices to variables in `set_state!`.
 - It is now guaranteed that all the symbolic state indexing works also for out of place dynamical systems, including `reinit!` and `set_state!`.
 
 - bugfix where `reinit!` or `set_state!` of continuous time out of place parallel dynamical systems was not working correctly.
+- Dynamical systems are now broadacastable, e.g., you can do `observe_state.(ds, (a, b, c))`.
 
 # v3.7.0
 
