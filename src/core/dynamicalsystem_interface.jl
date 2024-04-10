@@ -491,3 +491,7 @@ function SciMLBase.reinit!(ds::DynamicalSystem, mapping::Dict;
     set_state!(um, mapping, ds)
     reinit!(ds, um; kwargs...)
 end
+
+function SciMLBase.reinit!(ds::DynamicalSystem, ::Nothing; kw...)
+    return ds
+end
