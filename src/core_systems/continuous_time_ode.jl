@@ -136,17 +136,18 @@ for f in (:initial_state, :current_parameters, :dynamic_rule,
 end
 
 SciMLBase.isinplace(::CoupledODEs{IIP}) where {IIP} = IIP
-set_state!(ds::CoupledODEs, u::AbstractArray) = set_state!(ds.integ, u)
+set_state!(ds::CoupledODEs, u::AbstractArray{<:Real}) = set_state!(ds.integ, u)
 
 # so that `ds` is printed
 SciMLBase.step!(ds::CoupledODEs, args...) = (step!(ds.integ, args...); ds)
 
-function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(ds);
+function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u::AbstractArray = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
     )
     isnothing(u) && return
     set_parameters!(ds, p)
-    reinit!(ds.integ, u; reset_dt = true, t0)
+    newu = set_state!(ds, u) # this allows `u` to be a Dict for partial setting
+    reinit!(ds.integ, newu; reset_dt = true, t0)
     return ds
 end
 
@@ -180,7 +181,7 @@ function set_state!(integ::DEIntegrator, u)
         integ.u = recursivecopy(u)
     end
     u_modified!(integ, true)
-    return
+    return integ.u
 end
 
 # This is here to ensure that `u_modified!` is called

@@ -155,21 +155,41 @@ D = Differential(t)
 end
 
 @mtkbuild roessler_model = Roessler()
-prob = ODEProblem(roessler_model)
-roessler = CoupledODEs(prob)
 
-@test roessler isa CoupledODEs
+@testset "type: $(iip)" for iip in (true, false)
+    if iip
+        prob = ODEProblem(roessler_model)
+    else
+        prob = ODEProblem{false}(roessler_model, nothing, (0.0, Inf); u0_constructor = x->SVector(x...))
+    end
+    ds = CoupledODEs(prob)
 
-# Test pair set state
-set_state!(ds, Dict(:y => 0.5, :x => 0.5))
-@test observe_state(ds, :x) == 0.5
-@test observe_state(ds, :y) == 0.5
+    @test ds isa CoupledODEs
 
-# test using all three types of containers for parameters
-set_parameters!(ds, [0.5])
-@test current_parameter(ds, :a) == 0.5
-set_parameters!(ds, Dict(:a => 0.6))
-@test current_parameter(ds, :a) == 0.6
+    # Test partial set state
+    @testset "partial set state" begin
+        set_state!(ds, Dict(:y => 0.5, :x => 0.5))
+        @test observe_state(ds, :x) == 0.5
+        @test observe_state(ds, :y) == 0.5
+    end
+
+    @testset "partial set parameter" begin
+        set_parameters!(ds, Dict(:a => 0.6))
+        @test current_parameter(ds, :a) == 0.6
+    end
+
+    @testset "reinit with partial setting" begin
+        reinit!(ds, Dict(:y => 0.9)) # referring initial state
+        @test observe_state(ds, :x) == 1.0
+        @test observe_state(ds, :y) == 0.9
+
+        set_state!(ds, Dict(:y => 0.5, :x => 0.5))
+        reinit!(ds, Dict(:y => 0.9); reference_state = current_state(ds))
+        @test observe_state(ds, :x) == 0.5
+        @test observe_state(ds, :y) == 0.9
+    end
+
+end
 
 # %% Trajectory with mixed and time dependent indexing
 η2 = 1.0

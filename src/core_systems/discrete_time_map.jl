@@ -119,7 +119,7 @@ function reinit!(ds::DIM, u = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
     )
     isnothing(u) && return
-    set_state!(ds, u)
+    set_state!(ds, u) # here `u` can be vector or dict
     ds.t = t0
     set_parameters!(ds, p)
     return ds

@@ -326,12 +326,12 @@ StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 # API - altering status of the system
 ###########################################################################################
 """
-    set_state!(ds::DynamicalSystem, u::AbstractArray{Real})
+    set_state!(ds::DynamicalSystem, u::AbstractArray{<:Real})
 
 Set the state of `ds` to `u`, which must match dimensionality with that of `ds`.
 Also ensure that the change is notified to whatever integration protocol is used.
 """
-set_state!(ds, u) = errormsg(ds)
+set_state!(ds::DynamicalSystem, u::AbstractArray{<:Real}) = errormsg(ds)
 
 """
     set_state!(ds::DynamicalSystem, value::Real, i) → u
@@ -371,15 +371,26 @@ function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
 end
 
 """
-    set_state!(ds::DynamicalSystem, u::Dict)
+    set_state!(ds::DynamicalSystem, mapping::Dict)
 
 Convenience version of `set_state!` that iteratively calls `set_state!(ds, val, i)`
 for all index-value pairs `(i, val)` in `mapping`.
+
+The version `un = set_state!(u::AbstractVector, mapping::Dict, ds::DynamicalSystem)`
+is also available to alter an alternate state instead of the one stored by `ds`.
 """
-function set_state!(ds, mapping::Dict)
-    for (i, value) in mapping
-        set_state!(ds, value, i)
+function set_state!(ds::DynamicalSystem, mapping::Dict)
+    # ensure we use a mutable vector, so same code works for in-place problems
+    # (SymbolicIndexingInterface only works with mutable objects)
+    um = Array(copy(current_state(ds)))
+    set_state!(um, mapping, ds)
+    set_state!(ds, um)
+end
+function set_state!(um::Array{<:Real}, mapping::Dict, ds::DynamicalSystem)
+    for (i, value) in pairs(mapping)
+        set_state!(um, value, i, ds)
     end
+    return um
 end
 
 """
@@ -430,8 +441,7 @@ The keys of `p` must be valid keys that can be given to [`set_parameter!`](@ref)
 function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
     cp = current_parameters(ds)
     p === cp && return
-    iter = p isa Vector ? pairs(p) : p # allows using vector, dict, or vector{pair}.
-    for (index, value) in iter
+    for (index, value) in pairs(p)
         _set_parameter!(ds, index, value, cp)
     end
     return
@@ -463,15 +473,21 @@ SciMLBase.step!(ds::DynamicalSystem, args...) = errormsg(ds)
 
 Reset the status of `ds`, so that it is as if it has be just initialized
 with initial state `u`. Practically every function of the ecosystem that evolves
-`ds` first calls this function on it. Besides the new initial state `u`, you
+`ds` first calls this function on it. Besides the new state `u`, you
 can also configure the keywords `t0 = initial_time(ds)` and `p = current_parameters(ds)`.
 
-Note the default settings: the state and time are the initial,
-but the parameters are the current.
+If `u` is a `Dict` (for partially setting specific state variables in [`set_state`](@ref)),
+then the alterations in `u` are still done in the state given by the keyword
+`reference_state = copy(initial_state(ds))`.
 
 The special method `reinit!(ds, ::Nothing; kwargs...)` is also available,
 which does nothing and leaves the system as is. This is so that downstream functions
 that call `reinit!` can still be used without resetting the system but rather
 continuing from its exact current state.
 """
-SciMLBase.reinit!(ds::DynamicalSystem, args...; kwargs...) = errormsg(ds)
+function SciMLBase.reinit!(ds::DynamicalSystem, mapping::Dict;
+    reference_state = copy(initial_state(ds)), kwargs...)
+    um = Array(reference_state)
+    set_state!(um, mapping, ds)
+    reinit!(ds, um; kwargs...)
+end
