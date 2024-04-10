@@ -70,7 +70,7 @@ SciMLBase.isinplace(::DIM{IIP}) where {IIP} = IIP
 StateSpaceSets.dimension(::DIM{IIP, S, D}) where {IIP, S, D} = D
 isdeterministic(::DIM) = true
 
-function set_state!(ds::DeterministicIteratedMap{IIP}, u::AbstractArray) where {IIP}
+function set_state!(ds::DeterministicIteratedMap{IIP}, u::AbstractArray{<:Real}) where {IIP}
     ds.u = recursivecopy(u)
     ds.dummy = recursivecopy(u)
     return ds
@@ -112,7 +112,7 @@ end
 ###########################################################################################
 # Alterations
 ###########################################################################################
-function reinit!(ds::DIM, u::AbstractArray = initial_state(ds);
+function reinit!(ds::DIM, u::AbstractArray{<:Real} = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
     )
     isnothing(u) && return
