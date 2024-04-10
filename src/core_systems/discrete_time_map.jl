@@ -81,15 +81,12 @@ end
 ###########################################################################################
 # IIP version
 function SciMLBase.step!(ds::DeterministicIteratedMap{true})
-    # array swap
-    ds.dummy, ds.u = ds.u, ds.dummy
+    ds.dummy, ds.u = ds.u, ds.dummy # array swap
     ds.f(ds.u, ds.dummy, ds.p, ds.t)
     ds.t += 1
     return ds
 end
 function SciMLBase.step!(ds::DeterministicIteratedMap{true}, N, stop_at_tdt = true)
-    # We do not check for errors here for performance (of not computing equals to NaN
-    # or Inf all the time), because in the end detecting the error early doesn't help
     for _ in 1:N
         ds.dummy, ds.u = ds.u, ds.dummy
         ds.f(ds.u, ds.dummy, ds.p, ds.t)
@@ -101,7 +98,7 @@ end
 # OOP version
 function SciMLBase.step!(ds::DeterministicIteratedMap{false})
     ds.u = ds.f(ds.u, ds.p, ds.t)
-    ds.t +=1
+    ds.t += 1
     return ds
 end
 function SciMLBase.step!(ds::DeterministicIteratedMap{false}, N, stop_at_tdt = true)
