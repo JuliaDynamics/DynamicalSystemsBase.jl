@@ -12,6 +12,8 @@ providing a dictionary mapping indices to variables in `set_state!`.
 
 - It is now guaranteed that all the symbolic state indexing works also for out of place dynamical systems, including `reinit!` and `set_state!`.
 
+- bugfix where `reinit!` or `set_state!` of continuous time out of place parallel dynamical systems was not working correctly.
+
 # v3.7.0
 
 Symbolic indices used in `observe_state` can now also be used in `trajectory`.

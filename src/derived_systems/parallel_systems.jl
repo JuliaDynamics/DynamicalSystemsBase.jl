@@ -117,10 +117,15 @@ end
 ###########################################################################################
 # Analytically knwon rule: extensions
 ###########################################################################################
-for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
-        :current_parameters, :initial_parameters,:successful_step,
+for f in (:current_time, :initial_time, :isdiscretetime,
+        :current_parameters, :initial_parameters, :successful_step,
     )
     @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
+end
+
+for f in (:(SciMLBase.step!), :reinit!,)
+    # these need to return the original ds
+    @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = ($(f)(pdsa.ds, args...; kw...); pdsa)
 end
 
 (pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
@@ -150,6 +155,25 @@ initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
 function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u::AbstractArray, i::Int = 1)
     current_states(pdsa)[i] = u
     set_state!(pdsa.ds, current_states(pdsa))
+    return pdsa
+end
+
+# we need this special dispatch for vector{svector}.
+# actually, the whole vector{svector} approach needs to be overhauled at some
+# point. It is no longer supported by SciML ecosystem.
+# here `ds` is the internally stored system in ParallelDynamicalSystemAnalytic
+function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, us::Vector{<:SVector};
+        p = current_parameters(ds), t0 = initial_time(ds)
+    )
+    set_parameters!(ds, p)
+    set_state!(ds, us)
+    reinit!(ds.integ, ds.integ.u; reset_dt = true, t0)
+    return ds
+end
+function set_state!(ds::ContinuousTimeDynamicalSystem, us::Vector{<:SVector})
+    for (i, u) in enumerate(us)
+        ds.integ.u[i] = u
+    end
 end
 
 # States IO for matrix state
