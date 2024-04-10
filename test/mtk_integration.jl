@@ -132,7 +132,6 @@ set_parameter!(ds, 1, 2.0)
 @test_throws ErrorException observe_state(ds, fol_1.f)
 
 # Test that remake works also without anything initial
-
 @variables t
 D = Differential(t)
 @mtkmodel Roessler begin
@@ -160,6 +159,12 @@ prob = ODEProblem(roessler_model)
 roessler = CoupledODEs(prob)
 
 @test roessler isa CoupledODEs
+
+# Test pair set state
+set_state!(ds, [:x => 0.5])
+set_state!(ds, Dict(:y => 0.5))
+@test observe_state(ds, :x) == 0.5
+@test observe_state(ds, :y) == 0.5
 
 # %% Trajectory with mixed and time dependent indexing
 η2 = 1.0
