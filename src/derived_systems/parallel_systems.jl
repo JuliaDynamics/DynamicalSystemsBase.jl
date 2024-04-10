@@ -4,6 +4,14 @@
 # For all discrete time systems another structure exists that deepcopies the systems.
 # And for all continuous time systems another structure exists.
 # TODO: Continous time utilizing `step!(integ, dt, true)` and requiring a `dt`.
+
+# TODO: Re-write everything here.
+# make a dedicated version for discrete map, and another one for ODEs
+# which uses ONLY matrices (SMatrix for OOP). Combining both was
+# such a pain in the ass and complicated... Also the map doesn't require the
+# creation of a special new dynamic rule...
+
+
 export ParallelDynamicalSystem, current_states, initial_states
 
 """
@@ -123,9 +131,27 @@ for f in (:current_time, :initial_time, :isdiscretetime,
     @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
 end
 
-for f in (:(SciMLBase.step!), :reinit!,)
-    # these need to return the original ds
-    @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = ($(f)(pdsa.ds, args...; kw...); pdsa)
+# special extend so that they return the parallel system, not internal system
+SciMLBase.step!(pdsa::ParallelDynamicalSystemAnalytic, args...) = (step!(pdsa.ds, args...; kw...); pdsa)
+function SciMLBase.reinit!(pdsa::ParallelDynamicalSystemAnalytic, states = initial_states(pdsa);
+    p = current_parameters(pdsa), t0 = initial_time(pdsa))
+    reinit!(pdsa.ds, states; p, t0)
+    return pdsa
+end
+
+# we need this special dispatch for vector{svector}.
+# actually, the whole vector{svector} approach needs to be overhauled at some
+# point. It is no longer supported by SciML ecosystem.
+# here `ds` is the internally stored system in ParallelDynamicalSystemAnalytic
+function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, us::Vector{<:SVector} = initial_states(ds);
+        p = current_parameters(ds), t0 = initial_time(ds)
+    )
+    set_parameters!(ds, p)
+    for (i, u) in enumerate(us)
+        ds.integ.u[i] = u
+    end
+    reinit!(ds.integ, ds.integ.u; reset_dt = true, t0)
+    return ds
 end
 
 (pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
@@ -156,24 +182,6 @@ function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u::AbstractArray, i::
     current_states(pdsa)[i] = u
     set_state!(pdsa.ds, current_states(pdsa))
     return pdsa
-end
-
-# we need this special dispatch for vector{svector}.
-# actually, the whole vector{svector} approach needs to be overhauled at some
-# point. It is no longer supported by SciML ecosystem.
-# here `ds` is the internally stored system in ParallelDynamicalSystemAnalytic
-function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, us::Vector{<:SVector};
-        p = current_parameters(ds), t0 = initial_time(ds)
-    )
-    set_parameters!(ds, p)
-    set_state!(ds, us)
-    reinit!(ds.integ, ds.integ.u; reset_dt = true, t0)
-    return ds
-end
-function set_state!(ds::ContinuousTimeDynamicalSystem, us::Vector{<:SVector})
-    for (i, u) in enumerate(us)
-        ds.integ.u[i] = u
-    end
 end
 
 # States IO for matrix state
@@ -211,7 +219,7 @@ function ParallelDynamicalSystem(ds::DiscreteTimeDynamicalSystem, states)
 end
 
 for f in (:current_time, :initial_time, :isdiscretetime,
-        :current_parameters, :initial_parameters, :dynamic_rule,:referrenced_sciml_model
+        :current_parameters, :initial_parameters, :dynamic_rule, :referrenced_sciml_model
     )
     @eval $(f)(pdtds::PDTDS, args...; kw...) = $(f)(pdtds.systems[1], args...; kw...)
 end
@@ -235,12 +243,12 @@ initial_states(pdtds::PDTDS) = [initial_state(ds) for ds in pdtds.systems]
 # Set stuff
 set_parameter!(pdtds::PDTDS) = for ds in pdtds.systems; set_parameter!(ds, args...); end
 function set_state!(pdtds::PDTDS, u, i::Int = 1)
-    # We need to set state in all systems, in case this does
-    # some kind of resetting, e.g., the `u_modified!` stuff.
     for (k, ds) in enumerate(pdtds.systems)
         if k == i
             set_state!(ds, u)
         else
+            # We need to set state in all systems, in case this does
+            # some kind of resetting, e.g., the `u_modified!` stuff.
             set_state!(ds, current_state(ds))
         end
     end
