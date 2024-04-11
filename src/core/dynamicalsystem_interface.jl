@@ -105,6 +105,9 @@ unless when developing new algorithm implementations that use dynamical systems.
 """
 abstract type DynamicalSystem end
 
+# Make it broadcastable:
+Base.broadcastable(ds::DynamicalSystem) = Ref(ds)
+
 # We utilize nature of time for dispatch; continuous time dispatches to `integ`
 # and dispatches for `::DEIntegrator` are defined in `CoupledODEs` file.
 """
