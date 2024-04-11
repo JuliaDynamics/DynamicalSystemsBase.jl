@@ -1,3 +1,18 @@
+# v3.8.0
+
+Even more amazing level of integration with ModelingToolkit.jl!
+
+- Now it is possible to partially set specific state variables by
+providing a dictionary or vector of pairs that map indices to variables in `set_state!` or `reinit!`.
+- Partial setting of states via providing a dictionary also works in `reinit!`.
+- Partial setting of states also works when initializing a `ParallelDynamicalSystem`
+  by providing a vector of dictionaries or vector of pairs.
+- It was already possible to provide a dictionary of parameter indices to values
+  in `set_parameters!`, now it was made more clear in the docstring.
+- bugfix where `reinit!` or `set_state!` of continuous time out of place parallel dynamical systems was not working correctly.
+- Dynamical systems are now broadacastable, e.g., you can do `observe_state.(ds, (a, b, c))`.
+
+
 # v3.7.0
 
 Symbolic indices used in `observe_state` can now also be used in `trajectory`.
