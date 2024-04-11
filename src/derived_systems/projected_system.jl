@@ -113,7 +113,7 @@ function SciMLBase.step!(prods::ProjectedDynamicalSystem, args...)
 	return prods
 end
 
-function SciMLBase.reinit!(prods::ProjectedDynamicalSystem{P, D, <:AbstractVector}, y = initial_state(prods); kwargs...) where {P, D}
+function SciMLBase.reinit!(prods::ProjectedDynamicalSystem{P, D, <:AbstractVector}, y::AbstractArray = initial_state(prods); kwargs...) where {P, D}
     isnothing(y) && return(prods)
     u = prods.u
     u[prods.projection] .= y
@@ -122,7 +122,7 @@ function SciMLBase.reinit!(prods::ProjectedDynamicalSystem{P, D, <:AbstractVecto
     return prods
 end
 
-function SciMLBase.reinit!(prods::ProjectedDynamicalSystem{P, D, <:Function}, y = initial_state(prods); kwargs...) where {P, D}
+function SciMLBase.reinit!(prods::ProjectedDynamicalSystem{P, D, <:Function}, y::AbstractArray = initial_state(prods); kwargs...) where {P, D}
     isnothing(y) || reinit!(prods.ds, prods.complete_state(y); kwargs...)
     return prods
 end

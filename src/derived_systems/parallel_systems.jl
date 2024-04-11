@@ -208,6 +208,6 @@ function set_state!(pdtds::PDTDS, u, i::Int = 1)
     end
 end
 
-function SciMLBase.reinit!(pdtds::PDTDS, states = initial_states(pdtds); kwargs...)
+function SciMLBase.reinit!(pdtds::PDTDS, states::AbstractVector = initial_states(pdtds); kwargs...)
     for (ds, s) in zip(pdtds.systems, states); reinit!(ds, s; kwargs...); end
 end

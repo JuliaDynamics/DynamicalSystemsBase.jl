@@ -376,10 +376,18 @@ end
 Convenience version of `set_state!` that iteratively calls `set_state!(ds, val, i)`
 for all index-value pairs `(i, val)` in `mapping`.
 """
-function set_state!(ds, mapping::Dict)
-    for (i, value) in mapping
-        set_state!(ds, value, i)
+function set_state!(ds::DynamicalSystem, mapping::Dict)
+    # ensure we use a mutable vector, so same code works for in-place problems
+    # (SymbolicIndexingInterface only works with mutable objects)
+    um = Array(copy(current_state(ds)))
+    set_state!(um, mapping, ds)
+    set_state!(ds, um)
+end
+function set_state!(um::Array{<:Real}, mapping::Dict, ds::DynamicalSystem)
+    for (i, value) in pairs(mapping)
+        set_state!(um, value, i, ds)
     end
+    return um
 end
 
 """
@@ -463,15 +471,28 @@ SciMLBase.step!(ds::DynamicalSystem, args...) = errormsg(ds)
 
 Reset the status of `ds`, so that it is as if it has be just initialized
 with initial state `u`. Practically every function of the ecosystem that evolves
-`ds` first calls this function on it. Besides the new initial state `u`, you
+`ds` first calls this function on it. Besides the new state `u`, you
 can also configure the keywords `t0 = initial_time(ds)` and `p = current_parameters(ds)`.
 
-Note the default settings: the state and time are the initial,
-but the parameters are the current.
+    reinit!(ds::DynamicalSystem, u::Dict; kwargs...) → ds
 
-The special method `reinit!(ds, ::Nothing; kwargs...)` is also available,
-which does nothing and leaves the system as is. This is so that downstream functions
+If `u` is a `Dict` (for partially setting specific state variables in [`set_state`](@ref)),
+then the alterations in `u` are still done in the state given by the keyword
+`reference_state = copy(initial_state(ds))`.
+
+    reinit!(ds, ::Nothing; kwargs...)
+
+This method does nothing and leaves the system as is. This is so that downstream functions
 that call `reinit!` can still be used without resetting the system but rather
 continuing from its exact current state.
 """
-SciMLBase.reinit!(ds::DynamicalSystem, args...; kwargs...) = errormsg(ds)
+function SciMLBase.reinit!(ds::DynamicalSystem, mapping::Dict;
+    reference_state = copy(initial_state(ds)), kwargs...)
+    um = Array(reference_state)
+    set_state!(um, mapping, ds)
+    reinit!(ds, um; kwargs...)
+end
+
+SciMLBase.reinit!(ds::DynamicalSystem, ::Nothing; kw...) = ds
+# all extensions of `reinit!` in concrete implementaitons
+# should only implement `reinit!(ds, ::AbstractArray)` method.

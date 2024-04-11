@@ -253,7 +253,7 @@ function set_deviations!(t::TangentDynamicalSystem{false}, Q)
     set_state!(t.ds, U)
 end
 
-function SciMLBase.reinit!(tands::TangentDynamicalSystem{IIP}, u = initial_state(tands);
+function SciMLBase.reinit!(tands::TangentDynamicalSystem{IIP}, u::AbstractArray = initial_state(tands);
         p = current_parameters(tands), t0 = initial_time(tands), Q0 = default_deviations(tands)
     ) where {IIP}
     isnothing(u) && return
