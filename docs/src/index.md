@@ -33,7 +33,7 @@ referrenced_sciml_model
 ```
 
 ```@docs
-reinit!(::DynamicalSystem, args...; kwargs...)
+reinit!(::DynamicalSystem, ::AbstractDict; kwargs...)
 set_state!
 set_parameter!
 set_parameters!

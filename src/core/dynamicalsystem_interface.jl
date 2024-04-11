@@ -483,8 +483,8 @@ can also configure the keywords `t0 = initial_time(ds)` and `p = current_paramet
 
     reinit!(ds::DynamicalSystem, u::AbstractDict; kwargs...) → ds
 
-If `u` is a `AbstractDict` (for partially setting specific state variables in [`set_state`](@ref)),
-then the alterations in `u` are still done in the state given by the keyword
+If `u` is a `AbstractDict` (for partially setting specific state variables in [`set_state!`](@ref)),
+then the alterations are done in the state given by the keyword
 `reference_state = copy(initial_state(ds))`.
 
     reinit!(ds, ::Nothing; kwargs...)
