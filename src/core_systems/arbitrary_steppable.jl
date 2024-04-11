@@ -32,7 +32,7 @@ the following adjustments:
 - The keyword `isdeterministic` should be set properly, as it decides whether
   downstream algorithms should error or not.
 """
-struct ArbitrarySteppable{M, F, R, ES, EP, U, P, S} <: DiscreteTimeDynamicalSystem
+struct ArbitrarySteppable{U, M, F, R, ES, EP, P, S} <: DiscreteTimeDynamicalSystem
     model::M
     step::F
     reinit::R
@@ -77,10 +77,9 @@ function SciMLBase.step!(ds::ArbitrarySteppable, n::Int = 1, stop::Bool = true)
     return ds
 end
 
-function SciMLBase.reinit!(ds::ArbitrarySteppable, u = initial_state(ds);
+function SciMLBase.reinit!(ds::ArbitrarySteppable{U}, u::U = initial_state(ds);
         p = current_parameters(ds), t0 = 0, # t0 is not used but required for downstream.
-    )
-    isnothing(u) && return
+    ) where {U}
     ds.reinit(ds.model, u, p)
     ds.t[] = 0
     return ds

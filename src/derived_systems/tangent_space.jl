@@ -231,11 +231,13 @@ SciMLBase.step!(tands::TangentDynamicalSystem, args...) = (step!(tands.ds, args.
 function set_state!(t::TangentDynamicalSystem{true}, u)
     current_state(t) .= u
     set_state!(t.ds, current_state(t.ds))
+    return t
 end
 function set_state!(t::TangentDynamicalSystem{false}, u)
     u_correct = typeof(current_state(t))(u)
     U = hcat(u_correct, current_deviations(t))
     set_state!(t.ds, U)
+    return t
 end
 
 """
@@ -253,7 +255,7 @@ function set_deviations!(t::TangentDynamicalSystem{false}, Q)
     set_state!(t.ds, U)
 end
 
-function SciMLBase.reinit!(tands::TangentDynamicalSystem{IIP}, u = initial_state(tands);
+function SciMLBase.reinit!(tands::TangentDynamicalSystem{IIP}, u::AbstractArray = initial_state(tands);
         p = current_parameters(tands), t0 = initial_time(tands), Q0 = default_deviations(tands)
     ) where {IIP}
     isnothing(u) && return

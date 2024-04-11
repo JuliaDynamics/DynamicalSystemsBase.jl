@@ -73,7 +73,7 @@ isdeterministic(::DIM) = true
 function set_state!(ds::DeterministicIteratedMap{IIP}, u) where {IIP}
     ds.u = recursivecopy(u)
     ds.dummy = recursivecopy(u)
-    return
+    return ds
 end
 
 ###########################################################################################
@@ -115,10 +115,9 @@ end
 ###########################################################################################
 # Alterations
 ###########################################################################################
-function reinit!(ds::DIM, u = initial_state(ds);
+function reinit!(ds::DIM, u::AbstractArray = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
     )
-    isnothing(u) && return
     set_state!(ds, u)
     ds.t = t0
     set_parameters!(ds, p)

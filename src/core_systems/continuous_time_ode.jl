@@ -136,15 +136,14 @@ for f in (:initial_state, :current_parameters, :dynamic_rule,
 end
 
 SciMLBase.isinplace(::CoupledODEs{IIP}) where {IIP} = IIP
-set_state!(ds::CoupledODEs, u::AbstractArray) = set_state!(ds.integ, u)
+set_state!(ds::CoupledODEs, u::AbstractArray) = (set_state!(ds.integ, u); ds)
 
 # so that `ds` is printed
 SciMLBase.step!(ds::CoupledODEs, args...) = (step!(ds.integ, args...); ds)
 
-function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(ds);
+function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u::AbstractArray = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
     )
-    isnothing(u) && return
     set_parameters!(ds, p)
     reinit!(ds.integ, u; reset_dt = true, t0)
     return ds
@@ -174,7 +173,7 @@ end
 function set_state!(integ::DEIntegrator, u)
     if integ.u isa Array{<:Real}
         integ.u .= u
-    elseif integ.u isa Union{SVector, SMatrix}
+    elseif integ.u isa StateSpaceSets.StaticArraysCore.SArray{<:Real}
         integ.u = u
     else
         integ.u = recursivecopy(u)

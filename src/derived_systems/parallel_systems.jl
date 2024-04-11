@@ -23,6 +23,13 @@ This struct follows the [`DynamicalSystem`](@ref) interface with the following a
 - [`current_states`](@ref) and [`initial_states`](@ref) can be used to get
   all parallel states.
 - [`reinit!`](@ref) takes in a vector of states (like `states`) for `u`.
+
+
+    ParallelDynamicalSystem(ds::DynamicalSystem, states::Vector{<:Dict})
+
+For a dynamical system referring a MTK model, one can specify states
+as a vector of dictionaries to alter the current state of `ds`
+as in [`set_state!`](@ref).
 """
 abstract type ParallelDynamicalSystem <: DynamicalSystem end
 
@@ -45,7 +52,7 @@ struct ParallelDynamicalSystemAnalytic{D, M} <: ParallelDynamicalSystem
     prob        # reference original MTK problem
 end
 
-function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states)
+function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states::Vector{<:AbstractArray{<:Real}})
     f, st = parallel_rule(ds, states)
     if ds isa DeterministicIteratedMap
         pds = DeterministicIteratedMap(f, st, current_parameters(ds); t0 = initial_time(ds))
@@ -58,6 +65,13 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states)
     M = ds isa CoupledODEs && isinplace(ds)
     prob = referrenced_sciml_prob(ds)
     return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), prob)
+end
+
+function ParallelDynamicalSystem(ds::CoreDynamicalSystem, mappings::Vector{<:Dict})
+    # convert to vector of arrays:
+    u = Array(current_state(ds))
+    states = [set_state!(copy(u), mapping, ds) for mapping in mappings]
+    return ParallelDynamicalSystem(ds, states)
 end
 
 # Out of place: everywhere the same
@@ -74,7 +88,7 @@ function parallel_rule(ds::CoreDynamicalSystem{false}, states)
     return parallel_f, st
 end
 
-# In place: for where `Vector{Vector}` is possible
+# In place: for where `AbstractVector{Vector}` is possible
 function parallel_rule(ds::DeterministicIteratedMap{true}, states)
     f = dynamic_rule(ds)
     S = typeof(correct_state(Val{true}(), first(states)))
@@ -88,7 +102,7 @@ function parallel_rule(ds::DeterministicIteratedMap{true}, states)
     return parallel_f, st
 end
 
-# In place, uses matrix with each column a parallel state
+# In place, but ODEs use matrix with each column a parallel state
 function parallel_rule(ds::CoupledODEs{true}, states)
     st = Matrix(hcat(states...))
     f = dynamic_rule(ds)
@@ -136,6 +150,7 @@ initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
 function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u::AbstractArray, i::Int = 1)
     current_states(pdsa)[i] = u
     set_state!(pdsa.ds, current_states(pdsa))
+    return pdsa
 end
 
 # States IO for matrix state
@@ -208,6 +223,6 @@ function set_state!(pdtds::PDTDS, u, i::Int = 1)
     end
 end
 
-function SciMLBase.reinit!(pdtds::PDTDS, states = initial_states(pdtds); kwargs...)
+function SciMLBase.reinit!(pdtds::PDTDS, states::AbstractVector = initial_states(pdtds); kwargs...)
     for (ds, s) in zip(pdtds.systems, states); reinit!(ds, s; kwargs...); end
 end
