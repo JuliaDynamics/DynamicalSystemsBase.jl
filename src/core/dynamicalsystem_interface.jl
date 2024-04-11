@@ -377,20 +377,20 @@ function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
 end
 
 """
-    set_state!(ds::DynamicalSystem, mapping::Dict)
+    set_state!(ds::DynamicalSystem, mapping::AbstractDict)
 
 Convenience version of `set_state!` that iteratively calls `set_state!(ds, val, i)`
 for all index-value pairs `(i, val)` in `mapping`. This allows you to
 partially set only some state variables.
 """
-function set_state!(ds::DynamicalSystem, mapping::Dict)
+function set_state!(ds::DynamicalSystem, mapping::AbstractDict)
     # ensure we use a mutable vector, so same code works for in-place problems
     # (SymbolicIndexingInterface only works with mutable objects)
     um = Array(copy(current_state(ds)))
     set_state!(um, mapping, ds)
     set_state!(ds, um)
 end
-function set_state!(um::Array{<:Real}, mapping::Dict, ds::DynamicalSystem)
+function set_state!(um::Array{<:Real}, mapping::AbstractDict, ds::DynamicalSystem)
     for (i, value) in pairs(mapping)
         set_state!(um, value, i, ds)
     end
@@ -438,7 +438,7 @@ end
 Set the parameter values in the [`current_parameters`](@ref)`(ds)` to match those in `p`.
 This is done as an in-place overwrite by looping over the keys of `p`
 hence `p` can be an arbitrary container mapping parameter indices to values
-(such as a `Vector{Real}`, `Vector{Pair}`, or `Dict`).
+(such as a `Vector{Real}`, `Vector{Pair}`, or `AbstractDict`).
 
 The keys of `p` must be valid keys that can be given to [`set_parameter!`](@ref).
 """
@@ -481,9 +481,9 @@ with initial state `u`. Practically every function of the ecosystem that evolves
 `ds` first calls this function on it. Besides the new state `u`, you
 can also configure the keywords `t0 = initial_time(ds)` and `p = current_parameters(ds)`.
 
-    reinit!(ds::DynamicalSystem, u::Dict; kwargs...) → ds
+    reinit!(ds::DynamicalSystem, u::AbstractDict; kwargs...) → ds
 
-If `u` is a `Dict` (for partially setting specific state variables in [`set_state`](@ref)),
+If `u` is a `AbstractDict` (for partially setting specific state variables in [`set_state`](@ref)),
 then the alterations in `u` are still done in the state given by the keyword
 `reference_state = copy(initial_state(ds))`.
 
@@ -493,7 +493,7 @@ This method does nothing and leaves the system as is. This is so that downstream
 that call `reinit!` can still be used without resetting the system but rather
 continuing from its exact current state.
 """
-function SciMLBase.reinit!(ds::DynamicalSystem, mapping::Dict;
+function SciMLBase.reinit!(ds::DynamicalSystem, mapping::AbstractDict;
     reference_state = copy(initial_state(ds)), kwargs...)
     um = Array(reference_state)
     set_state!(um, mapping, ds)
