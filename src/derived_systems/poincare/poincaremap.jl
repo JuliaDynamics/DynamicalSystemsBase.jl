@@ -6,6 +6,8 @@ export PoincareMap, current_crossing_time
 
 const ROOTS_ALG = Roots.A42()
 
+# TODO: Remove keyword `save_idxs`!
+
 ###########################################################################################
 # Type definition
 ###########################################################################################
@@ -184,7 +186,7 @@ end
 function set_state!(pmap::PoincareMap, u)
     set_state!(pmap.ds, u)
     step!(pmap) # always step once to reach the PSOS
-    return
+    return pmap
 end
 
 function _recreate_state_from_poincare_plane(pmap::PoincareMap, u0)

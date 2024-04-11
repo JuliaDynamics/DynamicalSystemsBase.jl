@@ -150,6 +150,7 @@ initial_states(pdsa::ParallelDynamicalSystemAnalytic) = initial_state(pdsa.ds)
 function set_state!(pdsa::ParallelDynamicalSystemAnalytic, u::AbstractArray, i::Int = 1)
     current_states(pdsa)[i] = u
     set_state!(pdsa.ds, current_states(pdsa))
+    return pdsa
 end
 
 # States IO for matrix state

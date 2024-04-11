@@ -73,7 +73,7 @@ isdeterministic(::DIM) = true
 function set_state!(ds::DeterministicIteratedMap{IIP}, u) where {IIP}
     ds.u = recursivecopy(u)
     ds.dummy = recursivecopy(u)
-    return
+    return ds
 end
 
 ###########################################################################################

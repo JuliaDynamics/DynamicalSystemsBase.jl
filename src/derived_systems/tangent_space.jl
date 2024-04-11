@@ -231,11 +231,13 @@ SciMLBase.step!(tands::TangentDynamicalSystem, args...) = (step!(tands.ds, args.
 function set_state!(t::TangentDynamicalSystem{true}, u)
     current_state(t) .= u
     set_state!(t.ds, current_state(t.ds))
+    return t
 end
 function set_state!(t::TangentDynamicalSystem{false}, u)
     u_correct = typeof(current_state(t))(u)
     U = hcat(u_correct, current_deviations(t))
     set_state!(t.ds, U)
+    return t
 end
 
 """

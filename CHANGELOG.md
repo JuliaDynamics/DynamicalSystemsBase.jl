@@ -11,6 +11,7 @@ providing a dictionary or vector of pairs that map indices to variables in `set_
   in `set_parameters!`, now it was made more clear in the docstring.
 - bugfix where `reinit!` or `set_state!` of continuous time out of place parallel dynamical systems was not working correctly.
 - Dynamical systems are now broadacastable, e.g., you can do `observe_state.(ds, (a, b, c))`.
+- Fixed a bug where `set_state!(ds, val, index)` only worked for in-place systems.
 
 
 # v3.7.0

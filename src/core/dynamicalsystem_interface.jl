@@ -354,7 +354,7 @@ state `u` and return it, leaving `ds` unaltered.
 such as Poincare/stroboscopic/projected dynamical systems.
 """
 function set_state!(ds::DynamicalSystem, value::Real, i)
-    u = current_state(ds)
+    u = Array(current_state(ds)) # ensure it works for out of place as well!
     u = set_state!(u, value, i, ds)
     set_state!(ds, u)
 end
@@ -374,10 +374,11 @@ function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
 end
 
 """
-    set_state!(ds::DynamicalSystem, u::Dict)
+    set_state!(ds::DynamicalSystem, mapping::Dict)
 
 Convenience version of `set_state!` that iteratively calls `set_state!(ds, val, i)`
-for all index-value pairs `(i, val)` in `mapping`.
+for all index-value pairs `(i, val)` in `mapping`. This allows you to
+partially set only some state variables.
 """
 function set_state!(ds::DynamicalSystem, mapping::Dict)
     # ensure we use a mutable vector, so same code works for in-place problems
