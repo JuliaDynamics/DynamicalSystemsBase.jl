@@ -347,11 +347,14 @@ i = :x # or `1` or `only(@variables(x))`
 set_state!(ds, 0.5, i)
 ```
 
-Calling instead `set_state!(u, value, index, ds)` will modify the given
-state `u` and return it, leaving `ds` unaltered.
-
 **Warning:** this function should not be used with derivative dynamical systems
 such as Poincare/stroboscopic/projected dynamical systems.
+Use the method below to manipulate an array and give that to `set_state!`.
+
+
+    set_state!(u::AbstractArray, value, index, ds::DynamicalSystem)
+
+Modify the given state `u` and leave `ds` untouched.
 """
 function set_state!(ds::DynamicalSystem, value::Real, i)
     u = Array(current_state(ds)) # ensure it works for out of place as well!
