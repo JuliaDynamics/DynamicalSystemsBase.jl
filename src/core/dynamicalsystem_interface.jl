@@ -326,7 +326,7 @@ StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 # API - altering status of the system
 ###########################################################################################
 """
-    set_state!(ds::DynamicalSystem, u::AbstractArray)
+    set_state!(ds::DynamicalSystem, u::AbstractArray{Real})
 
 Set the state of `ds` to `u`, which must match dimensionality with that of `ds`.
 Also ensure that the change is notified to whatever integration protocol is used.
@@ -334,10 +334,15 @@ Also ensure that the change is notified to whatever integration protocol is used
 set_state!(ds, u) = errormsg(ds)
 
 """
-    set_state!(ds::DynamicalSystem, value::Real, index) → u
+    set_state!(ds::DynamicalSystem, value::Real, i) → u
 
-Set the `i`th variable of `ds` to `value`. The `index` can be an integer or
+Set the `i`th variable of `ds` to `value`. The index `i` can be an integer or
 a symbolic-like index for systems that reference a ModelingToolkit.jl model.
+For example:
+```julia
+i = :x # or `1` or `only(@variables(x))`
+set_state!(ds, 0.5, i)
+```
 
 Calling instead `set_state!(u, value, index, ds)` will modify the given
 state `u` and return it, leaving `ds` unaltered.
@@ -363,6 +368,18 @@ function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
         "dynamical system does not referrence a ModelingToolkit.jl system."))
     end
     return u
+end
+
+"""
+    set_state!(ds::DynamicalSystem, u::Dict)
+
+Convenience version of `set_state!` that iteratively calls `set_state!(ds, val, i)`
+for all index-value pairs `(i, val)` in `mapping`.
+"""
+function set_state!(ds::DynamicalSystem, mapping::Dict)
+    for (i, value) in mapping
+        set_state!(ds, value, i)
+    end
 end
 
 """
