@@ -167,7 +167,6 @@ end
 
     @test ds isa CoupledODEs
 
-    # Test partial set state
     @testset "partial set state" begin
         set_state!(ds, Dict(:y => 0.5, :x => 0.5))
         @test observe_state(ds, :x) == 0.5
@@ -188,6 +187,15 @@ end
         reinit!(ds, Dict(:y => 0.9); reference_state = current_state(ds))
         @test observe_state(ds, :x) == 0.5
         @test observe_state(ds, :y) == 0.9
+    end
+
+    @testset "parallel dynamical system" begin
+        dicts = [Dict(:y => 0.6), Dict(:x => 0.6)]
+        pds = ParallelDynamicalSystem(ds, dicts)
+        @test observe_state(ds, :x, current_state(pds, 1)) == 0.5
+        @test observe_state(ds, :y, current_state(pds, 1)) == 0.6
+        @test observe_state(ds, :x, current_state(pds, 2)) == 0.6
+        @test observe_state(ds, :y, current_state(pds, 2)) == 0.9
     end
 
 end
