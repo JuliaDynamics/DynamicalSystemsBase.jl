@@ -161,6 +161,17 @@ roessler = CoupledODEs(prob)
 
 @test roessler isa CoupledODEs
 
+# Test pair set state
+set_state!(ds, Dict(:y => 0.5, :x => 0.5))
+@test observe_state(ds, :x) == 0.5
+@test observe_state(ds, :y) == 0.5
+
+# test using all three types of containers for parameters
+set_parameters!(ds, [0.5])
+@test current_parameter(ds, :a) == 0.5
+set_parameters!(ds, Dict(:a => 0.6))
+@test current_parameter(ds, :a) == 0.6
+
 # %% Trajectory with mixed and time dependent indexing
 η2 = 1.0
 η3 = 0.3
