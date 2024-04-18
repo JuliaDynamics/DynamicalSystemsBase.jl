@@ -67,7 +67,7 @@ in the same form as `f`, the [`dynamic_rule`](@ref).
 Specifically, `J(u, p, n) -> M::SMatrix`
 for the out-of-place version or `J(M, u, p, n)` for the in-place version
 acting in-place on `M`.
-in both cases `M` is a matrix whose columns are the deviation vectors.
+In both cases `M` is the Jacobian matrix used for the evolution of the deviation vectors.
 
 By default `J = nothing`.  In this case `J` is constructed automatically using
 the module [`ForwardDiff`](https://github.com/JuliaDiff/ForwardDiff.jl),
