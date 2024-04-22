@@ -37,7 +37,7 @@ complete_state = [0.0, 0.0, 0.0] # completed state just in the plane of last two
 prods = ProjectedDynamicalSystem(ds, projection, complete_state)
 reinit!(prods, [0.2, 0.4])
 step!(prods)
-get_state(prods)
+current_state(prods)
 ```
 Case 2: custom projection to general functions of state.
 ```julia
