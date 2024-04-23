@@ -189,6 +189,9 @@ Return the state `u` of `ds` _observed_ at "index" `i`. Possibilities are:
    such as a `Num` or `Symbol` instance with the name of the symbolic variable.
    In this case, a last fourth optional positional argument `t` defaults to
    `current_time(ds)` and is the time to observe the state at.
+- Any symbolic expression involving variables present in the symbolic
+  variables tracked by the system, e.g., `i = x^2 - y` with `x, y`
+  symbolic variables.
 
 For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
 state of the system is the full state space state, not the projected one

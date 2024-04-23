@@ -80,7 +80,18 @@ Return a name that matches the outcome of [`observe_state`](@ref) with `index`.
 state_name(f::Int) = "u"*subscript(f)
 state_name(f::Function) = string(f)
 state_name(f::Union{AbstractString,Symbol}) = string(f)
-state_name(f) = string(DynamicalSystemsBase.SymbolicIndexingInterface.getname(f))
+function state_name(f)
+    # First, try a symbolic name
+    try
+        n = string(DynamicalSystemsBase.SymbolicIndexingInterface.getname(f))
+        return n
+    catch e
+    end
+    # if it failed, cast into string
+    n = string(f)
+    # and remove `(t)`
+    replace(n, "(t)" => "")
+end
 
 """
     parameter_name(index)::String
