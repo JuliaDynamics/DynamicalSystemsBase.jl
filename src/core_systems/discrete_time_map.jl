@@ -5,7 +5,7 @@ export DeterministicIteratedMap, DiscreteDynamicalSystem
 # Type
 ###########################################################################################
 """
-    DeterministicIteratedMap <: DynamicalSystem
+    DeterministicIteratedMap <: DiscreteTimeDynamicalSystem
     DeterministicIteratedMap(f, u0, p = nothing; t0 = 0)
 
 A deterministic discrete time dynamical system defined by an iterated map as follows:
