@@ -15,7 +15,8 @@ Otherwise, `projection` can be an arbitrary function that given the state of the
 original system `ds`, returns the state in the projected space. In this case the projected
 space can be equal, or even higher-dimensional, than the original.
 
-`complete_state` produces the state for the original system from the projected state.
+`complete_state` produces the state for the original system, it can be any form of input as long
+as the returned vector is a valid state in the original space. 
 `complete_state` can always be a function that given the projected state returns a state in
 the original space. However, if `projection isa AbstractVector{Int}`, then `complete_state`
 can also be a vector that contains the values of the _remaining_ variables of the system,
@@ -73,8 +74,11 @@ function ProjectedDynamicalSystem(ds::DynamicalSystem, projection, complete_stat
         remidxs = setdiff(1:dimension(ds), projection)
         !isempty(remidxs) || error("Error with the indices of the projection")
     else
-        length(complete_state(y)) == dimension(ds) ||
-                        error("The returned vector of complete_state must equal dimension(ds)")
+        if complete_state isa Function
+            @warn "Make sure that the function complete_state returns a valid vector of the same dimension than ds"
+        end
+        # length(complete_state(y)) == dimension(ds) ||
+                        # error("The returned vector of complete_state must equal dimension(ds)")
         remidxs = nothing
     end
     u = zeros(dimension(ds))
