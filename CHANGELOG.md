@@ -1,3 +1,8 @@
+# v3.9.0
+
+A new function `jacobian` that generates Jacobian rule for any `ds<:CoreDynamicalSystem` via 
+automatic differentiation with `ForwardDiff.jl`.
+
 # v3.8.0
 
 Even more amazing level of integration with ModelingToolkit.jl!
