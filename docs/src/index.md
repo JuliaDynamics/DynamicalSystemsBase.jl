@@ -74,6 +74,7 @@ CoreDynamicalSystem
 TangentDynamicalSystem
 current_deviations
 set_deviations!
+jacobian
 orthonormal
 ```
 

@@ -16,4 +16,5 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     testfile("successful_step.jl")
     testfile("mtk_integration.jl")
     testfile("trajectory.jl")
+    testfile("jacobian.jl")
 end
