@@ -138,7 +138,6 @@ correct_matrix_type(::Val{true}, Q::AbstractMatrix) = ismutable(Q) ? Q : Array(Q
 ###########################################################################################
 # Creation of tangent rule
 ###########################################################################################
-import ForwardDiff
 # IIP Tangent space dynamics
 function tangent_rule(f::F, J::JAC, J0, ::Val{true}, ::Val{k}, u0) where {F, JAC, k}
     tangentf = (du, u, p, t) -> begin
