@@ -7,6 +7,7 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
 @testset "DynamicalSystemsBase" begin
     testfile("discrete.jl")
     testfile("continuous.jl")
+    testfile("stochastic.jl")
     testfile("arbitrarysteppable.jl")
     testfile("stroboscopic.jl")
     testfile("parallel.jl")
