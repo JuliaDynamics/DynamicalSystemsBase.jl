@@ -2,7 +2,7 @@ using DynamicalSystemsBase, Test
 using ModelingToolkit
 
 # Make the same MTK model as in the basic tutorial
-@variables t
+@independent_variables t
 D = Differential(t)
 
 function fol_factory(separate = false; name)
@@ -133,7 +133,7 @@ set_parameter!(ds, 1, 2.0)
 
 # Test that remake works also without anything initial
 
-@variables t
+@independent_variables t
 D = Differential(t)
 @mtkmodel Roessler begin
     @parameters begin

@@ -19,3 +19,14 @@ henon_iip = DeterministicIteratedMap(henon_rule_iip, copy(u0), p0)
     @test dynamic_rule(henon) == (iip ? henon_rule_iip : henon_rule)
     test_dynamical_system(henon, u0, p0; idt = true, iip)
 end
+
+@testset "API" begin # also test API functions that are generic
+    reinit!(henon_oop)
+    set_parameters!(henon_oop, [2 => 1.1])
+    @test current_parameter(henon_oop, 2) == 1.1
+    set_parameters!(henon_oop, [0.3, 1.4])
+    @test current_parameter(henon_oop, 2) == 1.4
+    @test current_parameter(henon_oop, 1) == 0.3
+    set_parameters!(henon_oop, Dict(2 => 1.1))
+    @test current_parameter(henon_oop, 2) == 1.1
+end
