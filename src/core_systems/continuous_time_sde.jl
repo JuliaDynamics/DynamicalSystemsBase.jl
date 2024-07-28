@@ -6,7 +6,8 @@ export CoupledSDEs
 # DiffEq options
 ###########################################################################################
 const DEFAULT_SDE_SOLVER = SOSRA() # default recommendation for additive noise
-const DEFAULT_STOCH_DIFFEQ = (alg=DEFAULT_SDE_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
+const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol = 1e-2, reltol = 1e-2)
+const DEFAULT_STOCH_DIFFEQ = (alg=DEFAULT_SDE_SOLVER, DEFAULT_STOCH_DIFFEQ_KWARGS...)
 
 # Function from user `@xlxs4`, see
 # https://github.com/JuliaDynamics/jl/pull/153
