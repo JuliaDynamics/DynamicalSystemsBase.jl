@@ -254,3 +254,24 @@ function add_noise_strength(σ, g, IIP)
     newg = IIP ? σg!(σ, g) : σg(σ, g)
     return newg
 end
+
+"""
+    idfunc(u, p, t)
+
+Identity function for a diffusion function `g` of `CoupledSDEs` (out-of-place).
+Equivalent to `(u, p, t) -> ones(length(u))`,
+"""
+function idfunc(u, p, t)
+    return typeof(u)(ones(eltype(u), length(u)))
+end;
+
+"""
+    idfunc!(du, u, p, t)
+
+Identity function for a diffusion function `g` of `CoupledSDEs` (in-place).
+Equivalent to `idfunc!(du, u, p, t) = (du .= ones(length(u)); return nothing)`
+"""
+function idfunc!(du, u, p, t)
+    du .= ones(eltype(u), length(u))
+    return nothing
+end;
