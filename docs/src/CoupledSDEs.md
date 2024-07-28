@@ -35,7 +35,8 @@ Lyapunov spectrum of a `CoupledSDEs` in the absence of noise, here exemplified b
 FitzHugh-Nagumo model, can be computed by typing:
 
 ```julia
-using DynamicalSystems
+using DynamicalSystemsBase, StaticArrays
+using DynamicalSystemsBase: idfunc
 
 function fitzhugh_nagumo(u, p, t)
     x, y = u
@@ -47,8 +48,8 @@ function fitzhugh_nagumo(u, p, t)
     return SA[dx, dy]
 end
 
-sys = CoupledSDEs(fitzhugh_nagumo, idfunc, zeros(2), [1.,3.,1.,1.,1.,0.], 0.1)
-ls = lyapunovspectrum(CoupledODEs(sys), 10000)
+sde = CoupledSDEs(fitzhugh_nagumo, idfunc, zeros(2), [1.,3.,1.,1.,1.,0.], 0.1)
+tr = trajectory(sde, 10)
 ```
 
 ## Available noise processes

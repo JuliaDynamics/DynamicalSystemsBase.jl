@@ -183,7 +183,7 @@ end
 
 Converts a [`CoupledSDEs`](@ref) into [`CoupledODEs`](@ref).
 """
-function CoupledODEs(sys::CoupledSDEs; diffeq=DEFAULT_STOCH_DIFFEQ, t0=0.0)
+function CoupledODEs(sys::CoupledSDEs; diffeq=DEFAULT_DIFFEQ, t0=0.0)
     return CoupledODEs(
         sys.integ.f, SVector{length(sys.integ.u)}(sys.integ.u), sys.p0; diffeq=diffeq, t0=t0
     )
@@ -262,7 +262,7 @@ Identity function for a diffusion function `g` of `CoupledSDEs` (out-of-place).
 Equivalent to `(u, p, t) -> ones(length(u))`,
 """
 function idfunc(u, p, t)
-    return typeof(u)(ones(eltype(u), length(u)))
+    return  SVector{length(u)}(ones(eltype(u), length(u)))
 end;
 
 """
