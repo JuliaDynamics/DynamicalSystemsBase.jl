@@ -4,6 +4,7 @@ using DynamicalSystemsBase
 
 pages = [
     "index.md",
+    "CoupledSDEs.md",
 ]
 using DynamicalSystemsBase.SciMLBase
 
