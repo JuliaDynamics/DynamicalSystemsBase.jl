@@ -28,7 +28,7 @@ CoupledSDEs
 - `CoupledSDEs(ode::CoupledODEs, g)`, with `g` the noise function, turns `ode` into a `CoupledSDEs`
 
 ```@docs
-CoupledODEs
+CoupledODEs(::CoupledSDEs; kwargs...)
 ```
 For example, the
 Lyapunov spectrum of a `CoupledSDEs` in the absence of noise, here exemplified by the
