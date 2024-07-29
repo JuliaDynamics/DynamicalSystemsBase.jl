@@ -61,16 +61,16 @@ function find_noise_type(prob::SDEProblem, IIP)
         elseif noise_rate_size == (D, D) && isnothing(covariance)
             covariance = g(zeros(D), param, 0.0)
             if !isinvertible(covariance)
-                push!(properties, :non_invertiable)
+                push!(properties, :non_invertible)
             else
-                push!(properties, :invertiable)
+                push!(properties, :invertible)
             end
         elseif !isnothing(covariance) && !isinvertible(covariance)
-            push!(properties, :non_invertiable)
+            push!(properties, :non_invertible)
         elseif !isnothing(noise_rate_size) && noise_rate_size != (D, D)
-            push!(properties, :non_invertiable)
+            push!(properties, :non_invertible)
         else
-            push!(properties, :invertiable)
+            push!(properties, :invertible)
         end
     end
 
