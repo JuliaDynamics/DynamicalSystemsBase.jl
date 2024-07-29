@@ -1,11 +1,11 @@
 using SciMLBase: SDEProblem, AbstractSDEIntegrator, __init, SDEFunction
-using StochasticDiffEq: SOSRA
+using StochasticDiffEq: SOSRI
 export CoupledSDEs
 
 ###########################################################################################
 # DiffEq options
 ###########################################################################################
-const DEFAULT_SDE_SOLVER = SOSRA() # default recommendation for additive noise
+const DEFAULT_SDE_SOLVER = SOSRI() # default sciml solver
 const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol = 1e-2, reltol = 1e-2)
 const DEFAULT_STOCH_DIFFEQ = (alg=DEFAULT_SDE_SOLVER, DEFAULT_STOCH_DIFFEQ_KWARGS...)
 
@@ -78,6 +78,7 @@ struct CoupledSDEs{IIP,D,I,P,S} <: ContinuousTimeDynamicalSystem
     p0::P
     noise_strength
     diffeq # isn't parameterized because it is only used for display
+    noise_type::Vector{Symbol}
 end
 
 function CoupledSDEs(
@@ -130,6 +131,7 @@ function CoupledSDEs(
     end
     sde_function = SDEFunction(prob.f, add_noise_strength(noise_strength, prob.g, IIP))
     prob = SciMLBase.remake(prob; f=sde_function)
+    noise_type = find_noise_type(prob, IIP)
 
     solver, remaining = _decompose_into_sde_solver_and_remaining(diffeq)
     integ = __init(
@@ -145,7 +147,7 @@ function CoupledSDEs(
         maxiters=Inf,
     )
     return CoupledSDEs{IIP,D,typeof(integ),P,true}(
-        integ, deepcopy(prob.p), noise_strength, diffeq
+        integ, deepcopy(prob.p), noise_strength, diffeq, noise_type
     )
 end
 
@@ -197,6 +199,7 @@ function additional_details(ds::CoupledSDEs)
         "Noise strength" => ds.noise_strength,
         "SDE solver" => string(nameof(typeof(solver))),
         "SDE kwargs" => remaining,
+        "Noise type" => ds.noise_type,
     ]
 end
 

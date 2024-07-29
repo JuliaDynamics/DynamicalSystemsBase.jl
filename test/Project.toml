@@ -1,4 +1,5 @@
 [deps]
+DiffEqNoiseProcess = "77a26b50-5914-5dd7-bc55-306e6241c503"
 DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"

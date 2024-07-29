@@ -1,5 +1,5 @@
 using DynamicalSystemsBase, Test
-using StochasticDiffEq: SDEProblem, SRA, SRI, SOSRA
+using StochasticDiffEq: SDEProblem, SRA, SRI, SOSRI
 
 include("test_system_function.jl")
 
@@ -49,7 +49,7 @@ end
 
 @testset "correct SDE propagation" begin
     lorenz_oop = CoupledSDEs(lorenz_rule, diagonal_noise(σ), u0, p0)
-    @test lorenz_oop.integ.alg isa SOSRA
+    @test lorenz_oop.integ.alg isa SOSRI
 
     lorenz_SRA = CoupledSDEs(lorenz_rule, diagonal_noise(σ), u0, p0;
         diffeq = (alg = SRA(), abstol = 1e-6, reltol = 1e-6, verbose=false)
