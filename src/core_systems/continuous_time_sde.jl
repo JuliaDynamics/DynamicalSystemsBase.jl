@@ -78,7 +78,7 @@ struct CoupledSDEs{IIP,D,I,P,S} <: ContinuousTimeDynamicalSystem
     p0::P
     noise_strength
     diffeq # isn't parameterized because it is only used for display
-    noise_type::Vector{Symbol}
+    noise_type::NamedTuple
 end
 
 function CoupledSDEs(

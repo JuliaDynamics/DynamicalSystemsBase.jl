@@ -11,8 +11,7 @@ function is_time_independent(g, u, p)
     val = map(t -> g(u, p, t), trange) |> unique |> length == 1
     length(unique(val)) == 1
 end
-# isinvertible(x) = applicable(inv, x) && isone(inv(x) * x)
-isinvertible(x) = issuccess(lu(x, check = false))
+is_invertible(x) = issuccess(lu(x, check = false))
 
 function is_linear(f, x, y, c)
     check1 = f(x + y) == f(x) + f(y)
@@ -29,7 +28,10 @@ function find_noise_type(prob::SDEProblem, IIP)
     u0 = prob.u0
     D = length(u0)
 
-    properties = Symbol[]
+    isadditive = false
+    isautonomous = false
+    islinear = false
+    isinvertible = false
 
     function g(u, p, t)
         if IIP
@@ -44,38 +46,24 @@ function find_noise_type(prob::SDEProblem, IIP)
     state_independent = is_state_independent(g, u0, param, 1.0)
 
     # additive noise is equal to state independent noise
-    push!(properties, state_independent ? :additive : :multiplicative)
-    push!(properties, time_independent ? :autonomous : :non_autonomous)
-    if !state_independent
-        linear = is_linear(u -> g(u, param, 1.0), rand(D), rand(D), 2.0)
-        push!(properties, linear ? :linear : :non_linear)
-    else
-        push!(properties, :linear)
-    end
+    isadditive = state_independent
+    isautonomous = time_independent
+    islinear = !state_independent ?
+               is_linear(u -> g(u, param, 1.0), rand(D), rand(D), 2.0) : true
 
     if time_independent && state_independent
         if noise_rate_size == (D, D) && !isnothing(covariance)
-            error(
-                "The diffusion function `g` acts as an covariance matrix but
-                the noise process W also has a covariance matrix. This is ambiguous.")
+            error("The diffusion function `g` acts as an covariance matrix but the noise process W also has a covariance matrix. This is ambiguous.")
         elseif noise_rate_size == (D, D) && isnothing(covariance)
             covariance = g(zeros(D), param, 0.0)
-            if !isinvertible(covariance)
-                push!(properties, :non_invertible)
-            else
-                push!(properties, :invertible)
-            end
-        elseif !isnothing(covariance) && !isinvertible(covariance)
-            push!(properties, :non_invertible)
+            isinvertible = is_invertible(covariance)
         elseif !isnothing(noise_rate_size) && noise_rate_size != (D, D)
-            push!(properties, :non_invertible)
+            isinvertible = false
         else
-            push!(properties, :invertible)
+            isinvertible = isnothing(covariance) || is_invertible(covariance)
         end
     end
 
-    if !isnothing(noise) && D != length(noise.dW) && length(noise.dW) == 1
-        push!(properties, :scalar)
-    end
-    return properties
+    return (additive = isadditive, autonomous = isautonomous,
+        linear = islinear, invertible = isinvertible)
 end # function
