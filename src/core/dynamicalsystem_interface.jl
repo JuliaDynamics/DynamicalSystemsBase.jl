@@ -448,7 +448,7 @@ The keys of `p` must be valid keys that can be given to [`set_parameter!`](@ref)
 function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
     cp = current_parameters(ds)
     p === cp && return
-    iter = p isa Vector ? pairs(p) : p # allows using vector, dict, or vector{pair}.
+    iter = p isa Vector{<:Real} ? pairs(p) : p # allows using vector, dict, or vector{pair}.
     for (index, value) in iter
         _set_parameter!(ds, index, value, cp)
     end
