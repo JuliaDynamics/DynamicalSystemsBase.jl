@@ -12,6 +12,6 @@ using LinearAlgebra
 include("src/CoupledSDEs.jl")
 include("src/classification.jl")
 
-export CoupledSDEs
+export CoupledSDEs, CoupledODEs
 
 end
