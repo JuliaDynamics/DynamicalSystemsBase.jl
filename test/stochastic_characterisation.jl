@@ -1,13 +1,7 @@
 using DynamicalSystemsBase, DiffEqNoiseProcess, Test, StochasticDiffEq
-using DynamicalSystemsBase: find_noise_type, idfunc!
+
 f!(du, u, p, t) = du .= 1.01u # deterministic part
 σ = 0.25 # noise strength
-get_prob(sde) = sde.integ.sol.prob
-IIP = true
-
-# function idfunc(u, p, t)
-#     return  SVector{length(u)}(ones(eltype(u), length(u)))
-# end;
 
 function idfunc!(du, u, p, t)
     du .= ones(eltype(u), length(u))

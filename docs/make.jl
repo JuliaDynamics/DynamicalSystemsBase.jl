@@ -1,6 +1,7 @@
 cd(@__DIR__)
 
 using DynamicalSystemsBase
+using StochasticDiffEq # for extention
 
 pages = [
     "index.md",
@@ -16,5 +17,5 @@ Downloads.download(
 include("build_docs_with_style.jl")
 
 build_docs_with_style(pages,
-    DynamicalSystemsBase, SciMLBase, StateSpaceSets;
+    DynamicalSystemsBase, SciMLBase, StateSpaceSets, StochasticDiffEq;
 )

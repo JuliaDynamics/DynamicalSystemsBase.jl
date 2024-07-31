@@ -3,7 +3,7 @@
 ###########################################################################################
 
 const DEFAULT_SDE_SOLVER = SOSRI() # default sciml solver
-const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol = 1e-2, reltol = 1e-2)
+const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol = 1e-2, reltol = 1e-2) # default sciml tol
 const DEFAULT_STOCH_DIFFEQ = (alg = DEFAULT_SDE_SOLVER, DEFAULT_STOCH_DIFFEQ_KWARGS...)
 
 # Function from user `@xlxs4`, see
@@ -133,7 +133,7 @@ function DynamicalSystemsBase.CoupledODEs(
 end
 
 # Pretty print
-function additional_details(ds::CoupledSDEs)
+function DynamicalSystemsBase.additional_details(ds::CoupledSDEs)
     solver, remaining = _decompose_into_sde_solver_and_remaining(ds.diffeq)
     return [
         "Noise strength" => ds.noise_strength,
@@ -178,7 +178,7 @@ function DynamicalSystemsBase.set_parameter!(ds::CoupledSDEs, args...)
     return nothing
 end
 
-referrenced_sciml_prob(ds::CoupledSDEs) = ds.integ.sol.prob
+DynamicalSystemsBase.referrenced_sciml_prob(ds::CoupledSDEs) = ds.integ.sol.prob
 
 ###########################################################################################
 # Utilities
