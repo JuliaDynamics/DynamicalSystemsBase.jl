@@ -22,7 +22,6 @@ include("core/pretty_printing.jl")
 
 include("core_systems/discrete_time_map.jl")
 include("core_systems/continuous_time_ode.jl")
-include("core_systems/characterise_sde.jl")
 include("core_systems/continuous_time_sde.jl")
 include("core_systems/arbitrary_steppable.jl")
 include("core_systems/additional_supertypes.jl")

@@ -1,4 +1,3 @@
-using StochasticDiffEq: WienerProcess, CorrelatedWienerProcess, EM, SDEProblem
 using LinearAlgebra
 
 function is_state_independent(g, u, p, t)
@@ -8,7 +7,7 @@ function is_state_independent(g, u, p, t)
 end
 function is_time_independent(g, u, p)
     trange = 0:0.1:1
-    val = map(t -> g(u, p, t), trange) |> unique |> length == 1
+    val = map(t -> g(u, p, t), trange)
     length(unique(val)) == 1
 end
 is_invertible(x) = issuccess(lu(x, check = false))
