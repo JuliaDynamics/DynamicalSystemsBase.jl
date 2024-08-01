@@ -153,6 +153,16 @@ StateSpaceSets.dimension(::CoupledSDEs{IIP, D}) where {IIP, D} = D
 DynamicalSystemsBase.current_state(ds::CoupledSDEs) = current_state(ds.integ)
 DynamicalSystemsBase.isdeterministic(ds::CoupledSDEs) = false
 
+function DynamicalSystemsBase.dynamic_rule(ds::CoupledSDEs)
+    # with remake it can happen that we have nested SDEFunctions
+    # sciml integrator deals with this internally well
+    f = ds.integ.f
+    while hasfield(typeof(f), :f)
+        f = f.f
+    end
+    return f
+end
+
 # so that `ds` is printed
 function DynamicalSystemsBase.set_state!(ds::CoupledSDEs, u::AbstractArray)
     (set_state!(ds.integ, u); ds)
