@@ -70,6 +70,7 @@ $code-background: $codebg; // for inline code
 $pre-background: $codebg;  // for code blocks
 $documenter-docstring-header-background: lighten-color($body-background-color, 0.5);
 
+
 // Sidebar
 $documenter-sidebar-background: darken-color($maincolor, 1.2); //background color for sidebar
 $documenter-sidebar-color: $text; //font color for sidebar
@@ -86,22 +87,8 @@ $input-focus-border-color: $mainwhite;
 
 $documenter-docstring-shadow: 3px 3px 4px invert($shadow-color);
 
-
-
-// Admonition stuff
-$admbg: lighten-color($body-background-color, 0.5);
-$admonition-background: (
-  'default': $admbg, 'info': $admbg, 'success': $admbg, 'warning': $admbg,
-  'danger': $admbg, 'compat': $admbg
-);
-$admonition-header-background: (
-  'default': #ba3f1f, 'warning': #a88b17, 'danger': #c7524c,
-  'success': #42ac68, 'info': #28c);
-
-// Deprecations
-$admonition-body-color: null;
-$admonition-body-color: null;
-$admonition-header-color: null;
+// This line is required after https://github.com/JuliaDocs/Documenter.jl/pull/2499
+$admonition-default: $darkbg;
 
 // All secondary themes have to be nested in a theme--$(themename) class. When Documenter
 // switches themes, it applies this class to <html> and then disables the primary
@@ -157,4 +144,36 @@ html.theme--#{$themename} {
   .hljs-subst {
     color: #f8f8f2;
   }
+
+
+
+  // fix for the settings/modal panel
+  .modal-card-head {
+    background-color: darken($darkbg,5);
+  }
+  .modal-card-body {
+    background-color: darken($darkbg,5);
+  }
+  .modal-card-foot {
+    background-color: darken($darkbg,5);
+  }
+  .select {
+    > select {
+    background-color: darken($darkbg,5); 
+    }
+  } 
+
+  // fix for the search panel
+  .input {
+    background-color: darken($darkbg,5);
+  }
+  .search-result-title {
+    color: white
+  }
+
+  // match the size of the light theme (additional rule 
+  // that is dark-theme specific and messing around 
+  // with the size of elements, making the size be 0,75em
+  // only for the dark theme, no idea why)
+  font-size: unset !important;
 }
