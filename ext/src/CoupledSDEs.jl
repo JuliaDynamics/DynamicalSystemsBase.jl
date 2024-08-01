@@ -128,7 +128,8 @@ Converts a [`CoupledSDEs`](@ref) into [`CoupledODEs`](@ref).
 function DynamicalSystemsBase.CoupledODEs(
         sys::CoupledSDEs; diffeq = DEFAULT_DIFFEQ, t0 = 0.0)
     return CoupledODEs(
-        sys.integ.f, SVector{length(sys.integ.u)}(sys.integ.u), sys.p0; diffeq = diffeq, t0 = t0
+        dynamic_rule(sys), SVector{length(sys.integ.u)}(sys.integ.u), sys.p0;
+        diffeq = diffeq, t0 = t0
     )
 end
 
@@ -152,20 +153,13 @@ StateSpaceSets.dimension(::CoupledSDEs{IIP, D}) where {IIP, D} = D
 DynamicalSystemsBase.current_state(ds::CoupledSDEs) = current_state(ds.integ)
 DynamicalSystemsBase.isdeterministic(ds::CoupledSDEs) = false
 
-function DynamicalSystemsBase.dynamic_rule(sys::CoupledSDEs)
-    f = sys.integ.f
-    while hasfield(typeof(f), :f)
-        f = f.f
-    end
-    return f
-end
-
 # so that `ds` is printed
 function DynamicalSystemsBase.set_state!(ds::CoupledSDEs, u::AbstractArray)
     (set_state!(ds.integ, u); ds)
 end
 SciMLBase.step!(ds::CoupledSDEs, args...) = (step!(ds.integ, args...); ds)
 
+# TODO We have to check if for SDEIntegrators a different step interruption is possible.
 function DynamicalSystemsBase.successful_step(integ::AbstractSDEIntegrator)
     rcode = integ.sol.retcode
     return rcode == SciMLBase.ReturnCode.Default || rcode == SciMLBase.ReturnCode.Success

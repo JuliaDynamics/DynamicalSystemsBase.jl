@@ -1,4 +1,5 @@
 using DynamicalSystemsBase, Test
+using OrdinaryDiffEq: Tsit5
 using StochasticDiffEq: SDEProblem, SRA, SRI, SOSRI
 
 include("test_system_function.jl")
@@ -43,7 +44,7 @@ for (ds, iip) in zip((lorenz_oop, lorenz_iip, lorenz_SRA), (false, true, false))
     name = (ds === lorenz_SRA) ? "lorSRA" : "lorenz"
     @testset "$(name) IIP=$(iip)" begin
         @test dynamic_rule(ds) == (iip ? lorenz_rule_iip : lorenz_rule)
-        test_dynamical_system(ds, u0, p0; idt = false, iip)
+        test_dynamical_system(ds, u0, p0; idt = false, iip=iip)
     end
 end
 
@@ -52,12 +53,12 @@ end
     @test lorenz_oop.integ.alg isa SOSRI
 
     lorenz_SRA = CoupledSDEs(lorenz_rule, diagonal_noise(σ), u0, p0;
-        diffeq = (alg = SRA(), abstol = 1e-6, reltol = 1e-6, verbose=false)
+        diffeq = (alg = SRA(), abstol = 1e-3, reltol = 1e-3, verbose=false)
     )
     @test lorenz_SRA.integ.alg isa SRA
     @test lorenz_SRA.integ.opts.verbose == false
 
-    # # also test SDEproblem creation
+    # also test SDEproblem creation
     prob = lorenz_SRA.integ.sol.prob
 
     ds = CoupledSDEs(prob, (alg=SRI(), abstol=0.0, reltol=1e-6, verbose=false))
@@ -67,4 +68,13 @@ end
 
     @test_throws ArgumentError CoupledSDEs(prob; diffeq = (alg=SRI(), ))
 
+    # CoupledODEs creation
+    ds = CoupledODEs(lorenz_oop)
+    @test dynamic_rule(ds) == lorenz_rule
+    @test ds.integ.alg isa Tsit5
+    test_dynamical_system(ds, u0, p0; idt = false, iip=false)
+    # and back
+    sde = CoupledSDEs(ds, diagonal_noise(σ), p0)
+    @test dynamic_rule(sde) == lorenz_rule
+    @test sde.integ.alg isa SOSRI
 end
