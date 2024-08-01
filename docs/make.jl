@@ -1,7 +1,7 @@
 cd(@__DIR__)
 
 using DynamicalSystemsBase
-using StochasticDiffEq # to enable extention
+using StochasticDiffEq, DiffEqNoiseProcess # to enable extention
 # We need this because Documenter doesn't know where to get the docstring from otherwise
 StochasticSystemsBase = Base.get_extension(DynamicalSystemsBase, :StochasticSystemsBase)
 
