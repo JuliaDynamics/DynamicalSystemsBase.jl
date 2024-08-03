@@ -2,22 +2,21 @@ export CoupledSDEs
 
 """
     CoupledSDEs <: ContinuousTimeDynamicalSystem
-    CoupledSDEs(f, g, u0 [, p, σ]; kwargs...)
+    CoupledSDEs(f, g, u0 [, p]; kwargs...)
 
 A stochastic continuous time dynamical system defined by a set of
 coupled stochastic differential equations as follows:
 ```math
-d\\vec{u} = \\vec{f}(\\vec{u}, p, t) dt + σ \\vec{g}(\\vec{u}, p, t) dW_t
+d\\vec{u} = \\vec{f}(\\vec{u}, p, t) dt + \\vec{g}(\\vec{u}, p, t) dW_t
 ```
 where
-``\\sigma > 0`` is the overall noise strength,
 ``\\text{d}\\mathcal{W} = \\Gamma \\cdot \\text{d}\\mathcal{N}``,
 and ``\\mathcal N`` denotes a stochastic process.
 The (positive definite) noise covariance matrix is
 ``\\Sigma = \\Gamma \\Gamma^\\top \\in \\mathbb R^{N\\times N}``.
 
-Optionally you can provide a parameter container and the overall noise strength `σ`.
-and initial time as keyword `t0`. By default `p = nothing`, `σ = 1` and `t0 = 0`.
+Optionally you can provide a parameter container and initial time as keyword `t0`.
+By default `p = nothing`, and `t0 = 0`.
 
 For construction instructions regarding `f, u0` see the [DynamicalSystems.jl tutorial
 ](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/tutorial/).
@@ -37,15 +36,16 @@ the output of `g`. It can be any type which overloads `A_mul_B!` with itself bei
 middle argument. Commonly, this is a matrix or sparse matrix. If this is not given, it
 defaults to `nothing`, which means the `g` should be interpreted as being diagonal.
 
-By combining ``\\sigma, g, \\mathcal{W}``, you can define different type of stochastic
-systems. Examples of different types of stochastic systems can be found on the
+By combining ``g`` and ``\\mathcal{W}``, you can define different type of stochastic systems.
+Examples of different types of stochastic systems can be found on the
 [StochasticDiffEq.jl tutorial page](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/sde_example/).
 A quick overview of common types of stochastic systems can also be
 found in the [online docs for `CoupledSDEs`](@ref defining-stochastic-dynamics).
 
 The noise processes ``\\mathcal{W}`` that can be used in the stochastic simulations are
 obtained from [DiffEqNoiseProcess.jl](https://docs.sciml.ai/DiffEqNoiseProcess/stable).
-A complete list of the pre-defined processes can be found [here](https://docs.sciml.ai/DiffEqNoiseProcess/stable/noise_processes/). Note that `DiffEqNoiseProcess.jl` also has an interface for defining custom noise processes.
+A complete list of the pre-defined processes can be found [here](https://docs.sciml.ai/DiffEqNoiseProcess/stable/noise_processes/).
+Note that `DiffEqNoiseProcess.jl` also has an interface for defining custom noise processes.
 
 ## DifferentialEquations.jl interfacing
 
@@ -55,7 +55,7 @@ which requires you to be using StochasticDiffEq.jl to access the solvers.
 The default `diffeq` is:
 
 ```julia
-(alg = SOSRI(), abstol = 1.0e-6, reltol = 1.0e-6)
+(alg = SOSRI(), abstol = 1.0e-2, reltol = 1.0e-2)
 ```
 
 `diffeq` keywords can also include `callback` for [event handling
@@ -74,13 +74,11 @@ Similarly, use `CoupledSDEs(ds::CoupledODEs, g, p; kw...)` to convert to a stoch
 
 
 """
-struct CoupledSDEs{IIP,D,I,P,S} <: ContinuousTimeDynamicalSystem
+struct CoupledSDEs{IIP,D,I,P} <: ContinuousTimeDynamicalSystem
     # D parametrised by length of u0
-    # S indicated if the noise strength has been added to the diffusion function
     integ::I
     # things we can't recover from `integ`
     p0::P
-    noise_strength
     diffeq # isn't parameterized because it is only used for display
     noise_type::NamedTuple
 end
