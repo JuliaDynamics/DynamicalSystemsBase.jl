@@ -33,11 +33,11 @@ When $g$ is independent of the state variables $u$, the noise is called additive
 ```@example type
 t0 = 0.0; W0 = zeros(2);
 W = WienerProcess(t0, W0, 0.0)
-sde = CoupledSDEs(f!, idfunc!, zeros(2), nothing, σ; noise=W)
+sde = CoupledSDEs(f!, idfunc!, zeros(2); noise=W)
 ```
 which is equivalent to
 ```@example type
-sde = CoupledSDEs(f!, idfunc!, zeros(2), nothing, σ);
+sde = CoupledSDEs(f!, idfunc!, zeros(2));
 ```
 We defined a vector of random numbers `dW`, whose size matches the output of `g`, with the noise applied element-wise, i.e., `g.*dW`. Specifically, `dW` is a vector of Gaussian noise processes whose size matches the output of `g`. The noise is applied element-wise, i.e., `g.*dW`. By default, the noise processes are uncorrelated, meaning the covariance matrix is diagonal. This type of noise is referred to as diagonal. The vector `dW` is by default zero mean white gaussian noise $\mathcal{N}(0, \text{d}t)$ where the variance is the timestep $\text{d}t$ unit variance (Wiener Process). We can sample a trajectory from this system using the `trajectory` also used for the deterministic systems:
 ```@example type
@@ -65,7 +65,7 @@ scatter(values[1,:], values[2,:])
 ```
 The CoupledSDEs can be defined by passing the `CorrelatedWienerProcess` to the `noise` keyword:
 ```@example type
-sde = CoupledSDEs(f!, idfunc!, zeros(2), nothing, σ; noise=W)
+sde = CoupledSDEs(f!, idfunc!, zeros(2); noise=W)
 ```
 The covariance matrix $\Sigma$ can be accessed via `sde.integ.covariance`.
 
@@ -77,7 +77,7 @@ Scalar noise is where a single random variable is applied to all dependent varia
 ```@example type
 t0 = 0.0; W0 = 0.0;
 noise = WienerProcess(t0, W0, 0.0)
-sde = CoupledSDEs(f!, idfunc!, rand(2)/10, nothing, σ; noise=noise)
+sde = CoupledSDEs(f!, idfunc!, rand(2)/10; noise=noise)
 
 tr = trajectory(sde, 1.0)
 plot_trajectory(tr...)
@@ -92,7 +92,7 @@ function g!(du, u, p, t)
     du .= u ./ (1+t)
     return nothing
 end
-sde = CoupledSDEs(f!, g!, rand(2)./10, (), 1)
+sde = CoupledSDEs(f!, g!, rand(2)./10)
 ```
 
 #### Non-diagonal noise
@@ -112,7 +112,7 @@ function g(du, u, p, t)
     return nothing
 end
 diffeq = (alg = RKMilCommute(), reltol = 1e-3, abstol = 1e-3)
-sde = CoupledSDEs(f!, g, rand(2)./10, noise_rate_prototype = zeros(2, 2), diffeq = diffeq)
+sde = CoupledSDEs(f!, g, rand(2)./10; noise_rate_prototype = zeros(2, 2), diffeq = diffeq)
 ```
 
 !!! warning
