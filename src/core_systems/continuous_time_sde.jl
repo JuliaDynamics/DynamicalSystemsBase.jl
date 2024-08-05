@@ -2,7 +2,7 @@ export CoupledSDEs
 
 """
     CoupledSDEs <: ContinuousTimeDynamicalSystem
-    CoupledSDEs(f, g, u0 [, p]; kwargs...)
+    CoupledSDEs(f, u0 [, p]; kwargs...)
 
 A stochastic continuous time dynamical system defined by a set of
 coupled stochastic differential equations as follows:
@@ -20,18 +20,24 @@ By default `p = nothing`, and `t0 = 0`.
 
 For construction instructions regarding `f, u0` see the [DynamicalSystems.jl tutorial
 ](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/tutorial/).
-`g` must follow the sae syntax, i.e., `g(u, p, t)` for out-of-place (oop) and
+`g` must follow the same syntax, i.e., `g(u, p, t)` for out-of-place (oop) and
 `g(du, u, p, t)` for in-place (iip).
 
 ## Stochastic part
 
-The stochastic part of the differential equation is defined by the function `g` and
-the keyword arguments `noise_rate_prototype` and `noise`. `noise` indicates
-the noise process applied and defaults to Gaussian white noise (Wiener process).
+By default the stochastic part of the differential equation is additive diagional Wiener
+noise applied to every variable. Alternativly, to correlate the noise procces can provide
+a covariance matrix with the kwarg `covariance`. A more exotic stochastic process can be
+defined by adding the keyword arguments `g`, `noise_prototype` and `noise`.
+
+`g` is the diffusion function of the CoupledSDEs and provides an interface to multiplicative
+and non-autonomous noise processes.
+
+`noise` indicates the noise process applied and defaults to Gaussian white noise (Wiener process).
 For details on defining various noise processes, refer to [DiffEqNoiseProcess.jl
 ](https://docs.sciml.ai/DiffEqNoiseProcess/stable/).
 
-`noise_rate_prototype` indicates the prototype type instance for the noise rates, i.e.,
+`noise_prototype` indicates the prototype type instance for the noise rates, i.e.,
 the output of `g`. It can be any type which overloads `A_mul_B!` with itself being the
 middle argument. Commonly, this is a matrix or sparse matrix. If this is not given, it
 defaults to `nothing`, which means the `g` should be interpreted as being diagonal.
@@ -55,7 +61,7 @@ which requires you to be using StochasticDiffEq.jl to access the solvers.
 The default `diffeq` is:
 
 ```julia
-(alg = SOSRI(), abstol = 1.0e-2, reltol = 1.0e-2)
+(alg = SOSRA(), abstol = 1.0e-2, reltol = 1.0e-2)
 ```
 
 `diffeq` keywords can also include `callback` for [event handling
@@ -70,7 +76,7 @@ to extract the problem.
 
 You can convert to `CoupledODEs` to analyze the deterministic part via
 the function `CoupledODEs(ds::CoupledSDEs; diffeq, t0)`.
-Similarly, use `CoupledSDEs(ds::CoupledODEs, g, p; kw...)` to convert to a stochastic system.
+Similarly, use `CoupledSDEs(ds::CoupledODEs, p; kw...)` to convert to a stochastic system.
 
 
 """
