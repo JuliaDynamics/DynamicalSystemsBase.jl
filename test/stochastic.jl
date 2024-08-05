@@ -1,8 +1,9 @@
 using DynamicalSystemsBase, Test
 using OrdinaryDiffEq: Tsit5
-using StochasticDiffEq: SDEProblem, SRA, SRI, SOSRI
+using StochasticDiffEq: SDEProblem, SRA, SRA, SOSRA, CorrelatedWienerProcess
 
 include("test_system_function.jl")
+
 
 # Creation of lorenz
 @inbounds function lorenz_rule(u, p, t)
@@ -30,30 +31,30 @@ end
 diagonal_noise(σ) = (u, p, t) -> SVector{3}(σ, σ, σ)
 
 u0 = [0, 10.0, 0]
-p0 = [10, 28, 8/3]
+p0 = [10, 28, 8 / 3]
 
 # diagonal additive noise
-lorenz_oop = CoupledSDEs(lorenz_rule, diagonal_noise(σ), u0, p0)
-lorenz_iip = CoupledSDEs(SDEProblem(lorenz_rule_iip, diagonal_noise!(σ), copy(u0), (0.0, Inf), p0))
-lorenz_SRA = CoupledSDEs(lorenz_rule, diagonal_noise(σ), u0, p0;
-    diffeq = (alg = SRA(), abstol = 1e-6, reltol = 1e-6)
+lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0)
+lorenz_iip = CoupledSDEs(SDEProblem(
+    lorenz_rule_iip, diagonal_noise!(σ), copy(u0), (0.0, Inf), p0))
+lorenz_SRA = CoupledSDEs(lorenz_rule, u0, p0;
+    diffeq = (alg = SRA(), abstol = 1e-2, reltol = 1e-2)
 )
 
 for (ds, iip) in zip((lorenz_oop, lorenz_iip, lorenz_SRA), (false, true, false))
-
     name = (ds === lorenz_SRA) ? "lorSRA" : "lorenz"
     @testset "$(name) IIP=$(iip)" begin
         @test dynamic_rule(ds) == (iip ? lorenz_rule_iip : lorenz_rule)
-        test_dynamical_system(ds, u0, p0; idt = false, iip=iip)
+        test_dynamical_system(ds, u0, p0; idt = false, iip = iip)
     end
 end
 
 @testset "correct SDE propagation" begin
-    lorenz_oop = CoupledSDEs(lorenz_rule, diagonal_noise(σ), u0, p0)
-    @test lorenz_oop.integ.alg isa SOSRI
+    lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0)
+    @test lorenz_oop.integ.alg isa SOSRA
 
-    lorenz_SRA = CoupledSDEs(lorenz_rule, diagonal_noise(σ), u0, p0;
-        diffeq = (alg = SRA(), abstol = 1e-3, reltol = 1e-3, verbose=false)
+    lorenz_SRA = CoupledSDEs(lorenz_rule, u0, p0;
+        diffeq = (alg = SRA(), abstol = 1e-3, reltol = 1e-3, verbose = false)
     )
     @test lorenz_SRA.integ.alg isa SRA
     @test lorenz_SRA.integ.opts.verbose == false
@@ -61,20 +62,48 @@ end
     # also test SDEproblem creation
     prob = lorenz_SRA.integ.sol.prob
 
-    ds = CoupledSDEs(prob, (alg=SRI(), abstol=0.0, reltol=1e-6, verbose=false))
+    ds = CoupledSDEs(prob, (alg = SRA(), abstol = 0.0, reltol = 1e-3, verbose = false))
 
-    @test ds.integ.alg isa SRI
+    @test ds.integ.alg isa SRA
     @test ds.integ.opts.verbose == false
 
-    @test_throws ArgumentError CoupledSDEs(prob; diffeq = (alg=SRI(), ))
+    @test_throws ArgumentError CoupledSDEs(prob; diffeq = (alg = SRA(),))
 
     # CoupledODEs creation
     ds = CoupledODEs(lorenz_oop)
     @test dynamic_rule(ds) == lorenz_rule
     @test ds.integ.alg isa Tsit5
-    test_dynamical_system(ds, u0, p0; idt = false, iip=false)
+    test_dynamical_system(ds, u0, p0; idt = false, iip = false)
     # and back
-    sde = CoupledSDEs(ds, diagonal_noise(σ), p0)
+    sde = CoupledSDEs(ds, p0)
     @test dynamic_rule(sde) == lorenz_rule
-    @test sde.integ.alg isa SOSRI
+    @test sde.integ.alg isa SOSRA
+end
+
+@testset "interface" begin
+    f(u, p, t) = 1.01u
+    f!(du, u, p, t) = du .= 1.01u
+    @testset "covariance" begin
+        g(u, p, t) = [1 0.3; 0.3 1]
+        corr = CoupledSDEs(f, zeros(2); covariance = [1 0.3; 0.3 1])
+        corr_alt = CoupledSDEs(f, zeros(2); g = g, noise_prototype = zeros(2, 2))
+        @test corr.noise_type == corr_alt.noise_type
+        @test all(corr.integ.g(zeros(2), (), 0.0) .== corr_alt.integ.g(zeros(2), (), 0.0))
+    end
+
+    @testset "ArgumentError" begin
+        W = CorrelatedWienerProcess([1 0.3; 0.3 1], 0.0, zeros(2), zeros(2))
+        @test_throws ArgumentError CoupledSDEs(f!, zeros(2); noise = W)
+
+        g!(du, u, p, t) = du .= u
+        @test_throws ArgumentError CoupledSDEs(
+            f!, zeros(2); g = g!, covariance = [1 0.3; 0.3 1])
+
+        g(u, p, t) = u
+        @test_throws AssertionError CoupledSDEs(f!, zeros(2); g = g)
+
+        Csde = CoupledSDEs(f!, zeros(2))
+        diffeq = (alg = SRA(), abstol = 1e-2, reltol = 1e-2)
+        @test_throws ArgumentError CoupledSDEs(Csde.integ.sol.prob; diffeq = diffeq)
+    end
 end

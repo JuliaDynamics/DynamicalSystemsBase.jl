@@ -5,8 +5,8 @@ function is_state_independent(g, u, p, t)
     val = map(u -> g(u, p, t), rdm_states)
     length(unique(val)) == 1
 end
-function is_time_independent(g, u, p)
-    trange = 0:0.1:1
+function is_time_independent(g, u, p, t0)
+    trange = t0:0.1:10
     val = map(t -> g(u, p, t), trange)
     length(unique(val)) == 1
 end
@@ -18,51 +18,84 @@ function is_linear(f, x, y, c)
     return check1 && check2
 end
 
-function find_noise_type(prob::SDEProblem, IIP)
-    noise = prob.noise
-    noise_rate_prototype = prob.noise_rate_prototype
-    noise_rate_size = isnothing(noise_rate_prototype) ? nothing : size(noise_rate_prototype)
-    covariance = isnothing(noise) ? nothing : noise.covariance
-    param = prob.p
-    u0 = prob.u0
+"""
+We classify the noise type of the CoupledSDEs based on the properties given by the user.
+In doing this we also determine the covariance matrix
+
+"""
+function find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
+    noise_size = isnothing(noise_prototype) ? nothing : size(noise_prototype)
+    noise_cov = isnothing(noise) ? nothing : noise.covariance
     D = length(u0)
+
+    if !isnothing(noise_cov)
+        throw(
+            ArgumentError("CoupledSDEs does not support correlation between noise processes through DiffEqNoiseProcess.jl interface. Instead, use the `covariance` kwarg of `CoupledSDEs`.")
+        )
+    end
 
     isadditive = false
     isautonomous = false
     islinear = false
     isinvertible = false
 
-    function g(u, p, t)
+    function diffusion(u, p, t)
         if IIP
-            du = deepcopy(isnothing(noise_rate_prototype) ? u : noise_rate_prototype)
-            prob.g(du, u, p, t)
+            du = deepcopy(isnothing(noise_prototype) ? u : noise_prototype)
+            g(du, u, p, t)
             return du
         else
-            return prob.g(u, p, t)
+            return g(u, p, t)
         end
     end
-    time_independent = is_time_independent(g, rand(D), param)
-    state_independent = is_state_independent(g, u0, param, 1.0)
 
-    # additive noise is equal to state independent noise
-    isadditive = state_independent
-    isautonomous = time_independent
-    islinear = !state_independent ?
-               is_linear(u -> g(u, param, 1.0), rand(D), rand(D), 2.0) : true
-
-    if time_independent && state_independent
-        if noise_rate_size == (D, D) && !isnothing(covariance)
-            error("The diffusion function `g` acts as an covariance matrix but the noise process W also has a covariance matrix. This is ambiguous.")
-        elseif noise_rate_size == (D, D) && isnothing(covariance)
-            covariance = g(zeros(D), param, 0.0)
-            isinvertible = is_invertible(covariance)
-        elseif !isnothing(noise_rate_size) && noise_rate_size != (D, D)
-            isinvertible = false
+    if isnothing(g)
+        isadditive = true
+        isautonomous = true
+        islinear = true
+        if isnothing(covariance)
+            covariance = LinearAlgebra.I(D)
+            isinvertible = true
         else
-            isinvertible = isnothing(covariance) || is_invertible(covariance)
+            isinvertible = is_invertible(covariance)
+        end
+    elseif !isnothing(covariance)
+        throw(
+            ArgumentError("Both `g` and `covariance` are provided. Instead opt to encode the covariance in the difussion function `g` with the `noise_prototype` kwarg.")
+        )
+    else
+        time_independent = is_time_independent(diffusion, rand(D), p, t0)
+        state_independent = is_state_independent(diffusion, u0, p, t0)
+
+        # additive noise is equal to state independent noise
+        isadditive = state_independent
+        isautonomous = time_independent
+        islinear = !state_independent ?
+                   is_linear(u -> diffusion(u, p, t0), rand(D), rand(D), 2.0) : true
+
+        if time_independent && state_independent
+            if !isnothing(noise_size) && isequal(noise_size...)
+                covariance = diffusion(zeros(D), p, 0.0)
+                isinvertible = is_invertible(covariance)
+            elseif !isnothing(noise_size) && !isequal(noise_size...)
+                isinvertible = false
+                covariance = nothing
+            else
+                isinvertible = true
+                covariance = LinearAlgebra.I(D)
+            end
+        else
+            covariance = nothing
         end
     end
 
-    return (additive = isadditive, autonomous = isautonomous,
+    noise_type = (additive = isadditive, autonomous = isautonomous,
         linear = islinear, invertible = isinvertible)
-end # function
+    return noise_type, covariance
+end
+
+function find_noise_type(prob::SDEProblem, IIP)
+    find_noise_type(
+        prob.g, prob.u0, prob.p, prob.tspan[1], prob.noise,
+        nothing, prob.noise_rate_prototype, IIP)
+end

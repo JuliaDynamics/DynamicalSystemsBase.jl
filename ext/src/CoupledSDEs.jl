@@ -1,10 +1,12 @@
+using LinearAlgebra: LinearAlgebra
+
 ###########################################################################################
 # DiffEq options
 ###########################################################################################
-
-const DEFAULT_SDE_SOLVER = SOSRI() # default sciml solver
-const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol=1e-2, reltol=1e-2) # default sciml tol
-const DEFAULT_STOCH_DIFFEQ = (alg=DEFAULT_SDE_SOLVER, DEFAULT_STOCH_DIFFEQ_KWARGS...)
+# SOSRI is only applicable for diagonal noise
+const DEFAULT_SDE_SOLVER = SOSRA() # default sciml solver for adapitve non-diagonal noise
+const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol = 1e-2, reltol = 1e-2) # default sciml tol
+const DEFAULT_STOCH_DIFFEQ = (alg = DEFAULT_SDE_SOLVER, DEFAULT_STOCH_DIFFEQ_KWARGS...)
 
 # Function from user `@xlxs4`, see
 # https://github.com/JuliaDynamics/jl/pull/153
@@ -21,18 +23,25 @@ end
 ###########################################################################################
 
 function DynamicalSystemsBase.CoupledSDEs(
-    f,
-    g,
-    u0,
-    p=SciMLBase.NullParameters();
-    t0=0.0,
-    diffeq=DEFAULT_STOCH_DIFFEQ,
-    noise_rate_prototype=nothing,
-    noise=nothing,
-    seed=UInt64(0)
+        f,
+        u0,
+        p = SciMLBase.NullParameters();
+        g = nothing,
+        covariance = nothing,
+        t0 = 0.0,
+        diffeq = DEFAULT_STOCH_DIFFEQ,
+        noise_prototype = nothing,
+        noise = nothing,
+        seed = UInt64(0)
 )
     IIP = isinplace(f, 4) # from SciMLBase
-    @assert IIP == isinplace(g, 4) "f and g must both be in-place or out-of-place"
+    if !isnothing(g)
+        @assert IIP==isinplace(g, 4) "f and g must both be in-place or out-of-place"
+    end
+
+    noise_type, cov = find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
+    g, noise_prototype = construct_diffusion_function(
+        g, cov, noise_prototype, length(u0), IIP)
 
     s = correct_state(Val{IIP}(), u0)
     T = eltype(s)
@@ -42,21 +51,21 @@ function DynamicalSystemsBase.CoupledSDEs(
         s,
         (T(t0), T(Inf)),
         p;
-        noise_rate_prototype=noise_rate_prototype,
-        noise=noise,
-        seed=seed
+        noise_rate_prototype = noise_prototype,
+        noise = noise,
+        seed = seed
     )
-    return CoupledSDEs(prob, diffeq)
+    return CoupledSDEs(prob, diffeq, noise_type)
 end
 
 function DynamicalSystemsBase.CoupledSDEs(
-    prob::SDEProblem, diffeq=DEFAULT_STOCH_DIFFEQ; special_kwargs...
+        prob::SDEProblem, diffeq = DEFAULT_STOCH_DIFFEQ, noise_type = nothing; special_kwargs...
 )
     if haskey(special_kwargs, :diffeq)
         throw(
             ArgumentError(
-                "`diffeq` is given as positional argument when an ODEProblem is provided."
-            ),
+            "`diffeq` is given as positional argument when an ODEProblem is provided."
+        ),
         )
     end
     IIP = isinplace(prob) # from SciMLBase
@@ -65,9 +74,11 @@ function DynamicalSystemsBase.CoupledSDEs(
     if prob.tspan === (nothing, nothing)
         # If the problem was made via MTK, it is possible to not have a default timespan.
         U = eltype(prob.u0)
-        prob = SciMLBase.remake(prob; tspan=(U(0), U(Inf)))
+        prob = SciMLBase.remake(prob; tspan = (U(0), U(Inf)))
     end
-    noise_type = find_noise_type(prob, IIP)
+    if isnothing(noise_type)
+        noise_type, _ = find_noise_type(prob, IIP)
+    end
 
     solver, remaining = _decompose_into_sde_solver_and_remaining(diffeq)
     integ = __init(
@@ -75,14 +86,14 @@ function DynamicalSystemsBase.CoupledSDEs(
         solver;
         remaining...,
         # Integrators are used exclusively iteratively. There is no reason to save anything.
-        save_start=false,
-        save_end=false,
-        save_everystep=false,
+        save_start = false,
+        save_end = false,
+        save_everystep = false,
         # DynamicalSystems.jl operates on integrators and `step!` exclusively,
         # so there is no reason to limit the maximum time evolution
-        maxiters=Inf
+        maxiters = Inf
     )
-    return CoupledSDEs{IIP,D,typeof(integ),P}(
+    return CoupledSDEs{IIP, D, typeof(integ), P}(
         integ, deepcopy(prob.p), diffeq, noise_type
     )
 end
@@ -95,23 +106,25 @@ Converts a [`CoupledODEs`
 system into a [`CoupledSDEs`](@ref).
 """
 function DynamicalSystemsBase.CoupledSDEs(
-    ds::CoupledODEs,
-    g,
-    p; # the parameter is likely changed as the diffusion function g is added.
-    diffeq=DEFAULT_STOCH_DIFFEQ,
-    noise_rate_prototype=nothing,
-    noise=nothing,
-    seed=UInt64(0)
+        ds::CoupledODEs,
+        p; # the parameter is likely changed as the diffusion function g is added.
+        g = nothing,
+        covariance = nothing,
+        diffeq = DEFAULT_STOCH_DIFFEQ,
+        noise_prototype = nothing,
+        noise = nothing,
+        seed = UInt64(0)
 )
     return CoupledSDEs(
         dynamic_rule(ds),
-        g,
         current_state(ds),
         p;
-        diffeq=diffeq,
-        noise_rate_prototype=noise_rate_prototype,
-        noise=noise,
-        seed=seed
+        g = g,
+        covariance = covariance,
+        diffeq = diffeq,
+        noise_prototype = noise_prototype,
+        noise = noise,
+        seed = seed
     )
 end
 
@@ -121,10 +134,10 @@ end
 Converts a [`CoupledSDEs`](@ref) into [`CoupledODEs`](@ref).
 """
 function DynamicalSystemsBase.CoupledODEs(
-    sys::CoupledSDEs; diffeq=DEFAULT_DIFFEQ, t0=0.0)
+        sys::CoupledSDEs; diffeq = DEFAULT_DIFFEQ, t0 = 0.0)
     return CoupledODEs(
         dynamic_rule(sys), SVector{length(sys.integ.u)}(sys.integ.u), sys.p0;
-        diffeq=diffeq, t0=t0
+        diffeq = diffeq, t0 = t0
     )
 end
 
@@ -138,12 +151,38 @@ function DynamicalSystemsBase.additional_details(ds::CoupledSDEs)
     ]
 end
 
+"""
+https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#The-uniform-scaling-operator
+"""
+function construct_diffusion_function(g, cov, noise_prototype, D, IIP)
+    if isnothing(g) # diagonal additive noise
+        cov = isnothing(cov) ? LinearAlgebra.I(D) : cov
+        if IIP
+            if isdiag(cov)
+                g = (du, u, p, t) -> du .= diag(cov)
+            else
+                g = (du, u, p, t) -> du .= cov
+                noise_prototype = zeros(size(cov))
+                # ^ we could make this sparse to make it more performant
+            end
+        else
+            if isdiag(cov)
+                g = (u, p, t) -> SVector{length(diag(cov)), eltype(cov)}(diag(cov))
+            else
+                g = (u, p, t) -> SMatrix{size(cov)..., eltype(cov)}(cov)
+                noise_prototype = zeros(size(cov))
+            end
+        end
+    end
+    return g, noise_prototype
+end
+
 ###########################################################################################
 # API - obtaining information from the system
 ###########################################################################################
 
 SciMLBase.isinplace(::CoupledSDEs{IIP}) where {IIP} = IIP
-StateSpaceSets.dimension(::CoupledSDEs{IIP,D}) where {IIP,D} = D
+StateSpaceSets.dimension(::CoupledSDEs{IIP, D}) where {IIP, D} = D
 DynamicalSystemsBase.current_state(ds::CoupledSDEs) = current_state(ds.integ)
 DynamicalSystemsBase.isdeterministic(ds::CoupledSDEs) = false
 
