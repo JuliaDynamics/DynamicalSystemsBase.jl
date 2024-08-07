@@ -14,7 +14,11 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
         @test current_time(ds) == 0
         @test initial_time(ds) == 0
         @test isinplace(ds) == iip
-        @test isdeterministic(ds) == true
+        if ds isa DynamicalSystemsBase.CoupledSDEs
+            @test isdeterministic(ds) == false
+        else
+            @test isdeterministic(ds) == true
+        end
         @test isdiscretetime(ds) == idt
         @test ds(0) == u0
     end
@@ -138,4 +142,3 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
     end
 
 end
-

@@ -1,9 +1,13 @@
 cd(@__DIR__)
 
 using DynamicalSystemsBase
+using StochasticDiffEq, DiffEqNoiseProcess # to enable extention
+# We need this because Documenter doesn't know where to get the docstring from otherwise
+StochasticSystemsBase = Base.get_extension(DynamicalSystemsBase, :StochasticSystemsBase)
 
 pages = [
     "index.md",
+    "CoupledSDEs.md",
 ]
 using DynamicalSystemsBase.SciMLBase
 
@@ -15,5 +19,5 @@ Downloads.download(
 include("build_docs_with_style.jl")
 
 build_docs_with_style(pages,
-    DynamicalSystemsBase, SciMLBase, StateSpaceSets;
+    DynamicalSystemsBase, SciMLBase, StateSpaceSets, StochasticSystemsBase;
 )
