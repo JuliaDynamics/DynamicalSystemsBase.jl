@@ -151,32 +151,6 @@ function DynamicalSystemsBase.additional_details(ds::CoupledSDEs)
     ]
 end
 
-"""
-https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#The-uniform-scaling-operator
-"""
-function construct_diffusion_function(g, cov, noise_prototype, D, IIP)
-    if isnothing(g) # diagonal additive noise
-        cov = isnothing(cov) ? LinearAlgebra.I(D) : cov
-        if IIP
-            if isdiag(cov)
-                g = (du, u, p, t) -> du .= diag(cov)
-            else
-                g = (du, u, p, t) -> du .= cov
-                noise_prototype = zeros(size(cov))
-                # ^ we could make this sparse to make it more performant
-            end
-        else
-            if isdiag(cov)
-                g = (u, p, t) -> SVector{length(diag(cov)), eltype(cov)}(diag(cov))
-            else
-                g = (u, p, t) -> SMatrix{size(cov)..., eltype(cov)}(cov)
-                noise_prototype = zeros(size(cov))
-            end
-        end
-    end
-    return g, noise_prototype
-end
-
 ###########################################################################################
 # API - obtaining information from the system
 ###########################################################################################
@@ -216,3 +190,60 @@ function DynamicalSystemsBase.set_parameter!(ds::CoupledSDEs, args...)
 end
 
 DynamicalSystemsBase.referrenced_sciml_prob(ds::CoupledSDEs) = ds.integ.sol.prob
+
+function covariance(ds::CoupledSDEs)
+    A = diffusion_matrix(ds)
+    A * A'
+end
+
+function diffusion_matrix(ds::CoupledSDEs{IIP, D}) where {IIP, D}
+    if ds.noise_type[:invertible]
+        diffusion = diffusion_function(ds)
+        A = diffusion(zeros(D), current_parameters(ds), 0.0)
+    else
+        A = nothing
+    end
+    return A
+end
+
+###########################################################################################
+# Utilities
+###########################################################################################
+
+"""
+compute diffusion matrix given the covariance matrix of noise matrix.
+"""
+function diffusion_matrix(Γ::AbstractMatrix)
+    U, S, V = LinearAlgebra.svd(Γ) # A ≈ U * Diagonal(S) * V'
+    A = U * LinearAlgebra.Diagonal(sqrt.(S))
+    return A
+end
+
+"""
+https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#The-uniform-scaling-operator
+"""
+function construct_diffusion_function(g, cov, noise_prototype, D, IIP)
+    if isnothing(g) # diagonal additive noise
+        cov = isnothing(cov) ? LinearAlgebra.I(D) : cov
+        size(cov)[1] != D &&
+            throw(ArgumentError("covariance matrix must be of size $((D, D))"))
+        A = diffusion_matrix(cov)
+        if IIP
+            if isdiag(cov)
+                g = (du, u, p, t) -> du .= diag(A)
+            else
+                g = (du, u, p, t) -> du .= A
+                noise_prototype = zeros(size(A))
+                # ^ we could make this sparse to make it more performant
+            end
+        else
+            if isdiag(cov)
+                g = (u, p, t) -> SVector{length(diag(A)), eltype(A)}(diag(A))
+            else
+                g = (u, p, t) -> SMatrix{size(A)..., eltype(A)}(A)
+                noise_prototype = zeros(size(A))
+            end
+        end
+    end
+    return g, noise_prototype
+end

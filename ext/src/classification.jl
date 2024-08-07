@@ -18,6 +18,21 @@ function is_linear(f, x, y, c)
     return check1 && check2
 end
 
+function diffusion_function(g, IIP, noise_prototype)
+    function diffusion(u, p, t)
+        if IIP
+            du = deepcopy(isnothing(noise_prototype) ? u : noise_prototype)
+            g(du, u, p, t)
+            return du
+        else
+            return g(u, p, t)
+        end
+    end
+end
+function diffusion_function(ds::CoupledSDEs{IIP}) where {IIP}
+    diffusion_function(ds.integ.g, IIP, referrenced_sciml_prob(ds).noise_rate_prototype)
+end
+
 """
 We classify the noise type of the CoupledSDEs based on the properties given by the user.
 In doing this we also determine the covariance matrix
@@ -39,15 +54,7 @@ function find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
     islinear = false
     isinvertible = false
 
-    function diffusion(u, p, t)
-        if IIP
-            du = deepcopy(isnothing(noise_prototype) ? u : noise_prototype)
-            g(du, u, p, t)
-            return du
-        else
-            return g(u, p, t)
-        end
-    end
+    diffusion = diffusion_function(g, IIP, noise_prototype)
 
     if isnothing(g)
         isadditive = true
