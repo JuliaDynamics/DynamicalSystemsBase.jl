@@ -10,7 +10,11 @@ function is_time_independent(g, u, p, t0)
     val = map(t -> g(u, p, t), trange)
     length(unique(val)) == 1
 end
-is_invertible(x) = issuccess(lu(x, check = false))
+function is_invertible(x; tol=1e-10)
+    F = lu(x, check = false)
+    det = abs(prod(diag(F.U)))
+    return det > tol
+end
 
 function is_linear(f, x, y, c)
     check1 = f(x + y) == f(x) + f(y)
@@ -82,7 +86,8 @@ function find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
 
         if time_independent && state_independent
             if !isnothing(noise_size) && isequal(noise_size...)
-                covariance = diffusion(zeros(D), p, 0.0)
+                A = diffusion(zeros(D), p, 0.0)
+                covariance = A * A'
                 isinvertible = is_invertible(covariance)
             elseif !isnothing(noise_size) && !isequal(noise_size...)
                 isinvertible = false
