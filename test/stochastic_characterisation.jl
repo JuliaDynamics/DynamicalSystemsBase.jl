@@ -6,14 +6,14 @@ f!(du, u, p, t) = du .= 1.01u
 @testset "Additive" begin
     # Additive Wiener noise
     W = WienerProcess(0.0, zeros(2), zeros(2))
-    addit_autom_inv = CoupledSDEs(f!, zeros(2); noise = W)
+    addit_autom_inv = CoupledSDEs(f!, zeros(2); noise_process = W)
     types = addit_autom_inv.noise_type
     @test values(types) == (true, true, true, true)
     @test CoupledSDEs(sciml_prob(addit_autom_inv)).noise_type == types
 
     # Scalar Wiener noise
     W = WienerProcess(0.0, 0.0, 0.0)
-    scalar_a = CoupledSDEs(f!, zeros(2); noise = W)
+    scalar_a = CoupledSDEs(f!, zeros(2); noise_process = W)
     types = scalar_a.noise_type
     @test values(types) == (true, true, true, true)
     @test CoupledSDEs(sciml_prob(scalar_a)).noise_type == types

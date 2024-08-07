@@ -7,7 +7,7 @@ using DynamicalSystemsBase: DynamicalSystemsBase, SciMLBase, correct_state, Coup
                             additional_details, referrenced_sciml_prob, DEFAULT_DIFFEQ,
                             SVector, SMatrix, current_parameters
 using SciMLBase: SDEProblem, AbstractSDEIntegrator, __init, SDEFunction, step!
-using StochasticDiffEq: SOSRA
+using StochasticDiffEq: LambaEM
 using LinearAlgebra
 
 include("src/CoupledSDEs.jl")

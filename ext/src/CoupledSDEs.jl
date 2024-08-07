@@ -4,7 +4,8 @@ using LinearAlgebra: LinearAlgebra
 # DiffEq options
 ###########################################################################################
 # SOSRI is only applicable for diagonal noise
-const DEFAULT_SDE_SOLVER = SOSRA() # default sciml solver for adapitve non-diagonal noise
+# SOSRA can only be used with CorrelatedWienerProcess
+const DEFAULT_SDE_SOLVER = LambaEM()
 const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol = 1e-2, reltol = 1e-2) # default sciml tol
 const DEFAULT_STOCH_DIFFEQ = (alg = DEFAULT_SDE_SOLVER, DEFAULT_STOCH_DIFFEQ_KWARGS...)
 
@@ -27,11 +28,12 @@ function DynamicalSystemsBase.CoupledSDEs(
         u0,
         p = SciMLBase.NullParameters();
         g = nothing,
+        noise_strength = 1.0,
         covariance = nothing,
         t0 = 0.0,
         diffeq = DEFAULT_STOCH_DIFFEQ,
         noise_prototype = nothing,
-        noise = nothing,
+        noise_process = nothing,
         seed = UInt64(0)
 )
     IIP = isinplace(f, 4) # from SciMLBase
@@ -39,9 +41,9 @@ function DynamicalSystemsBase.CoupledSDEs(
         @assert IIP==isinplace(g, 4) "f and g must both be in-place or out-of-place"
     end
 
-    noise_type, cov = find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
+    noise_type, cov = find_noise_type(g, u0, p, t0, noise_process, covariance, noise_prototype, IIP)
     g, noise_prototype = construct_diffusion_function(
-        g, cov, noise_prototype, length(u0), IIP)
+        g, cov, noise_prototype, noise_strength, length(u0), IIP)
 
     s = correct_state(Val{IIP}(), u0)
     T = eltype(s)
@@ -52,7 +54,7 @@ function DynamicalSystemsBase.CoupledSDEs(
         (T(t0), T(Inf)),
         p;
         noise_rate_prototype = noise_prototype,
-        noise = noise,
+        noise = noise_process,
         seed = seed
     )
     return CoupledSDEs(prob, diffeq, noise_type)
@@ -109,10 +111,11 @@ function DynamicalSystemsBase.CoupledSDEs(
         ds::CoupledODEs,
         p; # the parameter is likely changed as the diffusion function g is added.
         g = nothing,
+        noise_strength = 1.0,
         covariance = nothing,
         diffeq = DEFAULT_STOCH_DIFFEQ,
         noise_prototype = nothing,
-        noise = nothing,
+        noise_process = nothing,
         seed = UInt64(0)
 )
     return CoupledSDEs(
@@ -120,10 +123,11 @@ function DynamicalSystemsBase.CoupledSDEs(
         current_state(ds),
         p;
         g = g,
+        noise_strength = noise_strength,
         covariance = covariance,
         diffeq = diffeq,
         noise_prototype = noise_prototype,
-        noise = noise,
+        noise_process = noise_process,
         seed = seed
     )
 end
@@ -222,7 +226,7 @@ end
 """
 https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#The-uniform-scaling-operator
 """
-function construct_diffusion_function(g, cov, noise_prototype, D, IIP)
+function construct_diffusion_function(g, cov, noise_prototype, σ, D, IIP)
     if isnothing(g) # diagonal additive noise
         cov = isnothing(cov) ? LinearAlgebra.I(D) : cov
         size(cov)[1] != D &&
@@ -230,17 +234,17 @@ function construct_diffusion_function(g, cov, noise_prototype, D, IIP)
         A = diffusion_matrix(cov)
         if IIP
             if isdiag(cov)
-                g = (du, u, p, t) -> du .= diag(A)
+                g = (du, u, p, t) -> du .= σ .* diag(A)
             else
-                g = (du, u, p, t) -> du .= A
+                g = (du, u, p, t) -> du .= σ .* A
                 noise_prototype = zeros(size(A))
                 # ^ we could make this sparse to make it more performant
             end
         else
             if isdiag(cov)
-                g = (u, p, t) -> SVector{length(diag(A)), eltype(A)}(diag(A))
+                g = (u, p, t) -> SVector{length(diag(A)), eltype(A)}(diag(σ .* A))
             else
-                g = (u, p, t) -> SMatrix{size(A)..., eltype(A)}(A)
+                g = (u, p, t) -> SMatrix{size(A)..., eltype(A)}(σ .* A)
                 noise_prototype = zeros(size(A))
             end
         end

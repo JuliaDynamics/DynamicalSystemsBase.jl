@@ -35,7 +35,7 @@ which is equivalent to
 ```@example type
 t0 = 0.0; W0 = zeros(2);
 W = WienerProcess(t0, W0, 0.0)
-sde = CoupledSDEs(f!, zeros(2); noise=W);
+sde = CoupledSDEs(f!, zeros(2); noise_process=W);
 ```
 We defined a vector of random numbers `dW`, whose size matches the output of `g`, with the noise applied element-wise, i.e., `g.*dW`. Specifically, `dW` is a vector of Gaussian noise processes whose size matches the output of `g`. The noise is applied element-wise, i.e., `g.*dW`. By default, the noise processes are uncorrelated, meaning the covariance matrix is diagonal. This type of noise is referred to as diagonal. The vector `dW` is by default zero mean white gaussian noise $\mathcal{N}(0, \text{d}t)$ where the variance is the timestep $\text{d}t$ unit variance (Wiener Process). We can sample a trajectory from this system using the `trajectory` also used for the deterministic systems:
 ```@example type
@@ -62,7 +62,7 @@ Scalar noise is where a single random variable is applied to all dependent varia
 ```@example type
 t0 = 0.0; W0 = 0.0;
 noise = WienerProcess(t0, W0, 0.0)
-sde = CoupledSDEs(f!, rand(2)/10; noise=noise)
+sde = CoupledSDEs(f!, rand(2)/10; noise_process=noise)
 
 tr = trajectory(sde, 1.0)
 plot_trajectory(tr...)
