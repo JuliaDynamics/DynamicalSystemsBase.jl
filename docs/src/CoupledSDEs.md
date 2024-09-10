@@ -48,7 +48,8 @@ Correlated noise is where the random number generated in `dW` are correlated. Th
 ```@example type
 ρ = 0.3
 Σ = [1 ρ; ρ 1]
-sde = CoupledSDEs(f!, zeros(2); covariance=Σ)
+diffeq = (alg = LambaEM(), dt=0.1)
+sde = CoupledSDEs(f!, zeros(2); covariance=Σ, diffeq=diffeq)
 ```
 Alternativly, we can parametrise the covariance matrix by defining the diffusion function $g$ ourselves:
 ```@example type
@@ -97,7 +98,7 @@ function g!(du, u, p, t)
   du[2,2] = σ*u[2]
     return nothing
 end
-diffeq = (alg = RKMilCommute(), reltol = 1e-3, abstol = 1e-3)
+diffeq = (alg = RKMilCommute(), reltol = 1e-3, abstol = 1e-3, dt=0.1)
 sde = CoupledSDEs(f!, rand(2)./10; g=g!, noise_prototype = zeros(2, 2), diffeq = diffeq)
 ```
 

@@ -1,11 +1,9 @@
 using DynamicalSystemsBase, Test
 using OrdinaryDiffEq: Tsit5
-using StochasticDiffEq: SDEProblem, SRA, LambaEM, CorrelatedWienerProcess
+using StochasticDiffEq: SDEProblem, SRA, SOSRA, LambaEM, CorrelatedWienerProcess
 
 StochasticSystemsBase = Base.get_extension(DynamicalSystemsBase, :StochasticSystemsBase)
 diffusion_matrix = StochasticSystemsBase.diffusion_matrix
-
-include("test_system_function.jl")
 
 # Creation of lorenz
 @inbounds function lorenz_rule(u, p, t)
@@ -48,8 +46,9 @@ lor_SRA = CoupledSDEs(lorenz_rule, u0, p0;
     diffeq = (alg = SRA(), abstol = 1e-2, reltol = 1e-2)
 )
 
-lor_oop_cov = CoupledSDEs(lorenz_rule, u0, p0; covariance = Γ)
-lor_iip_cov = CoupledSDEs(lorenz_rule_iip, u0, p0; covariance = Γ)
+diffeq_cov= (alg = LambaEM(), abstol = 1e-2, reltol = 1e-2, dt=0.1)
+lor_oop_cov = CoupledSDEs(lorenz_rule, u0, p0; covariance = Γ, diffeq=diffeq_cov)
+lor_iip_cov = CoupledSDEs(lorenz_rule_iip, u0, p0; covariance = Γ, diffeq=diffeq_cov)
 
 for (ds, iip) in zip(
     (lor_oop, lor_iip, lor_SRA, lor_oop_cov, lor_iip_cov), (false, true, false, false, true))
@@ -62,7 +61,7 @@ end
 
 @testset "correct SDE propagation" begin
     lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0)
-    @test lorenz_oop.integ.alg isa LambaEM
+    @test lorenz_oop.integ.alg isa SOSRA
 
     lorenz_SRA = CoupledSDEs(lorenz_rule, u0, p0;
         diffeq = (alg = SRA(), abstol = 1e-3, reltol = 1e-3, verbose = false)
@@ -88,7 +87,7 @@ end
     # and back
     sde = CoupledSDEs(ds, p0)
     @test dynamic_rule(sde) == lorenz_rule
-    @test sde.integ.alg isa LambaEM
+    @test sde.integ.alg isa SOSRA
 end
 
 @testset "interface" begin
@@ -126,7 +125,7 @@ end
     @testset "diffusion_matrix" begin
         Γ = [1.0 0.3 0.0; 0.3 1 0.5; 0.0 0.5 1.0]
         A = diffusion_matrix(Γ)
-        lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0, covariance = Γ)
+        lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0, covariance = Γ, diffeq=diffeq_cov)
         @test A ≈ diffusion_matrix(lorenz_oop)
         @test Γ ≈ A * A'
     end
@@ -148,9 +147,10 @@ end
     @testset "approximate cov" begin
         Γ = [1.0 0.3; 0.3 1]
         f(u, p, t) = [0.0, 0.0]
-        ds = CoupledSDEs(f, zeros(2), (); covariance = Γ)
+        ds = CoupledSDEs(f, zeros(2), (); covariance = Γ, diffeq=diffeq_cov)
         tr, _ = trajectory(ds, 1_000)
         approx = cov(diff(reduce(hcat, tr.data), dims=2), dims=2)
         @test approx ≈ Γ atol=1e-1 broken = true
+        # I think I understand something wromg here
     end
 end

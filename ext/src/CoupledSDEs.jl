@@ -3,10 +3,10 @@ using LinearAlgebra: LinearAlgebra
 ###########################################################################################
 # DiffEq options
 ###########################################################################################
-# SOSRI is only applicable for diagonal noise
-# SOSRA can only be used with CorrelatedWienerProcess
-const DEFAULT_SDE_SOLVER = LambaEM()
-const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol = 1e-2, reltol = 1e-2) # default sciml tol
+# SOSRA is only applicable for additive  noise and must be adaptive
+ # default sciml tolerance is 1e-2
+const DEFAULT_SDE_SOLVER = SOSRA()
+const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol = 1e-2, reltol = 1e-2, dt = 0.1)
 const DEFAULT_STOCH_DIFFEQ = (alg = DEFAULT_SDE_SOLVER, DEFAULT_STOCH_DIFFEQ_KWARGS...)
 
 # Function from user `@xlxs4`, see
