@@ -1,4 +1,4 @@
-using OrdinaryDiffEq: Tsit5
+using OrdinaryDiffEqTsit5: Tsit5
 using SciMLBase: ODEProblem, DEIntegrator, u_modified!, __init
 export CoupledODEs, ContinuousDynamicalSystem
 
@@ -46,7 +46,8 @@ When initializing a `CoupledODEs`, you can specify the solver that will integrat
 For example you could use `diffeq = (abstol = 1e-9, reltol = 1e-9)`.
 If you want to specify a solver, do so by using the keyword `alg`, e.g.:
 `diffeq = (alg = Tsit5(), reltol = 1e-6)`. This requires you to have been first
-`using OrdinaryDiffEq` to access the solvers. The default `diffeq` is:
+`using OrdinaryDiffEq` (or smaller library package such as `OrdinaryDiffEqVerner`)
+to access the solvers. The default `diffeq` is:
 
 $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 
@@ -55,14 +56,13 @@ $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 
 The convenience constructors `CoupledODEs(prob::ODEProblem [, diffeq])` and
 `CoupledODEs(ds::CoupledODEs [, diffeq])` are also available.
+Use `ODEProblem(ds::CoupledODEs, tspan = (t0, Inf))` to obtain the problem.
+
 To integrate with ModelingToolkit.jl, the dynamical system **must** be created
 via the `ODEProblem` (which itself is created via ModelingToolkit.jl), see
 the Tutorial for an example.
 
 Dev note: `CoupledODEs` is a light wrapper of `ODEIntegrator` from DifferentialEquations.jl.
-The integrator is available as the field `integ`, and the `ODEProblem` is `integ.sol.prob`.
-The convenience syntax `ODEProblem(ds::CoupledODEs, tspan = (t0, Inf))` is available
-to extract the problem.
 """
 struct CoupledODEs{IIP, D, I, P} <: ContinuousTimeDynamicalSystem
     integ::I
