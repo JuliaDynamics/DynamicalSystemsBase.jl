@@ -1,7 +1,7 @@
 # v3.10.0
 
 - OrdinaryDiffEq.jl dependency reduced to OrdinaryDiffEqTsit5.jl.
-- Updated to StateSpaceSets.jl: now the keyword `container` can be given to
+- Updated to StateSpaceSets.jl v2: now the keyword `container` can be given to
   the `trajectory` function.
 
 # v3.9.0
