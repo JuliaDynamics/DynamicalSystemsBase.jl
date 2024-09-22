@@ -125,7 +125,7 @@ function PoincareMap(
         v, current_time(ds), 0, dummy, diffidxs
     )
     step!(pmap)
-    pmap.t[] = 0 # first step is 0
+    pmap.t = 0 # first step is 0
     return pmap
 end
 
