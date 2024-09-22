@@ -84,7 +84,7 @@ are the same as in [`PoincareMap`](@ref).
 function poincaresos(A::AbstractStateSpaceSet, plane;
         direction = -1, warning = true, save_idxs = 1:dimension(A)
     )
-    check_hyperplane_match(plane, size(A, 2))
+    check_hyperplane_match(plane, dimension(A))
     i = typeof(save_idxs) <: Int ? save_idxs : SVector{length(save_idxs), Int}(save_idxs...)
     planecrossing = PlaneCrossing(plane, direction > 0)
     data = poincaresos(A, planecrossing, i)
