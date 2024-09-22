@@ -19,6 +19,8 @@ A discrete time dynamical system that produces iterations over the Poincaré map
 of the given continuous time `ds`. This map is defined as the sequence of points on the
 Poincaré surface of section, which is defined by the `plane` argument.
 
+Iterating `pmap` also mutates `ds` which is referrenced in `pmap`.
+
 See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref).
 
 ## Keyword arguments
@@ -67,8 +69,8 @@ and root finding from Roots.jl, to create a high accuracy estimate of the sectio
    surface of section. [`initial_time`](@ref) is always `0` and [`current_time`](@ref)
    is current iteration number.
 3. A new function [`current_crossing_time`](@ref) returns the real time corresponding
-   to the latest crossing of the hyperplane, which is what the [`current_state(ds)`](@ref)
-   corresponds to as well.
+   to the latest crossing of the hyperplane. The corresponding state on the hyperplane
+   is `current_state(pmap)` as expected.
 4. For the special case of `plane` being a `Tuple{Int, <:Real}`, a special `reinit!` method
    is allowed with input state of length `D-1` instead of `D`, i.e., a reduced state already
    on the hyperplane that is then converted into the `D` dimensional state.
@@ -95,7 +97,7 @@ mutable struct PoincareMap{I<:ContinuousTimeDynamicalSystem, F, P, R, V} <: Disc
 	rootkw::R
 	state_on_plane::V
     tcross::Float64
-	t::Base.RefValue{Int}
+	t::Int
     # These two fields are for setting the state of the pmap from the plane
     # (i.e., given a D-1 dimensional state, create the full D-dimensional state)
     dummy::Vector{Float64}
@@ -120,7 +122,7 @@ function PoincareMap(
     diffidxs = _indices_on_poincare_plane(plane, D)
 	pmap = PoincareMap(
         ds, plane_distance, planecrossing, Tmax, rootkw,
-        v, current_time(ds), Ref(0), dummy, diffidxs
+        v, current_time(ds), 0, dummy, diffidxs
     )
     step!(pmap)
     pmap.t[] = 0 # first step is 0
@@ -143,7 +145,7 @@ for f in (:initial_state, :current_parameters, :initial_parameters, :referrenced
     @eval $(f)(pmap::PoincareMap, args...) = $(f)(pmap.ds, args...)
 end
 initial_time(pmap::PoincareMap) = 0
-current_time(pmap::PoincareMap) = pmap.t[]
+current_time(pmap::PoincareMap) = pmap.t
 current_state(pmap::PoincareMap) = pmap.state_on_plane
 
 """
@@ -160,7 +162,7 @@ function SciMLBase.step!(pmap::PoincareMap)
 	else
 		pmap.state_on_plane = u # this is always a brand new vector
         pmap.tcross = t
-        pmap.t[] = pmap.t[] + 1
+        pmap.t += 1
 		return pmap
 	end
 end
@@ -179,7 +181,7 @@ function SciMLBase.reinit!(pmap::PoincareMap, u0::AbstractArray = initial_state(
     end
     reinit!(pmap.ds, u; t0, p)
     step!(pmap) # always step once to reach the PSOS
-    pmap.t[] = 0 # first step is 0
+    pmap.t = 0 # first step is 0
     pmap
 end
 
