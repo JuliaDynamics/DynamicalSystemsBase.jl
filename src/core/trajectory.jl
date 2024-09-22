@@ -4,18 +4,19 @@ export trajectory
     trajectory(ds::DynamicalSystem, T [, u0]; kwargs...) → X, t
 
 Evolve `ds` for a total time of `T` and return its trajectory `X`, sampled at equal time
-intervals, and corresponding time vector.
+intervals, and corresponding time vector. `X` is a `StateSpaceSet`.
 Optionally provide a starting state `u0` which is `current_state(ds)` by default.
 
 The returned time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)`.
 
-If time evolution diverged before `T`, the remaining of the trajectory is set
-to the last valid point.
+If time evolution diverged, or in general failed, before `T`,
+the remaining of the trajectory is set to the last valid point.
 
 `trajectory` is a very simple function provided for convenience.
 For continuous time systems, it doesn't play well with callbacks,
 use `DifferentialEquations.solve` if you want a trajectory/timeseries
-that works with callbacks.
+that works with callbacks, or in general you want more flexibility in the generated
+trajectory (but remember to convert the output of `solve` to a `StateSpaceSet`).
 
 ## Keyword arguments
 
@@ -24,6 +25,8 @@ that works with callbacks.
   have access to unicode, the keyword `Dt` can be used instead.
 * `Ttr = 0`: Transient time to evolve the initial state before starting saving states.
 * `t0 = initial_time(ds)`: Starting time.
+* `container = SVector`: Type of vector that will represent the state space points
+  that will be included in the `StateSpaceSet` output. See `StateSpaceSet` for valid options.
 * `save_idxs::AbstractVector`: Which variables to output in `X`. It can be
   any type of index that can be given to [`observe_state`](@ref).
   Defaults to `1:dimension(ds)` (all dynamic variables).
@@ -43,7 +46,8 @@ function trajectory(ds::DynamicalSystem, T, u0 = initial_state(ds);
 end
 
 function trajectory_discrete(ds, T;
-        Dt::Integer = 1, Δt::Integer = Dt, Ttr::Integer = 0, accessor = nothing
+        Dt::Integer = 1, Δt::Integer = Dt, Ttr::Integer = 0, accessor = nothing,
+        kw... # container keyword
     )
     ET = eltype(current_state(ds))
     t0 = current_time(ds)
@@ -65,10 +69,10 @@ function trajectory_discrete(ds, T;
             break
         end
     end
-    return StateSpaceSet(data), tvec
+    return StateSpaceSet(data; kw...), tvec
 end
 
-function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = nothing)
+function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = nothing, kw...)
     D = dimension(ds)
     t0 = current_time(ds)
     tvec = (t0+Ttr):Δt:(t0+T+Ttr)
@@ -92,7 +96,7 @@ function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = 
         end
 
     end
-    return StateSpaceSet(sol), tvec
+    return StateSpaceSet(sol; kw...), tvec
 end
 
 # Util functions for `trajectory` to make indexing static vectors
