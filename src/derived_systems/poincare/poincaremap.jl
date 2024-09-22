@@ -168,10 +168,9 @@ function SciMLBase.step!(pmap::PoincareMap)
 end
 SciMLBase.step!(pmap::PoincareMap, n::Int, s = true) = (for _ ∈ 1:n; step!(pmap); end; pmap)
 
-function SciMLBase.reinit!(pmap::PoincareMap, u0::Union{AbstractArray, Nothing} = initial_state(pmap);
+function SciMLBase.reinit!(pmap::PoincareMap, u0::AbstractArray = initial_state(pmap);
         t0 = initial_time(pmap), p = current_parameters(pmap)
     )
-    isnothing(u0) && return pmap
     if length(u0) == dimension(pmap)
 	    u = u0
     elseif length(u0) == dimension(pmap) - 1
