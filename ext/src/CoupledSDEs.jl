@@ -4,10 +4,10 @@ using LinearAlgebra: LinearAlgebra
 # DiffEq options
 ###########################################################################################
 # SOSRA is only applicable for additive  noise and must be adaptive
- # default sciml tolerance is 1e-2
+# default sciml tolerance is 1e-2
 const DEFAULT_SDE_SOLVER = SOSRA()
-const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol = 1e-2, reltol = 1e-2, dt = 0.1)
-const DEFAULT_STOCH_DIFFEQ = (alg = DEFAULT_SDE_SOLVER, DEFAULT_STOCH_DIFFEQ_KWARGS...)
+const DEFAULT_STOCH_DIFFEQ_KWARGS = (abstol=1e-2, reltol=1e-2, dt=0.1)
+const DEFAULT_STOCH_DIFFEQ = (alg=DEFAULT_SDE_SOLVER, DEFAULT_STOCH_DIFFEQ_KWARGS...)
 
 # Function from user `@xlxs4`, see
 # https://github.com/JuliaDynamics/jl/pull/153
@@ -24,21 +24,21 @@ end
 ###########################################################################################
 
 function DynamicalSystemsBase.CoupledSDEs(
-        f,
-        u0,
-        p = SciMLBase.NullParameters();
-        g = nothing,
-        noise_strength = 1.0,
-        covariance = nothing,
-        t0 = 0.0,
-        diffeq = DEFAULT_STOCH_DIFFEQ,
-        noise_prototype = nothing,
-        noise_process = nothing,
-        seed = UInt64(0)
+    f,
+    u0,
+    p=SciMLBase.NullParameters();
+    g=nothing,
+    noise_strength=1.0,
+    covariance=nothing,
+    t0=0.0,
+    diffeq=DEFAULT_STOCH_DIFFEQ,
+    noise_prototype=nothing,
+    noise_process=nothing,
+    seed=UInt64(0)
 )
     IIP = isinplace(f, 4) # from SciMLBase
     if !isnothing(g)
-        @assert IIP==isinplace(g, 4) "f and g must both be in-place or out-of-place"
+        @assert IIP == isinplace(g, 4) "f and g must both be in-place or out-of-place"
     end
 
     noise_type, cov = find_noise_type(g, u0, p, t0, noise_process, covariance, noise_prototype, IIP)
@@ -53,21 +53,21 @@ function DynamicalSystemsBase.CoupledSDEs(
         s,
         (T(t0), T(Inf)),
         p;
-        noise_rate_prototype = noise_prototype,
-        noise = noise_process,
-        seed = seed
+        noise_rate_prototype=noise_prototype,
+        noise=noise_process,
+        seed=seed
     )
     return CoupledSDEs(prob, diffeq, noise_type)
 end
 
 function DynamicalSystemsBase.CoupledSDEs(
-        prob::SDEProblem, diffeq = DEFAULT_STOCH_DIFFEQ, noise_type = nothing; special_kwargs...
+    prob::SDEProblem, diffeq=DEFAULT_STOCH_DIFFEQ, noise_type=nothing; special_kwargs...
 )
     if haskey(special_kwargs, :diffeq)
         throw(
             ArgumentError(
-            "`diffeq` is given as positional argument when an ODEProblem is provided."
-        ),
+                "`diffeq` is given as positional argument when an SDEProblem is provided."
+            ),
         )
     end
     IIP = isinplace(prob) # from SciMLBase
@@ -76,7 +76,7 @@ function DynamicalSystemsBase.CoupledSDEs(
     if prob.tspan === (nothing, nothing)
         # If the problem was made via MTK, it is possible to not have a default timespan.
         U = eltype(prob.u0)
-        prob = SciMLBase.remake(prob; tspan = (U(0), U(Inf)))
+        prob = SciMLBase.remake(prob; tspan=(U(0), U(Inf)))
     end
     if isnothing(noise_type)
         noise_type, _ = find_noise_type(prob, IIP)
@@ -88,14 +88,14 @@ function DynamicalSystemsBase.CoupledSDEs(
         solver;
         remaining...,
         # Integrators are used exclusively iteratively. There is no reason to save anything.
-        save_start = false,
-        save_end = false,
-        save_everystep = false,
+        save_start=false,
+        save_end=false,
+        save_everystep=false,
         # DynamicalSystems.jl operates on integrators and `step!` exclusively,
         # so there is no reason to limit the maximum time evolution
-        maxiters = Inf
+        maxiters=Inf
     )
-    return CoupledSDEs{IIP, D, typeof(integ), P}(
+    return CoupledSDEs{IIP,D,typeof(integ),P}(
         integ, deepcopy(prob.p), diffeq, noise_type
     )
 end
@@ -108,27 +108,27 @@ Converts a [`CoupledODEs`
 system into a [`CoupledSDEs`](@ref).
 """
 function DynamicalSystemsBase.CoupledSDEs(
-        ds::CoupledODEs,
-        p; # the parameter is likely changed as the diffusion function g is added.
-        g = nothing,
-        noise_strength = 1.0,
-        covariance = nothing,
-        diffeq = DEFAULT_STOCH_DIFFEQ,
-        noise_prototype = nothing,
-        noise_process = nothing,
-        seed = UInt64(0)
+    ds::CoupledODEs,
+    p; # the parameter is likely changed as the diffusion function g is added.
+    g=nothing,
+    noise_strength=1.0,
+    covariance=nothing,
+    diffeq=DEFAULT_STOCH_DIFFEQ,
+    noise_prototype=nothing,
+    noise_process=nothing,
+    seed=UInt64(0)
 )
     return CoupledSDEs(
         dynamic_rule(ds),
         current_state(ds),
         p;
-        g = g,
-        noise_strength = noise_strength,
-        covariance = covariance,
-        diffeq = diffeq,
-        noise_prototype = noise_prototype,
-        noise_process = noise_process,
-        seed = seed
+        g=g,
+        noise_strength=noise_strength,
+        covariance=covariance,
+        diffeq=diffeq,
+        noise_prototype=noise_prototype,
+        noise_process=noise_process,
+        seed=seed
     )
 end
 
@@ -138,10 +138,10 @@ end
 Converts a [`CoupledSDEs`](@ref) into [`CoupledODEs`](@ref).
 """
 function DynamicalSystemsBase.CoupledODEs(
-        sys::CoupledSDEs; diffeq = DEFAULT_DIFFEQ, t0 = 0.0)
+    sys::CoupledSDEs; diffeq=DEFAULT_DIFFEQ, t0=0.0)
     return CoupledODEs(
         dynamic_rule(sys), SVector{length(sys.integ.u)}(sys.integ.u), sys.p0;
-        diffeq = diffeq, t0 = t0
+        diffeq=diffeq, t0=t0
     )
 end
 
@@ -160,7 +160,7 @@ end
 ###########################################################################################
 
 SciMLBase.isinplace(::CoupledSDEs{IIP}) where {IIP} = IIP
-StateSpaceSets.dimension(::CoupledSDEs{IIP, D}) where {IIP, D} = D
+StateSpaceSets.dimension(::CoupledSDEs{IIP,D}) where {IIP,D} = D
 DynamicalSystemsBase.current_state(ds::CoupledSDEs) = current_state(ds.integ)
 DynamicalSystemsBase.isdeterministic(ds::CoupledSDEs) = false
 
@@ -174,7 +174,6 @@ function DynamicalSystemsBase.dynamic_rule(ds::CoupledSDEs)
     return f
 end
 
-# so that `ds` is printed
 function DynamicalSystemsBase.set_state!(ds::CoupledSDEs, u::AbstractArray)
     (set_state!(ds.integ, u); ds)
 end
@@ -200,7 +199,7 @@ function covariance(ds::CoupledSDEs)
     A * A'
 end
 
-function diffusion_matrix(ds::CoupledSDEs{IIP, D}) where {IIP, D}
+function diffusion_matrix(ds::CoupledSDEs{IIP,D}) where {IIP,D}
     if ds.noise_type[:invertible]
         diffusion = diffusion_function(ds)
         A = diffusion(zeros(D), current_parameters(ds), 0.0)
@@ -242,9 +241,9 @@ function construct_diffusion_function(g, cov, noise_prototype, σ, D, IIP)
             end
         else
             if isdiag(cov)
-                g = (u, p, t) -> SVector{length(diag(A)), eltype(A)}(diag(σ .* A))
+                g = (u, p, t) -> SVector{length(diag(A)),eltype(A)}(diag(σ .* A))
             else
-                g = (u, p, t) -> SMatrix{size(A)..., eltype(A)}(σ .* A)
+                g = (u, p, t) -> SMatrix{size(A)...,eltype(A)}(σ .* A)
                 noise_prototype = zeros(size(A))
             end
         end

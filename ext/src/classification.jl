@@ -11,7 +11,7 @@ function is_time_independent(g, u, p, t0)
     length(unique(val)) == 1
 end
 function is_invertible(x; tol=1e-10)
-    F = lu(x, check = false)
+    F = lu(x, check=false)
     det = abs(prod(diag(F.U)))
     return det > tol
 end
@@ -38,7 +38,7 @@ function diffusion_function(ds::CoupledSDEs{IIP}) where {IIP}
 end
 
 """
-We classify the noise type of the CoupledSDEs based on the properties given by the user.
+We classify the noise type of the CoupledSDEs based on the system given by the user.
 In doing this we also determine the covariance matrix
 
 """
@@ -101,8 +101,8 @@ function find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
         end
     end
 
-    noise_type = (additive = isadditive, autonomous = isautonomous,
-        linear = islinear, invertible = isinvertible)
+    noise_type = (additive=isadditive, autonomous=isautonomous,
+        linear=islinear, invertible=isinvertible)
     return noise_type, covariance
 end
 
