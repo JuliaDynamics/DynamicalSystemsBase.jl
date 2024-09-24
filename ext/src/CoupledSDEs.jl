@@ -194,19 +194,42 @@ end
 
 DynamicalSystemsBase.referrenced_sciml_prob(ds::CoupledSDEs) = ds.integ.sol.prob
 
-function covariance(ds::CoupledSDEs)
-    A = diffusion_matrix(ds)
-    A * A'
-end
+"""
+    diffusion_matrix(ds::CoupledSDEs)
 
+Returns the diffusion matrix of the stochastic term of the [`CoupledSDEs`](@ref) `ds`,
+provided that the diffusion function `g` can be expressed as a constant invertible matrix.
+If this is not the case, returns `nothing`.
+
+Note: The diffusion matrix ``Σ`` is the square root of the noise covariance matrix ``Q`` (see
+[`covariance_matrix`](@ref)), defined via the Cholesky decomposition ``Q = Σ Σ^\\top``.
+"""
 function diffusion_matrix(ds::CoupledSDEs{IIP,D}) where {IIP,D}
     if ds.noise_type[:invertible]
         diffusion = diffusion_function(ds)
         A = diffusion(zeros(D), current_parameters(ds), 0.0)
     else
+        @warn """
+        The diffusion function of the `CoupledSDEs` cannot be expressed as a constant
+        invertible matrix.
+        """
         A = nothing
     end
     return A
+end
+
+"""
+    covariance_matrix(ds::CoupledSDEs)
+
+Returns the covariance matrix of the stochastic term of the [`CoupledSDEs`](@ref) `ds`,
+provided that the diffusion function `g` can be expressed as a constant invertible matrix.
+If this is not the case, returns `nothing`.
+
+See also [`diffusion_matrix`](@ref).
+"""
+function covariance_matrix(ds::CoupledSDEs)
+    A = diffusion_matrix(ds)
+    (A == nothing) ? nothing : A * A'
 end
 
 ###########################################################################################
@@ -214,23 +237,14 @@ end
 ###########################################################################################
 
 """
-compute diffusion matrix given the covariance matrix of noise matrix.
-"""
-function diffusion_matrix(Γ::AbstractMatrix)
-    U, S, V = LinearAlgebra.svd(Γ) # A ≈ U * Diagonal(S) * V'
-    A = U * LinearAlgebra.Diagonal(sqrt.(S))
-    return A
-end
-
-"""
 https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#The-uniform-scaling-operator
 """
 function construct_diffusion_function(g, cov, noise_prototype, σ, D, IIP)
     if isnothing(g) # diagonal additive noise
         cov = isnothing(cov) ? LinearAlgebra.I(D) : cov
-        size(cov)[1] != D &&
-            throw(ArgumentError("covariance matrix must be of size $((D, D))"))
-        A = diffusion_matrix(cov)
+        size(cov) != (D,D) &&
+            throw(ArgumentError("Covariance matrix must be of size $((D, D))"))
+        A = sqrt(cov)
         if IIP
             if isdiag(cov)
                 g = (du, u, p, t) -> du .= σ .* diag(A)

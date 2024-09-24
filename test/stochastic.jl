@@ -46,7 +46,7 @@ lor_SRA = CoupledSDEs(lorenz_rule, u0, p0;
     diffeq = (alg = SRA(), abstol = 1e-2, reltol = 1e-2)
 )
 
-diffeq_cov= (alg = LambaEM(), abstol = 1e-2, reltol = 1e-2, dt=0.1)
+diffeq_cov = (alg = LambaEM(), abstol = 1e-2, reltol = 1e-2, dt=0.1)
 lor_oop_cov = CoupledSDEs(lorenz_rule, u0, p0; covariance = Γ, diffeq=diffeq_cov)
 lor_iip_cov = CoupledSDEs(lorenz_rule_iip, u0, p0; covariance = Γ, diffeq=diffeq_cov)
 
@@ -94,7 +94,7 @@ end
     f(u, p, t) = 1.01u
     f!(du, u, p, t) = du .= 1.01u
     @testset "covariance" begin
-        g(u, p, t) = diffusion_matrix([1 0.3; 0.3 1])
+        g(u, p, t) = sqrt([1 0.3; 0.3 1])
         corr = CoupledSDEs(f, zeros(2); covariance = [1 0.3; 0.3 1])
         corr_alt = CoupledSDEs(f, zeros(2); g = g, noise_prototype = zeros(2, 2))
         @test corr.noise_type == corr_alt.noise_type
@@ -124,7 +124,7 @@ end
 
     @testset "diffusion_matrix" begin
         Γ = [1.0 0.3 0.0; 0.3 1 0.5; 0.0 0.5 1.0]
-        A = diffusion_matrix(Γ)
+        A = sqrt(Γ)
         lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0, covariance = Γ, diffeq=diffeq_cov)
         @test A ≈ diffusion_matrix(lorenz_oop)
         @test Γ ≈ A * A'
@@ -135,7 +135,7 @@ end
         f(u, p, t) = [0.0, 0.0]
         function diffusion(u, p, t)
             Γ = [1.0 p[1]; p[1] 1.0]
-            diffusion_matrix(Γ)
+            sqrt(Γ)
         end
         ds = CoupledSDEs(f, zeros(2), [0.3]; g = diffusion, noise_prototype = zeros(2, 2))
         A = diffusion_matrix(ds)

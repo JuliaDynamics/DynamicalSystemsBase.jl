@@ -1,15 +1,17 @@
 using LinearAlgebra
 
 function is_state_independent(g, u, p, t)
-    rdm_states = [rand(eltype(u), length(u)) for _ in 1:10]
+    rdm_states = [u .+ rand(eltype(u), length(u)) .- 0.5 for _ in 1:10]
     val = map(u -> g(u, p, t), rdm_states)
     length(unique(val)) == 1
 end
+
 function is_time_independent(g, u, p, t0)
-    trange = t0:0.1:10
+    trange = t0 .+ [0, 0.101, 1.01, 10.1, 101.0]
     val = map(t -> g(u, p, t), trange)
     length(unique(val)) == 1
 end
+
 function is_invertible(x; tol=1e-10)
     F = lu(x, check=false)
     det = abs(prod(diag(F.U)))
@@ -33,6 +35,7 @@ function diffusion_function(g, IIP, noise_prototype)
         end
     end
 end
+
 function diffusion_function(ds::CoupledSDEs{IIP}) where {IIP}
     diffusion_function(ds.integ.g, IIP, referrenced_sciml_prob(ds).noise_rate_prototype)
 end
@@ -110,4 +113,8 @@ function find_noise_type(prob::SDEProblem, IIP)
     find_noise_type(
         prob.g, prob.u0, prob.p, prob.tspan[1], prob.noise,
         nothing, prob.noise_rate_prototype, IIP)
+end
+
+function noise_type(ds::CoupledSDEs; t0=0)
+    find_noise_type(SDEProblem(ds, tspan=(t0, Inf)), isinplace(ds))
 end
