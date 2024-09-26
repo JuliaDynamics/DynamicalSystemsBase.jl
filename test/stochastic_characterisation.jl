@@ -3,7 +3,7 @@ using DynamicalSystemsBase, DiffEqNoiseProcess, Test, StochasticDiffEq
 sciml_prob(sde) = sde.integ.sol.prob
 f!(du, u, p, t) = du .= 1.01u
 
-@testset "Additive" begin
+@testset "Additive noise" begin
     # Additive Wiener noise
     W = WienerProcess(0.0, zeros(2), zeros(2))
     addit_autom_inv = CoupledSDEs(f!, zeros(2); noise_process = W)
@@ -52,7 +52,7 @@ f!(du, u, p, t) = du .= 1.01u
     @test CoupledSDEs(sciml_prob(addit_non_autom)).noise_type == types
 end
 
-@testset "Multiplicative" begin
+@testset "Multiplicative noise" begin
     # multiplicative linear Wiener noise
     g!(du, u, p, t) = (du .= u; return nothing)
     linear_multipli = CoupledSDEs(f!, rand(2) ./ 10; g = g!)
