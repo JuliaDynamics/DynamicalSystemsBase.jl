@@ -1,23 +1,36 @@
 using LinearAlgebra
 
+"""
+Checks whether the function g depends on u based on 10 random points around the given u.
+"""
 function is_state_independent(g, u, p, t)
     rdm_states = [u .+ rand(eltype(u), length(u)) .- 0.5 for _ in 1:10]
     val = map(u -> g(u, p, t), rdm_states)
     length(unique(val)) == 1
 end
 
+"""
+Checks whether g depends explicitly on time for select points on the interval [t0, t0+101].
+"""
 function is_time_independent(g, u, p, t0)
-    trange = t0 .+ [0, 0.101, 1.01, 10.1, 101.0]
+    trange = t0 .+ [0.0, 0.101, 1.01, 10.1, 101.0]
     val = map(t -> g(u, p, t), trange)
     length(unique(val)) == 1
 end
 
+"""
+Checks whether a matrix x is invertible by verifying that it has nonzero determinant.
+"""
 function is_invertible(x; tol=1e-10)
     F = lu(x, check=false)
     det = abs(prod(diag(F.U)))
     return det > tol
 end
 
+"""
+Checks whether the function f is linear by checking additivity and scalar multiplication
+for two points x and y.
+"""
 function is_linear(f, x, y, c)
     check1 = f(x + y) == f(x) + f(y)
     check2 = f(c * x) == c * f(x)
@@ -41,9 +54,8 @@ function diffusion_function(ds::CoupledSDEs{IIP}) where {IIP}
 end
 
 """
-We classify the noise type of the CoupledSDEs based on the system given by the user.
-In doing this we also determine the covariance matrix
-
+Classifies the noise type of the CoupledSDEs given by the user.
+Returns a named tuple of noise properties and the noise covariance matrix (if applicable).
 """
 function find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
     noise_size = isnothing(noise_prototype) ? nothing : size(noise_prototype)
@@ -84,8 +96,19 @@ function find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
         # additive noise is equal to state independent noise
         isadditive = state_independent
         isautonomous = time_independent
-        islinear = !state_independent ?
-                   is_linear(u -> diffusion(u, p, t0), rand(D), rand(D), 2.0) : true
+
+        islinear = true
+        if !state_independent
+            for i in 1:10
+                check = is_linear(u -> diffusion(u, p, t0),
+                    u0 + i .* rand(D), u0 + i .* rand(D), 2.0)
+                check ? nothing : islinear = false
+            end
+        end        
+
+        # Previous formulation:
+        #islinear = !state_independent ?
+        #           is_linear(u -> diffusion(u, p, t0), rand(D), rand(D), 2.0) : true
 
         if time_independent && state_independent
             if !isnothing(noise_size) && isequal(noise_size...)
@@ -113,8 +136,4 @@ function find_noise_type(prob::SDEProblem, IIP)
     find_noise_type(
         prob.g, prob.u0, prob.p, prob.tspan[1], prob.noise,
         nothing, prob.noise_rate_prototype, IIP)
-end
-
-function noise_type(ds::CoupledSDEs; t0=0)
-    find_noise_type(SDEProblem(ds, tspan=(t0, Inf)), isinplace(ds))
 end

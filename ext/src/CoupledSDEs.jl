@@ -101,7 +101,7 @@ function DynamicalSystemsBase.CoupledSDEs(
 end
 
 """
-    CoupledSDEs(ds::CoupledODEs, g, p [, σ]; kwargs...)
+    CoupledSDEs(ds::CoupledODEs, p; kwargs...)
 
 Converts a [`CoupledODEs`
 ](https://juliadynamics.github.io/DynamicalSystems.jl/stable/tutorial/#CoupledODEs)
@@ -118,24 +118,15 @@ function DynamicalSystemsBase.CoupledSDEs(
     noise_process=nothing,
     seed=UInt64(0)
 )
-    return CoupledSDEs(
-        dynamic_rule(ds),
-        current_state(ds),
-        p;
-        g=g,
-        noise_strength=noise_strength,
-        covariance=covariance,
-        diffeq=diffeq,
-        noise_prototype=noise_prototype,
-        noise_process=noise_process,
-        seed=seed
-    )
+    return CoupledSDEs(dynamic_rule(ds), current_state(ds), p;
+        g, noise_strength, covariance, diffeq, noise_prototype, noise_process, seed)
 end
 
 """
     CoupledODEs(ds::CoupledSDEs; kwargs...)
 
-Converts a [`CoupledSDEs`](@ref) into [`CoupledODEs`](@ref).
+Converts a [`CoupledSDEs`](@ref) into a [`CoupledODEs`](@ref) by extracting the
+deterministic part of `ds`.
 """
 function DynamicalSystemsBase.CoupledODEs(
     sys::CoupledSDEs; diffeq=DEFAULT_DIFFEQ, t0=0.0)
@@ -237,27 +228,42 @@ end
 ###########################################################################################
 
 """
-https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#The-uniform-scaling-operator
+    construct_diffusion_function(g, covariance, noise_strength, noise_prototype, D, IIP)
+
+Constructs the noise function `g` based on the keyword arguments
+`g`, `covariance`, `noise_strength`, and `noise_prototype`
+specified by the user when defining a `CoupledSDEs`.
+
+Here `D` is the system dimension and `IIP` indicated whether the function `g` is in-place
+(`IIP = true`) or out-of-place (`false`).
+
+Returns `g, noise_prototype`.
 """
-function construct_diffusion_function(g, cov, noise_prototype, σ, D, IIP)
+function construct_diffusion_function(
+    g, covariance, noise_strength, noise_prototype, D, IIP
+    )
     if isnothing(g) # diagonal additive noise
-        cov = isnothing(cov) ? LinearAlgebra.I(D) : cov
+        cov = isnothing(covariance) ? LinearAlgebra.I(D) : covariance
         size(cov) != (D,D) &&
             throw(ArgumentError("Covariance matrix must be of size $((D, D))"))
         A = sqrt(cov)
         if IIP
             if isdiag(cov)
-                g = (du, u, p, t) -> du .= σ .* diag(A)
+                g = (du, u, p, t) -> du .= noise_strength .* diag(A)
             else
-                g = (du, u, p, t) -> du .= σ .* A
+                g = (du, u, p, t) -> du .= noise_strength .* A
                 noise_prototype = zeros(size(A))
                 # ^ we could make this sparse to make it more performant
             end
         else
             if isdiag(cov)
-                g = (u, p, t) -> SVector{length(diag(A)),eltype(A)}(diag(σ .* A))
+                g = (u, p, t) -> SVector{length(diag(A)),eltype(A)}(
+                    diag(noise_strength .* A)
+                )
             else
-                g = (u, p, t) -> SMatrix{size(A)...,eltype(A)}(σ .* A)
+                g = (u, p, t) -> SMatrix{size(A)...,eltype(A)}(
+                    noise_strength .* A
+                )
                 noise_prototype = zeros(size(A))
             end
         end

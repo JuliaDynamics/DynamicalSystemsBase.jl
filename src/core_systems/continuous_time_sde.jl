@@ -48,7 +48,9 @@ for out-of-place (oop) and `g!(du, u, p, t)` for in-place (iip).
 
 Unless `g` is of vector form and describes diagonal noise, a prototype type instance for the
 output of `g` must be specified via the keyword argument `noise_prototype`. It can be of any
-type that overloads `A_mul_B!` with itself being the middle argument.
+type `A` that has the method
+[`LinearAlgebra.mul!(Y, A, B) -> Y`](https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#LinearAlgebra.mul!)
+defined.
 Commonly, this is a matrix or sparse matrix. If this is not given, it
 defaults to `nothing`, which means the `g` should be interpreted as being diagonal.
 
