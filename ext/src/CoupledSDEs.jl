@@ -228,10 +228,10 @@ end
 ###########################################################################################
 
 """
-    construct_diffusion_function(g, covariance, noise_strength, noise_prototype, D, IIP)
+    construct_diffusion_function(g, covariance, noise_prototype, noise_strength, D, IIP)
 
 Constructs the noise function `g` based on the keyword arguments
-`g`, `covariance`, `noise_strength`, and `noise_prototype`
+`g`, `covariance`, `noise_prototype`, and `noise_strength`
 specified by the user when defining a `CoupledSDEs`.
 
 Here `D` is the system dimension and `IIP` indicated whether the function `g` is in-place
@@ -240,7 +240,7 @@ Here `D` is the system dimension and `IIP` indicated whether the function `g` is
 Returns `g, noise_prototype`.
 """
 function construct_diffusion_function(
-    g, covariance, noise_strength, noise_prototype, D, IIP
+    g, covariance, noise_prototype, noise_strength, D, IIP
     )
     if isnothing(g) # diagonal additive noise
         cov = isnothing(covariance) ? LinearAlgebra.I(D) : covariance
