@@ -26,8 +26,7 @@ The only required positional arguments are the deterministic dynamic rule
 ](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/dev/tutorial/).
 
 By default, the noise term is standard Brownian motion, i.e. additive Gaussian white noise
-with identity covariance matrix. To construct different noise structures, see
-[below](@noise-term).
+with identity covariance matrix. To construct different noise structures, see below.
 
 ## Noise term
 
@@ -37,7 +36,7 @@ arguments, the noise function `g` is constructed behind the scenes unless explic
 - The noise strength (i.e. the magnitude of the stochastic forcing) can be scaled with
   `noise_strength` (defaults to `1.0`). This factor is multiplied with the whole noise term.
 - For non-diagonal and correlated noise, a covariance matrix can be provided via
-  `covariance_matrix` (defaults to identity matrix of size `length(u0)`.)
+  `covariance` (defaults to identity matrix of size `length(u0)`.)
 - For more complicated noise structures, including state- and time-dependent noise, the
   noise function `g` can be provided explicitly as a keyword argument (defaults to
   `nothing`). For construction instructions, continue reading.
@@ -70,7 +69,7 @@ found in the [online docs for `CoupledSDEs`](@ref defining-stochastic-dynamics).
 
 - `g`: noise function (default `nothing`)
 - `noise_strength`: scaling factor for noise strength (default `1.0`)
-- `covariance_matrix`: noise covariance matrix (default `nothing`)
+- `covariance`: noise covariance matrix (default `nothing`)
 - `noise_prototype`: prototype instance for the output of `g` (default `nothing`)
 - `noise_process`: stochastic process as provided by [DiffEqNoiseProcess.jl](https://docs.sciml.ai/DiffEqNoiseProcess/stable/) (default `nothing`, i.e. standard Wiener process)
 - `t0`: initial time (default `0.0`)
