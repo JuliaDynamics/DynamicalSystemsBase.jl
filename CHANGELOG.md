@@ -1,10 +1,16 @@
-# v3.10.0
+# v3.11.0
 
 Brand new dynamical system `CoupledSDEs` that represents stochastic differential equations. It also comes with a dedicated documentation page.
 
+# v3.10.0
+
+- OrdinaryDiffEq.jl dependency reduced to OrdinaryDiffEqTsit5.jl.
+- Updated to StateSpaceSets.jl v2: now the keyword `container` can be given to
+  the `trajectory` function.
+
 # v3.9.0
 
-A new function `jacobian` that generates Jacobian rule for any `ds<:CoreDynamicalSystem` via 
+A new function `jacobian` that generates Jacobian rule for any `ds<:CoreDynamicalSystem` via
 automatic differentiation with `ForwardDiff.jl`.
 
 # v3.8.0

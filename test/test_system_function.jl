@@ -115,7 +115,8 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
 
                 # obtain only first variable
                 Z, t = trajectory(ds, 10; save_idxs = [1])
-                @test size(Z) == (11, 1)
+                @test length(Z) == 11
+                @test dimension(Z) == 1
                 @test Z[1][1] == u0[1]
             else
                 reinit!(ds)
@@ -133,7 +134,8 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
 
                 # obtain only first variable
                 Z, t = trajectory(ds, 3; save_idxs = [1], Δt = 1)
-                @test size(Z) == (4, 1)
+                @test length(Z) == 4
+                @test dimension(Z) == 1
                 @test Z[1][1] == u0[1]
             end
         end
