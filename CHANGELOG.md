@@ -1,3 +1,7 @@
+# v3.10.0
+
+Brand new dynamical system `CoupledSDEs` that represents stochastic differential equations. It also comes with a dedicated documentation page.
+
 # v3.9.0
 
 A new function `jacobian` that generates Jacobian rule for any `ds<:CoreDynamicalSystem` via 
