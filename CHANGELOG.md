@@ -1,3 +1,7 @@
+# v3.11.0
+
+Brand new dynamical system `CoupledSDEs` that represents stochastic differential equations. It also comes with a dedicated documentation page.
+
 # v3.10.0
 
 - OrdinaryDiffEq.jl dependency reduced to OrdinaryDiffEqTsit5.jl.

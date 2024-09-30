@@ -7,3 +7,4 @@ Manifest.toml
 *style.jl
 *.scss
 *.css
+.vscode
