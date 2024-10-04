@@ -127,6 +127,7 @@ end
         A = sqrt(Γ)
         lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0, covariance = Γ, diffeq=diffeq_cov)
         @test A ≈ diffusion_matrix(lorenz_oop)
+        @test A isa AbstractMatrix
         @test Γ ≈ A * A'
     end
 
