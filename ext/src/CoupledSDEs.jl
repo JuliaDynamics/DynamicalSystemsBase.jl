@@ -195,10 +195,11 @@ If this is not the case, returns `nothing`.
 Note: The diffusion matrix ``Σ`` is the square root of the noise covariance matrix ``Q`` (see
 [`covariance_matrix`](@ref)), defined via the Cholesky decomposition ``Q = Σ Σ^\\top``.
 """
-function diffusion_matrix(ds::CoupledSDEs{IIP,D}) where {IIP,D}
+function diffusion_matrix(ds::CoupledSDEs{IIP,D})::AbstractMatrix where {IIP,D}
     if ds.noise_type[:invertible]
         diffusion = diffusion_function(ds)
         A = diffusion(zeros(D), current_parameters(ds), 0.0)
+        A = A isa AbstractMatrix ? A : Diagonal(A)
     else
         @warn """
         The diffusion function of the `CoupledSDEs` cannot be expressed as a constant
@@ -218,7 +219,7 @@ If this is not the case, returns `nothing`.
 
 See also [`diffusion_matrix`](@ref).
 """
-function covariance_matrix(ds::CoupledSDEs)
+function covariance_matrix(ds::CoupledSDEs)::AbstractMatrix
     A = diffusion_matrix(ds)
     (A == nothing) ? nothing : A * A'
 end
@@ -241,10 +242,10 @@ Returns `g, noise_prototype`.
 """
 function construct_diffusion_function(
     g, covariance, noise_prototype, noise_strength, D, IIP
-    )
+)
     if isnothing(g) # diagonal additive noise
         cov = isnothing(covariance) ? LinearAlgebra.I(D) : covariance
-        size(cov) != (D,D) &&
+        size(cov) != (D, D) &&
             throw(ArgumentError("Covariance matrix must be of size $((D, D))"))
         A = sqrt(cov)
         if IIP
