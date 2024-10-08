@@ -332,7 +332,7 @@ StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 # API - altering status of the system
 ###########################################################################################
 """
-    set_state!(ds::DynamicalSystem, u::AbstractArray{Real})
+    set_state!(ds::DynamicalSystem, u::AbstractArray{<:Real})
 
 Set the state of `ds` to `u`, which must match dimensionality with that of `ds`.
 Also ensure that the change is notified to whatever integration protocol is used.
@@ -383,8 +383,11 @@ end
     set_state!(ds::DynamicalSystem, mapping::AbstractDict)
 
 Convenience version of `set_state!` that iteratively calls `set_state!(ds, val, i)`
-for all index-value pairs `(i, val)` in `mapping`. This allows you to
-partially set only some state variables.
+for all index-value pairs `(i, val)` in `mapping`.
+This is useful primarily in two cases:
+1) to partially set only some state variables,
+2) to set variables by name (if the system is created via ModelingToolkit.jl)
+so that you don't have to keep track of the order of the dynamic variables.
 """
 function set_state!(ds::DynamicalSystem, mapping::AbstractDict)
     # ensure we use a mutable vector, so same code works for in-place problems
