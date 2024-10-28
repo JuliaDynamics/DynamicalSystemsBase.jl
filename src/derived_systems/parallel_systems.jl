@@ -63,8 +63,21 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states::Vector{<:Abstr
         pds = CoupledODEs(prob, ds.diffeq; internalnorm = inorm)
     end
     M = ds isa CoupledODEs && isinplace(ds)
-    prob = referrenced_sciml_prob(ds)
+    prob = referrenced_sciml_prob(ds) 
     return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), prob)
+end
+
+function ParallelDynamicalSystem(smap::StroboscopicMap,states::Vector{<:AbstractArray{<:Real}})
+    f, st = parallel_rule(smap.ds, states)
+    T = eltype(first(st))
+    prob = ODEProblem{true}(f, st, (T(initial_time(smap)), T(Inf)), current_parameters(smap))
+    inorm = prob.u0 isa Matrix ? matrixnorm : vectornorm
+    cont_pds = CoupledODEs(prob, smap.ds.diffeq; internalnorm = inorm)
+    pds = StroboscopicMap(cont_pds,smap.period)
+
+    M = smap.ds isa CoupledODEs && isinplace(smap.ds)
+    prob = referrenced_sciml_prob(smap.ds)
+    return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(smap), prob)
 end
 
 function ParallelDynamicalSystem(ds::CoreDynamicalSystem, mappings::Vector{<:Dict})
