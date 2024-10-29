@@ -223,7 +223,7 @@ current_states(pdtds::PDTDS) = [current_state(ds) for ds in pdtds.systems]
 initial_states(pdtds::PDTDS) = [initial_state(ds) for ds in pdtds.systems]
 
 # Set stuff
-set_parameter!(pdtds::PDTDS) = for ds in pdtds.systems; set_parameter!(ds, args...); end
+set_parameter!(pdtds::PDTDS,index,value) = for ds in pdtds.systems; set_parameter!(ds, index,value); end
 function set_state!(pdtds::PDTDS, u, i::Int = 1)
     # We need to set state in all systems, in case this does
     # some kind of resetting, e.g., the `u_modified!` stuff.
