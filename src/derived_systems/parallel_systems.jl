@@ -177,6 +177,14 @@ function set_state!(pdsa::PDSAM, u::AbstractArray, i::Int = 1)
     return pdsa
 end
 
+
+function set_state!(pdsa::PDSAM{<: StroboscopicMap}, u::AbstractArray, i::Int = 1) where D
+    current_state(pdsa, i) .= u
+    u_modified!(pdsa.ds.ds.integ, true)
+    return pdsa
+end
+
+
 # We make one more extension here: for continuous time, in place systems
 # the state is a matrix (each column a parallel state) for performance.
 # re-init will not work because there is no way to do the recursive copy. we do it ourselves
