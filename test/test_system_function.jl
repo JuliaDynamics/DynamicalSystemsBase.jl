@@ -114,10 +114,10 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
                 @test Y[1] == X[end]
 
                 # obtain only first variable
-                Z, t = trajectory(ds, 10, u0; save_idxs = [1])
+                Z, t = trajectory(ds, 10, u0init; save_idxs = [1])
                 @test length(Z) == 11
                 @test dimension(Z) == 1
-                @test Z[1][1] == u0[1]
+                @test Z[1][1] == u0init[1]
             else
                 reinit!(ds)
                 @test current_state(ds) == u0
