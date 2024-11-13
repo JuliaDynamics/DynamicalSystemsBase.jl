@@ -190,6 +190,8 @@ function SciMLBase.reinit!(pmap::PoincareMap, u0::AbstractArray = initial_state(
     reinit!(pmap.ds, u; t0, p)
     if u0 ≠ initial_state(pmap) # the only state we can guarantee is on the plane
         step!(pmap) # step once to reach the PSOS
+    else
+        pmap.state_on_plane = recursivecopy(u0)
     end
     pmap.t = 0 # first step is always 0
     pmap
