@@ -28,7 +28,8 @@ See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref).
 * `direction = -1`: Only crossings with `sign(direction)` are considered to belong to
   the surface of section. Negative direction means going from less than ``b``
   to greater than ``b``.
-* `u0 = nothing`: Specify an initial state.
+* `u0 = nothing`: Specify an initial state. If `nothing` it is the
+  `current_state(ds)`.
 * `rootkw = (xrtol = 1e-6, atol = 1e-8)`: A `NamedTuple` of keyword arguments
   passed to `find_zero` from [Roots.jl](https://github.com/JuliaMath/Roots.jl).
 * `Tmax = 1e3`: The argument `Tmax` exists so that the integrator can terminate instead
@@ -74,11 +75,16 @@ and root finding from Roots.jl, to create a high accuracy estimate of the sectio
 4. For the special case of `plane` being a `Tuple{Int, <:Real}`, a special `reinit!` method
    is allowed with input state of length `D-1` instead of `D`, i.e., a reduced state already
    on the hyperplane that is then converted into the `D` dimensional state.
+5. The `initial_state(pmap)` returns the state initial state of the map. This is not `u0`
+   because `u0` is evolved forwards until it resides on the Poincaré plane.
+6. In the `reinit!` function, the `t0` keyword denotes the starting time of the
+   continuous time dynamical system, as the starting time of the `PoincareMap` is by
+   definition always 0.
 
 ## Example
 
 ```julia
-using DynamicalSystemsBase
+using DynamicalSystemsBase, PredefinedDynamicalSystems
 ds = Systems.rikitake(zeros(3); μ = 0.47, α = 1.0)
 pmap = poincaremap(ds, (3, 0.0))
 step!(pmap)
@@ -102,6 +108,7 @@ mutable struct PoincareMap{I<:ContinuousTimeDynamicalSystem, F, P, R, V} <: Disc
     # (i.e., given a D-1 dimensional state, create the full D-dimensional state)
     dummy::Vector{Float64}
     diffidxs::Vector{Int}
+    state_initial::V
 end
 Base.parent(pmap::PoincareMap) = pmap.ds
 
@@ -122,9 +129,10 @@ function PoincareMap(
     diffidxs = _indices_on_poincare_plane(plane, D)
 	pmap = PoincareMap(
         ds, plane_distance, planecrossing, Tmax, rootkw,
-        v, current_time(ds), 0, dummy, diffidxs
+        v, current_time(ds), 0, dummy, diffidxs, recursivecopy(v),
     )
-    step!(pmap)
+    step!(pmap) # this ensures that the state is on the hyperplane
+    pmap.state_initial = recursivecopy(current_state(pmap))
     pmap.t = 0 # first step is 0
     return pmap
 end
@@ -147,6 +155,7 @@ end
 initial_time(pmap::PoincareMap) = 0
 current_time(pmap::PoincareMap) = pmap.t
 current_state(pmap::PoincareMap) = pmap.state_on_plane
+initial_state(pmap::PoincareMap) = pmap.state_initial
 
 """
     current_crossing_time(pmap::PoincareMap) → tcross
@@ -169,8 +178,9 @@ end
 SciMLBase.step!(pmap::PoincareMap, n::Int, s = true) = (for _ ∈ 1:n; step!(pmap); end; pmap)
 
 function SciMLBase.reinit!(pmap::PoincareMap, u0::AbstractArray = initial_state(pmap);
-        t0 = initial_time(pmap), p = current_parameters(pmap)
+        t0 = initial_time(pmap.ds), p = current_parameters(pmap)
     )
+    uc = current_state(pmap)
     if length(u0) == dimension(pmap)
 	    u = u0
     elseif length(u0) == dimension(pmap) - 1
@@ -179,8 +189,13 @@ function SciMLBase.reinit!(pmap::PoincareMap, u0::AbstractArray = initial_state(
         error("Dimension of state for `PoincareMap` reinit is inappropriate.")
     end
     reinit!(pmap.ds, u; t0, p)
-    step!(pmap) # always step once to reach the PSOS
-    pmap.t = 0 # first step is 0
+    # Check if we have to step the map or not
+    if u0 == initial_state(pmap)
+        pmap.state_on_plane = copy(u0)
+    elseif u0 ≠ uc # if we were on current state (like in `trajectory`) then we don't step
+        step!(pmap) # step once to reach the PSOS
+    end
+    pmap.t = 0 # first step is always 0
     pmap
 end
 
@@ -223,20 +238,18 @@ function poincare_step!(ds, plane_distance, planecrossing, Tmax, rootkw)
     # Otherwise evolve until juuuuuust crossing the plane
     tprev = t0
     while side < 0
-        (current_time(ds) - t0) > Tmax && break
+        (current_time(ds) - t0) > Tmax && return (nothing, nothing)
         tprev = current_time(ds)
         step!(ds)
         side = planecrossing(current_state(ds))
     end
-    while side ≥ 0
-        (current_time(ds) - t0) > Tmax && break
+    while side ≥ 0 # when side becomes negative again we've just crossed the plane!
+        (current_time(ds) - t0) > Tmax && return (nothing, nothing)
         tprev = current_time(ds)
         step!(ds)
         side = planecrossing(current_state(ds))
     end
-    # we evolved too long and no crossing, return nothing
-    (current_time(ds) - t0) > Tmax && return (nothing, nothing)
-    # Else, we're guaranteed to have time window before and after the plane
+    # We're now guaranteed to have time window before and after the plane
     time_window = (tprev, current_time(ds))
     tcross = Roots.find_zero(plane_distance, time_window, ROOTS_ALG; rootkw...)
     ucross = ds(tcross)

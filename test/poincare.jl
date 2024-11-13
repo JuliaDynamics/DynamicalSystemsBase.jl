@@ -21,9 +21,6 @@ u0 = [
 Γ = 0.9
 p = [μ, ν, Γ]
 
-gissinger_oop = CoupledODEs(gissinger_rule, u0, p)
-gissinger_iip = CoupledODEs(gissinger_rule_iip, recursivecopy(u0), p)
-
 # Define appropriate hyperplane for gissinger system
 plane1 = (1, 0.0)
 # I want hyperperplane defined by these two points:
@@ -34,7 +31,7 @@ gis_plane(μ) = [cross(Np(μ), Nm(μ))..., 0]
 plane2 = gis_plane(μ)
 
 function poincare_tests(ds, pmap, plane)
-    P, t = trajectory(pmap, 10)
+    P, t = trajectory(pmap, 10, initial_state(pmap))
     reinit!(ds)
     P2 = poincaresos(ds, plane, 100; rootkw = (xrtol = 1e-12, atol = 1e-12))
     @test length(P) == 11
@@ -54,10 +51,10 @@ end
 
 @testset "IIP=$(IIP) plane=$(P)" for IIP in (false, true), P in (1, 2)
     rule = !IIP ? gissinger_rule : gissinger_rule_iip
-    ds = CoupledODEs(rule, recursivecopy(u0), p)
+    ds = CoupledODEs(rule, u0, p)
     plane = P == 1 ? plane1 : plane2
     pmap = PoincareMap(ds, plane; rootkw = (xrtol = 1e-12, atol = 1e-12))
-    u0pmap = recursivecopy(current_state(pmap))
+    u0pmap = deepcopy(current_state(pmap))
     test_dynamical_system(pmap, u0pmap, p;
     idt=true, iip=IIP, test_trajectory = true,
     test_init_state_equiv=false, u0init = initial_state(pmap))
@@ -77,7 +74,7 @@ end
     u0 = fill(10.0, 3)
     p = [10, 28, 8/3]
     plane = (1, 0.0)
-    ds = CoupledODEs(lorenz_rule, recursivecopy(u0), p)
+    ds = CoupledODEs(lorenz_rule, deepcopy(u0), p)
 
     pmap = PoincareMap(ds, plane; rootkw = (xrtol = 1e-12, atol = 1e-12))
     P, t = trajectory(pmap, 10)
@@ -91,6 +88,7 @@ end
 end
 
 @testset "poincare of dataset" begin
+    gissinger_oop = CoupledODEs(gissinger_rule, u0, p)
     X, t = trajectory(gissinger_oop, 1000.0)
     A = poincaresos(X, plane1)
     @test dimension(A) == 3

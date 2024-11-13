@@ -33,7 +33,7 @@ trajectory (but remember to convert the output of `solve` to a `StateSpaceSet`).
   Note: if you mix integer and symbolic indexing be sure to initialize the array
   as `Any` so that integers `1, 2, ...` are not converted to symbolic expressions.
 """
-function trajectory(ds::DynamicalSystem, T, u0 = initial_state(ds);
+function trajectory(ds::DynamicalSystem, T, u0 = current_state(ds);
         save_idxs = nothing, t0 = initial_time(ds), kwargs...
     )
     accessor = svector_access(save_idxs)

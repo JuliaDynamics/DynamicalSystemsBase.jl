@@ -1,3 +1,15 @@
+# v3.12.0
+
+- Crucial bugfix of the `trajectory` function. While it is documented that the default value
+of `u` is the `current_state(ds)`, the source code was incorrectly using `initial_state(ds)`. This is now fixed and `current_state` is used as was stated. Note that `t0` remains as `initial_time` as this is how it was documented.
+
+- The `initial_state(PoincareMap)` used to return the initial state of the parent system
+  which was almost never on the Poincare plane. Now it properly returns the first state
+  on the Poincare plane, which coincides with `current_state(PoincareMap)` right after
+  constructing the map.
+
+- `PoincareMap` had extra clarifications in the docstring about what's going on.
+
 # v3.11.0
 
 Brand new dynamical system `CoupledSDEs` that represents stochastic differential equations. It also comes with a dedicated documentation page.
