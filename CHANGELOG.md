@@ -8,6 +8,7 @@ of `u` is the `current_state(ds)`, the source code was incorrectly using `initia
   on the Poincare plane, which coincides with `current_state(PoincareMap)` right after
   constructing the map.
 
+- `PoincareMap` had extra clarifications in the docstring about what's going on.
 
 # v3.11.0
 
