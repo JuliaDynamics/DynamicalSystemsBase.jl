@@ -180,6 +180,7 @@ SciMLBase.step!(pmap::PoincareMap, n::Int, s = true) = (for _ ∈ 1:n; step!(pma
 function SciMLBase.reinit!(pmap::PoincareMap, u0::AbstractArray = initial_state(pmap);
         t0 = initial_time(pmap.ds), p = current_parameters(pmap)
     )
+    uc = current_state(pmap)
     if length(u0) == dimension(pmap)
 	    u = u0
     elseif length(u0) == dimension(pmap) - 1
@@ -188,10 +189,11 @@ function SciMLBase.reinit!(pmap::PoincareMap, u0::AbstractArray = initial_state(
         error("Dimension of state for `PoincareMap` reinit is inappropriate.")
     end
     reinit!(pmap.ds, u; t0, p)
-    if u0 ≠ initial_state(pmap) # the only state we can guarantee is on the plane
+    # Check if we have to step the map or not
+    if u0 == initial_state(pmap)
+        pmap.state_on_plane = copy(u0)
+    elseif u0 ≠ uc # if we were on current state (like in `trajectory`) then we don't step
         step!(pmap) # step once to reach the PSOS
-    else
-        pmap.state_on_plane = recursivecopy(u0)
     end
     pmap.t = 0 # first step is always 0
     pmap

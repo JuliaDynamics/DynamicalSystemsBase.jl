@@ -58,9 +58,9 @@ end
     test_dynamical_system(pmap, u0pmap, p;
     idt=true, iip=IIP, test_trajectory = true,
     test_init_state_equiv=false, u0init = initial_state(pmap))
-    # @testset "specific poincare" begin
-    #     poincare_tests(ds, pmap, plane)
-    # end
+    @testset "specific poincare" begin
+        poincare_tests(ds, pmap, plane)
+    end
 end
 
 @testset "set_parameter works" begin
