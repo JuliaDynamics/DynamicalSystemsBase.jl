@@ -67,7 +67,7 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states::Vector{<:Abstr
     return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), prob)
 end
 
-function ParallelDynamicalSystem(smap::StroboscopicMap,states::Vector{<:AbstractArray{<:Real}})
+function ParallelDynamicalSystem(smap::StroboscopicMap,states)
     f, st = parallel_rule(smap.ds, states)
     T = eltype(first(st))
     prob = ODEProblem{true}(f, st, (T(initial_time(smap)), T(Inf)), current_parameters(smap))
@@ -178,7 +178,7 @@ function set_state!(pdsa::PDSAM, u::AbstractArray, i::Int = 1)
 end
 
 
-function set_state!(pdsa::PDSAM{<: StroboscopicMap}, u::AbstractArray, i::Int = 1) where D
+function set_state!(pdsa::PDSAM{<: StroboscopicMap}, u::AbstractArray, i::Int = 1)
     current_state(pdsa, i) .= u
     u_modified!(pdsa.ds.ds.integ, true)
     return pdsa
