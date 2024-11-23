@@ -224,6 +224,8 @@ function covariance_matrix(ds::CoupledSDEs)::AbstractMatrix
     (A == nothing) ? nothing : A * A'
 end
 
+jacobian(sde::CoupledSDEs) = DynamicalSystemsBase.jacobian(CoupledODEs(sde))
+
 ###########################################################################################
 # Utilities
 ###########################################################################################
