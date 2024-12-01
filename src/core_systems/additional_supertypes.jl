@@ -9,4 +9,4 @@ which are the core systems whose dynamic rule `f` is known analytically.
 This type is used for deciding whether a creation of a [`TangentDynamicalSystem`](@ref)
 is possible or not.
 """
-CoreDynamicalSystem{IIP} = Union{CoupledSDEs{IIP}, CoupledODEs{IIP}, DeterministicIteratedMap{IIP}}
+CoreDynamicalSystem{IIP} = Union{CoupledODEs{IIP}, DeterministicIteratedMap{IIP}}

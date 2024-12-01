@@ -50,3 +50,5 @@ function _jacobian(ds, ::Val{false})
     Jf = (u, p, t) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
     return Jf
 end
+
+jacobian(ds::CoupledSDEs) = jacobian(CoupledODEs(ds))
