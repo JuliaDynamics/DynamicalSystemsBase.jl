@@ -51,7 +51,7 @@ function DynamicalSystemsBase.CoupledSDEs(
         f,
         g,
         s,
-        (T(t0), T(1e16)),
+        (T(t0), T(1e11)),
         p;
         noise_rate_prototype=noise_prototype,
         noise=noise_process,

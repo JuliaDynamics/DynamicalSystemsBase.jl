@@ -1,6 +1,6 @@
 using DynamicalSystemsBase, Test
 using OrdinaryDiffEq: Tsit5
-using StochasticDiffEq: SDEProblem, SRA, SOSRA, LambaEM, CorrelatedWienerProcess
+using StochasticDiffEq: SDEProblem, SRA, SOSRA, LambaEM, CorrelatedWienerProcess, EM
 
 StochasticSystemsBase = Base.get_extension(DynamicalSystemsBase, :StochasticSystemsBase)
 diffusion_matrix = StochasticSystemsBase.diffusion_matrix
@@ -148,9 +148,11 @@ end
     @testset "approximate cov" begin
         Γ = [1.0 0.3; 0.3 1]
         f(u, p, t) = [0.0, 0.0]
+        diffeq_cov = (alg = EM(), abstol = 1e-2, reltol = 1e-2, dt=0.1)
+
         ds = CoupledSDEs(f, zeros(2), (); covariance = Γ, diffeq=diffeq_cov)
-        tr, _ = trajectory(ds, 1_000, Δt=0.1)
-        approx = cov(diff(reduce(hcat, tr.data), dims=2), dims=2)
+        tr, _ = trajectory(ds, 10_000, Δt=0.1)
+        approx = cov(diff(reduce(hcat, tr.data), dims=2)./sqrt(0.1), dims=2)
         @test approx ≈ Γ atol=1e-1
     end
 end
