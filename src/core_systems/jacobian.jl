@@ -13,10 +13,10 @@ otherwise it constructs the Jacobian rule with automatic differentiation using m
 ## Description
 
 For out-of-place systems, `jacobian` returns the Jacobian rule as a
-function `Jf(u, p, t) -> J0::SMatrix`. Calling `Jf(u, p, t)` will compute the Jacobian
+function `Jf(u, p, t = 0) -> J0::SMatrix`. Calling `Jf(u, p, t)` will compute the Jacobian
 at the state `u`, parameters `p` and time `t` and return the result as `J0`.
 For in-place systems, `jacobian` returns the Jacobian rule as a function
-`Jf!(J0, u, p, t)`. Calling `Jf!(J0, u, p, t)` will compute the Jacobian
+`Jf!(J0, u, p, t = 0)`. Calling `Jf!(J0, u, p)` will compute the Jacobian
 at the state `u`, parameters `p` and time `t` and save the result in `J0`.
 """
 function jacobian(ds::CoreDynamicalSystem{IIP}) where {IIP}
@@ -35,7 +35,7 @@ function _jacobian(ds, ::Val{true})
     cfg = ForwardDiff.JacobianConfig(
         (du, u) -> f(du, u, p, p), deepcopy(u0), deepcopy(u0)
     )
-    Jf! = (J0, u, p, t) -> begin
+    Jf! = (J0, u, p, t = 0) -> begin
         uv = @view u[:, 1]
         du = copy(u)
         ForwardDiff.jacobian!(
@@ -48,7 +48,7 @@ end
 
 function _jacobian(ds, ::Val{false})
     f = dynamic_rule(ds)
-    Jf = (u, p, t) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
+    Jf = (u, p, t = 0) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
     return Jf
 end
 
