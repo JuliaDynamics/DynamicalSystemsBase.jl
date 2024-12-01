@@ -6,7 +6,8 @@ import ForwardDiff
     jacobian(ds::CoreDynamicalSystem)
 
 Construct the Jacobian rule for the dynamical system `ds`.
-This is done via automatic differentiation using module
+If the system already has a Jacobian rule constructed via ModelingToolkit it returns this,
+otherwise it constructs the Jacobian rule with automatic differentiation using module
 [`ForwardDiff`](https://github.com/JuliaDiff/ForwardDiff.jl).
 
 ## Description
