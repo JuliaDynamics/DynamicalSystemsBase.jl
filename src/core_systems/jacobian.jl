@@ -6,7 +6,8 @@ import ForwardDiff
     jacobian(ds::CoreDynamicalSystem)
 
 Construct the Jacobian rule for the dynamical system `ds`.
-This is done via automatic differentiation using module
+If the system already has a Jacobian rule constructed via ModelingToolkit it returns this,
+otherwise it constructs the Jacobian rule with automatic differentiation using module
 [`ForwardDiff`](https://github.com/JuliaDiff/ForwardDiff.jl).
 
 ## Description
@@ -19,7 +20,17 @@ For in-place systems, `jacobian` returns the Jacobian rule as a function
 at the state `u`, parameters `p` and time `t` and save the result in `J0`.
 """
 function jacobian(ds::CoreDynamicalSystem{IIP}) where {IIP}
-    _jacobian(ds, Val{IIP}())
+    if ds isa ContinuousTimeDynamicalSystem
+        prob = referrenced_sciml_prob(ds)
+        if prob.f isa SciMLBase.AbstractDiffEqFunction && !isnothing(prob.f.jac)
+            jac = prob.f.jac
+        else
+            jac = _jacobian(ds, Val{IIP}())
+        end
+    else
+        jac = _jacobian(ds, Val{IIP}())
+    end
+    return jac
 end
 
 function _jacobian(ds, ::Val{true})
@@ -44,3 +55,5 @@ function _jacobian(ds, ::Val{false})
     Jf = (u, p, t = 0) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
     return Jf
 end
+
+jacobian(ds::CoupledSDEs) = jacobian(CoupledODEs(ds))
