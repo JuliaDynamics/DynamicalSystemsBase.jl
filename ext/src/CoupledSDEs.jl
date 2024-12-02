@@ -118,7 +118,10 @@ function DynamicalSystemsBase.CoupledSDEs(
     noise_process=nothing,
     seed=UInt64(0)
 )
-    return CoupledSDEs(dynamic_rule(ds), current_state(ds), p;
+    prob = referrenced_sciml_prob(ds)
+    # we want the symbolic jacobian to be transfered over
+    # dynamic_rule(ds) takes the deepest nested f wich does not have a jac field
+    return CoupledSDEs(prob.f, current_state(ds), p;
         g, noise_strength, covariance, diffeq, noise_prototype, noise_process, seed)
 end
 
@@ -130,9 +133,11 @@ deterministic part of `ds`.
 """
 function DynamicalSystemsBase.CoupledODEs(
     sys::CoupledSDEs; diffeq=DEFAULT_DIFFEQ, t0=0.0)
+    prob = referrenced_sciml_prob(sys)
+    # we want the symbolic jacobian to be transfered over
+    # dynamic_rule(ds) takes the deepest nested f wich does not have a jac field
     return CoupledODEs(
-        dynamic_rule(sys), SVector{length(sys.integ.u)}(sys.integ.u), sys.p0;
-        diffeq=diffeq, t0=t0
+        prob.f, SVector{length(sys.integ.u)}(sys.integ.u), sys.p0; diffeq=diffeq, t0=t0
     )
 end
 

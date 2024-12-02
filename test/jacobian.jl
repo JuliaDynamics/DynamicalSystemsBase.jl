@@ -9,7 +9,7 @@ function iip(du, u, p, t)
     return nothing
 end
 
-#%%
+
 @testset "IDT=$(IDT), IIP=$(IIP)" for IDT in (true, false), IIP in (false, true)
     SystemType = IDT ? DeterministicIteratedMap : CoupledODEs
     rule = IIP ? iip : oop
@@ -48,7 +48,8 @@ end
     @test jac.jac_oop isa RuntimeGeneratedFunction
     @test jac([1.0, 1.0], [], 0.0) == [3 0;0 -3]
 
-    @testset "CoupledSDEs" begin # just to check if MTH @brownian does not give any problems
+    @testset "CoupledSDEs" begin
+        # just to check if MTK @brownian does not give any problems
         using StochasticDiffEq
         @brownian β
         eqs = [D(u[1]) ~ 3.0 * u[1]+ β,

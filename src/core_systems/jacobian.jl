@@ -20,9 +20,13 @@ For in-place systems, `jacobian` returns the Jacobian rule as a function
 at the state `u`, parameters `p` and time `t` and save the result in `J0`.
 """
 function jacobian(ds::CoreDynamicalSystem{IIP}) where {IIP}
-    if hasproperty(ds, :integ) &&
-            ds.integ.f isa SciMLBase.AbstractDiffEqFunction && !isnothing(ds.integ.f.jac)
-        jac = ds.integ.f.jac
+    if ds isa ContinuousTimeDynamicalSystem
+        prob = referrenced_sciml_prob(ds)
+        if prob.f isa SciMLBase.AbstractDiffEqFunction && !isnothing(prob.f.jac)
+            jac = prob.f.jac
+        else
+            jac = _jacobian(ds, Val{IIP}())
+        end
     else
         jac = _jacobian(ds, Val{IIP}())
     end
