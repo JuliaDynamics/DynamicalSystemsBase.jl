@@ -150,15 +150,7 @@ function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u::AbstractArray =
 end
 
 # `DEIntegrator` stuff
-function dynamic_rule(integ::DEIntegrator)
-    # with remake it can happen that we have nested SDEFunctions
-    # sciml integrator deals with this internally well
-    f = integ.f
-    while hasfield(typeof(f), :f)
-        f = f.f
-    end
-    return f
-end
+dynamic_rule(integ::DEIntegrator) = integ.f.f
 current_parameters(integ::DEIntegrator) = integ.p
 initial_state(integ::DEIntegrator) = integ.sol.prob.u0
 current_state(ds::CoupledODEs) = current_state(ds.integ)

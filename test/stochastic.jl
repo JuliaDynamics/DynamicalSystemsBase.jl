@@ -81,12 +81,12 @@ end
 
     # CoupledODEs creation
     ds = CoupledODEs(lorenz_oop)
-    @test dynamic_rule(ds) == lorenz_rule
+    @test dynamic_rule(ds).f == lorenz_rule
     @test ds.integ.alg isa Tsit5
     test_dynamical_system(ds, u0, p0; idt = false, iip = false)
     # and back
     sde = CoupledSDEs(ds, p0)
-    @test dynamic_rule(sde) == lorenz_rule
+    @test dynamic_rule(sde).f.f == lorenz_rule
     @test sde.integ.alg isa SOSRA
 end
 
