@@ -1,3 +1,7 @@
+# v3.13.0
+
+- `jacobian` will now re-use symbolically generated Jacobian functions if the dynamical system is made through a ModelingToolkit.jl-generated `DEProblem`.
+
 # v3.12.0
 
 - Crucial bugfix of the `trajectory` function. While it is documented that the default value
