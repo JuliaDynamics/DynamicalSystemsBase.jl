@@ -1,4 +1,3 @@
-using Revise #remove this
 using DynamicalSystemsBase, Test
 using LinearAlgebra: norm
 
@@ -162,3 +161,5 @@ end
 
 # TODO: Test that Lyapunovs of this match the original system
 # But test this in ChaosTools.jl
+
+#benchmarks, comparison with old version
