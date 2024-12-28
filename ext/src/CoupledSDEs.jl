@@ -51,7 +51,7 @@ function DynamicalSystemsBase.CoupledSDEs(
         f,
         g,
         s,
-        (T(t0), T(Inf)),
+        (T(t0), T(1e11)),
         p;
         noise_rate_prototype=noise_prototype,
         noise=noise_process,
@@ -118,7 +118,10 @@ function DynamicalSystemsBase.CoupledSDEs(
     noise_process=nothing,
     seed=UInt64(0)
 )
-    return CoupledSDEs(dynamic_rule(ds), current_state(ds), p;
+    prob = referrenced_sciml_prob(ds)
+    # we want the symbolic jacobian to be transfered over
+    # dynamic_rule(ds) takes the deepest nested f wich does not have a jac field
+    return CoupledSDEs(prob.f, current_state(ds), p;
         g, noise_strength, covariance, diffeq, noise_prototype, noise_process, seed)
 end
 
@@ -130,9 +133,11 @@ deterministic part of `ds`.
 """
 function DynamicalSystemsBase.CoupledODEs(
     sys::CoupledSDEs; diffeq=DEFAULT_DIFFEQ, t0=0.0)
+    prob = referrenced_sciml_prob(sys)
+    # we want the symbolic jacobian to be transfered over
+    # dynamic_rule(ds) takes the deepest nested f wich does not have a jac field
     return CoupledODEs(
-        dynamic_rule(sys), SVector{length(sys.integ.u)}(sys.integ.u), sys.p0;
-        diffeq=diffeq, t0=t0
+        prob.f, SVector{length(sys.integ.u)}(sys.integ.u), sys.p0; diffeq=diffeq, t0=t0
     )
 end
 
@@ -154,16 +159,6 @@ SciMLBase.isinplace(::CoupledSDEs{IIP}) where {IIP} = IIP
 StateSpaceSets.dimension(::CoupledSDEs{IIP,D}) where {IIP,D} = D
 DynamicalSystemsBase.current_state(ds::CoupledSDEs) = current_state(ds.integ)
 DynamicalSystemsBase.isdeterministic(ds::CoupledSDEs) = false
-
-function DynamicalSystemsBase.dynamic_rule(ds::CoupledSDEs)
-    # with remake it can happen that we have nested SDEFunctions
-    # sciml integrator deals with this internally well
-    f = ds.integ.f
-    while hasfield(typeof(f), :f)
-        f = f.f
-    end
-    return f
-end
 
 function DynamicalSystemsBase.set_state!(ds::CoupledSDEs, u::AbstractArray)
     (set_state!(ds.integ, u); ds)
@@ -223,6 +218,8 @@ function covariance_matrix(ds::CoupledSDEs)::AbstractMatrix
     A = diffusion_matrix(ds)
     (A == nothing) ? nothing : A * A'
 end
+
+jacobian(sde::CoupledSDEs) = DynamicalSystemsBase.jacobian(CoupledODEs(sde))
 
 ###########################################################################################
 # Utilities
