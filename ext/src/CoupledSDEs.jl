@@ -99,6 +99,8 @@ function DynamicalSystemsBase.CoupledSDEs(
         integ, deepcopy(prob.p), diffeq, noise_type
     )
 end
+# This preserves the referrenced MTK system and the originally passed diffeq kwargs
+CoupledSDEs(ds::CoupledSDEs, diffeq) = CoupledSDEs(SDEProblem(ds), merge(ds.diffeq, diffeq))
 
 """
     CoupledSDEs(ds::CoupledODEs, p; kwargs...)
