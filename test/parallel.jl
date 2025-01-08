@@ -98,7 +98,7 @@ for (ds, idt, iip) in zip(
 end
 
 @testset "parallel stroboscopic" begin
-# Generic Parallel
+
 @inbounds function duffing_rule(x, p, t)
     ω, f, d, β = p
     dx1 = x[2]
@@ -122,10 +122,44 @@ states = [u0, u0 .+ 0.01]
 pds_cont_oop = ParallelDynamicalSystem(duffing_oop, states)
 pds_cont_iip = ParallelDynamicalSystem(duffing_iip, deepcopy(states))
 
+#generic ds test 
 @testset "IIP=$iip" for (ds, iip) in zip((pds_cont_oop, pds_cont_iip,), (true, false))
     test_dynamical_system(ds, u0, p0; idt = true, iip = true, test_trajectory = false)
 end
+
+#tests for multistate stuff
+
+#alteration
+states = [ones(2) for i in 1:2]
+p = p0 .+ 0.1
+for i in 1:2
+    set_state!(pds_cont_oop,states[i],i)
+    set_state!(pds_cont_iip,states[i],i)
+end
+set_parameters!(pds_cont_oop,p)
+set_parameters!(pds_cont_iip,p)
+
+#obtaining info
+@test all(current_states(pds_cont_oop) .== states)
+@test all(current_states(pds_cont_iip) .== states)
+@test all(current_parameters(pds_cont_oop) .== p)
+@test all(current_parameters(pds_cont_iip) .== p)
+
+#time evolution
+step!(pds_cont_oop)
+@test all(current_states(pds_cont_oop)[1] .== current_states(pds_cont_oop)[2])
+step!(pds_cont_iip)
+@test all(current_states(pds_cont_iip)[1] .== current_states(pds_cont_iip)[2])
+
+#reinit!
+reinit!(pds_cont_oop)
+reinit!(pds_cont_iip)
+@test all(current_states(pds_cont_oop) .== initial_states(pds_cont_oop))
+@test all(current_states(pds_cont_iip) .== initial_states(pds_cont_iip))
+
 end
 
 # TODO: Test that Lyapunovs of this match the original system
 # But test this in ChaosTools.jl
+
+#benchmarks, comparison with old version

@@ -63,8 +63,21 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states::Vector{<:Abstr
         pds = CoupledODEs(prob, ds.diffeq; internalnorm = inorm)
     end
     M = ds isa CoupledODEs && isinplace(ds)
-    prob = referrenced_sciml_prob(ds)
+    prob = referrenced_sciml_prob(ds) 
     return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), prob)
+end
+
+function ParallelDynamicalSystem(smap::StroboscopicMap,states)
+    f, st = parallel_rule(smap.ds, states)
+    T = eltype(first(st))
+    prob = ODEProblem{true}(f, st, (T(initial_time(smap)), T(Inf)), current_parameters(smap))
+    inorm = prob.u0 isa Matrix ? matrixnorm : vectornorm
+    cont_pds = CoupledODEs(prob, smap.ds.diffeq; internalnorm = inorm)
+    pds = StroboscopicMap(cont_pds,smap.period)
+
+    M = smap.ds isa CoupledODEs && isinplace(smap.ds)
+    prob = referrenced_sciml_prob(smap.ds)
+    return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(smap), prob)
 end
 
 function ParallelDynamicalSystem(ds::CoreDynamicalSystem, mappings::Vector{<:Dict})
@@ -164,6 +177,14 @@ function set_state!(pdsa::PDSAM, u::AbstractArray, i::Int = 1)
     return pdsa
 end
 
+
+function set_state!(pdsa::PDSAM{<: StroboscopicMap}, u::AbstractArray, i::Int = 1)
+    current_state(pdsa, i) .= u
+    u_modified!(pdsa.ds.ds.integ, true)
+    return pdsa
+end
+
+
 # We make one more extension here: for continuous time, in place systems
 # the state is a matrix (each column a parallel state) for performance.
 # re-init will not work because there is no way to do the recursive copy. we do it ourselves
@@ -210,7 +231,7 @@ current_states(pdtds::PDTDS) = [current_state(ds) for ds in pdtds.systems]
 initial_states(pdtds::PDTDS) = [initial_state(ds) for ds in pdtds.systems]
 
 # Set stuff
-set_parameter!(pdtds::PDTDS) = for ds in pdtds.systems; set_parameter!(ds, args...); end
+set_parameter!(pdtds::PDTDS,index,value) = for ds in pdtds.systems; set_parameter!(ds, index,value); end
 function set_state!(pdtds::PDTDS, u, i::Int = 1)
     # We need to set state in all systems, in case this does
     # some kind of resetting, e.g., the `u_modified!` stuff.
