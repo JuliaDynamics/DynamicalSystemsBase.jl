@@ -192,7 +192,7 @@ Return the state `u` of `ds` _observed_ at "index" `i`. Possibilities are:
   symbolic variables.
 
 For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
-state of the system is the full state space state, not the projected one
+state of the system is the original state space state, not the projected one
 (this makes the most sense for allowing MTK-based indexing).
 
 Use [`state_name`](@ref) for an accompanying name.
