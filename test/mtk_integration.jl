@@ -200,6 +200,14 @@ end
 
 end
 
+@testset "informative errors" begin
+    prob = ODEProblem(roessler_model)
+    ds = CoupledODEs(prob)
+    @parameters XOXO = 0.5
+    @test_throws "XOXO" current_parameter(ds, :XOXO)
+    @test_throws "XOXO" current_parameter(ds, XOXO)
+end
+
 # %% Trajectory with mixed and time dependent indexing
 η2 = 1.0
 η3 = 0.3

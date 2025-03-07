@@ -247,7 +247,10 @@ function current_parameter(ds::DynamicalSystem, index, p = current_parameters(ds
     prob = referrenced_sciml_prob(ds)
     if !has_referrenced_model(prob)
         return _get_parameter(p, index)
-    else # symbolic dispatch
+    else # symbolic parameter
+        if !SymbolicIndexingInterface.is_parameter(prob, index)
+            error("Symbolic parameter with name $(index) does not exist in the system.")
+        end
         i = SymbolicIndexingInterface.getp(prob, index)
         return i(p)
     end
@@ -431,7 +434,10 @@ function _set_parameter!(ds::DynamicalSystem, index, value, p = current_paramete
         else
             setproperty!(p, index, value)
         end
-    else
+    else # symbolic parameter
+        if !SymbolicIndexingInterface.is_parameter(prob, index)
+            error("Symbolic parameter with name $(index) does not exist in the system.")
+        end
         set! = SymbolicIndexingInterface.setp(prob, index)
         set!(p, value)
     end
