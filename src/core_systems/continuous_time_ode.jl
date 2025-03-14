@@ -145,7 +145,7 @@ function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u::AbstractArray =
         p = current_parameters(ds), t0 = initial_time(ds)
     )
     set_parameters!(ds, p)
-    reinit!(ds.integ, u; reset_dt = true, t0)
+    reinit!(ds.integ, u; reinit_dae = false, reset_dt = true, t0)
     return ds
 end
 
