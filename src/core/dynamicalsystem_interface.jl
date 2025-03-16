@@ -329,17 +329,6 @@ successful_step(ds::DiscreteTimeDynamicalSystem) = all(x -> (isfinite(x) && !isn
 # Generic implementation, most types re-define it as compile-time info
 StateSpaceSets.dimension(ds::DynamicalSystem) = length(current_state(ds))
 
-# TODO: Document it
-function named_current_parameters(ds::DynamicalSystem)
-    mtk = referrenced_sciml_model(ebm)
-    # check if I can use `SymbolicIndexingInterface.parameter_symbols(mtk)` instead.
-    # Does it include initials or not?
-    params_names = Symbol.(ModelingToolkit.parameters(mtk))
-    params_values = current_parameter.(ds, params_names)
-    params = Dict(params_names .=> params_values)
-    return params
-end
-
 ###########################################################################################
 # API - altering status of the system
 ###########################################################################################
