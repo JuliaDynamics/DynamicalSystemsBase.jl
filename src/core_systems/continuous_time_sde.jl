@@ -13,7 +13,7 @@ where
 ``\\mathbf{u}(t)`` is the state vector at time ``t``, ``\\mathbf{f}`` describes the
 deterministic dynamics, and the noise term
 ``\\mathbf{g}(\\mathbf{u}, p, t) \\text{d}\\mathcal{N}_t`` describes
-the stochastic forcing in terms of a noise function (or *diffusion function*) 
+the stochastic forcing in terms of a noise function (or *diffusion function*)
 ``\\mathbf{g}`` and a noise process ``\\mathcal{N}_t``. The parameters of the functions
 ``\\mathcal{f}`` and ``\\mathcal{g}`` are contained in the vector ``p``.
 
@@ -55,7 +55,7 @@ Commonly, this is a matrix or sparse matrix. If this is not given, it
 defaults to `nothing`, which means the `g` should be interpreted as being diagonal.
 
 The noise process can be specified via `noise_process`. It defaults to a standard Wiener
-process (Gaussian white noise). 
+process (Gaussian white noise).
 For details on defining noise processes, see the docs of [DiffEqNoiseProcess.jl
 ](https://docs.sciml.ai/DiffEqNoiseProcess/stable/). A complete list of the pre-defined
 processes can be found [here](https://docs.sciml.ai/DiffEqNoiseProcess/stable/noise_processes/).
@@ -111,4 +111,12 @@ struct CoupledSDEs{IIP,D,I,P} <: ContinuousTimeDynamicalSystem
     p0::P
     diffeq # isn't parameterized because it is only used for display
     noise_type::NamedTuple
+end
+
+function SciMLBase.reinit!(ds::CoupledSDEs, u = initial_state(ds);
+    p = current_parameters(ds), t0 = initial_time(ds), kw...
+  )
+  set_parameters!(ds, p)
+  reinit!(ds.integ, u; t0, kw...)
+  return ds
 end
