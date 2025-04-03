@@ -113,7 +113,7 @@ struct CoupledSDEs{IIP,D,I,P} <: ContinuousTimeDynamicalSystem
     noise_type::NamedTuple
 end
 
-function SciMLBase.reinit!(ds::CoupledSDEs, u = initial_state(ds);
+function SciMLBase.reinit!(ds::CoupledSDEs, u::AbstractArray = initial_state(ds);
     p = current_parameters(ds), t0 = initial_time(ds), kw...
   )
   set_parameters!(ds, p)
