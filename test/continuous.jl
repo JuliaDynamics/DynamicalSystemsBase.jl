@@ -39,7 +39,7 @@ end
     @test lorenz_oop.integ.alg isa Tsit5
 
     # also test ODEproblem creation
-    prob = lorenz_vern.integ.sol.prob
+    prob = lorenz_oop.integ.sol.prob
 
     ds = CoupledODEs(prob, (alg=Rodas5(autodiff=false), abstol=0.0, reltol=1e-6, verbose=false))
 
