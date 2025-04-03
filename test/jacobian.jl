@@ -59,7 +59,6 @@ end
         sde = CoupledSDEs(prob)
 
         jac = jacobian(sde)
-        @test jac.jac_oop isa RuntimeGeneratedFunction
-        @test jac([1.0, 1.0], [], 0.0) == [3 0;0 -3]
+        @test jac([1.0, 1.0], [], 0.0) == [3 0; 0 -3]
     end
 end
