@@ -1,6 +1,6 @@
 using DynamicalSystemsBase, Test
 
-using OrdinaryDiffEq: Vern9
+using OrdinaryDiffEqVerner: Vern9
 
 include("test_system_function.jl")
 
