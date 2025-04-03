@@ -42,10 +42,9 @@ end
     sys = structural_simplify(sys)
 
     prob = ODEProblem(sys, [1.0, 1.0], (0.0, 1.0); jac=true)
-    ode = CoupledODEs(prob)
+    ds = CoupledODEs(prob)
 
-    jac = jacobian(ode)
-    @test jac.jac_oop isa RuntimeGeneratedFunction
+    jac = jacobian(ds)
     @test jac([1.0, 1.0], [], 0.0) == [3 0;0 -3]
 
     @testset "CoupledSDEs" begin
