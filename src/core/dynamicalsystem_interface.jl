@@ -56,14 +56,12 @@ The referenced MTK model corresponding to the dynamical system can be obtained w
 
 See also the DynamicalSystems.jl tutorial online for an example.
 
-!!! warn "ModelingToolkit.jl v9"
-    In ModelingToolkit.jl v9 the default `split` behavior of the parameter container
-    is `true`. This means that the parameter container is no longer a `Vector{Float64}`
-    by default, which means that you cannot use integers to access parameters.
-    It is recommended to keep `split = true` (default) and only access
-    parameters via their symbolic parameter binding.
-    Use `structural_simplify(sys; split = false)` to allow accessing parameters
-    with integers again.
+!!! warn "Initial conditions and parameters"
+    ModelingToolkit.jl treats initial conditions of all variables as additional parameters.
+    This is because its terminology is aimed primarily at initial value problems rather
+    than dynamical systems. It is strongly recommended when making a dynamical system from
+    an MTK model to only access parameters via symbols, and to not use the `split = false`
+    keyword when creating the problem type from the MTK model.
 
 ## API
 
@@ -79,8 +77,8 @@ unless when developing new algorithm implementations that use dynamical systems.
 ### API - obtain information
 
 - `ds(t)` with `ds` an instance of `DynamicalSystem`: return the state of `ds` at time `t`.
-  For continuous time systems this interpolates and extrapolates,
-  while for discrete time systems it only works if `t` is the current time.
+  For continuous time systems this interpolates current and previous time step and is very accurate;
+  for discrete time systems it only works if `t` is the current time.
 - [`current_state`](@ref)
 - [`initial_state`](@ref)
 - [`observe_state`](@ref)
@@ -194,7 +192,7 @@ Return the state `u` of `ds` _observed_ at "index" `i`. Possibilities are:
   symbolic variables.
 
 For [`ProjectedDynamicalSystem`](@ref), this function assumes that the
-state of the system is the full state space state, not the projected one
+state of the system is the original state space state, not the projected one
 (this makes the most sense for allowing MTK-based indexing).
 
 Use [`state_name`](@ref) for an accompanying name.
@@ -247,7 +245,10 @@ function current_parameter(ds::DynamicalSystem, index, p = current_parameters(ds
     prob = referrenced_sciml_prob(ds)
     if !has_referrenced_model(prob)
         return _get_parameter(p, index)
-    else # symbolic dispatch
+    else # symbolic parameter
+        if !SymbolicIndexingInterface.is_parameter(prob, index)
+            error("Symbolic parameter with name $(index) does not exist in the system.")
+        end
         i = SymbolicIndexingInterface.getp(prob, index)
         return i(p)
     end
@@ -431,7 +432,10 @@ function _set_parameter!(ds::DynamicalSystem, index, value, p = current_paramete
         else
             setproperty!(p, index, value)
         end
-    else
+    else # symbolic parameter
+        if !SymbolicIndexingInterface.is_parameter(prob, index)
+            error("Symbolic parameter with name $(index) does not exist in the system.")
+        end
         set! = SymbolicIndexingInterface.setp(prob, index)
         set!(p, value)
     end

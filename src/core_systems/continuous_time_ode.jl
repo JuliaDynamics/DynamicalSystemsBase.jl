@@ -142,10 +142,10 @@ set_state!(ds::CoupledODEs, u::AbstractArray) = (set_state!(ds.integ, u); ds)
 SciMLBase.step!(ds::CoupledODEs, args...) = (step!(ds.integ, args...); ds)
 
 function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u::AbstractArray = initial_state(ds);
-        p = current_parameters(ds), t0 = initial_time(ds)
+        p = current_parameters(ds), t0 = initial_time(ds), kw...
     )
     set_parameters!(ds, p)
-    reinit!(ds.integ, u; reset_dt = true, t0)
+    reinit!(ds.integ, u; reinit_dae = false, reset_dt = true, t0, kw...)
     return ds
 end
 

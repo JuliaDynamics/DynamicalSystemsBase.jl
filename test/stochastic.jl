@@ -1,5 +1,5 @@
 using DynamicalSystemsBase, Test
-using OrdinaryDiffEq: Tsit5
+using OrdinaryDiffEqTsit5: Tsit5
 using StochasticDiffEq: SDEProblem, SRA, SOSRA, LambaEM, CorrelatedWienerProcess, EM
 
 StochasticSystemsBase = Base.get_extension(DynamicalSystemsBase, :StochasticSystemsBase)
