@@ -141,7 +141,7 @@ set_state!(ds::CoupledODEs, u::AbstractArray) = (set_state!(ds.integ, u); ds)
 # so that `ds` is printed
 SciMLBase.step!(ds::CoupledODEs, args...) = (step!(ds.integ, args...); ds)
 
-function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u = initial_state(ds);
+function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u::AbstractArray = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds), kw...
     )
     set_parameters!(ds, p)
