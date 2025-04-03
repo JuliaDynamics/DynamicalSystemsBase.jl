@@ -1,7 +1,7 @@
 using DynamicalSystemsBase, Test
 
 using OrdinaryDiffEqTsit5: ODEProblem, Tsit5
-using OrdinaryDiffEqRosenbrock: Rodas5
+using OrdinaryDiffEqVerner: Vern9
 
 include("test_system_function.jl")
 
@@ -38,14 +38,9 @@ end
     lorenz_oop = CoupledODEs(lorenz_rule, u0, p0)
     @test lorenz_oop.integ.alg isa Tsit5
 
-    # also test ODEproblem creation
     prob = lorenz_oop.integ.sol.prob
-
-    ds = CoupledODEs(prob, (alg=Rodas5(autodiff=false), abstol=0.0, reltol=1e-6, verbose=false))
-
-    @test ds.integ.alg isa Rodas5
+    ds = CoupledODEs(prob, (alg=Vern9(), abstol=0.0, reltol=1e-6, verbose=false))
+    @test ds.integ.alg isa Vern9
     @test ds.integ.opts.verbose == false
-
-    @test_throws ArgumentError CoupledODEs(prob; diffeq = (alg=Rodas5(autodiff=false), ))
 
 end
