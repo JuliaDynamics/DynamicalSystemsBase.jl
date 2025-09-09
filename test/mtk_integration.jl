@@ -68,6 +68,12 @@ end
     @test observe_state(ds, 1) == -0.5
 end
 
+@testset "trajectory naming" begin
+    @test named_variables(ds) == [:fol_1₊x, :fol_2₊x]
+    X, tvec = trajectory(ds, 10)
+    @test X.names == [:fol_1₊x, :fol_2₊x]
+end
+
 @testset "derivative dynamical systems" begin
     u1 = current_state(ds)
     pds = ParallelDynamicalSystem(ds, [u1, copy(u1)])
@@ -102,13 +108,13 @@ end
 
 
 @testset "split = true" begin
-sys = structural_simplify(connected; split = true)
+    sys = structural_simplify(connected; split = true)
 
-u0 = [fol_1.x => -0.5,
-    fol_2.x => 1.0]
+    u0 = [fol_1.x => -0.5,
+        fol_2.x => 1.0]
 
-p = [fol_1.τ => 2.0,
-    fol_2.τ => 4.0]
+    p = [fol_1.τ => 2.0,
+        fol_2.τ => 4.0]
 
     prob = ODEProblem(sys, u0, (0.0, 10.0), p)
     ds = CoupledODEs(prob)

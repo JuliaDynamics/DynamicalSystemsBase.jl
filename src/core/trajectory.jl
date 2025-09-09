@@ -12,8 +12,8 @@ Optionally provide a starting state `u0` which is `current_state(ds)` by default
 If time evolution diverged or in general failed before `T`,
 the remaining of the trajectory is set to the last valid point.
 
-The dimensions of `X` are automatically named if `ds` referrences an MTK model,
-see [`DynamicalSystem`](@ref).
+The dimensions of `X` are automatically named if `ds` referrences an MTK model
+and if `save_idxs` remains at its default value.
 
 ## Keyword arguments
 
@@ -24,9 +24,8 @@ see [`DynamicalSystem`](@ref).
 * `t0 = initial_time(ds)`: Starting time.
 * `container = SVector`: Type of vector that will represent the state space points
   that will be included in the `StateSpaceSet` output. See `StateSpaceSet` for valid options.
-* `save_idxs::AbstractVector`: Which variables to output in `X`. It can be
-  any type of index that can be given to [`observe_state`](@ref).
-  Defaults to `1:dimension(ds)` (all dynamic variables).
+* `save_idxs`: Which variables to output in `X`. By default it is `nothing` (all variables).
+  It can be a vector of any type of index that can be given to [`observe_state`](@ref).
   Note: if you mix integer and symbolic indexing be sure to initialize the array
   as `Any` so that integers `1, 2, ...` are not converted to symbolic expressions.
 
@@ -49,7 +48,9 @@ function trajectory(ds::DynamicalSystem, T, u0 = current_state(ds);
         X, tvec = trajectory_continuous(ds, T; accessor, kwargs...)
     end
     # name automatically if possible
-    X = StateSpaceSet(X; names = named_variables(ds))
+    if isnothing(save_idxs)
+        X = StateSpaceSet(X; names = named_variables(ds))
+    end
     return X, tvec
 end
 
