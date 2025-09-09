@@ -6,6 +6,7 @@
 # v3.14.0
 
 - `set_parameter!` and `current_parameter` will now throw an informative error message explicitly naming the parameter if the user tries to get/set a symbolic parameter that does not exist in the MTK-generated dynamical system.
+- Fixed a plethora of bugs and test failures associated with updates in the SciML ecosystem.
 
 # v3.13.0
 

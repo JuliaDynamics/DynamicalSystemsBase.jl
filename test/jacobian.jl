@@ -30,7 +30,7 @@ end
 
 @testset "MTK Jacobian" begin
     using ModelingToolkit
-    using ModelingToolkit: Num, RuntimeGeneratedFunctions.RuntimeGeneratedFunction
+    using ModelingToolkit: Num, GeneratedFunctionWrapper
     using DynamicalSystemsBase: SciMLBase
     @independent_variables t
     @variables u(t)[1:2]
@@ -42,10 +42,10 @@ end
     sys = structural_simplify(sys)
 
     prob = ODEProblem(sys, [1.0, 1.0], (0.0, 1.0); jac=true)
-    ode = CoupledODEs(prob)
+    ds = CoupledODEs(prob)
 
-    jac = jacobian(ode)
-    @test jac.jac_oop isa RuntimeGeneratedFunction
+    jac = jacobian(ds)
+    @test jac isa GeneratedFunctionWrapper
     @test jac([1.0, 1.0], [], 0.0) == [3 0;0 -3]
 
     @testset "CoupledSDEs" begin
@@ -60,7 +60,7 @@ end
         sde = CoupledSDEs(prob)
 
         jac = jacobian(sde)
-        @test jac.jac_oop isa RuntimeGeneratedFunction
-        @test jac([1.0, 1.0], [], 0.0) == [3 0;0 -3]
+        @test jac isa GeneratedFunctionWrapper
+        @test jac([1.0, 1.0], [], 0.0) == [3 0; 0 -3]
     end
 end

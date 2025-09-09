@@ -15,8 +15,14 @@ StateSpaceSets = "40b095a5-5852-4c12-98c7-d43bf788e795"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 SymbolicIndexingInterface = "2efcf032-c050-4f8e-a9bb-153293bab1f5"
 
+[weakdeps]
+StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
+
+[extensions]
+StochasticSystemsBase = "StochasticDiffEq"
+
 [compat]
-ForwardDiff = "0.10"
+ForwardDiff = "0.10, 1"
 OrdinaryDiffEqTsit5 = "1.1"
 Reexport = "1"
 Roots = "1, 2"
@@ -26,9 +32,3 @@ Statistics = "1"
 StochasticDiffEq = "6.66.0"
 SymbolicIndexingInterface = "0.3.4"
 julia = "1.9"
-
-[weakdeps]
-StochasticDiffEq = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
-
-[extensions]
-StochasticSystemsBase = "StochasticDiffEq"
