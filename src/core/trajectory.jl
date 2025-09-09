@@ -5,18 +5,15 @@ export trajectory
 
 Evolve `ds` for a total time of `T` and return its trajectory `X`, sampled at equal time
 intervals, and corresponding time vector. `X` is a `StateSpaceSet`.
-Optionally provide a starting state `u0` which is `current_state(ds)` by default.
-
 The returned time vector is `t = (t0+Ttr):Δt:(t0+Ttr+T)`.
 
-If time evolution diverged, or in general failed, before `T`,
+Optionally provide a starting state `u0` which is `current_state(ds)` by default.
+
+If time evolution diverged or in general failed before `T`,
 the remaining of the trajectory is set to the last valid point.
 
-`trajectory` is a very simple function provided for convenience.
-For continuous time systems, it doesn't play well with callbacks,
-use `DifferentialEquations.solve` if you want a trajectory/timeseries
-that works with callbacks, or in general you want more flexibility in the generated
-trajectory (but remember to convert the output of `solve` to a `StateSpaceSet`).
+The dimensions of `X` are automatically named if `ds` referrences an MTK model,
+see [`DynamicalSystem`](@ref).
 
 ## Keyword arguments
 
@@ -32,6 +29,14 @@ trajectory (but remember to convert the output of `solve` to a `StateSpaceSet`).
   Defaults to `1:dimension(ds)` (all dynamic variables).
   Note: if you mix integer and symbolic indexing be sure to initialize the array
   as `Any` so that integers `1, 2, ...` are not converted to symbolic expressions.
+
+## Description
+
+`trajectory` is a very simple function provided for convenience.
+For continuous time systems, it doesn't play well with callbacks,
+use `DifferentialEquations.solve` if you want a trajectory
+that works with callbacks, or in general you want more flexibility in the generated
+trajectory (but remember to convert the output of `solve` to a `StateSpaceSet`).
 """
 function trajectory(ds::DynamicalSystem, T, u0 = current_state(ds);
         save_idxs = nothing, t0 = initial_time(ds), kwargs...
@@ -39,10 +44,13 @@ function trajectory(ds::DynamicalSystem, T, u0 = current_state(ds);
     accessor = svector_access(save_idxs)
     reinit!(ds, u0; t0)
     if isdiscretetime(ds)
-        trajectory_discrete(ds, T; accessor, kwargs...)
+        X, tvec = trajectory_discrete(ds, T; accessor, kwargs...)
     else
-        trajectory_continuous(ds, T; accessor, kwargs...)
+        X, tvec = trajectory_continuous(ds, T; accessor, kwargs...)
     end
+    # name automatically if possible
+    X = StateSpaceSet(X; names = named_variables(ds))
+    return X, tvec
 end
 
 function trajectory_discrete(ds, T;
