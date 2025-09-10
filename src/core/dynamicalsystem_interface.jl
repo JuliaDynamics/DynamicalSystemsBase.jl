@@ -44,7 +44,7 @@ from an experimental measurement of a dynamical system with an unknown dynamic r
 
 See also the DynamicalSystems.jl tutorial online for examples making dynamical systems.
 
-## Integration with ModelingToolkit.jl
+## Integration with ModelingToolkit.jl (MTK)
 
 Dynamical systems that have been constructed from `DEProblem`s that themselves
 have been constructed from ModelingToolkit.jl keep a reference to the symbolic
@@ -93,6 +93,7 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`isinplace`](@ref)
 - [`successful_step`](@ref)
 - [`referrenced_sciml_model`](@ref)
+- [`named_variables`](@ref)
 
 ### API - alter status
 
@@ -126,7 +127,7 @@ errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(
 
 export current_state, initial_state, current_parameters, current_parameter, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
-    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_model
+    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_model, named_variables
 
 ###########################################################################################
 # Symbolic support
@@ -148,9 +149,26 @@ referrenced_sciml_model(::Nothing) = nothing
 
 # return true if there is an actual referrenced system
 has_referrenced_model(prob::SciMLBase.DEProblem) = has_referrenced_model(referrenced_sciml_model(prob))
+has_referrenced_model(prob::DynamicalSystem) = has_referrenced_model(referrenced_sciml_model(prob))
 has_referrenced_model(::Nothing) = false
 has_referrenced_model(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
 has_referrenced_model(sys) = true
+
+"""
+    named_variables(ds::DynamicalSystem)
+
+If `ds` is constructed via MTK, return a vector of the variable names (as symbols).
+Otherwise return `nothing`. If `X` is a `StateSpaceSet`, you can always do
+```julia
+X = StateSpaceSet(X; names = named_variables(ds))
+```
+in downstream functions to name a set coming from `ds` (if possible).
+"""
+function named_variables(ds::DynamicalSystem)
+    mtk = referrenced_sciml_model(ds)
+    isnothing(mtk) && return nothing
+    return SymbolicIndexingInterface.getname.(SymbolicIndexingInterface.variable_symbols(mtk))
+end
 
 ###########################################################################################
 # API - obtaining information from the system

@@ -1,3 +1,8 @@
+# v3.15
+
+- New function `named_variables(ds)` for getting the variable names of an MTK-generated dynamical system.
+- `trajectory` function now automatically makes a named state space set if the dynamical system is MTK-generated.
+
 # v3.14.0
 
 - `set_parameter!` and `current_parameter` will now throw an informative error message explicitly naming the parameter if the user tries to get/set a symbolic parameter that does not exist in the MTK-generated dynamical system.
