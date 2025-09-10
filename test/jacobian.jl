@@ -30,7 +30,7 @@ end
 
 @testset "MTK Jacobian" begin
     using ModelingToolkit
-    using ModelingToolkit: Num, GeneratedFunctionWrapper
+    using ModelingToolkit: GeneratedFunctionWrapper
     using DynamicalSystemsBase: SciMLBase
     @independent_variables t
     @variables u(t)[1:2]
@@ -38,15 +38,15 @@ end
 
     eqs = [D(u[1]) ~ 3.0 * u[1],
            D(u[2]) ~ -3.0 * u[2]]
-    @named sys = ODESystem(eqs, t)
-    sys = structural_simplify(sys)
+    @named sys = System(eqs, t)
+    sys = mtkcompile(sys)
 
     prob = ODEProblem(sys, [1.0, 1.0], (0.0, 1.0); jac=true)
     ds = CoupledODEs(prob)
 
     jac = jacobian(ds)
     @test jac isa GeneratedFunctionWrapper
-    @test jac([1.0, 1.0], [], 0.0) == [3 0;0 -3]
+    @test jac([1.0, 1.0], [], 0.0) == [-3 0;0 3]
 
     @testset "CoupledSDEs" begin
         # just to check if MTK @brownian does not give any problems
@@ -61,6 +61,6 @@ end
 
         jac = jacobian(sde)
         @test jac isa GeneratedFunctionWrapper
-        @test jac([1.0, 1.0], [], 0.0) == [3 0; 0 -3]
+        @test jac([1.0, 1.0], [], 0.0) == [-3 0; 0 3]
     end
 end
