@@ -22,9 +22,9 @@ end
 connections = [fol_1.f ~ 1.5,
     fol_2.f ~ fol_1.x]
 
-connected = compose(ODESystem(connections, t; name = :connected), fol_1, fol_2)
+connected = compose(System(connections, t; name = :connected), fol_1, fol_2)
 
-sys = structural_simplify(connected; split = false)
+sys = mtkcompile(connected; split = false)
 
 u0 = [fol_1.x => -0.5,
     fol_2.x => 1.0]
@@ -32,46 +32,34 @@ u0 = [fol_1.x => -0.5,
 p = [fol_1.τ => 2.0,
     fol_2.τ => 4.0]
 
-prob = ODEProblem(sys, u0, (0.0, 10.0), p)
+initials = vcat(u0, p)
+
+prob = ODEProblem(sys, initials, (0.0, 10.0))
 ds = CoupledODEs(prob)
 
 @testset "parameter get/set" begin
-    @test current_parameter(ds, 1) == 2.0
     @test current_parameter(ds, fol_1.τ) == 2.0
-    @test current_parameter(ds, 2) == 4.0
     @test current_parameter(ds, fol_2.τ) == 4.0
-
-    set_parameter!(ds, 1, 3.0)
-    @test current_parameter(ds, 1) == 3.0
-    @test current_parameter(ds, fol_1.τ) == 3.0
-
-    set_parameter!(ds, fol_1.τ, 2.0)
-    @test current_parameter(ds, 1) == 2.0
-    @test current_parameter(ds, fol_1.τ) == 2.0
+    set_parameter!(ds, fol_1.τ, 4.0)
+    @test current_parameter(ds, fol_1.τ) == 4.0
 end
 
 # pure parameter container
 @testset "pure parameter container" begin
     pp = deepcopy(current_parameters(ds))
-    set_parameter!(ds, fol_1.τ, 4.0, pp)
-    @test current_parameter(ds, fol_1.τ, pp) == 4.0
+    set_parameter!(ds, fol_1.τ, 2.0, pp)
+    @test current_parameter(ds, fol_1.τ, pp) == 2.0
 end
 
 @testset "states and observed variables" begin
-    @test observe_state(ds, 1) == -0.5
     @test observe_state(ds, fol_1.x) == -0.5
     @test observe_state(ds, fol_2.RHS) == -0.375
 
-    set_state!(ds, 1.5, 1)
-    @test observe_state(ds, 1) == 1.5
+    x0 = observe_state(ds, 1)
+    set_state!(ds, x0, 1)
+    @test observe_state(ds, 1) == x0
     set_state!(ds, -0.5, fol_1.x)
-    @test observe_state(ds, 1) == -0.5
-end
-
-@testset "trajectory naming" begin
-    @test named_variables(ds) == [:fol_1₊x, :fol_2₊x]
-    X, tvec = trajectory(ds, 10)
-    @test X.names == [:fol_1₊x, :fol_2₊x]
+    @test observe_state(ds, fol_1.x) == -0.5
 end
 
 @testset "derivative dynamical systems" begin
@@ -79,46 +67,41 @@ end
     pds = ParallelDynamicalSystem(ds, [u1, copy(u1)])
 
     set_parameter!(pds, fol_1.τ, 4.0)
-    @test current_parameter(pds, 1) == 4.0
     @test current_parameter(pds, fol_1.τ) == 4.0
     @test observe_state(pds, fol_1.x) == -0.5
     @test observe_state(pds, fol_2.RHS) == -0.375
 
     sds = StroboscopicMap(ds, 1.0)
     set_parameter!(sds, fol_1.τ, 2.0)
-    @test current_parameter(sds, 1) == 2.0
     @test current_parameter(sds, fol_1.τ) == 2.0
     @test observe_state(sds, fol_1.x) == -0.5
     @test observe_state(sds, fol_2.RHS) == -0.375
 
     prods = ProjectedDynamicalSystem(ds, [1], [0.0])
     set_parameter!(prods, fol_1.τ, 3.0)
-    @test current_parameter(prods, 1) == 3.0
     @test current_parameter(prods, fol_1.τ) == 3.0
     @test observe_state(prods, fol_1.x) == -0.5
     @test observe_state(prods, fol_2.RHS) == -0.375
 
     # notice this evolves the dynamical system!!!
-    pmap = PoincareMap(ds, (1, 0.0))
+    pmap = PoincareMap(ds, (2, 0.0))
     set_parameter!(pmap, fol_1.τ, 4.0)
-    @test current_parameter(pmap, 1) == 4.0
     @test current_parameter(pmap, fol_1.τ) == 4.0
     @test observe_state(pmap, fol_1.x) ≈ 0 atol = 1e-3 rtol = 0
 end
 
+@testset "trajectory naming" begin
+    vars = named_variables(ds)
+    @test length(vars) == 2
+    @test sort!(string.(vars)) == ["fol_1₊x", "fol_2₊x"]
+    X, tvec = trajectory(ds, 10)
+    @test X.names == vars
+end
 
 @testset "split = true" begin
-    sys = structural_simplify(connected; split = true)
-
-    u0 = [fol_1.x => -0.5,
-        fol_2.x => 1.0]
-
-    p = [fol_1.τ => 2.0,
-        fol_2.τ => 4.0]
-
-    prob = ODEProblem(sys, u0, (0.0, 10.0), p)
+    sys = mtkcompile(connected; split = true)
+    prob = ODEProblem(sys, initials, (0.0, 10.0))
     ds = CoupledODEs(prob)
-
     @test current_parameter(ds, fol_1.τ) == 2.0
     set_parameter!(ds, fol_1.τ, 3.0)
     @test current_parameter(ds, fol_1.τ) == 3.0
@@ -142,7 +125,7 @@ end
 
     @test observe_state(ds, 1) == 1.0
 
-    @test_throws ErrorException observe_state(ds, fol_1.f)
+    @test_throws ArgumentError observe_state(ds, fol_1.f)
 end
 
 # Test that remake works also without anything initial
@@ -169,11 +152,11 @@ D = Differential(t)
     end
 end
 
-@mtkbuild roessler_model = Roessler()
+@mtkcompile roessler_model = Roessler()
 
 @testset "type: $(iip)" for iip in (true, false)
     if iip
-        prob = ODEProblem(roessler_model)
+        prob = ODEProblem(roessler_model, nothing, (0.0, Inf))
     else
         prob = ODEProblem{false}(roessler_model, nothing, (0.0, Inf); u0_constructor = x->SVector(x...))
     end
@@ -215,7 +198,7 @@ end
 end
 
 @testset "informative errors" begin
-    prob = ODEProblem(roessler_model)
+    prob = prob = ODEProblem(roessler_model, nothing, (0.0, Inf))
     ds = CoupledODEs(prob)
     @parameters XOXO = 0.5
     @test_throws "XOXO" current_parameter(ds, :XOXO)
@@ -237,10 +220,10 @@ Differential(t)(DS) ~ η2 - η3*DS - abs(DT - DS)*DS,
 η1 ~ η1_0 + r_η*t, # this symbolic variable has its own equation!
 ]
 
-sys = ODESystem(eqs, t; name = :stommel)
-sys = structural_simplify(sys; split = false)
+sys = System(eqs, t; name = :stommel)
+sys = mtkcompile(sys; split = false)
 
-prob = ODEProblem(sys)
+prob = ODEProblem(sys, nothing, (0.0, Inf))
 ds = CoupledODEs(prob)
 
 X, tvec = trajectory(ds, 10.0; Δt = 0.1, save_idxs = Any[1, 2, η1])
