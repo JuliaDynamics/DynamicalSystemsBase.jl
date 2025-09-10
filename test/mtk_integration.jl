@@ -13,7 +13,7 @@ function fol_factory(separate = false; name)
         D(x) ~ RHS] :
           D(x) ~ (f - x) / τ
 
-    ODESystem(eqs, t; name)
+    System(eqs, t; name)
 end
 
 @named fol_1 = fol_factory()
@@ -112,6 +112,7 @@ end
         du[1] = p[1] * (u[2] - u[1])
         du[2] = u[1] * (28.0 - u[3]) - u[2]
         du[3] = u[1] * u[2] - (8 / 3) * u[3]
+        return nothing
     end
     u0 = [1.0; 0.0; 0.0]
     tspan = (0.0, 100.0)
