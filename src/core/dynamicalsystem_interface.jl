@@ -127,14 +127,24 @@ errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(
 
 export current_state, initial_state, current_parameters, current_parameter, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
-    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_model, named_variables
+    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_model,
+    referenced_sciml_prob, named_variables
 
 ###########################################################################################
 # Symbolic support
 ###########################################################################################
 # Simply extend the `referrenced_sciml_prob` and you have symbolic indexing support!
 import SymbolicIndexingInterface
+"""
+    referrenced_sciml_prob(ds::Dynamical system)
+
+Return `ds.integ.sol.prob` if there is a referenced model.
+Otherwise return `nothing`.
+
+The same function can be called with the alias `referenced_sciml_prob`.
+"""
 referrenced_sciml_prob(::DynamicalSystem) = nothing
+const referenced_sciml_prob = referrenced_sciml_prob # Alias with correct spelling (exported)
 
 # The rest are all automated!
 """
