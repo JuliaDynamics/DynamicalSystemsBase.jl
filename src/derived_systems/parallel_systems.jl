@@ -63,7 +63,7 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states::Vector{<:Abstr
         pds = CoupledODEs(prob, ds.diffeq; internalnorm = inorm)
     end
     M = ds isa CoupledODEs && isinplace(ds)
-    prob = referrenced_sciml_prob(ds) 
+    prob = referrenced_sciml_prob(ds)
     return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), prob)
 end
 
@@ -131,9 +131,17 @@ end
 # Analytically knwon rule: extensions
 ###########################################################################################
 for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
-        :current_parameters, :initial_parameters, :successful_step,
+        :current_parameters, :initial_parameters,
     )
     @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
+end
+
+function successful_step(pdsa::ParallelDynamicalSystemAnalytic)
+    if !isdiscretetime(pdsa)
+        return successful_step(pdsa.ds)
+    else
+        return all(x -> (isfinite(x) && !isnan(x)), current_state(pdsa))
+    end
 end
 
 (pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
