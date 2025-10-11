@@ -94,6 +94,9 @@ for (ds, idt, iip) in zip(
         test_dynamical_system(ds, u0, p0; idt, iip = true, test_trajectory = false)
         parallel_integration_tests(ds)
         max_lyapunov_test(ds, idt ? lmax_disc : lmax_cont)
+        @testset "successful step" begin
+            @test successful_step(ds) == true
+        end
     end
 end
 
@@ -122,7 +125,7 @@ states = [u0, u0 .+ 0.01]
 pds_cont_oop = ParallelDynamicalSystem(duffing_oop, states)
 pds_cont_iip = ParallelDynamicalSystem(duffing_iip, deepcopy(states))
 
-#generic ds test 
+#generic ds test
 @testset "IIP=$iip" for (ds, iip) in zip((pds_cont_oop, pds_cont_iip,), (true, false))
     test_dynamical_system(ds, u0, p0; idt = true, iip = true, test_trajectory = false)
 end
