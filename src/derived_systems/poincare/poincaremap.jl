@@ -95,18 +95,18 @@ next_state_on_psos = current_state(pmap)
     Datseris & Parlitz 2022, _Nonlinear Dynamics: A Concise Introduction Interlaced with Code_,
     [Springer Nature, Undergrad. Lect. Notes In Physics](https://doi.org/10.1007/978-3-030-91032-7)
 """
-mutable struct PoincareMap{I<:ContinuousTimeDynamicalSystem, F, P, R, V} <: DiscreteTimeDynamicalSystem
+mutable struct PoincareMap{I<:ContinuousTimeDynamicalSystem, F, P, R, U<:Real, V} <: DiscreteTimeDynamicalSystem
 	ds::I
 	plane_distance::F
  	planecrossing::P
-	Tmax::Float64
+	Tmax::U
 	rootkw::R
 	state_on_plane::V
-    tcross::Float64
+    tcross::U
 	t::Int
     # These two fields are for setting the state of the pmap from the plane
     # (i.e., given a D-1 dimensional state, create the full D-dimensional state)
-    dummy::Vector{Float64}
+    dummy::Vector{U}
     diffidxs::Vector{Int}
     state_initial::V
 end
@@ -125,11 +125,13 @@ function PoincareMap(
 	planecrossing = PlaneCrossing(plane, direction > 0)
 	plane_distance = (t) -> planecrossing(ds(t))
     v = recursivecopy(current_state(ds))
-    dummy = zeros(D)
+    tcross = current_time(ds)
+    Tmax = convert(typeof(tcross), Tmax)
+    dummy = zeros(eltype(v), D)
     diffidxs = _indices_on_poincare_plane(plane, D)
 	pmap = PoincareMap(
         ds, plane_distance, planecrossing, Tmax, rootkw,
-        v, current_time(ds), 0, dummy, diffidxs, recursivecopy(v),
+        v, tcross, 0, dummy, diffidxs, recursivecopy(v),
     )
     step!(pmap) # this ensures that the state is on the hyperplane
     pmap.state_initial = recursivecopy(current_state(pmap))

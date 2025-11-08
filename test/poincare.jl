@@ -99,3 +99,24 @@ end
     @test all(x -> abs(x) < 1e-12, B[:, 1])
     @test vec(A) == vec(B)
 end
+
+@testset "PoincareMap BigFloat" begin
+    setprecision(113) # quadruple precision
+    u0Big = BigFloat.(u0)
+    pBig = BigFloat.(p)
+    ds = CoupledODEs(gissinger_rule, u0Big, pBig)
+    rootkw = (xrtol = BigFloat(1e-25), atol = BigFloat(1e-25))
+    pmap = PoincareMap(ds, plane1;
+        rootkw = rootkw,
+    )
+
+    # check if everything is BigFloat
+    @test typeof(current_crossing_time(pmap)) == BigFloat
+    @test typeof(pmap.Tmax) == BigFloat
+    @test eltype(current_state(pmap)) == BigFloat
+
+    # check if BigFloat works
+    pmap = poincaresos(ds, plane1, 100; rootkw = rootkw)
+    @test eltype(pmap[1]) == BigFloat
+    @test all(x -> abs(x) < 1e-20, pmap[:, 1])
+end
