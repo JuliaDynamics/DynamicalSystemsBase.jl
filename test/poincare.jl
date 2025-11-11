@@ -101,11 +101,10 @@ end
 end
 
 @testset "PoincareMap BigFloat" begin
-    setprecision(113) # quadruple precision
-    u0Big = BigFloat.(u0)
-    pBig = BigFloat.(p)
+    u0Big = BigFloat.(u0, 113)
+    pBig = BigFloat.(p, 113)
     ds = CoupledODEs(gissinger_rule, u0Big, pBig)
-    rootkw = (xrtol = BigFloat(1e-25), atol = BigFloat(1e-25))
+    rootkw = (xrtol = BigFloat(1e-25, 113), atol = BigFloat(1e-25, 113))
     pmap = PoincareMap(ds, plane1;
         rootkw = rootkw,
     )
