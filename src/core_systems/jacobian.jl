@@ -47,8 +47,10 @@ end
 function _jacobian(ds, ::Val{true})
     f = dynamic_rule(ds)
     u0 = current_state(ds)
+    p = current_parameters(ds)
+    t = initial_time(ds)
     cfg = ForwardDiff.JacobianConfig(
-        (du, u) -> f(du, u, p, p), deepcopy(u0), deepcopy(u0)
+        (du, u) -> f(du, u, p, t), deepcopy(u0), deepcopy(u0)
     )
     Jf! = (J0, u, p, t = 0) -> begin
         uv = @view u[:, 1]
@@ -63,7 +65,7 @@ end
 
 function _jacobian(ds, ::Val{false})
     f = dynamic_rule(ds)
-    Jf = (u, p, t = 0) -> ForwardDiff.jacobian((x) -> f(x, p, t), u)
+    Jf = (u, p, t = 0) -> ForwardDiff.jacobian(x -> f(x, p, t), u)
     return Jf
 end
 
