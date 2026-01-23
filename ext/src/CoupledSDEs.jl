@@ -1,4 +1,5 @@
 using LinearAlgebra: LinearAlgebra
+import DynamicalSystemsBase: CoupledSDEs
 
 ###########################################################################################
 # DiffEq options
