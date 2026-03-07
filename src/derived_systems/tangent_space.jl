@@ -95,7 +95,8 @@ additional_details(tands::TangentDynamicalSystem) = [
 
 # it is practically identical to `TangentDynamicalSystem`
 
-function TangentDynamicalSystem(ds::CoreDynamicalSystem{IIP};
+function TangentDynamicalSystem(
+        ds::CoreDynamicalSystem{IIP};
         J = nothing, k::Int = dimension(ds), Q0 = default_deviations(dimension(ds), k),
         J0 = zeros(dimension(ds), dimension(ds)), u0 = current_state(ds),
     ) where {IIP}
@@ -130,7 +131,7 @@ end
 
 function correct_matrix_type(::Val{false}, Q::AbstractMatrix)
     A, B = size(Q)
-    SMatrix{A, B}(Q)
+    return SMatrix{A, B}(Q)
 end
 correct_matrix_type(::Val{false}, Q::SMatrix) = Q
 correct_matrix_type(::Val{true}, Q::AbstractMatrix) = ismutable(Q) ? Q : Array(Q)
@@ -144,7 +145,7 @@ function tangent_rule(f::F, J::JAC, J0, ::Val{true}, ::Val{k}, u0) where {F, JAC
         uv = @view u[:, 1]
         f(view(du, :, 1), uv, p, t)
         J(J0, uv, p, t)
-        mul!((@view du[:, 2:(k+1)]), J0, (@view u[:, 2:(k+1)]))
+        mul!((@view du[:, 2:(k + 1)]), J0, (@view u[:, 2:(k + 1)]))
         nothing
     end
     return tangentf
@@ -153,7 +154,7 @@ end
 # OOP Tangent space dynamics
 function tangent_rule(f::F, J::JAC, J0, ::Val{false}, ::Val{k}, u0) where {F, JAC, k}
     # Initial matrix `J0` is ignored
-    ws_index = SVector{k, Int}(2:(k+1)...)
+    ws_index = SVector{k, Int}(2:(k + 1)...)
     tangentf = TangentOOP(f, J, ws_index)
     return tangentf
 end
@@ -167,7 +168,7 @@ function (tan::TangentOOP)(u, p, t)
     @inbounds s = u[:, 1]
     du = tan.f(s, p, t)
     J = tan.J(s, p, t)
-    @inbounds dW = J*u[:, tan.ws]
+    @inbounds dW = J * u[:, tan.ws]
     return hcat(du, dW)
 end
 
@@ -177,8 +178,9 @@ end
 dynamic_rule(tands::TangentDynamicalSystem) = tands.original_f
 (tands::TangentDynamicalSystem)(t::Real) = tands.ds(t)[:, 1]
 
-for f in (:current_time, :initial_time, :isdiscretetime,
-        :current_parameters, :initial_parameters, :isinplace,:successful_step,
+for f in (
+        :current_time, :initial_time, :isdiscretetime,
+        :current_parameters, :initial_parameters, :isinplace, :successful_step,
     )
     @eval $(f)(tands::TangentDynamicalSystem, args...; kw...) = $(f)(tands.ds, args...; kw...)
 end
@@ -222,15 +224,16 @@ Set the deviation vectors of `tands` to be `Q`, a matrix with each column a vect
 """
 function set_deviations!(t::TangentDynamicalSystem{true}, Q)
     current_deviations(t) .= Q
-    set_state!(t.ds, current_state(t.ds))
+    return set_state!(t.ds, current_state(t.ds))
 end
 function set_deviations!(t::TangentDynamicalSystem{false}, Q)
     Q_correct = typeof(current_deviations(t))(Q)
     U = hcat(current_state(t), Q_correct)
-    set_state!(t.ds, U)
+    return set_state!(t.ds, U)
 end
 
-function SciMLBase.reinit!(tands::TangentDynamicalSystem{IIP}, u::AbstractArray = initial_state(tands);
+function SciMLBase.reinit!(
+        tands::TangentDynamicalSystem{IIP}, u::AbstractArray = initial_state(tands);
         p = current_parameters(tands), t0 = initial_time(tands), Q0 = default_deviations(tands)
     ) where {IIP}
     isnothing(u) && return
@@ -243,7 +246,7 @@ function SciMLBase.reinit!(tands::TangentDynamicalSystem{IIP}, u::AbstractArray 
     else
         U = hcat(u_correct, Q0_correct)
     end
-    reinit!(tands.ds, U; p, t0)
+    return reinit!(tands.ds, U; p, t0)
 end
 
 function default_deviations(tands)

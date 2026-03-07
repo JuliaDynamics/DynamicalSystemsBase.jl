@@ -6,7 +6,7 @@ export CoupledODEs, ContinuousDynamicalSystem
 # DiffEq options
 ###########################################################################################
 const DEFAULT_SOLVER = Tsit5()
-const DEFAULT_DIFFEQ_KWARGS = (abstol = 1e-6, reltol = 1e-6)
+const DEFAULT_DIFFEQ_KWARGS = (abstol = 1.0e-6, reltol = 1.0e-6)
 const DEFAULT_DIFFEQ = (alg = DEFAULT_SOLVER, DEFAULT_DIFFEQ_KWARGS...)
 
 # Function from user `@xlxs4`, see
@@ -102,7 +102,8 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs..
         prob = SciMLBase.remake(prob; tspan = (U(0), U(Inf)))
     end
     solver, remaining = _decompose_into_solver_and_remaining(diffeq)
-    integ = __init(prob, solver; remaining..., special_kwargs...,
+    integ = __init(
+        prob, solver; remaining..., special_kwargs...,
         # Integrators are used exclusively iteratively. There is no reason to save anything.
         save_start = false, save_end = false, save_everystep = false,
         # DynamicalSystems.jl operates on integrators and `step!` exclusively,
@@ -120,7 +121,8 @@ end
 # Pretty print
 function additional_details(ds::CoupledODEs)
     solver, remaining = _decompose_into_solver_and_remaining(ds.diffeq)
-    return ["ODE solver" => string(nameof(typeof(solver))),
+    return [
+        "ODE solver" => string(nameof(typeof(solver))),
         "ODE kwargs" => remaining,
     ]
 end
@@ -130,8 +132,10 @@ end
 ###########################################################################################
 StateSpaceSets.dimension(::CoupledODEs{IIP, D}) where {IIP, D} = D
 
-for f in (:initial_state, :current_parameters, :dynamic_rule,
-    :current_time, :initial_time, :successful_step,)
+for f in (
+        :initial_state, :current_parameters, :dynamic_rule,
+        :current_time, :initial_time, :successful_step,
+    )
     @eval $(f)(ds::ContinuousTimeDynamicalSystem, args...) = $(f)(ds.integ, args...)
 end
 
@@ -141,7 +145,8 @@ set_state!(ds::CoupledODEs, u::AbstractArray) = (set_state!(ds.integ, u); ds)
 # so that `ds` is printed
 SciMLBase.step!(ds::CoupledODEs, args...) = (step!(ds.integ, args...); ds)
 
-function SciMLBase.reinit!(ds::ContinuousTimeDynamicalSystem, u::AbstractArray = initial_state(ds);
+function SciMLBase.reinit!(
+        ds::ContinuousTimeDynamicalSystem, u::AbstractArray = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds), kw...
     )
     set_parameters!(ds, p)

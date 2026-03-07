@@ -3,8 +3,10 @@
 # `trajectory` is tested or not.
 using DynamicalSystemsBase, Test
 
-function test_dynamical_system(ds, u0, p0; idt, iip,
-    test_init_state_equiv = true, test_trajectory = true, u0init = deepcopy(u0))
+function test_dynamical_system(
+        ds, u0, p0; idt, iip,
+        test_init_state_equiv = true, test_trajectory = true, u0init = deepcopy(u0)
+    )
 
     @testset "obtaining info" begin
         @test current_state(ds) == u0
@@ -46,7 +48,7 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
     end
 
 
-    @testset "time evolution" begin
+    return @testset "time evolution" begin
         if idt
             @test_throws ArgumentError ds(2)
 
@@ -82,7 +84,7 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
             t1 = current_time(ds)
             @test t1 > t0
 
-            tm = (t1 - t0)/2
+            tm = (t1 - t0) / 2
             xm = ds(tm)[1]
             xf = current_state(ds)[1]
             @test min(xi, xf) ≤ xm ≤ max(xi, xf)
@@ -97,48 +99,48 @@ function test_dynamical_system(ds, u0, p0; idt, iip,
 
         if test_trajectory
 
-        @testset "trajectory" begin
-            if idt
-                reinit!(ds)
-                @test current_state(ds) == u0
-                X, t = trajectory(ds, 10)
-                @test X isa StateSpaceSet{dimension(ds), Float64}
-                @test X[1] == u0
-                @test X[2] == second_state
-                @test t == 0:1:10
-                @test length(X) == length(t) == 11
+            @testset "trajectory" begin
+                if idt
+                    reinit!(ds)
+                    @test current_state(ds) == u0
+                    X, t = trajectory(ds, 10)
+                    @test X isa StateSpaceSet{dimension(ds), Float64}
+                    @test X[1] == u0
+                    @test X[2] == second_state
+                    @test t == 0:1:10
+                    @test length(X) == length(t) == 11
 
-                # Continue as is from current state:
-                Y, t = trajectory(ds, 10, nothing)
-                @test t[1] == 10
-                @test Y[1] == X[end]
+                    # Continue as is from current state:
+                    Y, t = trajectory(ds, 10, nothing)
+                    @test t[1] == 10
+                    @test Y[1] == X[end]
 
-                # obtain only first variable
-                Z, t = trajectory(ds, 10, u0init; save_idxs = [1])
-                @test length(Z) == 11
-                @test dimension(Z) == 1
-                @test Z[1][1] == u0init[1]
-            else
-                reinit!(ds)
-                @test current_state(ds) == u0
-                X, t = trajectory(ds, 3; Δt = 0.1)
-                @test Base.step(t) == 0.1
-                @test t[1] == initial_time(ds)
-                @test X isa StateSpaceSet{dimension(ds), Float64}
-                @test X[1] == u0
+                    # obtain only first variable
+                    Z, t = trajectory(ds, 10, u0init; save_idxs = [1])
+                    @test length(Z) == 11
+                    @test dimension(Z) == 1
+                    @test Z[1][1] == u0init[1]
+                else
+                    reinit!(ds)
+                    @test current_state(ds) == u0
+                    X, t = trajectory(ds, 3; Δt = 0.1)
+                    @test Base.step(t) == 0.1
+                    @test t[1] == initial_time(ds)
+                    @test X isa StateSpaceSet{dimension(ds), Float64}
+                    @test X[1] == u0
 
-                prev_u0 = deepcopy(current_state(ds))
-                Y, t2 = trajectory(ds, 3, nothing; Dt = 1)
-                @test Y[1] ≈ prev_u0 atol=1e-6
-                @test t2[1] > t[end]
+                    prev_u0 = deepcopy(current_state(ds))
+                    Y, t2 = trajectory(ds, 3, nothing; Dt = 1)
+                    @test Y[1] ≈ prev_u0 atol = 1.0e-6
+                    @test t2[1] > t[end]
 
-                # obtain only first variable
-                Z, t = trajectory(ds, 3, u0; save_idxs = [1], Δt = 1)
-                @test length(Z) == 4
-                @test dimension(Z) == 1
-                @test Z[1][1] == u0[1]
+                    # obtain only first variable
+                    Z, t = trajectory(ds, 3, u0; save_idxs = [1], Δt = 1)
+                    @test length(Z) == 4
+                    @test dimension(Z) == 1
+                    @test Z[1][1] == u0[1]
+                end
             end
-        end
         end
 
     end

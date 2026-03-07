@@ -67,13 +67,13 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states::Vector{<:Abstr
     return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), prob)
 end
 
-function ParallelDynamicalSystem(smap::StroboscopicMap,states)
+function ParallelDynamicalSystem(smap::StroboscopicMap, states)
     f, st = parallel_rule(smap.ds, states)
     T = eltype(first(st))
     prob = ODEProblem{true}(f, st, (T(initial_time(smap)), T(Inf)), current_parameters(smap))
     inorm = prob.u0 isa Matrix ? matrixnorm : vectornorm
     cont_pds = CoupledODEs(prob, smap.ds.diffeq; internalnorm = inorm)
-    pds = StroboscopicMap(cont_pds,smap.period)
+    pds = StroboscopicMap(cont_pds, smap.period)
 
     M = smap.ds isa CoupledODEs && isinplace(smap.ds)
     prob = referrenced_sciml_prob(smap.ds)
@@ -130,7 +130,8 @@ end
 ###########################################################################################
 # Analytically knwon rule: extensions
 ###########################################################################################
-for f in (:(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
+for f in (
+        :(SciMLBase.step!), :current_time, :initial_time, :isdiscretetime, :reinit!,
         :current_parameters, :initial_parameters,
     )
     @eval $(f)(pdsa::ParallelDynamicalSystemAnalytic, args...; kw...) = $(f)(pdsa.ds, args...; kw...)
@@ -186,7 +187,7 @@ function set_state!(pdsa::PDSAM, u::AbstractArray, i::Int = 1)
 end
 
 
-function set_state!(pdsa::PDSAM{<: StroboscopicMap}, u::AbstractArray, i::Int = 1)
+function set_state!(pdsa::PDSAM{<:StroboscopicMap}, u::AbstractArray, i::Int = 1)
     current_state(pdsa, i) .= u
     u_modified!(pdsa.ds.ds.integ, true)
     return pdsa
@@ -212,12 +213,15 @@ const PDTDS = ParallelDiscreteTimeDynamicalSystem
 
 function ParallelDynamicalSystem(ds::DiscreteTimeDynamicalSystem, states)
     systems = [deepcopy(ds) for s in states]
-    for (i, s) in enumerate(states); reinit!(systems[i], s); end
+    for (i, s) in enumerate(states)
+        reinit!(systems[i], s)
+    end
     return ParallelDiscreteTimeDynamicalSystem(systems)
 end
 
-for f in (:current_time, :initial_time, :isdiscretetime,
-        :current_parameters, :initial_parameters, :dynamic_rule,:referrenced_sciml_model
+for f in (
+        :current_time, :initial_time, :isdiscretetime,
+        :current_parameters, :initial_parameters, :dynamic_rule, :referrenced_sciml_model,
     )
     @eval $(f)(pdtds::PDTDS, args...; kw...) = $(f)(pdtds.systems[1], args...; kw...)
 end
@@ -239,7 +243,9 @@ current_states(pdtds::PDTDS) = [current_state(ds) for ds in pdtds.systems]
 initial_states(pdtds::PDTDS) = [initial_state(ds) for ds in pdtds.systems]
 
 # Set stuff
-set_parameter!(pdtds::PDTDS,index,value) = for ds in pdtds.systems; set_parameter!(ds, index,value); end
+set_parameter!(pdtds::PDTDS, index, value) = for ds in pdtds.systems
+    set_parameter!(ds, index, value)
+end
 function set_state!(pdtds::PDTDS, u, i::Int = 1)
     # We need to set state in all systems, in case this does
     # some kind of resetting, e.g., the `u_modified!` stuff.
@@ -250,8 +256,12 @@ function set_state!(pdtds::PDTDS, u, i::Int = 1)
             set_state!(ds, current_state(ds))
         end
     end
+    return
 end
 
 function SciMLBase.reinit!(pdtds::PDTDS, states::AbstractVector = initial_states(pdtds); kwargs...)
-    for (ds, s) in zip(pdtds.systems, states); reinit!(ds, s; kwargs...); end
+    for (ds, s) in zip(pdtds.systems, states)
+        reinit!(ds, s; kwargs...)
+    end
+    return
 end

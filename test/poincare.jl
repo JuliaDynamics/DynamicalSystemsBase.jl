@@ -4,9 +4,9 @@ include("test_system_function.jl")
 
 function gissinger_rule(u, p, t)
     μ, ν, Γ = p
-    du1 = μ*u[1] - u[2]*u[3]
-    du2 = -ν*u[2] + u[1]*u[3]
-    du3 = Γ - u[3] + u[1]*u[2]
+    du1 = μ * u[1] - u[2] * u[3]
+    du2 = -ν * u[2] + u[1] * u[3]
+    du3 = Γ - u[3] + u[1] * u[2]
     return SVector{3}(du1, du2, du3)
 end
 gissinger_rule_iip(du, u, p, t) = (du .= gissinger_rule(u, p, t); nothing)
@@ -24,8 +24,8 @@ p = [μ, ν, Γ]
 # Define appropriate hyperplane for gissinger system
 plane1 = (1, 0.0)
 # I want hyperperplane defined by these two points:
-Np(μ) = SVector{3}(sqrt(ν + Γ*sqrt(ν/μ)), -sqrt(μ + Γ*sqrt(μ/ν)), -sqrt(μ*ν))
-Nm(μ) = SVector{3}(-sqrt(ν + Γ*sqrt(ν/μ)), sqrt(μ + Γ*sqrt(μ/ν)), -sqrt(μ*ν))
+Np(μ) = SVector{3}(sqrt(ν + Γ * sqrt(ν / μ)), -sqrt(μ + Γ * sqrt(μ / ν)), -sqrt(μ * ν))
+Nm(μ) = SVector{3}(-sqrt(ν + Γ * sqrt(ν / μ)), sqrt(μ + Γ * sqrt(μ / ν)), -sqrt(μ * ν))
 # Create hyperplane using normal vector to vector connecting points:
 gis_plane(μ) = [cross(Np(μ), Nm(μ))..., 0]
 plane2 = gis_plane(μ)
@@ -33,19 +33,19 @@ plane2 = gis_plane(μ)
 function poincare_tests(ds, pmap, plane)
     P, t = trajectory(pmap, 10, initial_state(pmap))
     reinit!(ds)
-    P2 = poincaresos(ds, plane, 100; rootkw = (xrtol = 1e-12, atol = 1e-12))
+    P2 = poincaresos(ds, plane, 100; rootkw = (xrtol = 1.0e-12, atol = 1.0e-12))
     @test length(P) == 11
     @test P[1] == P2[1]
     @test length(P2) > 1
-    if plane isa Tuple # test that 0 is first element approximately
-        @test all(x -> abs(x) < 1e-6, P[:, 1])
-        @test all(x -> abs(x) < 1e-6, P2[:, 1])
+    return if plane isa Tuple # test that 0 is first element approximately
+        @test all(x -> abs(x) < 1.0e-6, P[:, 1])
+        @test all(x -> abs(x) < 1.0e-6, P2[:, 1])
     else
-        @test all(x -> abs(x) > 1e-6, P[:, 1])
-        @test all(x -> abs(x) > 1e-6, P2[:, 1])
+        @test all(x -> abs(x) > 1.0e-6, P[:, 1])
+        @test all(x -> abs(x) > 1.0e-6, P2[:, 1])
         # Here we access internal field to get distance from plane
-        @test all(u -> abs(pmap.planecrossing(u)) < 1e-6, P)
-        @test all(u -> abs(pmap.planecrossing(u)) < 1e-6, P2)
+        @test all(u -> abs(pmap.planecrossing(u)) < 1.0e-6, P)
+        @test all(u -> abs(pmap.planecrossing(u)) < 1.0e-6, P2)
     end
 end
 
@@ -53,11 +53,13 @@ end
     rule = !IIP ? gissinger_rule : gissinger_rule_iip
     ds = CoupledODEs(rule, u0, p)
     plane = P == 1 ? plane1 : plane2
-    pmap = PoincareMap(ds, plane; rootkw = (xrtol = 1e-12, atol = 1e-12))
+    pmap = PoincareMap(ds, plane; rootkw = (xrtol = 1.0e-12, atol = 1.0e-12))
     u0pmap = deepcopy(current_state(pmap))
-    test_dynamical_system(pmap, u0pmap, p;
-    idt=true, iip=IIP, test_trajectory = true,
-    test_init_state_equiv=false, u0init = initial_state(pmap))
+    test_dynamical_system(
+        pmap, u0pmap, p;
+        idt = true, iip = IIP, test_trajectory = true,
+        test_init_state_equiv = false, u0init = initial_state(pmap)
+    )
     @testset "specific poincare" begin
         poincare_tests(ds, pmap, plane)
     end
@@ -66,24 +68,24 @@ end
 @testset "set_parameter works" begin
     function lorenz_rule(u, p, t)
         σ = p[1]; ρ = p[2]; β = p[3]
-        du1 = σ*(u[2]-u[1])
-        du2 = u[1]*(ρ-u[3]) - u[2]
-        du3 = u[1]*u[2] - β*u[3]
+        du1 = σ * (u[2] - u[1])
+        du2 = u[1] * (ρ - u[3]) - u[2]
+        du3 = u[1] * u[2] - β * u[3]
         return SVector{3}(du1, du2, du3)
     end
     u0 = fill(10.0, 3)
-    p = [10, 28, 8/3]
+    p = [10, 28, 8 / 3]
     plane = (1, 0.0)
     ds = CoupledODEs(lorenz_rule, deepcopy(u0), p)
 
-    pmap = PoincareMap(ds, plane; rootkw = (xrtol = 1e-12, atol = 1e-12))
+    pmap = PoincareMap(ds, plane; rootkw = (xrtol = 1.0e-12, atol = 1.0e-12))
     P, t = trajectory(pmap, 10)
-    @test all(x -> abs(x) < 1e-6, P[:, 1])
+    @test all(x -> abs(x) < 1.0e-6, P[:, 1])
 
     set_parameter!(pmap, 2, 26.4)
 
     P, t = trajectory(pmap, 10, nothing)
-    @test all(x -> abs(x) < 1e-6, P[:, 1])
+    @test all(x -> abs(x) < 1.0e-6, P[:, 1])
 
 end
 
@@ -92,11 +94,11 @@ end
     X, t = trajectory(gissinger_oop, 1000.0)
     A = poincaresos(X, plane1)
     @test dimension(A) == 3
-    @test all(x -> abs(x) < 1e-12, A[:, 1])
-    vec_plane = [1.0,0.0,0.0,0.0]
+    @test all(x -> abs(x) < 1.0e-12, A[:, 1])
+    vec_plane = [1.0, 0.0, 0.0, 0.0]
     B = poincaresos(X, vec_plane)
     @test dimension(B) == 3
-    @test all(x -> abs(x) < 1e-12, B[:, 1])
+    @test all(x -> abs(x) < 1.0e-12, B[:, 1])
     @test vec(A) == vec(B)
 end
 
@@ -104,8 +106,9 @@ end
     u0Big = BigFloat.(u0, 113)
     pBig = BigFloat.(p, 113)
     ds = CoupledODEs(gissinger_rule, u0Big, pBig)
-    rootkw = (xrtol = BigFloat(1e-25, 113), atol = BigFloat(1e-25, 113))
-    pmap = PoincareMap(ds, plane1;
+    rootkw = (xrtol = BigFloat(1.0e-25, 113), atol = BigFloat(1.0e-25, 113))
+    pmap = PoincareMap(
+        ds, plane1;
         rootkw = rootkw,
     )
 
@@ -117,5 +120,5 @@ end
     # check if BigFloat works
     pmap = poincaresos(ds, plane1, 100; rootkw = rootkw)
     @test eltype(pmap[1]) == BigFloat
-    @test all(x -> abs(x) < 1e-20, pmap[:, 1])
+    @test all(x -> abs(x) < 1.0e-20, pmap[:, 1])
 end

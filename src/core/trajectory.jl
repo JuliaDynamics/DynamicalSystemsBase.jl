@@ -37,7 +37,8 @@ use `DifferentialEquations.solve` if you want a trajectory
 that works with callbacks, or in general you want more flexibility in the generated
 trajectory (but remember to convert the output of `solve` to a `StateSpaceSet`).
 """
-function trajectory(ds::DynamicalSystem, T, u0 = current_state(ds);
+function trajectory(
+        ds::DynamicalSystem, T, u0 = current_state(ds);
         save_idxs = nothing, t0 = initial_time(ds), kwargs...
     )
     accessor = svector_access(save_idxs)
@@ -54,13 +55,14 @@ function trajectory(ds::DynamicalSystem, T, u0 = current_state(ds);
     return X, tvec
 end
 
-function trajectory_discrete(ds, T;
+function trajectory_discrete(
+        ds, T;
         Dt::Integer = 1, Δt::Integer = Dt, Ttr::Integer = 0, accessor = nothing,
         kw... # container keyword
     )
     ET = eltype(current_state(ds))
     t0 = current_time(ds)
-    tvec = (t0+Ttr):Δt:(t0+T+Ttr)
+    tvec = (t0 + Ttr):Δt:(t0 + T + Ttr)
     L = length(tvec)
     X = isnothing(accessor) ? dimension(ds) : length(accessor)
     data = Vector{SVector{X, ET}}(undef, L)
@@ -72,7 +74,7 @@ function trajectory_discrete(ds, T;
         if !successful_step(ds)
             # Diverged trajectory; set final state to remaining set
             # and exit iteration early
-            for j in (i+1):L
+            for j in (i + 1):L
                 data[j] = data[i]
             end
             break
@@ -84,7 +86,7 @@ end
 function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = nothing, kw...)
     D = dimension(ds)
     t0 = current_time(ds)
-    tvec = (t0+Ttr):Δt:(t0+T+Ttr)
+    tvec = (t0 + Ttr):Δt:(t0 + T + Ttr)
     X = isnothing(accessor) ? D : length(accessor)
     ET = eltype(current_state(ds))
     sol = Vector{SVector{X, ET}}(undef, length(tvec))
@@ -98,7 +100,7 @@ function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = 
         if !successful_step(ds)
             # Diverged trajectory; set final state to remaining set
             # and exit iteration early
-            for j in (i+1):length(tvec)
+            for j in (i + 1):length(tvec)
                 sol[j] = sol[i]
             end
             break

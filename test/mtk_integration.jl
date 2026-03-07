@@ -9,28 +9,36 @@ function fol_factory(separate = false; name)
     @parameters τ
     @variables x(t) f(t) RHS(t)
 
-    eqs = separate ? [RHS ~ (f - x) / τ,
-        D(x) ~ RHS] :
-          D(x) ~ (f - x) / τ
+    eqs = separate ? [
+            RHS ~ (f - x) / τ,
+            D(x) ~ RHS,
+        ] :
+        D(x) ~ (f - x) / τ
 
-    System(eqs, t; name)
+    return System(eqs, t; name)
 end
 
 @named fol_1 = fol_factory()
 @named fol_2 = fol_factory(true) # has observable RHS
 
-connections = [fol_1.f ~ 1.5,
-    fol_2.f ~ fol_1.x]
+connections = [
+    fol_1.f ~ 1.5,
+    fol_2.f ~ fol_1.x,
+]
 
 connected = compose(System(connections, t; name = :connected), fol_1, fol_2)
 
 sys = mtkcompile(connected; split = false)
 
-u0 = [fol_1.x => -0.5,
-    fol_2.x => 1.0]
+u0 = [
+    fol_1.x => -0.5,
+    fol_2.x => 1.0,
+]
 
-p = [fol_1.τ => 2.0,
-    fol_2.τ => 4.0]
+p = [
+    fol_1.τ => 2.0,
+    fol_2.τ => 4.0,
+]
 
 initials = vcat(u0, p)
 
@@ -87,7 +95,7 @@ end
     pmap = PoincareMap(ds, (2, 0.0))
     set_parameter!(pmap, fol_1.τ, 4.0)
     @test current_parameter(pmap, fol_1.τ) == 4.0
-    @test observe_state(pmap, fol_1.x) ≈ 0 atol = 1e-3 rtol = 0
+    @test observe_state(pmap, fol_1.x) ≈ 0 atol = 1.0e-3 rtol = 0
 end
 
 @testset "trajectory naming" begin
@@ -146,10 +154,10 @@ D = Differential(t)
         nlt(t) # nonlinear term
     end
     @equations begin
-        D(x) ~ -y -z
-        D(y) ~ x + a*y
+        D(x) ~ -y - z
+        D(y) ~ x + a * y
         D(z) ~ b + nlt
-        nlt ~ z*(x - c)
+        nlt ~ z * (x - c)
     end
 end
 
@@ -159,7 +167,7 @@ end
     if iip
         prob = ODEProblem(roessler_model, nothing, (0.0, Inf))
     else
-        prob = ODEProblem{false}(roessler_model, nothing, (0.0, Inf); u0_constructor = x->SVector(x...))
+        prob = ODEProblem{false}(roessler_model, nothing, (0.0, Inf); u0_constructor = x -> SVector(x...))
     end
     ds = CoupledODEs(prob)
 
@@ -216,9 +224,9 @@ end
 @parameters r_η = 0.01  # the rate that η1 changes
 
 eqs = [
-Differential(t)(DT) ~ η1 - DT - abs(DT - DS)*DT,
-Differential(t)(DS) ~ η2 - η3*DS - abs(DT - DS)*DS,
-η1 ~ η1_0 + r_η*t, # this symbolic variable has its own equation!
+    Differential(t)(DT) ~ η1 - DT - abs(DT - DS) * DT,
+    Differential(t)(DS) ~ η2 - η3 * DS - abs(DT - DS) * DS,
+    η1 ~ η1_0 + r_η * t, # this symbolic variable has its own equation!
 ]
 
 sys = System(eqs, t; name = :stommel)
@@ -229,5 +237,5 @@ ds = CoupledODEs(prob)
 
 X, tvec = trajectory(ds, 10.0; Δt = 0.1, save_idxs = Any[1, 2, η1])
 
-@test all(abs.(diff(X[:, 1])) .> 1e-8)
+@test all(abs.(diff(X[:, 1])) .> 1.0e-8)
 @test all(diff(X[:, 3]) .≈ 0.001)

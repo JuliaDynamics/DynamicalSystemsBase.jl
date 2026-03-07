@@ -29,17 +29,17 @@ is also provided.
 
 See also [`PoincareMap`](@ref).
 """
-mutable struct StroboscopicMap{D<:CoupledODEs, TT<:Real} <: DiscreteTimeDynamicalSystem
-	ds::D
-	period::TT
-	t::Int
+mutable struct StroboscopicMap{D <: CoupledODEs, TT <: Real} <: DiscreteTimeDynamicalSystem
+    ds::D
+    period::TT
+    t::Int
 end
 
-StroboscopicMap(ds::D, T::TT) where {D<:CoupledODEs, TT<:Real} =
-StroboscopicMap{D, TT}(ds, T, 0)
+StroboscopicMap(ds::D, T::TT) where {D <: CoupledODEs, TT <: Real} =
+    StroboscopicMap{D, TT}(ds, T, 0)
 
 StroboscopicMap(T::Real, f, u0::AbstractArray, p = nothing; kwargs...) =
-StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
+    StroboscopicMap(CoupledODEs(f, u0, p; kwargs...), T)
 
 additional_details(smap::StroboscopicMap) = [
     "period" => smap.period,
@@ -50,29 +50,32 @@ set_period!(smap::StroboscopicMap, T) = (smap.period = T)
 ###########################################################################################
 # Extend interface
 ###########################################################################################
-for f in (:current_state, :initial_state, :current_parameters, :initial_parameters,
-	:dynamic_rule, :set_state!, :successful_step, :referrenced_sciml_prob,
-	:(SciMLBase.isinplace), :(StateSpaceSets.dimension))
+for f in (
+        :current_state, :initial_state, :current_parameters, :initial_parameters,
+        :dynamic_rule, :set_state!, :successful_step, :referrenced_sciml_prob,
+        :(SciMLBase.isinplace), :(StateSpaceSets.dimension),
+    )
     @eval $(f)(smap::StroboscopicMap, args...) = $(f)(smap.ds, args...)
 end
 current_time(smap::StroboscopicMap) = smap.t
 initial_time(smap::StroboscopicMap) = 0
 
 function SciMLBase.step!(smap::StroboscopicMap)
-	step!(smap.ds, smap.period, true)
-	smap.t += 1
-	return
+    step!(smap.ds, smap.period, true)
+    smap.t += 1
+    return
 end
 function SciMLBase.step!(smap::StroboscopicMap, n::Int, stop_at_dt = true)
-	step!(smap.ds, n*smap.period, true)
-	smap.t += n
-	return
+    step!(smap.ds, n * smap.period, true)
+    smap.t += n
+    return
 end
 
-function SciMLBase.reinit!(smap::StroboscopicMap, u::AbstractArray = initial_state(smap);
-		p = current_parameters(smap), t0 = initial_time(smap.ds)
-	)
-	isnothing(u) && return
-	smap.t = 0
-	reinit!(smap.ds, u; t0, p)
+function SciMLBase.reinit!(
+        smap::StroboscopicMap, u::AbstractArray = initial_state(smap);
+        p = current_parameters(smap), t0 = initial_time(smap.ds)
+    )
+    isnothing(u) && return
+    smap.t = 0
+    return reinit!(smap.ds, u; t0, p)
 end

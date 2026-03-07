@@ -18,27 +18,27 @@ struct PlaneCrossing{P, D, T}
 end
 PlaneCrossing(plane::Tuple, dir) = PlaneCrossing(plane, dir, SVector(true), SVector(true))
 function PlaneCrossing(plane::AbstractVector, dir)
-    n = plane[1:end-1] # normal vector to hyperplane
+    n = plane[1:(end - 1)] # normal vector to hyperplane
     i = findfirst(!iszero, plane)
-    D = length(plane)-1; T = eltype(plane)
+    D = length(plane) - 1; T = eltype(plane)
     p₀ = zeros(D)
-    p₀[i] = plane[end]/plane[i] # p₀ is an arbitrary point on the plane.
-    PlaneCrossing(plane, dir, SVector{D, T}(n), SVector{D, T}(p₀))
+    p₀[i] = plane[end] / plane[i] # p₀ is an arbitrary point on the plane.
+    return PlaneCrossing(plane, dir, SVector{D, T}(n), SVector{D, T}(p₀))
 end
 
 # Definition of functional behavior: signed distance from hyperplane
-function (hp::PlaneCrossing{P})(u::AbstractVector) where {P<:Tuple}
+function (hp::PlaneCrossing{P})(u::AbstractVector) where {P <: Tuple}
     @inbounds x = u[hp.plane[1]] - hp.plane[2]
-    hp.dir ? x : -x
+    return hp.dir ? x : -x
 end
-function (hp::PlaneCrossing{P})(u::AbstractVector) where {P<:AbstractVector}
+function (hp::PlaneCrossing{P})(u::AbstractVector) where {P <: AbstractVector}
     x = zero(eltype(u))
     D = length(u)
     @inbounds for i in 1:D
-        x += u[i]*hp.plane[i]
+        x += u[i] * hp.plane[i]
     end
-    @inbounds x -= hp.plane[D+1]
-    hp.dir ? x : -x
+    @inbounds x -= hp.plane[D + 1]
+    return hp.dir ? x : -x
 end
 
 
@@ -46,24 +46,30 @@ end
 function check_hyperplane_match(plane, D)
     P = typeof(plane)
     L = length(plane)
-    if P <: AbstractVector
+    return if P <: AbstractVector
         if L != D + 1
-            throw(ArgumentError(
-            "The plane for the `poincaresos` must be either a 2-Tuple or a vector of "*
-            "length D+1 with D the dimension of the system."
-            ))
+            throw(
+                ArgumentError(
+                    "The plane for the `poincaresos` must be either a 2-Tuple or a vector of " *
+                        "length D+1 with D the dimension of the system."
+                )
+            )
         end
     elseif P <: Tuple
         if !(P <: Tuple{Int, Number})
-            throw(ArgumentError(
-            "If the plane for the `poincaresos` is a 2-Tuple then "*
-            "it must be subtype of `Tuple{Int, Number}`."
-            ))
+            throw(
+                ArgumentError(
+                    "If the plane for the `poincaresos` is a 2-Tuple then " *
+                        "it must be subtype of `Tuple{Int, Number}`."
+                )
+            )
         end
     else
-        throw(ArgumentError(
-        "Unrecognized type for the `plane` argument."
-        ))
+        throw(
+            ArgumentError(
+                "Unrecognized type for the `plane` argument."
+            )
+        )
     end
 end
 
@@ -81,7 +87,8 @@ by performing linear interpolation betweeen points that sandwich the hyperplane.
 Argument `plane` and keywords `direction, warning, save_idxs`
 are the same as in [`PoincareMap`](@ref).
 """
-function poincaresos(A::AbstractStateSpaceSet, plane;
+function poincaresos(
+        A::AbstractStateSpaceSet, plane;
         direction = -1, warning = true, save_idxs = 1:dimension(A)
     )
     check_hyperplane_match(plane, dimension(A))
@@ -112,7 +119,7 @@ function poincaresos(A::StateSpaceSet, planecrossing::PlaneCrossing, j)
         end
         i == L && break
         # It is now guaranteed that A crosses hyperplane between i-1 and i
-        ucross = interpolate_crossing(A[i-1], A[i], planecrossing)
+        ucross = interpolate_crossing(A[i - 1], A[i], planecrossing)
         push!(data, ucross[j])
     end
     return data
@@ -121,7 +128,7 @@ end
 using LinearAlgebra
 function interpolate_crossing(A, B, pc::PlaneCrossing{<:AbstractVector})
     # https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
-    t = LinearAlgebra.dot(pc.n, (pc.p₀ .- A))/LinearAlgebra.dot((B .- A), pc.n)
+    t = LinearAlgebra.dot(pc.n, (pc.p₀ .- A)) / LinearAlgebra.dot((B .- A), pc.n)
     return A .+ (B .- A) .* t
 end
 

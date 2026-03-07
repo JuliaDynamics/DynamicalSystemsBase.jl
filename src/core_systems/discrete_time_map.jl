@@ -50,8 +50,10 @@ function DeterministicIteratedMap(f, u0, p = nothing; t0::Integer = 0)
     if !IIP
         out = f(s, p, t0)
         if typeof(out) != S
-            error("Dynamic rule does not output correct state! "*
-            "Got $(typeof(out)) instead of $(S).")
+            error(
+                "Dynamic rule does not output correct state! " *
+                    "Got $(typeof(out)) instead of $(S)."
+            )
         end
     else
         out = f(dummy, s, p, t0)
@@ -101,7 +103,7 @@ end
 # OOP version
 function SciMLBase.step!(ds::DeterministicIteratedMap{false})
     ds.u = ds.f(ds.u, ds.p, ds.t)
-    ds.t +=1
+    ds.t += 1
     return ds
 end
 function SciMLBase.step!(ds::DeterministicIteratedMap{false}, N, stop_at_tdt = true)
@@ -115,7 +117,8 @@ end
 ###########################################################################################
 # Alterations
 ###########################################################################################
-function reinit!(ds::DIM, u::AbstractArray = initial_state(ds);
+function reinit!(
+        ds::DIM, u::AbstractArray = initial_state(ds);
         p = current_parameters(ds), t0 = initial_time(ds)
     )
     set_state!(ds, u)
