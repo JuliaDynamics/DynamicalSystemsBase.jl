@@ -38,14 +38,15 @@ struct ArbitrarySteppable{U, M, F, R, ES, EP, P, S} <: DiscreteTimeDynamicalSyst
     reinit::R
     extract_state::ES
     extract_parameters::EP
-	t::Base.RefValue{Int}
+    t::Base.RefValue{Int}
     u0::U
     p0::P
     isdeterministic::Bool
     set_state::S
 end
 
-function ArbitrarySteppable(model, step, extract_state, extract_parameters, reinit;
+function ArbitrarySteppable(
+        model, step, extract_state, extract_parameters, reinit;
         isdeterministic = true, set_state = (ds, u) -> reinit(ds, u, current_parameters(ds)),
     )
     p0 = deepcopy(extract_parameters(model))
@@ -56,8 +57,10 @@ function ArbitrarySteppable(model, step, extract_state, extract_parameters, rein
         in downstream functions.
         """
     end
-    return ArbitrarySteppable(model, step, reinit, extract_state, extract_parameters,
-    Ref(0), u0, p0, isdeterministic, set_state)
+    return ArbitrarySteppable(
+        model, step, reinit, extract_state, extract_parameters,
+        Ref(0), u0, p0, isdeterministic, set_state
+    )
 end
 
 # Extend DynamicalSystems.jl interface
@@ -77,7 +80,8 @@ function SciMLBase.step!(ds::ArbitrarySteppable, n::Int = 1, stop::Bool = true)
     return ds
 end
 
-function SciMLBase.reinit!(ds::ArbitrarySteppable{U}, u::U = initial_state(ds);
+function SciMLBase.reinit!(
+        ds::ArbitrarySteppable{U}, u::U = initial_state(ds);
         p = current_parameters(ds), t0 = 0, # t0 is not used but required for downstream.
     ) where {U}
     ds.reinit(ds.model, u, p)

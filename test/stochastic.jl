@@ -27,7 +27,7 @@ end
 
 σ = 0.1
 function diagonal_noise!(σ)
-    function (du, u, p, t)
+    return function (du, u, p, t)
         du .= σ .* ones(length(u))
         return nothing
     end
@@ -40,18 +40,23 @@ p0 = [10, 28, 8 / 3]
 
 # diagonal additive noise
 lor_oop = CoupledSDEs(lorenz_rule, u0, p0)
-lor_iip = CoupledSDEs(SDEProblem(
-    lorenz_rule_iip, diagonal_noise!(σ), copy(u0), (0.0, Inf), p0))
-lor_SRA = CoupledSDEs(lorenz_rule, u0, p0;
-    diffeq = (alg = SRA(), abstol = 1e-2, reltol = 1e-2)
+lor_iip = CoupledSDEs(
+    SDEProblem(
+        lorenz_rule_iip, diagonal_noise!(σ), copy(u0), (0.0, Inf), p0
+    )
+)
+lor_SRA = CoupledSDEs(
+    lorenz_rule, u0, p0;
+    diffeq = (alg = SRA(), abstol = 1.0e-2, reltol = 1.0e-2)
 )
 
-diffeq_cov = (alg = LambaEM(), abstol = 1e-2, reltol = 1e-2, dt=0.1)
-lor_oop_cov = CoupledSDEs(lorenz_rule, u0, p0; covariance = Γ, diffeq=diffeq_cov)
-lor_iip_cov = CoupledSDEs(lorenz_rule_iip, u0, p0; covariance = Γ, diffeq=diffeq_cov)
+diffeq_cov = (alg = LambaEM(), abstol = 1.0e-2, reltol = 1.0e-2, dt = 0.1)
+lor_oop_cov = CoupledSDEs(lorenz_rule, u0, p0; covariance = Γ, diffeq = diffeq_cov)
+lor_iip_cov = CoupledSDEs(lorenz_rule_iip, u0, p0; covariance = Γ, diffeq = diffeq_cov)
 
 for (ds, iip) in zip(
-    (lor_oop, lor_iip, lor_SRA, lor_oop_cov, lor_iip_cov), (false, true, false, false, true))
+        (lor_oop, lor_iip, lor_SRA, lor_oop_cov, lor_iip_cov), (false, true, false, false, true)
+    )
     name = (ds === lor_SRA) ? "lorvern" : "lorenz"
     @testset "$(name) IIP=$(iip)" begin
         @test dynamic_rule(ds) == (iip ? lorenz_rule_iip : lorenz_rule)
@@ -63,8 +68,9 @@ end
     lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0)
     @test lorenz_oop.integ.alg isa SOSRA
 
-    lorenz_SRA = CoupledSDEs(lorenz_rule, u0, p0;
-        diffeq = (alg = SRA(), abstol = 1e-3, reltol = 1e-3, verbose = false)
+    lorenz_SRA = CoupledSDEs(
+        lorenz_rule, u0, p0;
+        diffeq = (alg = SRA(), abstol = 1.0e-3, reltol = 1.0e-3, verbose = false)
     )
     @test lorenz_SRA.integ.alg isa SRA
     @test lorenz_SRA.integ.opts.verbose == false
@@ -72,7 +78,7 @@ end
     # also test SDEproblem creation
     prob = lorenz_SRA.integ.sol.prob
 
-    ds = CoupledSDEs(prob, (alg = SRA(), abstol = 0.0, reltol = 1e-3, verbose = false))
+    ds = CoupledSDEs(prob, (alg = SRA(), abstol = 0.0, reltol = 1.0e-3, verbose = false))
 
     @test ds.integ.alg isa SRA
     @test ds.integ.opts.verbose == false
@@ -107,13 +113,14 @@ end
 
         g!(du, u, p, t) = du .= u
         @test_throws ArgumentError CoupledSDEs(
-            f!, zeros(2); g = g!, covariance = [1 0.3; 0.3 1])
+            f!, zeros(2); g = g!, covariance = [1 0.3; 0.3 1]
+        )
 
         g(u, p, t) = u
         @test_throws AssertionError CoupledSDEs(f!, zeros(2); g = g)
 
         Csde = CoupledSDEs(f!, zeros(2))
-        diffeq = (alg = SRA(), abstol = 1e-2, reltol = 1e-2)
+        diffeq = (alg = SRA(), abstol = 1.0e-2, reltol = 1.0e-2)
         @test_throws ArgumentError CoupledSDEs(Csde.integ.sol.prob; diffeq = diffeq)
     end
 end
@@ -125,7 +132,7 @@ end
     @testset "diffusion_matrix" begin
         Γ = [1.0 0.3 0.0; 0.3 1 0.5; 0.0 0.5 1.0]
         A = sqrt(Γ)
-        lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0, covariance = Γ, diffeq=diffeq_cov)
+        lorenz_oop = CoupledSDEs(lorenz_rule, u0, p0, covariance = Γ, diffeq = diffeq_cov)
         @test A ≈ diffusion_matrix(lorenz_oop)
         @test A isa AbstractMatrix
         @test Γ ≈ A * A'
@@ -148,11 +155,11 @@ end
     @testset "approximate cov" begin
         Γ = [1.0 0.3; 0.3 1]
         f(u, p, t) = [0.0, 0.0]
-        diffeq_cov = (alg = EM(), abstol = 1e-2, reltol = 1e-2, dt=0.1)
+        diffeq_cov = (alg = EM(), abstol = 1.0e-2, reltol = 1.0e-2, dt = 0.1)
 
-        ds = CoupledSDEs(f, zeros(2), (); covariance = Γ, diffeq=diffeq_cov)
-        tr, _ = trajectory(ds, 10_000, Δt=0.1)
-        approx = cov(diff(reduce(hcat, tr.data), dims=2)./sqrt(0.1), dims=2)
-        @test approx ≈ Γ atol=1e-1
+        ds = CoupledSDEs(f, zeros(2), (); covariance = Γ, diffeq = diffeq_cov)
+        tr, _ = trajectory(ds, 10_000, Δt = 0.1)
+        approx = cov(diff(reduce(hcat, tr.data), dims = 2) ./ sqrt(0.1), dims = 2)
+        @test approx ≈ Γ atol = 1.0e-1
     end
 end

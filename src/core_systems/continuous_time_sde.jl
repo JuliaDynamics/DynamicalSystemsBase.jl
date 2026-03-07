@@ -104,7 +104,7 @@ using the function `CoupledODEs(ds::CoupledSDEs; diffeq, t0)`.
 Similarly, use `CoupledSDEs(ds::CoupledODEs [, p]; kwargs...)` to convert a `CoupledODEs` into
 a `CoupledSDEs`.
 """
-struct CoupledSDEs{IIP,D,I,P} <: ContinuousTimeDynamicalSystem
+struct CoupledSDEs{IIP, D, I, P} <: ContinuousTimeDynamicalSystem
     # D parametrised by length of u0
     integ::I
     # things we can't recover from `integ`
@@ -113,10 +113,11 @@ struct CoupledSDEs{IIP,D,I,P} <: ContinuousTimeDynamicalSystem
     noise_type::NamedTuple
 end
 
-function SciMLBase.reinit!(ds::CoupledSDEs, u::AbstractArray = initial_state(ds);
-    p = current_parameters(ds), t0 = initial_time(ds), kw...
-  )
-  set_parameters!(ds, p)
-  reinit!(ds.integ, u; t0, kw...)
-  return ds
+function SciMLBase.reinit!(
+        ds::CoupledSDEs, u::AbstractArray = initial_state(ds);
+        p = current_parameters(ds), t0 = initial_time(ds), kw...
+    )
+    set_parameters!(ds, p)
+    reinit!(ds.integ, u; t0, kw...)
+    return ds
 end

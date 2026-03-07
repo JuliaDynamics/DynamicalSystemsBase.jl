@@ -36,12 +36,14 @@ end
     @variables u(t)[1:2]
     D = Differential(t)
 
-    eqs = [D(u[1]) ~ 3.0 * u[1],
-           D(u[2]) ~ -3.0 * u[2]]
+    eqs = [
+        D(u[1]) ~ 3.0 * u[1],
+        D(u[2]) ~ -3.0 * u[2],
+    ]
     @named sys = System(eqs, t)
     sys = mtkcompile(sys)
 
-    prob = ODEProblem(sys, [1.0, 1.0], (0.0, 1.0); jac=true)
+    prob = ODEProblem(sys, [1.0, 1.0], (0.0, 1.0); jac = true)
     ds = CoupledODEs(prob)
 
     jac = jacobian(ds)
@@ -52,11 +54,13 @@ end
         # just to check if MTK @brownian does not give any problems
         using StochasticDiffEq
         @brownian β
-        eqs = [D(u[1]) ~ 3.0 * u[1]+ β,
-                D(u[2]) ~ -3.0 * u[2] + β]
+        eqs = [
+            D(u[1]) ~ 3.0 * u[1] + β,
+            D(u[2]) ~ -3.0 * u[2] + β,
+        ]
         @mtkbuild sys = System(eqs, t)
 
-        prob = SDEProblem(sys, [1.0, 1.0], (0.0, 1.0), jac=true)
+        prob = SDEProblem(sys, [1.0, 1.0], (0.0, 1.0), jac = true)
         sde = CoupledSDEs(prob)
 
         jac = jacobian(sde)

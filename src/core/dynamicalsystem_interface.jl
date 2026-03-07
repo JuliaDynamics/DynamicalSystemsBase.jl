@@ -226,8 +226,12 @@ function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_st
         p = current_parameters(ds)
         return ugetter(u, p, t)
     else
-        throw(ArgumentError("Invalid index to observe state, or if symbolic index, the "*
-        "dynamical system does not referrence a ModelingToolkit.jl system."))
+        throw(
+            ArgumentError(
+                "Invalid index to observe state, or if symbolic index, the " *
+                    "dynamical system does not referrence a ModelingToolkit.jl system."
+            )
+        )
     end
 end
 
@@ -381,7 +385,7 @@ Modify the given state `u` and leave `ds` untouched.
 function set_state!(ds::DynamicalSystem, value::Real, i)
     u = Array(current_state(ds)) # ensure it works for out of place as well!
     u = set_state!(u, value, i, ds)
-    set_state!(ds, u)
+    return set_state!(ds, u)
 end
 
 function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
@@ -392,8 +396,12 @@ function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
         usetter = SymbolicIndexingInterface.setu(prob, i)
         usetter(u, value)
     else
-        throw(ArgumentError("Invalid index to set state, or if symbolic index, the "*
-        "dynamical system does not referrence a ModelingToolkit.jl system."))
+        throw(
+            ArgumentError(
+                "Invalid index to set state, or if symbolic index, the " *
+                    "dynamical system does not referrence a ModelingToolkit.jl system."
+            )
+        )
     end
     return u
 end
@@ -413,7 +421,7 @@ function set_state!(ds::DynamicalSystem, mapping::AbstractDict)
     # (SymbolicIndexingInterface only works with mutable objects)
     um = Array(copy(current_state(ds)))
     set_state!(um, mapping, ds)
-    set_state!(ds, um)
+    return set_state!(ds, um)
 end
 function set_state!(um::Array{<:Real}, mapping::AbstractDict, ds::DynamicalSystem)
     for (i, value) in pairs(mapping)
@@ -440,7 +448,7 @@ It must match layout with its default value.
 """
 function set_parameter!(ds::DynamicalSystem, index, value, p = current_parameters(ds))
     # internal function is necessary so that we are able to call `u_modified!` for ODEs.
-    _set_parameter!(ds::DynamicalSystem, index, value, p)
+    return _set_parameter!(ds::DynamicalSystem, index, value, p)
 end
 function _set_parameter!(ds::DynamicalSystem, index, value, p = current_parameters(ds))
     prob = referrenced_sciml_prob(ds)
@@ -521,11 +529,13 @@ This method does nothing and leaves the system as is. This is so that downstream
 that call `reinit!` can still be used without resetting the system but rather
 continuing from its exact current state.
 """
-function SciMLBase.reinit!(ds::DynamicalSystem, mapping::AbstractDict;
-    reference_state = copy(initial_state(ds)), kwargs...)
+function SciMLBase.reinit!(
+        ds::DynamicalSystem, mapping::AbstractDict;
+        reference_state = copy(initial_state(ds)), kwargs...
+    )
     um = Array(reference_state)
     set_state!(um, mapping, ds)
-    reinit!(ds, um; kwargs...)
+    return reinit!(ds, um; kwargs...)
 end
 
 SciMLBase.reinit!(ds::DynamicalSystem, ::Nothing; kw...) = ds

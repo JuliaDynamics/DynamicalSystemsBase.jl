@@ -6,7 +6,7 @@ Checks whether the function g depends on u based on 10 random points around the 
 function is_state_independent(g, u, p, t)
     rdm_states = [u .+ rand(eltype(u), length(u)) .- 0.5 for _ in 1:10]
     val = map(u -> g(u, p, t), rdm_states)
-    length(unique(val)) == 1
+    return length(unique(val)) == 1
 end
 
 """
@@ -15,14 +15,14 @@ Checks whether g depends explicitly on time for select points on the interval [t
 function is_time_independent(g, u, p, t0)
     trange = t0 .+ [0.0, 0.101, 1.01, 10.1, 101.0]
     val = map(t -> g(u, p, t), trange)
-    length(unique(val)) == 1
+    return length(unique(val)) == 1
 end
 
 """
 Checks whether a matrix x is invertible by verifying that it has nonzero determinant.
 """
-function is_invertible(x; tol=1e-10)
-    F = lu(x, check=false)
+function is_invertible(x; tol = 1.0e-10)
+    F = lu(x, check = false)
     det = abs(prod(diag(F.U)))
     return det > tol
 end
@@ -38,7 +38,7 @@ function is_linear(f, x, y, c)
 end
 
 function diffusion_function(g, IIP, noise_prototype)
-    function diffusion(u, p, t)
+    return function diffusion(u, p, t)
         if IIP
             du = deepcopy(isnothing(noise_prototype) ? u : noise_prototype)
             g(du, u, p, t)
@@ -50,7 +50,7 @@ function diffusion_function(g, IIP, noise_prototype)
 end
 
 function diffusion_function(ds::CoupledSDEs{IIP}) where {IIP}
-    diffusion_function(ds.integ.g, IIP, referrenced_sciml_prob(ds).noise_rate_prototype)
+    return diffusion_function(ds.integ.g, IIP, referrenced_sciml_prob(ds).noise_rate_prototype)
 end
 
 """
@@ -100,11 +100,13 @@ function find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
         islinear = true
         if !state_independent
             for i in 1:10
-                check = is_linear(u -> diffusion(u, p, t0),
-                    u0 + i .* rand(D), u0 + i .* rand(D), 2.0)
+                check = is_linear(
+                    u -> diffusion(u, p, t0),
+                    u0 + i .* rand(D), u0 + i .* rand(D), 2.0
+                )
                 check ? nothing : islinear = false
             end
-        end        
+        end
 
         # Previous formulation:
         #islinear = !state_independent ?
@@ -127,13 +129,16 @@ function find_noise_type(g, u0, p, t0, noise, covariance, noise_prototype, IIP)
         end
     end
 
-    noise_type = (additive=isadditive, autonomous=isautonomous,
-        linear=islinear, invertible=isinvertible)
+    noise_type = (
+        additive = isadditive, autonomous = isautonomous,
+        linear = islinear, invertible = isinvertible,
+    )
     return noise_type, covariance
 end
 
 function find_noise_type(prob::SDEProblem, IIP)
-    find_noise_type(
+    return find_noise_type(
         prob.g, prob.u0, prob.p, prob.tspan[1], prob.noise,
-        nothing, prob.noise_rate_prototype, IIP)
+        nothing, prob.noise_rate_prototype, IIP
+    )
 end

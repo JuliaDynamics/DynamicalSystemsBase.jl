@@ -95,15 +95,15 @@ next_state_on_psos = current_state(pmap)
     Datseris & Parlitz 2022, _Nonlinear Dynamics: A Concise Introduction Interlaced with Code_,
     [Springer Nature, Undergrad. Lect. Notes In Physics](https://doi.org/10.1007/978-3-030-91032-7)
 """
-mutable struct PoincareMap{I<:ContinuousTimeDynamicalSystem, F, P, R, U<:Real, V} <: DiscreteTimeDynamicalSystem
-	ds::I
-	plane_distance::F
- 	planecrossing::P
-	Tmax::U
-	rootkw::R
-	state_on_plane::V
+mutable struct PoincareMap{I <: ContinuousTimeDynamicalSystem, F, P, R, U <: Real, V} <: DiscreteTimeDynamicalSystem
+    ds::I
+    plane_distance::F
+    planecrossing::P
+    Tmax::U
+    rootkw::R
+    state_on_plane::V
     tcross::U
-	t::Int
+    t::Int
     # These two fields are for setting the state of the pmap from the plane
     # (i.e., given a D-1 dimensional state, create the full D-dimensional state)
     dummy::Vector{U}
@@ -113,23 +113,23 @@ end
 Base.parent(pmap::PoincareMap) = pmap.ds
 
 function PoincareMap(
-		ds::DS, plane;
-        Tmax = 1e3,
-	    direction = -1, u0 = nothing,
-	    rootkw = (xrtol = 1e-6, atol = 1e-8)
-	) where {DS<:ContinuousTimeDynamicalSystem}
+        ds::DS, plane;
+        Tmax = 1.0e3,
+        direction = -1, u0 = nothing,
+        rootkw = (xrtol = 1.0e-6, atol = 1.0e-8)
+    ) where {DS <: ContinuousTimeDynamicalSystem}
 
     reinit!(ds, u0)
     D = dimension(ds)
-	check_hyperplane_match(plane, D)
-	planecrossing = PlaneCrossing(plane, direction > 0)
-	plane_distance = (t) -> planecrossing(ds(t))
+    check_hyperplane_match(plane, D)
+    planecrossing = PlaneCrossing(plane, direction > 0)
+    plane_distance = (t) -> planecrossing(ds(t))
     v = recursivecopy(current_state(ds))
     tcross = current_time(ds)
     Tmax = convert(typeof(tcross), Tmax)
     dummy = zeros(eltype(v), D)
     diffidxs = _indices_on_poincare_plane(plane, D)
-	pmap = PoincareMap(
+    pmap = PoincareMap(
         ds, plane_distance, planecrossing, Tmax, rootkw,
         v, tcross, 0, dummy, diffidxs, recursivecopy(v),
     )
@@ -140,7 +140,7 @@ function PoincareMap(
 end
 
 _indices_on_poincare_plane(plane::Tuple, D) = setdiff(1:D, [plane[1]])
-_indices_on_poincare_plane(::Vector, D) = collect(1:D-1)
+_indices_on_poincare_plane(::Vector, D) = collect(1:(D - 1))
 
 additional_details(pmap::PoincareMap) = [
     "hyperplane" => pmap.planecrossing.plane,
@@ -150,8 +150,10 @@ additional_details(pmap::PoincareMap) = [
 ###########################################################################################
 # Extensions
 ###########################################################################################
-for f in (:initial_state, :current_parameters, :initial_parameters, :referrenced_sciml_prob,
-	:dynamic_rule, :(SciMLBase.isinplace), :(StateSpaceSets.dimension))
+for f in (
+        :initial_state, :current_parameters, :initial_parameters, :referrenced_sciml_prob,
+        :dynamic_rule, :(SciMLBase.isinplace), :(StateSpaceSets.dimension),
+    )
     @eval $(f)(pmap::PoincareMap, args...) = $(f)(pmap.ds, args...)
 end
 initial_time(pmap::PoincareMap) = 0
@@ -167,24 +169,29 @@ Return the time of the latest crossing of the Poincare section.
 current_crossing_time(pmap::PoincareMap) = pmap.tcross
 
 function SciMLBase.step!(pmap::PoincareMap)
-	u, t = poincare_step!(pmap.ds, pmap.plane_distance, pmap.planecrossing, pmap.Tmax, pmap.rootkw)
-	if isnothing(u)
-		error("Exceeded `Tmax` without crossing the plane.")
-	else
-		pmap.state_on_plane = u # this is always a brand new vector
+    u, t = poincare_step!(pmap.ds, pmap.plane_distance, pmap.planecrossing, pmap.Tmax, pmap.rootkw)
+    if isnothing(u)
+        error("Exceeded `Tmax` without crossing the plane.")
+    else
+        pmap.state_on_plane = u # this is always a brand new vector
         pmap.tcross = t
         pmap.t += 1
-		return pmap
-	end
+        return pmap
+    end
 end
-SciMLBase.step!(pmap::PoincareMap, n::Int, s = true) = (for _ ∈ 1:n; step!(pmap); end; pmap)
+SciMLBase.step!(pmap::PoincareMap, n::Int, s = true) = (
+    for _ in 1:n
+        step!(pmap)
+    end; pmap
+)
 
-function SciMLBase.reinit!(pmap::PoincareMap, u0::AbstractArray = initial_state(pmap);
+function SciMLBase.reinit!(
+        pmap::PoincareMap, u0::AbstractArray = initial_state(pmap);
         t0 = initial_time(pmap.ds), p = current_parameters(pmap)
     )
     uc = current_state(pmap)
     if length(u0) == dimension(pmap)
-	    u = u0
+        u = u0
     elseif length(u0) == dimension(pmap) - 1
         u = _recreate_state_from_poincare_plane(pmap, u0)
     else
@@ -198,7 +205,7 @@ function SciMLBase.reinit!(pmap::PoincareMap, u0::AbstractArray = initial_state(
         step!(pmap) # step once to reach the PSOS
     end
     pmap.t = 0 # first step is always 0
-    pmap
+    return pmap
 end
 
 function set_state!(pmap::PoincareMap, u)
@@ -233,9 +240,9 @@ function poincare_step!(ds, plane_distance, planecrossing, Tmax, rootkw)
     # Check if initial condition is already on the plane
     side = planecrossing(current_state(ds))
     if side == 0
-		dat = current_state(ds)
+        dat = current_state(ds)
         step!(ds)
-		return dat, t0
+        return dat, t0
     end
     # Otherwise evolve until juuuuuust crossing the plane
     tprev = t0
@@ -275,13 +282,14 @@ with [`PoincareMap`](@ref) to get a sequence of `N::Int` points instead.
 The keywords `Ttr, save_idxs` act as in [`trajectory`](@ref).
 See [`PoincareMap`](@ref) for `plane` and all other keywords.
 """
-function poincaresos(ds::CoupledODEs, plane, T = 1000.0;
+function poincaresos(
+        ds::CoupledODEs, plane, T = 1000.0;
         save_idxs = 1:dimension(ds), Ttr = 0, kwargs...
     )
     pmap = PoincareMap(ds, plane; kwargs...)
     i = typeof(save_idxs) <: Int ? save_idxs : SVector{length(save_idxs), Int}(save_idxs...)
-	data = _initialize_output(current_state(pmap), i)
-    poincaresos!(data, pmap, i, T, Ttr)
+    data = _initialize_output(current_state(pmap), i)
+    return poincaresos!(data, pmap, i, T, Ttr)
 end
 
 function poincaresos!(data, pmap, i, T, Ttr)

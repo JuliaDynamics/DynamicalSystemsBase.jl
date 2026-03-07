@@ -4,10 +4,10 @@
 # and last current parameter, time, state
 
 Base.summary(ds::DynamicalSystem) =
-"$(dimension(ds))-dimensional $(nameof(typeof(ds)))"
+    "$(dimension(ds))-dimensional $(nameof(typeof(ds)))"
 
 function Base.show(io::IO, ds::DynamicalSystem)
-    print(io, summary(ds))
+    return print(io, summary(ds))
 end
 
 # Extend this function to return a vector of `Pair`s of `"description" => value`
@@ -21,11 +21,13 @@ function Base.show(io::IO, ::MIME"text/plain", ds::DynamicalSystem)
         "dynamic rule" => rulestring(dynamic_rule(ds)),
     ]
     append!(descriptors, additional_details(ds))
-    append!(descriptors, [
-        "parameters" => current_parameters(ds),
-        "time" => current_time(ds),
-        "state" => current_state(ds),
-    ])
+    append!(
+        descriptors, [
+            "parameters" => current_parameters(ds),
+            "time" => current_time(ds),
+            "state" => current_state(ds),
+        ]
+    )
     padlen = maximum(length(d[1]) for d in descriptors) + 3
 
     println(io, summary(ds))
@@ -44,6 +46,7 @@ function Base.show(io::IO, ::MIME"text/plain", ds::DynamicalSystem)
     # println(io,  rpad(" jacobian: ", padlen),   jacobianstring(ds))
     # print(io,    rpad(" parameters: ", padlen))
     # printlimited(io, printable(ds.p), Δx = length(prefix), Δy = 10)
+    return
 end
 
 rulestring(f::Function) = nameof(f)
@@ -56,13 +59,15 @@ printable(p) = string(p)
 # Credit to Sebastian Pfitzner
 function printlimited(io, x; Δx = 0, Δy = 0)
     sz = displaysize(io)
-    io2 = IOBuffer(); ctx = IOContext(io2, :limit => true, :compact => true,
-    :displaysize => (sz[1]-Δy, sz[2]-Δx))
-    if x isa AbstractArray
+    io2 = IOBuffer(); ctx = IOContext(
+        io2, :limit => true, :compact => true,
+        :displaysize => (sz[1] - Δy, sz[2] - Δx)
+    )
+    return if x isa AbstractArray
         Base.print_array(ctx, x)
         s = String(take!(io2))
         s = replace(s[2:end], "  " => ", ")
-        Base.print(io, "["*s*"]")
+        Base.print(io, "[" * s * "]")
     else
         Base.print(ctx, x)
         s = String(take!(io2))
@@ -77,9 +82,9 @@ printlimited(io, x::Number; kwargs...) = print(io, x)
 
 Return a name that matches the outcome of [`observe_state`](@ref) with `index`.
 """
-state_name(f::Int) = "u"*subscript(f)
+state_name(f::Int) = "u" * subscript(f)
 state_name(f::Function) = string(f)
-state_name(f::Union{AbstractString,Symbol}) = string(f)
+state_name(f::Union{AbstractString, Symbol}) = string(f)
 function state_name(f)
     # First, try a symbolic name
     try
@@ -90,7 +95,7 @@ function state_name(f)
     # if it failed, cast into string
     n = string(f)
     # and remove `(t)`
-    replace(n, "(t)" => "")
+    return replace(n, "(t)" => "")
 end
 
 """
@@ -98,8 +103,8 @@ end
 
 Return a name that matches the outcome of [`current_parameter`](@ref) with `index`.
 """
-parameter_name(f::Int) = "p"*subscript(f)
-parameter_name(f::Union{AbstractString,Symbol}) = string(f)
+parameter_name(f::Int) = "p" * subscript(f)
+parameter_name(f::Union{AbstractString, Symbol}) = string(f)
 parameter_name(f) = string(DynamicalSystemsBase.SymbolicIndexingInterface.getname(f))
 
 export state_name, parameter_name
@@ -110,8 +115,8 @@ export state_name, parameter_name
 Transform `i` to a string that has `i` as a subscript.
 """
 function subscript(i::Int)
-    if i < 0
-        "₋"*subscript(-i)
+    return if i < 0
+        "₋" * subscript(-i)
     elseif i == 1
         "₁"
     elseif i == 2

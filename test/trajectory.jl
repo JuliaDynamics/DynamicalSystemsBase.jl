@@ -10,12 +10,12 @@ using Test
     rs = range(r1, r2; length = N)
 
     function logistic_drifting_rule(u, rs, n)
-        r = rs[n+1] # time is `n`, starting from 0
-        return SVector(r*u[1]*(1 - u[1]))
+        r = rs[n + 1] # time is `n`, starting from 0
+        return SVector(r * u[1] * (1 - u[1]))
     end
 
     ds = DeterministicIteratedMap(logistic_drifting_rule, [0.5], rs)
 
-    x, t = trajectory(ds, N-1)
+    x, t = trajectory(ds, N - 1)
     @test length(x) > 1
 end

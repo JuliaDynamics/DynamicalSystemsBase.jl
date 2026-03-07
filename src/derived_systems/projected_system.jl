@@ -52,7 +52,7 @@ struct ProjectedDynamicalSystem{P, PD, C, R, D} <: DynamicalSystem
     complete_state::C
     u::Vector{Float64} # dummy variable for a state in full state space
     remidxs::R
-	ds::D
+    ds::D
 end
 Base.parent(prods::ProjectedDynamicalSystem) = prods.ds
 
@@ -69,18 +69,19 @@ function ProjectedDynamicalSystem(ds::DynamicalSystem, projection, complete_stat
     if complete_state isa AbstractVector
         projection isa AbstractVector{Int} || error("Projection vector must be of type Int")
         length(complete_state) + length(projection) == dimension(ds) ||
-                                error("Wrong dimensions for complete_state and projection")
+            error("Wrong dimensions for complete_state and projection")
         remidxs = setdiff(1:dimension(ds), projection)
         !isempty(remidxs) || error("Error with the indices of the projection")
     else
         length(complete_state(y)) == dimension(ds) ||
-                        error("The returned vector of complete_state must equal dimension(ds)")
+            error("The returned vector of complete_state must equal dimension(ds)")
         remidxs = nothing
     end
     u = zeros(dimension(ds))
-	return ProjectedDynamicalSystem{
+    return ProjectedDynamicalSystem{
         typeof(projection), length(y), typeof(complete_state),
-        typeof(remidxs), typeof(ds)}(projection, complete_state, u, remidxs, ds)
+        typeof(remidxs), typeof(ds),
+    }(projection, complete_state, u, remidxs, ds)
 end
 
 additional_details(prods::ProjectedDynamicalSystem) = [
@@ -92,12 +93,13 @@ additional_details(prods::ProjectedDynamicalSystem) = [
 # Extensions
 ###########################################################################################
 # Everything besides `dimension`, `current/initia_state` and `reinit!` is propagated!
-for f in (:(SciMLBase.isinplace), :current_time, :initial_time, :isdiscretetime,
+for f in (
+        :(SciMLBase.isinplace), :current_time, :initial_time, :isdiscretetime,
         :referrenced_sciml_prob, :successful_step,
         :current_parameters, :initial_parameters, :isdeterministic, :dynamic_rule,
     )
     @eval $(f)(prods::ProjectedDynamicalSystem, args...; kw...) =
-    $(f)(prods.ds, args...; kw...)
+        $(f)(prods.ds, args...; kw...)
 end
 StateSpaceSets.dimension(::ProjectedDynamicalSystem{P, PD}) where {P, PD} = PD
 
@@ -109,12 +111,12 @@ for f in (:current_state, :initial_state)
 end
 # Extend `step!` just so that it returns the projected system
 function SciMLBase.step!(prods::ProjectedDynamicalSystem, args...)
-	step!(prods.ds, args...)
-	return prods
+    step!(prods.ds, args...)
+    return prods
 end
 
 function SciMLBase.reinit!(prods::ProjectedDynamicalSystem{P, D, <:AbstractVector}, y::AbstractArray = initial_state(prods); kwargs...) where {P, D}
-    isnothing(y) && return(prods)
+    isnothing(y) && return (prods)
     u = prods.u
     u[prods.projection] .= y
     u[prods.remidxs] .= prods.complete_state
@@ -140,5 +142,5 @@ end
 
 function observe_state(ds::ProjectedDynamicalSystem, index)
     u = current_state(ds.ds) # here we use the full state so that indexing makes sense
-    observe_state(ds, index, u)
+    return observe_state(ds, index, u)
 end

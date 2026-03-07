@@ -5,13 +5,13 @@ include("test_system_function.jl")
 
 # Creation of a trivial system with one coordinate going to infinity
 # and the other to zero. Lyapunov exponents are known analytically
-trivial_rule(x, p, n) = SVector{2}(p[1]*x[1], p[2]*x[2])
+trivial_rule(x, p, n) = SVector{2}(p[1] * x[1], p[2] * x[2])
 function trivial_rule_iip(dx, x, p, n)
     dx .= trivial_rule(x, p, n)
     return
 end
 trivial_jac(x, p, n) = SMatrix{2, 2}(p[1], 0, 0, p[2])
-trivial_jac_iip(J, x, p, n) = (J[1,1] = p[1]; J[2,2] = p[2]; nothing)
+trivial_jac_iip(J, x, p, n) = (J[1, 1] = p[1]; J[2, 2] = p[2]; nothing)
 
 u0 = ones(2)
 p0_disc = [1.1, 0.8]
@@ -46,7 +46,7 @@ function tangent_space_test(tands, lyapunovs)
     @test y1[1] == 0
     @test y1[2] ≈ exp(lyapunovs[2])
     @test y2[1] ≈ exp(lyapunovs[1])
-    @test y2[2] == 0
+    return @test y2[2] == 0
 end
 
 # Allright, unfortunately here we have to test a ridiculous amount of multiplicity...
@@ -60,6 +60,6 @@ end
     ds = SystemType(rule, u0, p0)
     tands = TangentDynamicalSystem(ds; J = Jf)
 
-    test_dynamical_system(tands, u0, p0; idt=IDT, iip=IIP, test_trajectory = false)
+    test_dynamical_system(tands, u0, p0; idt = IDT, iip = IIP, test_trajectory = false)
     tangent_space_test(tands, lyapunovs)
 end
