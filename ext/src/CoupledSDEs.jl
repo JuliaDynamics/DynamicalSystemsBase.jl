@@ -104,15 +104,15 @@ end
 CoupledSDEs(ds::CoupledSDEs, diffeq) = CoupledSDEs(SDEProblem(ds), merge(ds.diffeq, diffeq))
 
 """
-    CoupledSDEs(ds::CoupledODEs, p; kwargs...)
+    CoupledSDEs(ds::CoupledODEs, p = current_parameters(ds); kwargs...)
 
-Converts a [`CoupledODEs`
-](https://juliadynamics.github.io/DynamicalSystems.jl/stable/tutorial/#CoupledODEs)
-system into a [`CoupledSDEs`](@ref).
+Converts a [`CoupledODEs`](@ref) into a [`CoupledSDEs`](@ref).
+While `p` is optional, it is likely to change as the
+diffusion (noise) function `g` is added.
 """
 function DynamicalSystemsBase.CoupledSDEs(
     ds::CoupledODEs,
-    p; # the parameter is likely changed as the diffusion function g is added.
+    p = current_parameters(ds); # the parameter is likely changed as the diffusion function g is added.
     g=nothing,
     noise_strength=1.0,
     covariance=nothing,

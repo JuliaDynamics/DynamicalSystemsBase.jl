@@ -101,7 +101,7 @@ to extract the problem.
 
 You can convert a `CoupledSDEs` system to `CoupledODEs` to analyze its deterministic part
 using the function `CoupledODEs(ds::CoupledSDEs; diffeq, t0)`.
-Similarly, use `CoupledSDEs(ds::CoupledODEs, p; kwargs...)` to convert a `CoupledODEs` into
+Similarly, use `CoupledSDEs(ds::CoupledODEs [, p]; kwargs...)` to convert a `CoupledODEs` into
 a `CoupledSDEs`.
 """
 struct CoupledSDEs{IIP,D,I,P} <: ContinuousTimeDynamicalSystem
