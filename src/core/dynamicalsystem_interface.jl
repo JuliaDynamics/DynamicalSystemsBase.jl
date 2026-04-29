@@ -477,9 +477,11 @@ hence `p` can be an arbitrary container mapping parameter indices to values
 (such as a `Vector{Real}`, `Vector{Pair}`, or `AbstractDict`).
 
 The keys of `p` must be valid keys that can be given to [`set_parameter!`](@ref).
+
+Optionally a third input argument can be given for the parameter container to overwrite,
+otherwise it is just `current_parameters(ds)`.
 """
-function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds))
-    cp = current_parameters(ds)
+function set_parameters!(ds::DynamicalSystem, p = initial_parameters(ds), cp = current_parameters(ds))
     p === cp && return
     iter = p isa Vector{<:Real} ? pairs(p) : p # allows using vector, dict, or vector{pair}.
     for (index, value) in iter
