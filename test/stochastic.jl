@@ -163,3 +163,74 @@ end
         @test approx ≈ Γ atol = 1.0e-1
     end
 end
+
+# Regression test for https://github.com/JuliaDynamics/DynamicalSystemsBase.jl/issues/251:
+# the auto-generated diffusion closure used to recompute its (constant) output on every
+# call, allocating ~1 KB per `step!` and dominating long integrations. The closure must
+# now return a precomputed constant with no allocations.
+@testset "auto-diffusion closure is allocation-free (#251)" begin
+    f_oop(u, p, t) = SVector{2}(0.0, 0.0)
+    f_iip(du, u, p, t) = (du .= 0; nothing)
+    Γ = [1.0 0.3; 0.3 1.0]
+
+    function call_oop(g, n)
+        s = SVector(0.1, 0.2)
+        out = SVector(0.0, 0.0)
+        for _ in 1:n
+            out = g(s, nothing, 0.0)
+        end
+        return out
+    end
+    function call_iip!(g, du, n)
+        u = [0.0, 0.0]
+        for _ in 1:n
+            g(du, u, nothing, 0.0)
+        end
+        return du
+    end
+
+    @testset "OOP diagonal" begin
+        ds = CoupledSDEs(f_oop, SVector(0.0, 0.0); noise_strength = 2.5)
+        g = ds.integ.sol.prob.f.g
+        @test g(SVector(0.0, 0.0), nothing, 0.0) === g(SVector(1.0, 1.0), nothing, 5.0)
+        @test g(SVector(0.0, 0.0), nothing, 0.0) == SVector(2.5, 2.5)
+        call_oop(g, 10) # warmup
+        @test (@allocated call_oop(g, 10_000)) < 100
+    end
+
+    @testset "OOP non-diagonal" begin
+        ds = CoupledSDEs(f_oop, SVector(0.0, 0.0); covariance = Γ, noise_strength = 1.5)
+        g = ds.integ.sol.prob.f.g
+        @test g(SVector(0.0, 0.0), nothing, 0.0) === g(SVector(1.0, 1.0), nothing, 5.0)
+        @test g(SVector(0.0, 0.0), nothing, 0.0) ≈ 1.5 .* sqrt(Γ)
+        call_oop(g, 10)
+        @test (@allocated call_oop(g, 10_000)) < 100
+    end
+
+    @testset "IIP diagonal" begin
+        ds = CoupledSDEs(f_iip, [0.0, 0.0]; noise_strength = 2.5)
+        g = ds.integ.sol.prob.f.g
+        du = zeros(2)
+        g(du, [0.0, 0.0], nothing, 0.0)
+        @test du == [2.5, 2.5]
+        call_iip!(g, du, 10)
+        @test (@allocated call_iip!(g, du, 10_000)) < 100
+    end
+
+    @testset "IIP non-diagonal" begin
+        ds = CoupledSDEs(f_iip, [0.0, 0.0]; covariance = Γ, noise_strength = 1.5)
+        g = ds.integ.sol.prob.f.g
+        DU = zeros(2, 2)
+        g(DU, [0.0, 0.0], nothing, 0.0)
+        @test DU ≈ 1.5 .* sqrt(Γ)
+        function call_iip_mat!(g, DU, n)
+            u = [0.0, 0.0]
+            for _ in 1:n
+                g(DU, u, nothing, 0.0)
+            end
+            return DU
+        end
+        call_iip_mat!(g, DU, 10)
+        @test (@allocated call_iip_mat!(g, DU, 10_000)) < 100
+    end
+end
