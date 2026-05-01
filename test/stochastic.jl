@@ -104,7 +104,10 @@ end
         corr = CoupledSDEs(f, zeros(2); covariance = [1 0.3; 0.3 1])
         corr_alt = CoupledSDEs(f, zeros(2); g = g, noise_prototype = zeros(2, 2))
         @test corr.noise_type == corr_alt.noise_type
-        @test all(corr.integ.g(zeros(2), (), 0.0) .== corr_alt.integ.g(zeros(2), (), 0.0))
+        @test all(
+            DynamicalSystemsBase.referrenced_sciml_prob(corr).g(zeros(2), (), 0.0) .==
+            DynamicalSystemsBase.referrenced_sciml_prob(corr_alt).g(zeros(2), (), 0.0)
+        )
     end
 
     @testset "ArgumentError" begin

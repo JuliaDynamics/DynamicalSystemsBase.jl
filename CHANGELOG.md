@@ -1,3 +1,8 @@
+# v3.16
+
+- Support StochasticDiffEq v6.96+, where the diffusion function is no longer reachable via `integrator.g`. The extension now reads it from the `SDEProblem` (`prob.g`), which is a stable SciMLBase accessor that works across both old and new StochasticDiffEq versions.
+- Run the multiplicative and non-diagonal noise examples on the `CoupledSDEs` docs page so they actually integrate a trajectory.
+
 # v3.15
 
 - New function `named_variables(ds)` for getting the variable names of an MTK-generated dynamical system.
