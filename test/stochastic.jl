@@ -106,7 +106,7 @@ end
         @test corr.noise_type == corr_alt.noise_type
         @test all(
             DynamicalSystemsBase.referrenced_sciml_prob(corr).g(zeros(2), (), 0.0) .==
-            DynamicalSystemsBase.referrenced_sciml_prob(corr_alt).g(zeros(2), (), 0.0)
+                DynamicalSystemsBase.referrenced_sciml_prob(corr_alt).g(zeros(2), (), 0.0)
         )
     end
 
