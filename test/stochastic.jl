@@ -73,7 +73,8 @@ end
         diffeq = (alg = SRA(), abstol = 1.0e-3, reltol = 1.0e-3, verbose = false)
     )
     @test lorenz_SRA.integ.alg isa SRA
-    @test lorenz_SRA.integ.opts.verbose == false
+    # SciML moved from Bool verbose to a `DEVerbosity` struct of per-toggle verbosities.
+    @test nameof(typeof(lorenz_SRA.integ.opts.verbose.linear_verbosity)) == :None
 
     # also test SDEproblem creation
     prob = lorenz_SRA.integ.sol.prob
@@ -81,7 +82,7 @@ end
     ds = CoupledSDEs(prob, (alg = SRA(), abstol = 0.0, reltol = 1.0e-3, verbose = false))
 
     @test ds.integ.alg isa SRA
-    @test ds.integ.opts.verbose == false
+    @test nameof(typeof(ds.integ.opts.verbose.linear_verbosity)) == :None
 
     @test_throws ArgumentError CoupledSDEs(prob; diffeq = (alg = SRA(),))
 

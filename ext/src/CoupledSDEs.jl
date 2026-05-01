@@ -85,6 +85,10 @@ function DynamicalSystemsBase.CoupledSDEs(
     end
 
     solver, remaining = _decompose_into_sde_solver_and_remaining(diffeq)
+    # The default `dtmin` from SciML scales with `tspan`. With our open-ended
+    # `tspan = (0, 1e11)` it becomes ~1e-5, which is too coarse for the SDE
+    # adaptive controller and causes spurious `DtLessThanMin` aborts.
+    remaining = haskey(remaining, :dtmin) ? remaining : merge((dtmin = 0.0,), remaining)
     integ = __init(
         prob,
         solver;
