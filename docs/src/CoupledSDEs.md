@@ -84,6 +84,8 @@ function g!(du, u, p, t)
     return nothing
 end
 sde = CoupledSDEs(f!, rand(2)./10; g=g!)
+tr = trajectory(sde, 1.0)
+plot_trajectory(tr...)
 ```
 
 #### Non-diagonal noise
@@ -105,6 +107,8 @@ function g!(du, u, p, t)
 end
 diffeq = (alg = RKMilCommute(), reltol = 1e-3, abstol = 1e-3, dt=0.1)
 sde = CoupledSDEs(f!, rand(2)./10; g=g!, noise_prototype = zeros(2, 2), diffeq = diffeq)
+tr = trajectory(sde, 1.0)
+plot_trajectory(tr...)
 ```
 
 !!! warning

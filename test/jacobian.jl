@@ -48,23 +48,23 @@ end
 
     jac = jacobian(ds)
     @test jac isa GeneratedFunctionWrapper
-    @test jac([1.0, 1.0], [], 0.0) == [-3 0;0 3]
+    @test jac([1.0, 1.0], prob.p, 0.0) == [-3 0;0 3]
 
     @testset "CoupledSDEs" begin
         # just to check if MTK @brownian does not give any problems
         using StochasticDiffEq
-        @brownian β
+        @brownians β
         eqs = [
             D(u[1]) ~ 3.0 * u[1] + β,
             D(u[2]) ~ -3.0 * u[2] + β,
         ]
-        @mtkbuild sys = System(eqs, t)
+        @mtkcompile sys = System(eqs, t)
 
         prob = SDEProblem(sys, [1.0, 1.0], (0.0, 1.0), jac = true)
         sde = CoupledSDEs(prob)
 
         jac = jacobian(sde)
         @test jac isa GeneratedFunctionWrapper
-        @test jac([1.0, 1.0], [], 0.0) == [-3 0; 0 3]
+        @test jac([1.0, 1.0], prob.p, 0.0) == [-3 0; 0 3]
     end
 end

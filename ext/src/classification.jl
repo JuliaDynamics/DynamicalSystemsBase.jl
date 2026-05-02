@@ -50,7 +50,8 @@ function diffusion_function(g, IIP, noise_prototype)
 end
 
 function diffusion_function(ds::CoupledSDEs{IIP}) where {IIP}
-    return diffusion_function(ds.integ.g, IIP, referrenced_sciml_prob(ds).noise_rate_prototype)
+    prob = referrenced_sciml_prob(ds)
+    return diffusion_function(prob.g, IIP, prob.noise_rate_prototype)
 end
 
 """
