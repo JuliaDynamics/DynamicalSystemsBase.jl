@@ -206,6 +206,9 @@ end
         # Different explicit seed → different trajectory
         reinit!(ds; seed = UInt64(43)); step!(ds, 1.0); uc = copy(current_state(ds))
         @test ua != uc
+    end
+end
+
 # Regression test for https://github.com/JuliaDynamics/DynamicalSystemsBase.jl/issues/251:
 # the auto-generated diffusion closure used to recompute its (constant) output on every
 # call, allocating ~1 KB per `step!` and dominating long integrations. The closure must
