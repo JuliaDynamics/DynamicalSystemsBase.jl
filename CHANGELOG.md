@@ -1,5 +1,7 @@
-# main
+# v3.16
 
+- `reinit!(ds::CoupledSDEs)` now accepts a `seed::UInt64` keyword that re-seeds the noise process random number generator. The default is `rand(UInt64)`, so each `reinit!` produces a fresh, independent noise realization unless an explicit seed is given.
+- The `CoupledSDEs` constructor's default `seed` is now `rand(UInt64)` instead of `UInt64(0)`. Behavior is unchanged (the SDE problem already used a random seed when given `0`), but `prob.seed` now stores the actual seed used, so a realization can be reproduced by reading it back and passing it to `reinit!`.
 - Support StochasticDiffEq v6.96+, where the diffusion function is no longer reachable via `integrator.g`. The extension now reads it from the `SDEProblem` (`prob.g`), which is a stable SciMLBase accessor that works across both old and new StochasticDiffEq versions.
 - Run the multiplicative and non-diagonal noise examples on the `CoupledSDEs` docs page so they actually integrate a trajectory.
 

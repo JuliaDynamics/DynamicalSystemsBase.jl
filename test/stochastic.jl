@@ -168,6 +168,47 @@ end
     end
 end
 
+@testset "seed" begin
+    f(u, p, t) = -u
+
+    @testset "constructor default is randomized" begin
+        # Two CoupledSDEs without explicit seed get different seeds and different trajectories.
+        ds1 = CoupledSDEs(f, [1.0])
+        ds2 = CoupledSDEs(f, [1.0])
+        @test ds1.integ.sol.prob.seed != 0
+        @test ds1.integ.sol.prob.seed != ds2.integ.sol.prob.seed
+        step!(ds1, 1.0); step!(ds2, 1.0)
+        @test current_state(ds1) != current_state(ds2)
+    end
+
+    @testset "constructor explicit seed is reproducible" begin
+        seed = UInt64(20250502)
+        ds1 = CoupledSDEs(f, [1.0]; seed = seed)
+        ds2 = CoupledSDEs(f, [1.0]; seed = seed)
+        step!(ds1, 1.0); step!(ds2, 1.0)
+        @test current_state(ds1) ≈ current_state(ds2)
+    end
+
+    @testset "reinit! default reseeds with fresh randomness" begin
+        ds = CoupledSDEs(f, [1.0]; seed = UInt64(1))
+        reinit!(ds); step!(ds, 1.0); ua = copy(current_state(ds))
+        reinit!(ds); step!(ds, 1.0); ub = copy(current_state(ds))
+        # Different default seeds → different trajectories
+        @test ua != ub
+    end
+
+    @testset "reinit! accepts explicit seed kwarg" begin
+        ds = CoupledSDEs(f, [1.0])
+        # Same explicit seed → same noise stream after reinit
+        reinit!(ds; seed = UInt64(42)); step!(ds, 1.0); ua = copy(current_state(ds))
+        reinit!(ds; seed = UInt64(42)); step!(ds, 1.0); ub = copy(current_state(ds))
+        @test ua ≈ ub
+        # Different explicit seed → different trajectory
+        reinit!(ds; seed = UInt64(43)); step!(ds, 1.0); uc = copy(current_state(ds))
+        @test ua != uc
+    end
+end
+
 # Regression test for https://github.com/JuliaDynamics/DynamicalSystemsBase.jl/issues/251:
 # the auto-generated diffusion closure used to recompute its (constant) output on every
 # call, allocating ~1 KB per `step!` and dominating long integrations. The closure must

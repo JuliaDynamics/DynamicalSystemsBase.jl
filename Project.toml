@@ -1,12 +1,13 @@
 name = "DynamicalSystemsBase"
 uuid = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
 repo = "https://github.com/JuliaDynamics/DynamicalSystemsBase.jl.git"
-version = "3.16.1"
+version = "3.16.0"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OrdinaryDiffEqTsit5 = "b1df2697-797e-41e3-8120-5422d3b24e4a"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"

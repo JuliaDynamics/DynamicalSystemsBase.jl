@@ -76,7 +76,7 @@ found in the [online docs for `CoupledSDEs`](@ref defining-stochastic-dynamics).
 - `noise_process`: stochastic process as provided by [DiffEqNoiseProcess.jl](https://docs.sciml.ai/DiffEqNoiseProcess/stable/) (default `nothing`, i.e. standard Wiener process)
 - `t0`: initial time (default `0.0`)
 - `diffeq`: DiffEq solver settings (see below)
-- `seed`: random number seed (default `UInt64(0)`)
+- `seed`: random number seed (default `rand(UInt64)`, so each `CoupledSDEs` produces a different noise realization unless a seed is given explicitly)
 
 ## DifferentialEquations.jl interfacing
 
@@ -111,13 +111,4 @@ struct CoupledSDEs{IIP, D, I, P} <: ContinuousTimeDynamicalSystem
     p0::P
     diffeq # isn't parameterized because it is only used for display
     noise_type::NamedTuple
-end
-
-function SciMLBase.reinit!(
-        ds::CoupledSDEs, u::AbstractArray = initial_state(ds);
-        p = current_parameters(ds), t0 = initial_time(ds), kw...
-    )
-    set_parameters!(ds, p)
-    reinit!(ds.integ, u; t0, kw...)
-    return ds
 end
