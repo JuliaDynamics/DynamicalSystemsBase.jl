@@ -41,6 +41,7 @@ end
     prob = lorenz_oop.integ.sol.prob
     ds = CoupledODEs(prob, (alg = Vern9(), abstol = 0.0, reltol = 1.0e-6, verbose = false))
     @test ds.integ.alg isa Vern9
-    @test ds.integ.opts.verbose == false
+    # SciML moved from Bool verbose to a `DEVerbosity` struct of per-toggle verbosities.
+    @test nameof(typeof(ds.integ.opts.verbose.linear_verbosity)) == :None
 
 end
