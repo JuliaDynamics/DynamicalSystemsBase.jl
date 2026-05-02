@@ -35,7 +35,7 @@ function DynamicalSystemsBase.CoupledSDEs(
         diffeq = DEFAULT_STOCH_DIFFEQ,
         noise_prototype = nothing,
         noise_process = nothing,
-        seed = UInt64(0)
+        seed = rand(UInt64)
     )
     IIP = isinplace(f, 4) # from SciMLBase
     if !isnothing(g)
@@ -105,6 +105,32 @@ end
 CoupledSDEs(ds::CoupledSDEs, diffeq) = CoupledSDEs(SDEProblem(ds), merge(ds.diffeq, diffeq))
 
 """
+    reinit!(ds::CoupledSDEs, u = initial_state(ds); kwargs...) → ds
+
+Re-initialize a [`CoupledSDEs`](@ref). In addition to the keywords accepted by
+`reinit!` for any [`DynamicalSystem`](@ref), the following is supported:
+
+- `seed::UInt64`: re-seed the noise process random number generator. Defaults to
+  `rand(UInt64)`, so by default every `reinit!` produces a fresh, independent noise
+  realization. Pass an explicit `seed` to obtain a reproducible noise stream.
+"""
+function SciMLBase.reinit!(
+        ds::CoupledSDEs, u::AbstractArray = DynamicalSystemsBase.initial_state(ds);
+        p = DynamicalSystemsBase.current_parameters(ds),
+        t0 = DynamicalSystemsBase.initial_time(ds),
+        seed::UInt64 = rand(UInt64), kw...
+    )
+    DynamicalSystemsBase.set_parameters!(ds, p)
+    # Adaptive solvers carry the previous run's last `dt`; resetting it ensures
+    # `seed` reproducibility. Non-adaptive solvers must keep their user-specified `dt`.
+    reset_dt = ds.integ.opts.adaptive
+    SciMLBase.reinit!(ds.integ, u; reinit_dae = false, reset_dt, t0, kw...)
+    Random.seed!(ds.integ.W.rng, seed)
+    setup_next_step!(ds.integ.W, ds.integ.u, ds.integ.p)
+    return ds
+end
+
+"""
     CoupledSDEs(ds::CoupledODEs, p = current_parameters(ds); kwargs...)
 
 Converts a [`CoupledODEs`](@ref) into a [`CoupledSDEs`](@ref).
@@ -120,7 +146,7 @@ function DynamicalSystemsBase.CoupledSDEs(
         diffeq = DEFAULT_STOCH_DIFFEQ,
         noise_prototype = nothing,
         noise_process = nothing,
-        seed = UInt64(0)
+        seed = rand(UInt64)
     )
     prob = referrenced_sciml_prob(ds)
     # we want the symbolic jacobian to be transfered over

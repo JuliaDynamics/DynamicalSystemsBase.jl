@@ -1,3 +1,8 @@
+# v3.17
+
+- `reinit!(ds::CoupledSDEs)` now accepts a `seed::UInt64` keyword that re-seeds the noise process random number generator. The default is `rand(UInt64)`, so each `reinit!` produces a fresh, independent noise realization unless an explicit seed is given.
+- The `CoupledSDEs` constructor's default `seed` is now `rand(UInt64)` instead of `UInt64(0)`. Behavior is unchanged (the SDE problem already used a random seed when given `0`), but `prob.seed` now stores the actual seed used, so a realization can be reproduced by reading it back and passing it to `reinit!`.
+
 # v3.15
 
 - New function `named_variables(ds)` for getting the variable names of an MTK-generated dynamical system.
