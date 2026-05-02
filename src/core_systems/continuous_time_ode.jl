@@ -52,7 +52,7 @@ to access the solvers. The default `diffeq` is:
 $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 
 `diffeq` keywords can also include `callback` for [event handling
-](http://docs.juliadiffeq.org/latest/features/callback_functions.html).
+](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/).
 
 The convenience constructors `CoupledODEs(prob::ODEProblem [, diffeq])` and
 `CoupledODEs(ds::CoupledODEs [, diffeq])` are also available.
