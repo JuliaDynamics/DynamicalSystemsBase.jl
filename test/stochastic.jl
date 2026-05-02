@@ -73,7 +73,8 @@ end
         diffeq = (alg = SRA(), abstol = 1.0e-3, reltol = 1.0e-3, verbose = false)
     )
     @test lorenz_SRA.integ.alg isa SRA
-    @test lorenz_SRA.integ.opts.verbose == false
+    # SciML moved from Bool verbose to a `DEVerbosity` struct of per-toggle verbosities.
+    @test nameof(typeof(lorenz_SRA.integ.opts.verbose.linear_verbosity)) == :None
 
     # also test SDEproblem creation
     prob = lorenz_SRA.integ.sol.prob
@@ -81,7 +82,7 @@ end
     ds = CoupledSDEs(prob, (alg = SRA(), abstol = 0.0, reltol = 1.0e-3, verbose = false))
 
     @test ds.integ.alg isa SRA
-    @test ds.integ.opts.verbose == false
+    @test nameof(typeof(ds.integ.opts.verbose.linear_verbosity)) == :None
 
     @test_throws ArgumentError CoupledSDEs(prob; diffeq = (alg = SRA(),))
 
@@ -104,7 +105,10 @@ end
         corr = CoupledSDEs(f, zeros(2); covariance = [1 0.3; 0.3 1])
         corr_alt = CoupledSDEs(f, zeros(2); g = g, noise_prototype = zeros(2, 2))
         @test corr.noise_type == corr_alt.noise_type
-        @test all(corr.integ.g(zeros(2), (), 0.0) .== corr_alt.integ.g(zeros(2), (), 0.0))
+        @test all(
+            DynamicalSystemsBase.referrenced_sciml_prob(corr).g(zeros(2), (), 0.0) .==
+                DynamicalSystemsBase.referrenced_sciml_prob(corr_alt).g(zeros(2), (), 0.0)
+        )
     end
 
     @testset "ArgumentError" begin
@@ -202,5 +206,73 @@ end
         # Different explicit seed → different trajectory
         reinit!(ds; seed = UInt64(43)); step!(ds, 1.0); uc = copy(current_state(ds))
         @test ua != uc
+# Regression test for https://github.com/JuliaDynamics/DynamicalSystemsBase.jl/issues/251:
+# the auto-generated diffusion closure used to recompute its (constant) output on every
+# call, allocating ~1 KB per `step!` and dominating long integrations. The closure must
+# now return a precomputed constant with no allocations.
+@testset "auto-diffusion closure is allocation-free (#251)" begin
+    f_oop(u, p, t) = SVector{2}(0.0, 0.0)
+    f_iip(du, u, p, t) = (du .= 0; nothing)
+    Γ = [1.0 0.3; 0.3 1.0]
+
+    function call_oop(g, n)
+        s = SVector(0.1, 0.2)
+        out = SVector(0.0, 0.0)
+        for _ in 1:n
+            out = g(s, nothing, 0.0)
+        end
+        return out
+    end
+    function call_iip!(g, du, n)
+        u = [0.0, 0.0]
+        for _ in 1:n
+            g(du, u, nothing, 0.0)
+        end
+        return du
+    end
+
+    @testset "OOP diagonal" begin
+        ds = CoupledSDEs(f_oop, SVector(0.0, 0.0); noise_strength = 2.5)
+        g = ds.integ.sol.prob.f.g
+        @test g(SVector(0.0, 0.0), nothing, 0.0) === g(SVector(1.0, 1.0), nothing, 5.0)
+        @test g(SVector(0.0, 0.0), nothing, 0.0) == SVector(2.5, 2.5)
+        call_oop(g, 10) # warmup
+        @test (@allocated call_oop(g, 10_000)) < 100
+    end
+
+    @testset "OOP non-diagonal" begin
+        ds = CoupledSDEs(f_oop, SVector(0.0, 0.0); covariance = Γ, noise_strength = 1.5)
+        g = ds.integ.sol.prob.f.g
+        @test g(SVector(0.0, 0.0), nothing, 0.0) === g(SVector(1.0, 1.0), nothing, 5.0)
+        @test g(SVector(0.0, 0.0), nothing, 0.0) ≈ 1.5 .* sqrt(Γ)
+        call_oop(g, 10)
+        @test (@allocated call_oop(g, 10_000)) < 100
+    end
+
+    @testset "IIP diagonal" begin
+        ds = CoupledSDEs(f_iip, [0.0, 0.0]; noise_strength = 2.5)
+        g = ds.integ.sol.prob.f.g
+        du = zeros(2)
+        g(du, [0.0, 0.0], nothing, 0.0)
+        @test du == [2.5, 2.5]
+        call_iip!(g, du, 10)
+        @test (@allocated call_iip!(g, du, 10_000)) < 100
+    end
+
+    @testset "IIP non-diagonal" begin
+        ds = CoupledSDEs(f_iip, [0.0, 0.0]; covariance = Γ, noise_strength = 1.5)
+        g = ds.integ.sol.prob.f.g
+        DU = zeros(2, 2)
+        g(DU, [0.0, 0.0], nothing, 0.0)
+        @test DU ≈ 1.5 .* sqrt(Γ)
+        function call_iip_mat!(g, DU, n)
+            u = [0.0, 0.0]
+            for _ in 1:n
+                g(DU, u, nothing, 0.0)
+            end
+            return DU
+        end
+        call_iip_mat!(g, DU, 10)
+        @test (@allocated call_iip_mat!(g, DU, 10_000)) < 100
     end
 end

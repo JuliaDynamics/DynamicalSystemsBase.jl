@@ -85,6 +85,10 @@ function DynamicalSystemsBase.CoupledSDEs(
     end
 
     solver, remaining = _decompose_into_sde_solver_and_remaining(diffeq)
+    # The default `dtmin` from SciML scales with `tspan`. With our open-ended
+    # `tspan = (0, 1e11)` it becomes ~1e-5, which is too coarse for the SDE
+    # adaptive controller and causes spurious `DtLessThanMin` aborts.
+    remaining = haskey(remaining, :dtmin) ? remaining : merge((dtmin = 0.0,), remaining)
     integ = __init(
         prob,
         solver;
@@ -280,21 +284,29 @@ function construct_diffusion_function(
         A = sqrt(cov)
         if IIP
             if isdiag(cov)
-                g = (du, u, p, t) -> du .= noise_strength .* diag(A)
+                diag_const = collect(noise_strength .* diag(A))
+                g = let diag_const = diag_const
+                    (du, u, p, t) -> (du .= diag_const; nothing)
+                end
             else
-                g = (du, u, p, t) -> du .= noise_strength .* A
+                A_const = collect(noise_strength .* A)
+                g = let A_const = A_const
+                    (du, u, p, t) -> (du .= A_const; nothing)
+                end
                 noise_prototype = zeros(size(A))
                 # ^ we could make this sparse to make it more performant
             end
         else
             if isdiag(cov)
-                g = (u, p, t) -> SVector{length(diag(A)), eltype(A)}(
-                    diag(noise_strength .* A)
-                )
+                diag_const = SVector{D, eltype(A)}(diag(noise_strength .* A))
+                g = let diag_const = diag_const
+                    (u, p, t) -> diag_const
+                end
             else
-                g = (u, p, t) -> SMatrix{size(A)..., eltype(A)}(
-                    noise_strength .* A
-                )
+                A_const = SMatrix{size(A)..., eltype(A)}(noise_strength .* A)
+                g = let A_const = A_const
+                    (u, p, t) -> A_const
+                end
                 noise_prototype = zeros(size(A))
             end
         end
