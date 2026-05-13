@@ -1,5 +1,5 @@
 using OrdinaryDiffEqTsit5: Tsit5
-using SciMLBase: ODEProblem, DEIntegrator, u_modified!, __init
+using SciMLBase: ODEProblem, DEIntegrator, derivative_discontinuity!, __init
 export CoupledODEs, ContinuousDynamicalSystem
 
 ###########################################################################################
@@ -183,14 +183,14 @@ function set_state!(integ::DEIntegrator, u)
     else
         integ.u = recursivecopy(u)
     end
-    u_modified!(integ, true)
+    derivative_discontinuity!(integ, true)
     return
 end
 
-# This is here to ensure that `u_modified!` is called
+# This is here to ensure that `derivative_discontinuity!` is called
 function set_parameter!(ds::CoupledODEs, args...)
     _set_parameter!(ds, args...)
-    u_modified!(ds.integ, true)
+    derivative_discontinuity!(ds.integ, true)
     return
 end
 

@@ -141,27 +141,15 @@ end
 
 @independent_variables t
 D = Differential(t)
-@mtkmodel Roessler begin
-    @parameters begin
-        a = 0.2
-        b = 0.2
-        c = 5.7
-    end
-    @variables begin
-        x(t) = 1.0
-        y(t) = 0.0
-        z(t) = 0.0
-        nlt(t) # nonlinear term
-    end
-    @equations begin
-        D(x) ~ -y - z
-        D(y) ~ x + a * y
-        D(z) ~ b + nlt
-        nlt ~ z * (x - c)
-    end
-end
-
-@mtkcompile roessler_model = Roessler()
+@parameters a = 0.2 b = 0.2 c = 5.7
+@variables x(t) = 1.0 y(t) = 0.0 z(t) = 0.0 nlt(t)
+eqs = [
+    D(x) ~ -y - z,
+    D(y) ~ x + a * y,
+    D(z) ~ b + nlt,
+    nlt ~ z * (x - c),
+]
+@mtkcompile roessler_model = System(eqs, t)
 
 @testset "type: $(iip)" for iip in (true, false)
     if iip

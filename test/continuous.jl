@@ -1,6 +1,7 @@
 using DynamicalSystemsBase, Test
 
 using OrdinaryDiffEqTsit5: ODEProblem, Tsit5
+using OrdinaryDiffEqTsit5.OrdinaryDiffEqCore: None
 using OrdinaryDiffEqVerner: Vern9
 
 include("test_system_function.jl")
@@ -39,7 +40,9 @@ end
     @test lorenz_oop.integ.alg isa Tsit5
 
     prob = lorenz_oop.integ.sol.prob
-    ds = CoupledODEs(prob, (alg = Vern9(), abstol = 0.0, reltol = 1.0e-6, verbose = false))
+    ds = CoupledODEs(
+        prob, (alg = Vern9(), abstol = 0.0, reltol = 1.0e-6, verbose = None())
+    )
     @test ds.integ.alg isa Vern9
     # SciML moved from Bool verbose to a `DEVerbosity` struct of per-toggle verbosities.
     @test nameof(typeof(ds.integ.opts.verbose.linear_verbosity)) == :None
