@@ -43,7 +43,7 @@ end
     @named sys = System(eqs, t)
     sys = mtkcompile(sys)
 
-    prob = ODEProblem(sys, [1.0, 1.0], (0.0, 1.0); jac = true)
+    prob = ODEProblem(sys, [u[1] => 1.0, u[2] => 1.0], (0.0, 1.0); jac = true)
     ds = CoupledODEs(prob)
 
     jac = jacobian(ds)
@@ -60,7 +60,7 @@ end
         ]
         @mtkcompile sys = System(eqs, t)
 
-        prob = SDEProblem(sys, [1.0, 1.0], (0.0, 1.0), jac = true)
+        prob = SDEProblem(sys, [u[1] => 1.0, u[2] => 1.0], (0.0, 1.0), jac = true)
         sde = CoupledSDEs(prob)
 
         jac = jacobian(sde)

@@ -1,5 +1,6 @@
 using DynamicalSystemsBase, Test
 using OrdinaryDiffEqTsit5: Tsit5
+using OrdinaryDiffEqTsit5.OrdinaryDiffEqCore: None
 using StochasticDiffEq: SDEProblem, SRA, SOSRA, LambaEM, CorrelatedWienerProcess, EM
 
 StochasticSystemsBase = Base.get_extension(DynamicalSystemsBase, :StochasticSystemsBase)
@@ -70,7 +71,7 @@ end
 
     lorenz_SRA = CoupledSDEs(
         lorenz_rule, u0, p0;
-        diffeq = (alg = SRA(), abstol = 1.0e-3, reltol = 1.0e-3, verbose = false)
+        diffeq = (alg = SRA(), abstol = 1.0e-3, reltol = 1.0e-3, verbose = None())
     )
     @test lorenz_SRA.integ.alg isa SRA
     # SciML moved from Bool verbose to a `DEVerbosity` struct of per-toggle verbosities.
@@ -79,7 +80,9 @@ end
     # also test SDEproblem creation
     prob = lorenz_SRA.integ.sol.prob
 
-    ds = CoupledSDEs(prob, (alg = SRA(), abstol = 0.0, reltol = 1.0e-3, verbose = false))
+    ds = CoupledSDEs(
+        prob, (alg = SRA(), abstol = 0.0, reltol = 1.0e-3, verbose = None())
+    )
 
     @test ds.integ.alg isa SRA
     @test nameof(typeof(ds.integ.opts.verbose.linear_verbosity)) == :None

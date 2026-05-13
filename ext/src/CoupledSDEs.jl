@@ -208,10 +208,10 @@ function DynamicalSystemsBase.successful_step(integ::AbstractSDEIntegrator)
     return rcode == SciMLBase.ReturnCode.Default || rcode == SciMLBase.ReturnCode.Success
 end
 
-# This is here to ensure that `u_modified!` is called
+# This is here to ensure that `derivative_discontinuity!` is called
 function DynamicalSystemsBase.set_parameter!(ds::CoupledSDEs, args...)
     _set_parameter!(ds, args...)
-    u_modified!(ds.integ, true)
+    derivative_discontinuity!(ds.integ, true)
     return nothing
 end
 

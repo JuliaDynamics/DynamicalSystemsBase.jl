@@ -182,14 +182,14 @@ initial_states(pdsa::PDSAM) = eachcol(initial_state(pdsa.ds))
 (pdsa::PDSAM)(t::Real, i::Int = 1) = view(pdsa.ds(t), :, i)
 function set_state!(pdsa::PDSAM, u::AbstractArray, i::Int = 1)
     current_state(pdsa, i) .= u
-    u_modified!(pdsa.ds.integ, true)
+    derivative_discontinuity!(pdsa.ds.integ, true)
     return pdsa
 end
 
 
 function set_state!(pdsa::PDSAM{<:StroboscopicMap}, u::AbstractArray, i::Int = 1)
     current_state(pdsa, i) .= u
-    u_modified!(pdsa.ds.ds.integ, true)
+    derivative_discontinuity!(pdsa.ds.ds.integ, true)
     return pdsa
 end
 
@@ -248,7 +248,7 @@ set_parameter!(pdtds::PDTDS, index, value) = for ds in pdtds.systems
 end
 function set_state!(pdtds::PDTDS, u, i::Int = 1)
     # We need to set state in all systems, in case this does
-    # some kind of resetting, e.g., the `u_modified!` stuff.
+    # some kind of resetting, e.g., the `derivative_discontinuity!` stuff.
     for (k, ds) in enumerate(pdtds.systems)
         if k == i
             set_state!(ds, u)

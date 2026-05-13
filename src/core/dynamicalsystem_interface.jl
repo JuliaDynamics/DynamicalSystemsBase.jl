@@ -144,11 +144,11 @@ Return the ModelingToolkit.jl structurally-simplified model referrenced by `ds`.
 Return `nothing` if there is no referrenced model.
 """
 referrenced_sciml_model(ds::DynamicalSystem) = referrenced_sciml_model(referrenced_sciml_prob(ds))
-referrenced_sciml_model(prob::SciMLBase.DEProblem) = prob.f.sys
+referrenced_sciml_model(prob::SciMLBase.AbstractDEProblem) = prob.f.sys
 referrenced_sciml_model(::Nothing) = nothing
 
 # return true if there is an actual referrenced system
-has_referrenced_model(prob::SciMLBase.DEProblem) = has_referrenced_model(referrenced_sciml_model(prob))
+has_referrenced_model(prob::SciMLBase.AbstractDEProblem) = has_referrenced_model(referrenced_sciml_model(prob))
 has_referrenced_model(prob::DynamicalSystem) = has_referrenced_model(referrenced_sciml_model(prob))
 has_referrenced_model(::Nothing) = false
 has_referrenced_model(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false

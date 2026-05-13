@@ -1,7 +1,7 @@
 name = "DynamicalSystemsBase"
 uuid = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
 repo = "https://github.com/JuliaDynamics/DynamicalSystemsBase.jl.git"
-version = "3.15.7"
+version = "3.16.0"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -24,12 +24,12 @@ StochasticSystemsBase = "StochasticDiffEq"
 
 [compat]
 ForwardDiff = "0.10, 1"
-OrdinaryDiffEqTsit5 = "1.1"
+OrdinaryDiffEqTsit5 = "2"
 Reexport = "1"
-Roots = "1, 2"
-SciMLBase = "1.19.5, 2"
+Roots = "2, 3"
+SciMLBase = "3"
 StateSpaceSets = "2.5"
 Statistics = "1"
-StochasticDiffEq = "6.66.0"
+StochasticDiffEq = "7"
 SymbolicIndexingInterface = "0.3.4"
-julia = "1.9"
+julia = "1.10"
