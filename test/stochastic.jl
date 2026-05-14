@@ -3,8 +3,7 @@ using OrdinaryDiffEqTsit5: Tsit5
 using OrdinaryDiffEqTsit5.OrdinaryDiffEqCore: None
 using StochasticDiffEq: SDEProblem, SRA, SOSRA, LambaEM, CorrelatedWienerProcess, EM
 
-StochasticSystemsBase = Base.get_extension(DynamicalSystemsBase, :StochasticSystemsBase)
-diffusion_matrix = StochasticSystemsBase.diffusion_matrix
+using DynamicalSystemsBase: diffusion_matrix
 
 # Creation of lorenz
 @inbounds function lorenz_rule(u, p, t)
@@ -133,9 +132,6 @@ end
 end
 
 @testset "utilities" begin
-    StochasticSystemsBase = Base.get_extension(DynamicalSystemsBase, :StochasticSystemsBase)
-    diffusion_matrix = StochasticSystemsBase.diffusion_matrix
-
     @testset "diffusion_matrix" begin
         Γ = [1.0 0.3 0.0; 0.3 1 0.5; 0.0 0.5 1.0]
         A = sqrt(Γ)
