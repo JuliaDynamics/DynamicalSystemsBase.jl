@@ -1,3 +1,8 @@
+# v3.17
+
+- `CoupledSDEs` (along with `diffusion_matrix` and related utilities) is now part of the core package instead of living behind the `StochasticSystemsBase` package extension. Users no longer need to load `StochasticDiffEq` to construct or use `CoupledSDEs`, and `Base.get_extension` is no longer required to access `diffusion_matrix`.
+- The `StochasticDiffEq` dependency has been replaced with the smaller `StochasticDiffEqHighOrder` sublibrary, reducing load time and dependency surface for users of `CoupledSDEs`. Compile time of `DynamicalSystemsBase` increases slightly (about 2.5s to 3s) in exchange.
+
 # v3.16
 
 - `reinit!(ds::CoupledSDEs)` now accepts a `seed::UInt64` keyword that re-seeds the noise process random number generator. The default is `rand(UInt64)`, so each `reinit!` produces a fresh, independent noise realization unless an explicit seed is given.
