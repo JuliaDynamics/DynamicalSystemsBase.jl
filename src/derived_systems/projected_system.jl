@@ -95,7 +95,7 @@ additional_details(prods::ProjectedDynamicalSystem) = [
 # Everything besides `dimension`, `current/initia_state` and `reinit!` is propagated!
 for f in (
         :(SciMLBase.isinplace), :current_time, :initial_time, :isdiscretetime,
-        :referrenced_sciml_prob, :successful_step,
+        :referenced_sciml_prob, :successful_step,
         :current_parameters, :initial_parameters, :isdeterministic, :dynamic_rule,
     )
     @eval $(f)(prods::ProjectedDynamicalSystem, args...; kw...) =

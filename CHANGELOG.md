@@ -1,3 +1,7 @@
+# v3.18
+
+- The public API functions `referrenced_sciml_prob`, `referrenced_sciml_model`, and the internal `has_referrenced_model` have been renamed to fix the misspelling: `referenced_sciml_prob`, `referenced_sciml_model`, `has_referenced_model`. The misspelled names are kept as deprecated aliases that forward to the new ones, so existing code keeps working but emits a deprecation warning. `referenced_sciml_prob` is now also exported and documented.
+
 # v3.17
 
 - `CoupledSDEs` (along with `diffusion_matrix` and related utilities) is now part of the core package instead of living behind the `StochasticSystemsBase` package extension. Users no longer need to load `StochasticDiffEq` to construct or use `CoupledSDEs`, and `Base.get_extension` is no longer required to access `diffusion_matrix`.
@@ -86,7 +90,7 @@ model and all symbolic variables. Accessing a `DynamicalSystem` using symbolic v
 is possible via the functions [`observe_state`](@ref), [`set_state!`](@ref),
 [`current_parameter`](@ref) and [`set_parameter!`](@ref).
 The referenced MTK model corresponding to the dynamical system can be obtained with
-`model = referrenced_sciml_model(ds::DynamicalSystem)`.
+`model = referenced_sciml_model(ds::DynamicalSystem)`.
 
 See also the online overarching tutorial for an example.
 

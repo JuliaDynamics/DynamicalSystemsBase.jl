@@ -23,8 +23,8 @@ function jacobian(ds::CoreDynamicalSystem{IIP}) where {IIP}
     if ds isa ContinuousTimeDynamicalSystem
         # TODO: This is the correct API way to obtain the Jacobian,
         # however it relies on MTK dependency, so we can't do it.
-        # if has_referrenced_model(ds)
-        #     model = referrenced_sciml_model(ds)
+        # if has_referenced_model(ds)
+        #     model = referenced_sciml_model(ds)
         #     Joop, Jiip = generate_jacobian(model; expression = Val{false})
         #     if IIP
         #         jac = Jiip
@@ -32,7 +32,7 @@ function jacobian(ds::CoreDynamicalSystem{IIP}) where {IIP}
         #         jac = Joop
         #     end
         # end
-        prob = referrenced_sciml_prob(ds)
+        prob = referenced_sciml_prob(ds)
         if prob.f isa SciMLBase.AbstractDiffEqFunction && !isnothing(prob.f.jac)
             jac = prob.f.jac
         else

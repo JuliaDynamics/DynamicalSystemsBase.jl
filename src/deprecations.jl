@@ -1,6 +1,11 @@
 @deprecate get_state current_state
 @deprecate get_deviations current_deviations
 
+# Misspelled names kept for backwards compatibility; remove in a future breaking release.
+@deprecate referrenced_sciml_prob referenced_sciml_prob
+@deprecate referrenced_sciml_model referenced_sciml_model
+@deprecate has_referrenced_model has_referenced_model false
+
 export integrator, tangent_integrator, parallel_integrator, poincaremap
 export projected_integrator
 

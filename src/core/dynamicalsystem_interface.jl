@@ -52,7 +52,7 @@ model and all symbolic variables. Accessing a `DynamicalSystem` using symbolic v
 is possible via the functions [`observe_state`](@ref), [`set_state!`](@ref),
 [`current_parameter`](@ref) and [`set_parameter!`](@ref).
 The referenced MTK model corresponding to the dynamical system can be obtained with
-`model = referrenced_sciml_model(ds::DynamicalSystem)`.
+`model = referenced_sciml_model(ds::DynamicalSystem)`.
 
 See also the DynamicalSystems.jl tutorial online for an example.
 
@@ -92,7 +92,7 @@ unless when developing new algorithm implementations that use dynamical systems.
 - [`initial_time`](@ref)
 - [`isinplace`](@ref)
 - [`successful_step`](@ref)
-- [`referrenced_sciml_model`](@ref)
+- [`referenced_sciml_model`](@ref)
 - [`named_variables`](@ref)
 
 ### API - alter status
@@ -127,32 +127,40 @@ errormsg(ds) = error("Not yet implemented for dynamical system of type $(nameof(
 
 export current_state, initial_state, current_parameters, current_parameter, initial_parameters, isinplace,
     current_time, initial_time, successful_step, isdeterministic, isdiscretetime, dynamic_rule,
-    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state, referrenced_sciml_model, named_variables
+    reinit!, set_state!, set_parameter!, set_parameters!, step!, observe_state,
+    referenced_sciml_model, referenced_sciml_prob, named_variables
 
 ###########################################################################################
 # Symbolic support
 ###########################################################################################
-# Simply extend the `referrenced_sciml_prob` and you have symbolic indexing support!
+# Simply extend the `referenced_sciml_prob` and you have symbolic indexing support!
 import SymbolicIndexingInterface
-referrenced_sciml_prob(::DynamicalSystem) = nothing
+"""
+    referenced_sciml_prob(ds::DynamicalSystem)
+
+Return the SciML problem (e.g. `ODEProblem`, `SDEProblem`) that `ds` was built from,
+or `nothing` if `ds` does not reference one. The returned problem is used for symbolic
+indexing through SymbolicIndexingInterface.jl.
+"""
+referenced_sciml_prob(::DynamicalSystem) = nothing
 
 # The rest are all automated!
 """
-    referrenced_sciml_model(ds::DynamicalSystem)
+    referenced_sciml_model(ds::DynamicalSystem)
 
-Return the ModelingToolkit.jl structurally-simplified model referrenced by `ds`.
-Return `nothing` if there is no referrenced model.
+Return the ModelingToolkit.jl structurally-simplified model referenced by `ds`.
+Return `nothing` if there is no referenced model.
 """
-referrenced_sciml_model(ds::DynamicalSystem) = referrenced_sciml_model(referrenced_sciml_prob(ds))
-referrenced_sciml_model(prob::SciMLBase.AbstractDEProblem) = prob.f.sys
-referrenced_sciml_model(::Nothing) = nothing
+referenced_sciml_model(ds::DynamicalSystem) = referenced_sciml_model(referenced_sciml_prob(ds))
+referenced_sciml_model(prob::SciMLBase.AbstractDEProblem) = prob.f.sys
+referenced_sciml_model(::Nothing) = nothing
 
-# return true if there is an actual referrenced system
-has_referrenced_model(prob::SciMLBase.AbstractDEProblem) = has_referrenced_model(referrenced_sciml_model(prob))
-has_referrenced_model(prob::DynamicalSystem) = has_referrenced_model(referrenced_sciml_model(prob))
-has_referrenced_model(::Nothing) = false
-has_referrenced_model(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
-has_referrenced_model(sys) = true
+# return true if there is an actual referenced system
+has_referenced_model(prob::SciMLBase.AbstractDEProblem) = has_referenced_model(referenced_sciml_model(prob))
+has_referenced_model(prob::DynamicalSystem) = has_referenced_model(referenced_sciml_model(prob))
+has_referenced_model(::Nothing) = false
+has_referenced_model(::SymbolicIndexingInterface.SymbolCache{Nothing, Nothing, Nothing}) = false
+has_referenced_model(sys) = true
 
 """
     named_variables(ds::DynamicalSystem)
@@ -165,7 +173,7 @@ X = StateSpaceSet(X; names = named_variables(ds))
 in downstream functions to name a set coming from `ds` (if possible).
 """
 function named_variables(ds::DynamicalSystem)
-    mtk = referrenced_sciml_model(ds)
+    mtk = referenced_sciml_model(ds)
     isnothing(mtk) && return nothing
     return SymbolicIndexingInterface.getname.(SymbolicIndexingInterface.variable_symbols(mtk))
 end
@@ -198,7 +206,7 @@ Return the state `u` of `ds` _observed_ at "index" `i`. Possibilities are:
 - `i::Int` returns the `i`-th dynamic variable.
 - `i::Function` returns `f(current_state(ds))`.
 - `i::SymbolLike` returns the value of the corresponding symbolic variable.
-   This is valid only for dynamical systems referrencing a ModelingToolkit.jl model
+   This is valid only for dynamical systems referencing a ModelingToolkit.jl model
    which also has `i` as one of its listed variables (either uknowns or observed).
    Here `i` can be anything can be anything
    that could index the solution object `sol = ModelingToolkit.solve(...)`,
@@ -220,8 +228,8 @@ function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_st
         return index(u)
     elseif index isa Integer
         return u[index]
-    elseif has_referrenced_model(ds)
-        prob = referrenced_sciml_prob(ds)
+    elseif has_referenced_model(ds)
+        prob = referenced_sciml_prob(ds)
         ugetter = SymbolicIndexingInterface.observed(prob, index)
         p = current_parameters(ds)
         return ugetter(u, p, t)
@@ -229,7 +237,7 @@ function observe_state(ds::DynamicalSystem, index, u::AbstractArray = current_st
         throw(
             ArgumentError(
                 "Invalid index to observe state, or if symbolic index, the " *
-                    "dynamical system does not referrence a ModelingToolkit.jl system."
+                    "dynamical system does not reference a ModelingToolkit.jl system."
             )
         )
     end
@@ -264,8 +272,8 @@ to extract the parameter from, which must match layout with its default value.
 Use [`parameter_name`](@ref) for an accompanying name.
 """
 function current_parameter(ds::DynamicalSystem, index, p = current_parameters(ds))
-    prob = referrenced_sciml_prob(ds)
-    if !has_referrenced_model(prob)
+    prob = referenced_sciml_prob(ds)
+    if !has_referenced_model(prob)
         return _get_parameter(p, index)
     else # symbolic parameter
         if !SymbolicIndexingInterface.is_parameter(prob, index)
@@ -389,17 +397,17 @@ function set_state!(ds::DynamicalSystem, value::Real, i)
 end
 
 function set_state!(u::AbstractArray, value::Real, i, ds::DynamicalSystem)
-    prob = referrenced_sciml_prob(ds)
+    prob = referenced_sciml_prob(ds)
     if i isa Integer
         u[i] = value
-    elseif has_referrenced_model(prob)
+    elseif has_referenced_model(prob)
         usetter = SymbolicIndexingInterface.setu(prob, i)
         usetter(u, value)
     else
         throw(
             ArgumentError(
                 "Invalid index to set state, or if symbolic index, the " *
-                    "dynamical system does not referrence a ModelingToolkit.jl system."
+                    "dynamical system does not reference a ModelingToolkit.jl system."
             )
         )
     end
@@ -451,8 +459,8 @@ function set_parameter!(ds::DynamicalSystem, index, value, p = current_parameter
     return _set_parameter!(ds::DynamicalSystem, index, value, p)
 end
 function _set_parameter!(ds::DynamicalSystem, index, value, p = current_parameters(ds))
-    prob = referrenced_sciml_prob(ds)
-    if !has_referrenced_model(prob)
+    prob = referenced_sciml_prob(ds)
+    if !has_referenced_model(prob)
         if p isa Union{AbstractArray, AbstractDict}
             setindex!(p, value, index)
         else

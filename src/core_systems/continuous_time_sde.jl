@@ -223,7 +223,7 @@ function CoupledSDEs(
         integ, deepcopy(prob.p), diffeq, noise_type
     )
 end
-# This preserves the referrenced MTK system and the originally passed diffeq kwargs
+# This preserves the referenced MTK system and the originally passed diffeq kwargs
 CoupledSDEs(ds::CoupledSDEs, diffeq) = CoupledSDEs(SDEProblem(ds), merge(ds.diffeq, diffeq))
 
 """
@@ -270,7 +270,7 @@ function CoupledSDEs(
         noise_process = nothing,
         seed = rand(UInt64)
     )
-    prob = referrenced_sciml_prob(ds)
+    prob = referenced_sciml_prob(ds)
     # we want the symbolic jacobian to be transfered over
     # dynamic_rule(ds) takes the deepest nested f wich does not have a jac field
     return CoupledSDEs(
@@ -288,7 +288,7 @@ deterministic part of `ds`.
 function CoupledODEs(
         sys::CoupledSDEs; diffeq = DEFAULT_DIFFEQ, t0 = 0.0
     )
-    prob = referrenced_sciml_prob(sys)
+    prob = referenced_sciml_prob(sys)
     # we want the symbolic jacobian to be transfered over
     # dynamic_rule(ds) takes the deepest nested f wich does not have a jac field
     return CoupledODEs(
@@ -331,7 +331,7 @@ function set_parameter!(ds::CoupledSDEs, args...)
     return nothing
 end
 
-referrenced_sciml_prob(ds::CoupledSDEs) = ds.integ.sol.prob
+referenced_sciml_prob(ds::CoupledSDEs) = ds.integ.sol.prob
 
 """
     diffusion_matrix(ds::CoupledSDEs)
@@ -479,7 +479,7 @@ function diffusion_function(g, IIP, noise_prototype)
 end
 
 function diffusion_function(ds::CoupledSDEs{IIP}) where {IIP}
-    prob = referrenced_sciml_prob(ds)
+    prob = referenced_sciml_prob(ds)
     return diffusion_function(prob.g, IIP, prob.noise_rate_prototype)
 end
 

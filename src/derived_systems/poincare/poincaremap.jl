@@ -19,7 +19,7 @@ A discrete time dynamical system that produces iterations over the Poincaré map
 of the given continuous time `ds`. This map is defined as the sequence of points on the
 Poincaré surface of section, which is defined by the `plane` argument.
 
-Iterating `pmap` also mutates `ds` which is referrenced in `pmap`.
+Iterating `pmap` also mutates `ds` which is referenced in `pmap`.
 
 See also [`StroboscopicMap`](@ref), [`poincaresos`](@ref).
 
@@ -151,7 +151,7 @@ additional_details(pmap::PoincareMap) = [
 # Extensions
 ###########################################################################################
 for f in (
-        :initial_state, :current_parameters, :initial_parameters, :referrenced_sciml_prob,
+        :initial_state, :current_parameters, :initial_parameters, :referenced_sciml_prob,
         :dynamic_rule, :(SciMLBase.isinplace), :(StateSpaceSets.dimension),
     )
     @eval $(f)(pmap::PoincareMap, args...) = $(f)(pmap.ds, args...)

@@ -108,8 +108,8 @@ end
         corr_alt = CoupledSDEs(f, zeros(2); g = g, noise_prototype = zeros(2, 2))
         @test corr.noise_type == corr_alt.noise_type
         @test all(
-            DynamicalSystemsBase.referrenced_sciml_prob(corr).g(zeros(2), (), 0.0) .==
-                DynamicalSystemsBase.referrenced_sciml_prob(corr_alt).g(zeros(2), (), 0.0)
+            DynamicalSystemsBase.referenced_sciml_prob(corr).g(zeros(2), (), 0.0) .==
+                DynamicalSystemsBase.referenced_sciml_prob(corr_alt).g(zeros(2), (), 0.0)
         )
     end
 
