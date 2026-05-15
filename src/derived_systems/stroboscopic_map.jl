@@ -52,7 +52,7 @@ set_period!(smap::StroboscopicMap, T) = (smap.period = T)
 ###########################################################################################
 for f in (
         :current_state, :initial_state, :current_parameters, :initial_parameters,
-        :dynamic_rule, :set_state!, :successful_step, :referrenced_sciml_prob,
+        :dynamic_rule, :set_state!, :successful_step, :referenced_sciml_prob,
         :(SciMLBase.isinplace), :(StateSpaceSets.dimension),
     )
     @eval $(f)(smap::StroboscopicMap, args...) = $(f)(smap.ds, args...)

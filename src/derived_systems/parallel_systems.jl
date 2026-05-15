@@ -63,7 +63,7 @@ function ParallelDynamicalSystem(ds::CoreDynamicalSystem, states::Vector{<:Abstr
         pds = CoupledODEs(prob, ds.diffeq; internalnorm = inorm)
     end
     M = ds isa CoupledODEs && isinplace(ds)
-    prob = referrenced_sciml_prob(ds)
+    prob = referenced_sciml_prob(ds)
     return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(ds), prob)
 end
 
@@ -76,7 +76,7 @@ function ParallelDynamicalSystem(smap::StroboscopicMap, states)
     pds = StroboscopicMap(cont_pds, smap.period)
 
     M = smap.ds isa CoupledODEs && isinplace(smap.ds)
-    prob = referrenced_sciml_prob(smap.ds)
+    prob = referenced_sciml_prob(smap.ds)
     return ParallelDynamicalSystemAnalytic{typeof(pds), M}(pds, dynamic_rule(smap), prob)
 end
 
@@ -148,7 +148,7 @@ end
 (pdsa::ParallelDynamicalSystemAnalytic)(t::Real, i::Int = 1) = pdsa.ds(t)[i]
 dynamic_rule(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.original_f
 
-referrenced_sciml_prob(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.prob
+referenced_sciml_prob(pdsa::ParallelDynamicalSystemAnalytic) = pdsa.prob
 
 function observe_state(ds::ParallelDynamicalSystemAnalytic, index, i::Int = 1)
     u = current_state(ds, i)
@@ -221,7 +221,7 @@ end
 
 for f in (
         :current_time, :initial_time, :isdiscretetime,
-        :current_parameters, :initial_parameters, :dynamic_rule, :referrenced_sciml_model,
+        :current_parameters, :initial_parameters, :dynamic_rule, :referenced_sciml_model,
     )
     @eval $(f)(pdtds::PDTDS, args...; kw...) = $(f)(pdtds.systems[1], args...; kw...)
 end

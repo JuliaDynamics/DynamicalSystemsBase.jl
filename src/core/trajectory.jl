@@ -12,7 +12,7 @@ Optionally provide a starting state `u0` which is `current_state(ds)` by default
 If time evolution diverged or in general failed before `T`,
 the remaining of the trajectory is set to the last valid point.
 
-The dimensions of `X` are automatically named if `ds` referrences an MTK model
+The dimensions of `X` are automatically named if `ds` references an MTK model
 and if `save_idxs` remains at its default value.
 
 ## Keyword arguments
