@@ -59,9 +59,10 @@ function trajectory(
     end
     # name automatically if possible
     if isnothing(save_idxs)
-        X = StateSpaceSet(X; container, names = named_variables(ds))
+        return StateSpaceSet(X; container, names = named_variables(ds)), tvec
+    else
+        return StateSpaceSet(X; container), tvec
     end
-    return X, tvec
 end
 
 function trajectory_discrete(
@@ -90,7 +91,6 @@ function trajectory_discrete(
 end
 
 function trajectory_continuous(ds, T, U; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = nothing)
-    D = dimension(ds)
     t0 = current_time(ds)
     tvec = (t0 + Ttr):Δt:(t0 + T + Ttr)
     sol = Vector{U}(undef, length(tvec))
