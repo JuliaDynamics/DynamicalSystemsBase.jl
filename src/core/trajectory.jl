@@ -39,38 +39,45 @@ trajectory (but remember to convert the output of `solve` to a `StateSpaceSet`).
 """
 function trajectory(
         ds::DynamicalSystem, T, u0 = current_state(ds);
-        save_idxs = nothing, t0 = initial_time(ds), kwargs...
+        save_idxs = nothing, t0 = initial_time(ds), container = SVector, kwargs...
     )
     accessor = svector_access(save_idxs)
     reinit!(ds, u0; t0)
-    if isdiscretetime(ds)
-        X, tvec = trajectory_discrete(ds, T; accessor, kwargs...)
+    X = isnothing(accessor) ? dimension(ds) : length(accessor)
+    t = eltype(u0)
+    if container <: SVector
+        U = SVector{X, t}
+    elseif container <: MVector
+        U = MVector{X, t}
     else
-        X, tvec = trajectory_continuous(ds, T; accessor, kwargs...)
+        U = Vector{t}
+    end
+    if isdiscretetime(ds)
+        X, tvec = trajectory_discrete(ds, T, U; accessor, kwargs...)
+    else
+        X, tvec = trajectory_continuous(ds, T, U; accessor, kwargs...)
     end
     # name automatically if possible
     if isnothing(save_idxs)
-        X = StateSpaceSet(X; names = named_variables(ds))
+        return StateSpaceSet(X; container, names = named_variables(ds)), tvec
+    else
+        return StateSpaceSet(X; container), tvec
     end
-    return X, tvec
 end
 
 function trajectory_discrete(
-        ds, T;
+        ds, T, U;
         Dt::Integer = 1, Δt::Integer = Dt, Ttr::Integer = 0, accessor = nothing,
-        kw... # container keyword
     )
-    ET = eltype(current_state(ds))
     t0 = current_time(ds)
     tvec = (t0 + Ttr):Δt:(t0 + T + Ttr)
     L = length(tvec)
-    X = isnothing(accessor) ? dimension(ds) : length(accessor)
-    data = Vector{SVector{X, ET}}(undef, L)
+    data = Vector{U}(undef, L)
     Ttr ≠ 0 && step!(ds, Ttr)
     data[1] = obtain_state(current_state(ds), accessor)
     for i in 2:L
         step!(ds, Δt)
-        data[i] = SVector{X, ET}(obtain_state(ds, current_time(ds), accessor))
+        data[i] = U(obtain_state(ds, current_time(ds), accessor))
         if !successful_step(ds)
             # Diverged trajectory; set final state to remaining set
             # and exit iteration early
@@ -80,23 +87,20 @@ function trajectory_discrete(
             break
         end
     end
-    return StateSpaceSet(data; kw...), tvec
+    return data, tvec
 end
 
-function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = nothing, kw...)
-    D = dimension(ds)
+function trajectory_continuous(ds, T, U; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = nothing)
     t0 = current_time(ds)
     tvec = (t0 + Ttr):Δt:(t0 + T + Ttr)
-    X = isnothing(accessor) ? D : length(accessor)
-    ET = eltype(current_state(ds))
-    sol = Vector{SVector{X, ET}}(undef, length(tvec))
+    sol = Vector{U}(undef, length(tvec))
     step!(ds, Ttr)
     for (i, t) in enumerate(tvec)
         while t > current_time(ds)
             step!(ds)
             successful_step(ds) || break
         end
-        sol[i] = SVector{X, ET}(obtain_state(ds, t, accessor))
+        sol[i] = U(obtain_state(ds, t, accessor))
         if !successful_step(ds)
             # Diverged trajectory; set final state to remaining set
             # and exit iteration early
@@ -107,7 +111,7 @@ function trajectory_continuous(ds, T; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = 
         end
 
     end
-    return StateSpaceSet(sol; kw...), tvec
+    return sol, tvec
 end
 
 # Util functions for `trajectory` to make indexing static vectors

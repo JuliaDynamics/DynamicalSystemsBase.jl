@@ -1,3 +1,7 @@
+# v3.18.1
+
+- Fixed a key bug in `trajectory` where it was not respecting the `container` keyword.
+
 # v3.18
 
 - The public API functions `referrenced_sciml_prob`, `referrenced_sciml_model`, and the internal `has_referrenced_model` have been renamed to fix the misspelling: `referenced_sciml_prob`, `referenced_sciml_model`, `has_referenced_model`. The misspelled names are kept as deprecated aliases that forward to the new ones, so existing code keeps working but emits a deprecation warning. `referenced_sciml_prob` is now also exported and documented.

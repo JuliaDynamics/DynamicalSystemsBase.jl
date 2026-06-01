@@ -19,3 +19,15 @@ using Test
     x, t = trajectory(ds, N - 1)
     @test length(x) > 1
 end
+
+@testset "container" begin
+    u0 = zeros(2)
+    p0 = [1.4, 0.3]
+    henon_rule(x, p, n) = SVector{2}(1.0 - p[1] * x[1]^2 + x[2], p[2] * x[1])
+    henon_oop = DeterministicIteratedMap(henon_rule, u0, p0)
+
+    x, t = trajectory(henon_oop, 100)
+    @test eltype(vec(x)) <: SVector
+    x, t = trajectory(henon_oop, 100; container = Vector)
+    @test eltype(vec(x)) <: Vector
+end
