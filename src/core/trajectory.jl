@@ -93,6 +93,16 @@ end
 function trajectory_continuous(ds, T, U; Dt = 0.1, Δt = Dt, Ttr = 0.0, accessor = nothing)
     t0 = current_time(ds)
     tvec = (t0 + Ttr):Δt:(t0 + T + Ttr)
+    if ds isa CoupledODEs && haskey(ds.diffeq, :callback)
+        # we proceed to call `solve` for better handling of callbacks
+        prob = ODEProblem(ds, (tvec[1], tvec[end]))
+        save_idxs = isnothing(accessor) ? (1:dimension(ds)) : svector_access(accessor)
+        sol = SciMLBase.solve(prob; ds.diffeq..., save_idxs, saveat = tvec)
+        # now cast sol to ssset
+        data = U.(sol.u)
+        return data, tvec
+    end
+
     sol = Vector{U}(undef, length(tvec))
     step!(ds, Ttr)
     for (i, t) in enumerate(tvec)

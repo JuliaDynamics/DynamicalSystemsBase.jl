@@ -1,3 +1,9 @@
+# v3.19
+
+- Now `ODEProblem(ds::DynamicalSystem)` allows for keyword propagation.
+- Now `ODEProblem(ds::DynamicalSystem)` creates a problem using the system's current status.
+- `trajectory` now detects whether a passed `CoupledODEs` contains `callback` in its `diffeq`. If yes, `solve` is used to evolve the trajectory instead of the slightly cheaper manual iterative stepping.
+
 # v3.18.1
 
 - Fixed a key bug in `trajectory` where it was not respecting the `container` keyword.
