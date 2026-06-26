@@ -56,7 +56,8 @@ $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 
 The convenience constructors `CoupledODEs(prob::ODEProblem [, diffeq])` and
 `CoupledODEs(ds::CoupledODEs [, diffeq])` are also available.
-Use `ODEProblem(ds::CoupledODEs, tspan = (t0, Inf))` to obtain the problem.
+Use `ODEProblem(ds::CoupledODEs; tspan = (current_time(ds), Inf), kw...)` to obtain the problem.
+The propagated keywords `u0, p` use the dynamical system's **current** status.
 
 To integrate with ModelingToolkit.jl, the dynamical system **must** be created
 via the `ODEProblem` (which itself is created via ModelingToolkit.jl), see
@@ -113,9 +114,11 @@ function CoupledODEs(prob::ODEProblem, diffeq = DEFAULT_DIFFEQ; special_kwargs..
     return CoupledODEs{IIP, D, typeof(integ), P}(integ, deepcopy(prob.p), diffeq)
 end
 
-function SciMLBase.ODEProblem(ds::CoupledODEs{IIP}, tspan = (initial_time(ds), Inf)) where {IIP}
+function SciMLBase.ODEProblem(ds::CoupledODEs, tspan = (current_time(ds), Inf), kw...)
     prob = ds.integ.sol.prob
-    return SciMLBase.remake(prob; tspan)
+    return SciMLBase.remake(prob;
+        u0 = current_state(ds), p = current_parameters(ds), tspan, kw...
+    )
 end
 
 # Pretty print
