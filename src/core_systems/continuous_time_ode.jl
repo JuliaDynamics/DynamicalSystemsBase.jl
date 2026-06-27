@@ -53,6 +53,7 @@ $(DynamicalSystemsBase.DEFAULT_DIFFEQ)
 
 `diffeq` keywords can also include `callback` for [event handling
 ](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/).
+If doing so, it is recommended to use `save_positions = (false, false)` to all callbacks.
 
 The convenience constructors `CoupledODEs(prob::ODEProblem [, diffeq])` and
 `CoupledODEs(ds::CoupledODEs [, diffeq])` are also available.
