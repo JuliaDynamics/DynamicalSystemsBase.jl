@@ -49,7 +49,7 @@ If you want to specify a solver, do so by using the keyword `alg`, e.g.:
 `using OrdinaryDiffEq` (or smaller library package such as `OrdinaryDiffEqVerner`)
 to access the solvers. The default `diffeq` is:
 
-$(DynamicalSystemsBase.DEFAULT_DIFFEQ)
+$(DEFAULT_DIFFEQ)
 
 `diffeq` keywords can also include `callback` for [event handling
 ](https://docs.sciml.ai/DiffEqDocs/stable/features/callback_functions/).

@@ -105,7 +105,7 @@ Return a name that matches the outcome of [`current_parameter`](@ref) with `inde
 """
 parameter_name(f::Int) = "p" * subscript(f)
 parameter_name(f::Union{AbstractString, Symbol}) = string(f)
-parameter_name(f) = string(DynamicalSystemsBase.SymbolicIndexingInterface.getname(f))
+parameter_name(f) = string(SymbolicIndexingInterface.getname(f))
 
 export state_name, parameter_name
 

@@ -1,6 +1,6 @@
 export CoupledSDEs
 
-using SciMLBase: SDEProblem, AbstractSDEIntegrator, SDEFunction, __init
+using SciMLBase: SDEProblem, AbstractSDEIntegrator, __init
 using StochasticDiffEqHighOrder: SOSRA
 using StochasticDiffEqHighOrder.StochasticDiffEqCore: setup_next_step!
 using LinearAlgebra
