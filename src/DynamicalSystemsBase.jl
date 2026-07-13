@@ -12,7 +12,7 @@ using Reexport
 
 import SciMLBase
 import SciMLBase: reinit!, step!, isinplace
-using SciMLBase: recursivecopy
+using RecursiveArrayTools: recursivecopy
 export reinit!, step!, isinplace, recursivecopy
 
 include("core/dynamicalsystem_interface.jl")

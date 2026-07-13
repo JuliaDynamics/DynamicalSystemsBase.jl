@@ -88,7 +88,7 @@ state_name(f::Union{AbstractString, Symbol}) = string(f)
 function state_name(f)
     # First, try a symbolic name
     try
-        n = string(DynamicalSystemsBase.SymbolicIndexingInterface.getname(f))
+        n = string(SymbolicIndexingInterface.getname(f))
         return n
     catch e
     end
