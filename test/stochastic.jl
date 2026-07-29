@@ -1,6 +1,6 @@
 using DynamicalSystemsBase, Test
 using OrdinaryDiffEqTsit5: Tsit5
-using OrdinaryDiffEqTsit5.OrdinaryDiffEqCore: None
+using SciMLLogging: None
 using StochasticDiffEq: SDEProblem, SRA, SOSRA, LambaEM, CorrelatedWienerProcess, EM
 
 using DynamicalSystemsBase: diffusion_matrix

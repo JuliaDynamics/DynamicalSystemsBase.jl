@@ -117,7 +117,8 @@ end
 
 function SciMLBase.ODEProblem(ds::CoupledODEs, tspan = (current_time(ds), Inf), kw...)
     prob = ds.integ.sol.prob
-    return SciMLBase.remake(prob;
+    return SciMLBase.remake(
+        prob;
         u0 = current_state(ds), p = current_parameters(ds), tspan, kw...
     )
 end

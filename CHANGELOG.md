@@ -1,3 +1,7 @@
+# v3.19.3
+
+- Fixed `UndefVarError: setup_next_step!` when calling `reinit!` (and hence `trajectory`) on a `CoupledSDEs` with StochasticDiffEqCore v2.0.3 or later. `setup_next_step!` is now imported from DiffEqNoiseProcess, which owns it, instead of relying on StochasticDiffEqCore re-exporting it.
+
 # v3.19
 
 - Now `ODEProblem(ds::DynamicalSystem)` allows for keyword propagation.

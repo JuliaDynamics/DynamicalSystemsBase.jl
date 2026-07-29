@@ -1,7 +1,7 @@
 using DynamicalSystemsBase, Test
 
 using OrdinaryDiffEqTsit5: ODEProblem, Tsit5
-using OrdinaryDiffEqTsit5.OrdinaryDiffEqCore: None
+using SciMLLogging: None
 using OrdinaryDiffEqVerner: Vern9
 
 include("test_system_function.jl")
